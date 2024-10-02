@@ -9,7 +9,7 @@ import Foundation
 import CloudKit
 
 class UserCloudKitUtility {
-    static let container = CloudKit.CKContainer(identifier: "ICloud.LoopContainer")
+    static let container = CloudKit.CKContainer(identifier: "iCloud.LoopContainer")
     
     static func addUserData() {
         let privateDB = container.privateCloudDatabase

@@ -12,6 +12,15 @@
 		99A0C8F52CA9EF2600F9281A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 99A0C8F42CA9EF2600F9281A /* Assets.xcassets */; };
 		99A0C8F82CA9EF2600F9281A /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 99A0C8F72CA9EF2600F9281A /* Preview Assets.xcassets */; };
 		99A0C9042CA9F70500F9281A /* UserCloudKitUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C9032CA9F70500F9281A /* UserCloudKitUtility.swift */; };
+		99F7F6E52CAC77E7009858AC /* IntroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6E42CAC77E7009858AC /* IntroView.swift */; };
+		99F7F6E72CAC77F4009858AC /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6E62CAC77F4009858AC /* HomeView.swift */; };
+		99F7F6E92CAC792C009858AC /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6E82CAC792C009858AC /* NotificationManager.swift */; };
+		99F7F6EB2CAC7935009858AC /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6EA2CAC7935009858AC /* AudioManager.swift */; };
+		99F7F6ED2CAC796E009858AC /* RecordLoopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6EC2CAC796E009858AC /* RecordLoopView.swift */; };
+		99F7F6F12CAC7B5B009858AC /* LoopCloudKitUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6F02CAC7B5B009858AC /* LoopCloudKitUtility.swift */; };
+		99F7F6F32CAC7D0F009858AC /* Loop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6F22CAC7D0F009858AC /* Loop.swift */; };
+		99F7F6F52CAC7DB4009858AC /* LoopManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6F42CAC7DB4009858AC /* LoopManager.swift */; };
+		99F7F6F72CAC93B4009858AC /* LoopRevealDate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6F62CAC93B4009858AC /* LoopRevealDate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -22,6 +31,15 @@
 		99A0C8F72CA9EF2600F9281A /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		99A0C9012CA9F5CA00F9281A /* Loop.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Loop.entitlements; sourceTree = "<group>"; };
 		99A0C9032CA9F70500F9281A /* UserCloudKitUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserCloudKitUtility.swift; sourceTree = "<group>"; };
+		99F7F6E42CAC77E7009858AC /* IntroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntroView.swift; sourceTree = "<group>"; };
+		99F7F6E62CAC77F4009858AC /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		99F7F6E82CAC792C009858AC /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
+		99F7F6EA2CAC7935009858AC /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
+		99F7F6EC2CAC796E009858AC /* RecordLoopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordLoopView.swift; sourceTree = "<group>"; };
+		99F7F6F02CAC7B5B009858AC /* LoopCloudKitUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopCloudKitUtility.swift; sourceTree = "<group>"; };
+		99F7F6F22CAC7D0F009858AC /* Loop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Loop.swift; sourceTree = "<group>"; };
+		99F7F6F42CAC7DB4009858AC /* LoopManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopManager.swift; sourceTree = "<group>"; };
+		99F7F6F62CAC93B4009858AC /* LoopRevealDate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopRevealDate.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,6 +96,9 @@
 		99A0C8FE2CA9EF6500F9281A /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				99F7F6E42CAC77E7009858AC /* IntroView.swift */,
+				99F7F6E62CAC77F4009858AC /* HomeView.swift */,
+				99F7F6EC2CAC796E009858AC /* RecordLoopView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -85,6 +106,9 @@
 		99A0C8FF2CA9EF7400F9281A /* Managers */ = {
 			isa = PBXGroup;
 			children = (
+				99F7F6E82CAC792C009858AC /* NotificationManager.swift */,
+				99F7F6EA2CAC7935009858AC /* AudioManager.swift */,
+				99F7F6F42CAC7DB4009858AC /* LoopManager.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -92,6 +116,8 @@
 		99A0C9002CA9EF7B00F9281A /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				99F7F6F22CAC7D0F009858AC /* Loop.swift */,
+				99F7F6F62CAC93B4009858AC /* LoopRevealDate.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -100,6 +126,7 @@
 			isa = PBXGroup;
 			children = (
 				99A0C9032CA9F70500F9281A /* UserCloudKitUtility.swift */,
+				99F7F6F02CAC7B5B009858AC /* LoopCloudKitUtility.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -174,8 +201,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				99F7F6E92CAC792C009858AC /* NotificationManager.swift in Sources */,
+				99F7F6EB2CAC7935009858AC /* AudioManager.swift in Sources */,
+				99F7F6F52CAC7DB4009858AC /* LoopManager.swift in Sources */,
 				99A0C8F32CA9EF2400F9281A /* ContentView.swift in Sources */,
+				99F7F6F12CAC7B5B009858AC /* LoopCloudKitUtility.swift in Sources */,
+				99F7F6ED2CAC796E009858AC /* RecordLoopView.swift in Sources */,
+				99F7F6F72CAC93B4009858AC /* LoopRevealDate.swift in Sources */,
+				99F7F6F32CAC7D0F009858AC /* Loop.swift in Sources */,
+				99F7F6E52CAC77E7009858AC /* IntroView.swift in Sources */,
 				99A0C8F12CA9EF2400F9281A /* LoopApp.swift in Sources */,
+				99F7F6E72CAC77F4009858AC /* HomeView.swift in Sources */,
 				99A0C9042CA9F70500F9281A /* UserCloudKitUtility.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -314,6 +350,7 @@
 				DEVELOPMENT_TEAM = NDZ2DG6484;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "So that you can Loop!";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -344,6 +381,7 @@
 				DEVELOPMENT_TEAM = NDZ2DG6484;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "So that you can Loop!";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
