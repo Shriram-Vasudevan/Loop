@@ -49,7 +49,7 @@ struct RecordLoopView: View {
             Button(action: { dismiss() }) {
                 Image(systemName: "xmark")
                     .foregroundColor(.black)
-//                    .font(.system(size: 20, weight: .semibold))
+
             }
             Spacer()
             Text("Record your Loop")
