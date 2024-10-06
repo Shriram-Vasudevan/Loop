@@ -12,31 +12,31 @@ class AudioManager: NSObject, ObservableObject {
     static let shared = AudioManager()
     
     private var audioRecorder: AVAudioRecorder?
+    private var audioFilename: URL?
     @Published var isRecording: Bool = false
-    @Published var elapsedTime: Int = 0
-    
-    private var audioFilename: URL? {
-        let directory = FileManager.default.temporaryDirectory
-        let filePath = directory.appendingPathComponent("loopRecording.m4a")
-        return filePath
-    }
-    
-    private override init() {
+
+    override init() {
         super.init()
+        configureAudioSession()
     }
 
+    // Configure audio session for recording
     func configureAudioSession() {
-        let audioSession = AVAudioSession.sharedInstance()
+        let session = AVAudioSession.sharedInstance()
         do {
-            try audioSession.setCategory(.playAndRecord, mode: .default)
-            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+            try session.setCategory(.playAndRecord, mode: .default, options: .defaultToSpeaker)
+            try session.setActive(true)
         } catch {
-            print("Failed to configure audio session:", error.localizedDescription)
+            print("Failed to set up audio session: \(error.localizedDescription)")
         }
     }
-
+    
+    // Start recording a new audio file
     func startRecording() {
-        configureAudioSession()
+        let directory = FileManager.default.temporaryDirectory
+        let filePath = directory.appendingPathComponent(UUID().uuidString + ".m4a")
+        audioFilename = filePath
+        
         let settings = [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
             AVSampleRateKey: 12000,
@@ -45,47 +45,30 @@ class AudioManager: NSObject, ObservableObject {
         ]
         
         do {
-            guard let audioFilename = audioFilename else {
-                print("Failed to create file path for recording.")
-                return
-            }
-            
-            audioRecorder = try AVAudioRecorder(url: audioFilename, settings: settings)
-            audioRecorder?.delegate = self
+            audioRecorder = try AVAudioRecorder(url: filePath, settings: settings)
             audioRecorder?.record()
             isRecording = true
         } catch {
-            print("Failed to start recording:", error.localizedDescription)
+            print("Failed to start recording: \(error.localizedDescription)")
         }
     }
-
+    
+    // Stop recording
     func stopRecording() {
         audioRecorder?.stop()
         isRecording = false
     }
 
+    // Reset recording (remove any existing audio)
+    func resetRecording() {
+        audioRecorder = nil
+        audioFilename = nil
+        isRecording = false
+    }
+
+    // Return the URL of the recorded audio file
     func getRecordedAudioFile() -> URL? {
         return audioFilename
     }
-
-    func resetRecording() {
-        audioRecorder = nil
-        isRecording = false
-    }
 }
 
-extension AudioManager: AVAudioRecorderDelegate {
-    func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
-        if flag {
-            print("Recording finished successfully.")
-        } else {
-            print("Recording failed to finish.")
-        }
-    }
-
-    func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
-        if let error = error {
-            print("Recording error occurred: \(error.localizedDescription)")
-        }
-    }
-}

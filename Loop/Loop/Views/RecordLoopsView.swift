@@ -4,60 +4,133 @@
 //
 //  Created by Shriram Vasudevan on 10/3/24.
 //
+
 import SwiftUI
+import AVKit
 
 struct RecordLoopsView: View {
     @ObservedObject var loopManager = LoopManager.shared
     @ObservedObject var audioManager = AudioManager.shared
     
     @State private var isRecording = false
-    @State private var showPromptText = true
-    @State private var promptOpacity: Double = 0
-    @State private var animationProgress: CGFloat = 0
+    @State private var isPostRecording = false
+    @State private var audioPlayer: AVAudioPlayer?
+    @State private var isAllPromptsCompleted = false
+    @State private var retryAttempts = 1 // Retry allowed once
+    @State private var recordingTimer: Timer? // Timer for recording
+    @State private var timeRemaining: Int = 30 // Countdown timer starting at 30 seconds
     
     @Environment(\.dismiss) var dismiss
-    
-    let gradientColors = [Color(hex: "F0F0F0"), Color.white, Color(hex: "F8F8F8")]
+
     let accentColor = Color(hex: "A28497")
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Enhanced gradient background
-                LinearGradient(gradient: Gradient(colors: gradientColors), startPoint: .topLeading, endPoint: .bottomTrailing)
-                    .edgesIgnoringSafeArea(.all)
-                
-                // Random decorative curves
-                RandomCurvesBackground(accentColor: accentColor)
-                
-                VStack(spacing: 0) {
-                    topBar
-                    
-                    Spacer()
-                    
-                    promptArea
-                    
-                    Spacer()
-                    
-                    recordingButton
-                        .padding(.bottom, 10)
+        ZStack {
+            // White background with oscillating dots on top
+            Color.white.edgesIgnoringSafeArea(.all)
+            
+            // Oscillating dots background
+            OscillatingDotsBackground()
+                .edgesIgnoringSafeArea(.all)
+            
+            VStack(spacing: 0) {
+                if isAllPromptsCompleted {
+                    thankYouScreen // Final thank you screen when all prompts are completed
+                        .transition(.opacity.animation(.easeInOut(duration: 0.5)))
+                } else if isPostRecording {
+                    postRecordingScreen
+                        .transition(.opacity.animation(.easeInOut(duration: 0.5))) // Smooth fade transition
+                } else {
+                    recordingScreen
+                        .transition(.opacity.animation(.easeInOut(duration: 0.5))) // Smooth fade transition
                 }
-                .padding(.horizontal, 16)
             }
+            .padding(.horizontal, 16)
         }
         .onAppear {
-            animatePromptText()
+            audioManager.resetRecording() // Ensure fresh recording each time
         }
     }
     
+    // Main recording screen with top bar, prompt, and record button
+    private var recordingScreen: some View {
+        VStack(spacing: 0) {
+            topBar
+            
+            Spacer()
+            
+            promptArea
+            
+            Spacer()
+            
+            recordingButton
+                .padding(.bottom, 10)
+        }
+    }
+    
+    // Final "Thanks for Looping" screen after all prompts are completed
+    private var thankYouScreen: some View {
+        VStack(spacing: 16) {
+            Text("Thanks for Looping!")
+                .font(.system(size: 40, weight: .ultraLight))
+                .foregroundColor(Color(hex: "333333"))
+                .multilineTextAlignment(.center)
+            
+            Spacer()
+            
+            Text("See you tomorrow for another Loop.")
+                .font(.system(size: 24, weight: .thin))
+                .foregroundColor(Color.gray)
+                .multilineTextAlignment(.center)
+            
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .onAppear {
+            audioManager.resetRecording() // Reset when everything is done
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                dismiss()
+            }
+        }
+    }
+    
+    // Post-recording screen to listen, retry or complete the loop
+    private var postRecordingScreen: some View {
+        VStack(spacing: 16) {
+            Text("Review Your Recording")
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundColor(Color(hex: "333333"))
+                .padding(.top, 16)
+            
+            // Audio player controls
+            if let audioFileURL = audioManager.getRecordedAudioFile() {
+                audioPlayerControls(audioFileURL: audioFileURL)
+            } else {
+                Text("No recording available.")
+                    .foregroundColor(Color.gray)
+            }
+            
+            Spacer()
+            
+            retryAndCompleteButtons
+        }
+        .onAppear {
+            playAudioIfAvailable() // Play audio immediately on appearance
+        }
+    }
+    
+    // Top bar with navigation and indicator dots
     private var topBar: some View {
         VStack(spacing: 16) {
             HStack {
                 Button(action: {
-                    loopManager.nextPrompt()
-                    dismiss()
+                    if isPostRecording {
+                        retryRecording()
+                    } else {
+                        dismiss()
+                    }
                 }) {
-                    Image(systemName: "xmark")
+                    Image(systemName: isPostRecording ? "arrow.backward" : "xmark")
                         .font(.system(size: 20, weight: .light))
                         .foregroundColor(Color(hex: "CCCCCC"))
                 }
@@ -76,34 +149,27 @@ struct RecordLoopsView: View {
         .padding(.top, 16)
     }
     
+    // Prompt display or recording state
     private var promptArea: some View {
         VStack(spacing: isRecording ? 16 : 40) {
-            if showPromptText {
-                Text("Find a quiet space")
-                    .font(.system(size: 40, weight: .ultraLight))
-                    .foregroundColor(Color(hex: "333333"))
-                    .multilineTextAlignment(.center)
-                    .opacity(promptOpacity)
+            Text(loopManager.getCurrentPrompt())
+                .font(.system(size: 44, weight: .ultraLight))
+                .foregroundColor(Color(hex: "333333"))
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .transition(.opacity)
+            
+            if isRecording {
+                Text("Recording... \(timeRemaining)s")
+                    .font(.system(size: 26, weight: .ultraLight))
+                    .foregroundColor(accentColor)
                     .transition(.opacity)
-            } else {
-                Text(loopManager.getCurrentPrompt())
-                    .font(.system(size: 44, weight: .ultraLight))
-                    .foregroundColor(Color(hex: "333333"))
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .transition(.opacity)
-                
-                if isRecording {
-                    Text("Recording...")
-                        .font(.system(size: 26, weight: .ultraLight))
-                        .foregroundColor(accentColor)
-                        .transition(.opacity)
-                }
             }
         }
         .frame(maxWidth: .infinity)
     }
     
+    // Button to start or stop recording
     private var recordingButton: some View {
         Button(action: toggleRecording) {
             ZStack {
@@ -125,98 +191,155 @@ struct RecordLoopsView: View {
                         .frame(width: 72, height: 72)
                         .opacity(0.8)
                 }
-
-                Circle()
-                    .stroke(isRecording ? accentColor.opacity(0.5) : Color.clear, lineWidth: 3)
-                    .frame(width: 100, height: 100)
-                    .scaleEffect(animationProgress)
-                    .opacity(1 - animationProgress)
-                    .animation(Animation.easeInOut(duration: 1.5).repeatForever(autoreverses: false), value: animationProgress)
-            }
-        }
-        .onChange(of: isRecording) { _ in
-            animationProgress = 0
-            withAnimation {
-                animationProgress = 1
             }
         }
     }
-
     
+    // Playback controls for the recorded audio
+    private func audioPlayerControls(audioFileURL: URL) -> some View {
+        HStack {
+            Button(action: {
+                playAudio(url: audioFileURL)
+            }) {
+                Image(systemName: "play.fill")
+                    .foregroundColor(accentColor)
+                    .font(.system(size: 40))
+            }
+        }
+    }
+    
+    // Retry and complete buttons
+    private var retryAndCompleteButtons: some View {
+        HStack(spacing: 16) {
+            if loopManager.retryAttemptsLeft > 0 {
+                Button(action: retryRecording) {
+                    Text("Retry (\(loopManager.retryAttemptsLeft) left)")
+                        .frame(width: 150, height: 50)
+                        .foregroundColor(.white)
+                        .background(Color.red)
+                        .cornerRadius(10)
+                }
+            }
+            
+            Button(action: completeRecording) {
+                Text("Complete")
+                    .frame(width: 150, height: 50)
+                    .foregroundColor(.white)
+                    .background(accentColor)
+                    .cornerRadius(10)
+            }
+        }
+    }
+    
+    // Retry the recording and save state
+    private func retryRecording() {
+        loopManager.retryRecording()
+        audioManager.resetRecording()
+        isPostRecording = false
+    }
+    
+    // Complete the recording and upload the loop
+    private func completeRecording() {
+        if let audioFileURL = audioManager.getRecordedAudioFile() {
+            let currentPrompt = loopManager.getCurrentPrompt()
+            loopManager.addLoop(audioURL: audioFileURL, prompt: currentPrompt)
+            loopManager.nextPrompt()
+
+            if loopManager.areAllPromptsDone() {
+                isAllPromptsCompleted = true
+                print("all prompts completed")
+            } else {
+                isPostRecording = false // Continue to the next prompt
+            }
+        }
+    }
+    
+    // Play recorded audio
+    private func playAudio(url: URL) {
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.play()
+        } catch {
+            print("Error playing audio: \(error.localizedDescription)")
+        }
+    }
+    
+    // Play audio immediately on confirm screen
+    private func playAudioIfAvailable() {
+        if let audioFileURL = audioManager.getRecordedAudioFile() {
+            playAudio(url: audioFileURL)
+        }
+    }
+    
+    // Start/stop recording logic
     private func toggleRecording() {
         withAnimation(.easeInOut(duration: 0.3)) {
             isRecording.toggle()
         }
+        
         if !isRecording {
-            loopManager.nextPrompt()
-            if loopManager.areAllPromptsDone() {
-                dismiss()
-            }
+            audioManager.stopRecording() // Stop and store audio
+            stopTimer()
+            isPostRecording = true // Switch to confirm view
+        } else {
+            startRecordingWithTimer() // Start recording with countdown
         }
-        // Logic to record audio would go here
     }
     
-    private func animatePromptText() {
-        withAnimation(.easeIn(duration: 1.5)) {
-            promptOpacity = 1.0
-        }
+    // Start the recording and countdown timer
+    private func startRecordingWithTimer() {
+        audioManager.startRecording() // Start recording
+        timeRemaining = 30 // Reset countdown to 30 seconds
+        startTimer()
+    }
+    
+    // Timer to count down from 30 seconds
+    private func startTimer() {
+        recordingTimer?.invalidate() // Stop any existing timer
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
-            withAnimation(.easeOut(duration: 1.5)) {
-                promptOpacity = 0
+        recordingTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
+            if timeRemaining > 0 {
+                timeRemaining -= 1
+            } else {
+                stopTimer()
+                audioManager.stopRecording() // Stop recording at 0
+                isPostRecording = true // Switch to confirm view
             }
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
-            withAnimation {
-                showPromptText = false
-            }
-        }
+    }
+    
+    // Stop the timer
+    private func stopTimer() {
+        recordingTimer?.invalidate()
+        recordingTimer = nil
     }
 }
 
-struct RandomCurvesBackground: View {
+// New Oscillating Dots Background with a circle and animated dots
+struct OscillatingDotsBackground: View {
     @State private var phase: CGFloat = 0
-    let accentColor: Color
     
     var body: some View {
-        // Timer-driven animation, decoupled from rendering
         GeometryReader { geometry in
-            Canvas { context, size in
-                context.opacity = 0.3
-                
-                let colors = [Color(hex: "EEEEEE"), Color(hex: "DDDDDD"), accentColor.opacity(0.3), Color(hex: "CCCCCC")]
-                
-                for i in 0..<8 {
-                    var path = Path()
-                    
-                    let startY = CGFloat.random(in: 0...size.height)
-                    let endY = CGFloat.random(in: 0...size.height)
-                    let controlY1 = CGFloat.random(in: 0...size.height)
-                    let controlY2 = CGFloat.random(in: 0...size.height)
-                    
-                    let offset = phase * size.width * 0.1
-                    
-                    path.move(to: CGPoint(x: -offset, y: startY))
-                    path.addCurve(
-                        to: CGPoint(x: size.width + offset, y: endY),
-                        control1: CGPoint(x: size.width * 0.3 + offset, y: controlY1),
-                        control2: CGPoint(x: size.width * 0.7 - offset, y: controlY2)
+            ZStack {
+                Circle()
+                    .fill(Color.clear)
+                    .frame(width: geometry.size.width * 0.6, height: geometry.size.width * 0.6)
+                    .overlay(
+                        ForEach(0..<12) { index in
+                            Circle()
+                                .fill(Color.black.opacity(0.4))
+                                .frame(width: 10 + phase * 10, height: 10 + phase * 10)
+                                .position(x: geometry.size.width / 2 + CGFloat(cos(Double(index) * .pi / 6)) * (geometry.size.width * 0.25),
+                                          y: geometry.size.height / 2 + CGFloat(sin(Double(index) * .pi / 6)) * (geometry.size.height * 0.25))
+                        }
                     )
-                    
-                    context.stroke(path, with: .color(colors[i % colors.count]), lineWidth: CGFloat.random(in: 1...3))
-                }
             }
             .onAppear {
-                startAnimation() // Trigger animation
+                withAnimation(Animation.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
+                    phase = 1 // Animate between sizes
+                }
             }
-        }
-    }
-    
-    // Trigger animation on view appearance
-    private func startAnimation() {
-        withAnimation(.linear(duration: 10).repeatForever(autoreverses: false)) {
-            phase = 1 // Animate phase from 0 to 1 indefinitely
         }
     }
 }
