@@ -53,7 +53,7 @@ class LoopManager: ObservableObject {
     
     init() {
         loadCachedState()
-        if prompts.isEmpty || !isCacheValidForToday() {
+        if prompts.isEmpty || !isCacheValidForToday() || !areAllPromptsDone() {
             selectRandomPrompts()
         }
     }
@@ -73,7 +73,7 @@ class LoopManager: ObservableObject {
         if currentPromptIndex < prompts.count - 1 {
             currentPromptIndex += 1
         }
-        saveCachedState() // Save progress after each prompt
+        saveCachedState()
     }
 
     func getCurrentPrompt() -> String {
@@ -84,13 +84,13 @@ class LoopManager: ObservableObject {
     }
     
     func areAllPromptsDone() -> Bool {
-        return currentPromptIndex >= prompts.count
+        return currentPromptIndex >= prompts.count - 1
     }
     
     func retryRecording() {
         if retryAttemptsLeft > 0 {
             retryAttemptsLeft -= 1
-            saveCachedState() 
+            saveCachedState()
         }
     }
     
@@ -133,17 +133,15 @@ class LoopManager: ObservableObject {
             UserDefaults.standard.set(currentPromptIndex, forKey: promptIndexKey)
             UserDefaults.standard.set(prompts, forKey: promptCacheKey)
             UserDefaults.standard.set(retryAttemptsLeft, forKey: retryAttemptsKey)
-            UserDefaults.standard.set(Date(), forKey: lastPromptDateKey) // Save the current date
+            UserDefaults.standard.set(Date(), forKey: lastPromptDateKey)
         }
 
-    // Load the cached state from UserDefaults (prompt index, retry attempts)
     private func loadCachedState() {
         currentPromptIndex = UserDefaults.standard.integer(forKey: promptIndexKey)
         prompts = UserDefaults.standard.stringArray(forKey: promptCacheKey) ?? []
         retryAttemptsLeft = UserDefaults.standard.integer(forKey: retryAttemptsKey)
     }
 
-    // Check if the cached prompts were generated today
     private func isCacheValidForToday() -> Bool {
         if let lastPromptDate = UserDefaults.standard.object(forKey: lastPromptDateKey) as? Date {
             return Calendar.current.isDateInToday(lastPromptDate)

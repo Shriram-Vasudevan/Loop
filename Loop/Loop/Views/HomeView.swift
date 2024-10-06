@@ -11,74 +11,101 @@ struct HomeView: View {
     @ObservedObject var loopManager = LoopManager.shared
     @State private var showingRecordLoopsView = false
     
+    let accentColor = Color(hex: "A28497")
+    let backgroundColor = Color.white
+    
     var body: some View {
-        NavigationView {
-            VStack {
+        ScrollView {
+            VStack(spacing: 20) {
                 topBar
-                
-                Spacer()
-                
-                promptDisplay
-                
-                Spacer()
-                
-                startRecordingButton
-                
-                Spacer()
+                loopsWidget
+
             }
-            .background(Color.white)
-            .navigationBarHidden(true)
-            .onAppear {
-                // Make sure prompts are selected
-                loopManager.selectRandomPrompts()
-            }
-            .fullScreenCover(isPresented: $showingRecordLoopsView) {
-                RecordLoopsView()
-            }
+            .padding(.horizontal)
+        }
+        .background(backgroundColor.edgesIgnoringSafeArea(.all))
+        .onAppear {
+            loopManager.selectRandomPrompts()
+        }
+        .fullScreenCover(isPresented: $showingRecordLoopsView) {
+            RecordLoopsView()
         }
     }
     
-    // Top Bar with title and X button
     private var topBar: some View {
         HStack {
             Text("LOOP")
                 .font(.system(size: 24, weight: .bold, design: .default))
-                .foregroundColor(.black)
+               .foregroundColor(.black)
             Spacer()
-            Button(action: {
-                // When X is pressed, save the current progress and dismiss
-                showingRecordLoopsView = false
-            }) {
-                Image(systemName: "xmark")
-                    .foregroundColor(.black)
-                    .font(.system(size: 20))
-            }
         }
-        .padding([.horizontal, .top])
     }
     
-    // Display the current prompt or "Nothing to record for now"
-    private var promptDisplay: some View {
-        Text(loopManager.getCurrentPrompt())
-            .font(.system(size: 24, weight: .thin))
-            .foregroundColor(Color.gray)
-            .multilineTextAlignment(.center)
-            .padding()
+    private var loopsWidget: some View {
+        VStack(alignment: .leading, spacing: 30) {
+            progressView
+            promptView
+            recordButton
+        }
     }
     
-    // Start Recording Button
-    private var startRecordingButton: some View {
+    private var progressView: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            Text("Loops Completed")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundColor(.gray)
+            
+            HStack(spacing: 8) {
+                ForEach(0..<loopManager.prompts.count, id: \.self) { index in
+                    Capsule()
+                        .fill(index <= loopManager.currentPromptIndex ? accentColor : Color(hex: "EEEEEE"))
+                        .frame(height: 4)
+                }
+            }
+            
+            Text("\(loopManager.currentPromptIndex + 1) / \(loopManager.prompts.count)")
+                .font(.system(size: 24, weight: .light))
+                .foregroundColor(accentColor)
+        }
+    }
+    
+    private var promptView: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            Text(loopManager.areAllPromptsDone() ? "Loops Complete!" : "Today's Prompts")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundColor(.gray)
+            
+            Text(loopManager.getCurrentPrompt())
+                .font(.system(size: 24, weight: .light))
+                .foregroundColor(.black)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+    
+    private var recordButton: some View {
         Button(action: {
             showingRecordLoopsView = true
         }) {
-            Text("Start Recording")
-                .font(.system(size: 18, weight: .bold))
-                .frame(width: 200, height: 50)
-                .background(loopManager.areAllPromptsDone() ? Color.gray : Color.black)
-                .foregroundColor(.white)
-                .cornerRadius(10)
+            HStack {
+                Text("Start Recording")
+                    .font(.system(size: 18, weight: .medium))
+                Spacer()
+                Image(systemName: "mic")
+            }
+            .foregroundColor(loopManager.areAllPromptsDone() ? .gray : accentColor)
+            .padding(.vertical, 15)
+            .overlay(
+                RoundedRectangle(cornerRadius: 15)
+                    .stroke(loopManager.areAllPromptsDone() ? Color.gray : accentColor, lineWidth: 1)
+            )
         }
         .disabled(loopManager.areAllPromptsDone())
+    }
+}
+
+struct HomeView_Previews: PreviewProvider {
+    static var previews: some View {
+        HomeView()
     }
 }
 

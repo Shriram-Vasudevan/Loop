@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		990E4A842CB30EAB009F88A0 /* ThankYouView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A832CB30EAB009F88A0 /* ThankYouView.swift */; };
+		990E4A862CB30EB8009F88A0 /* LoopAudioConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A852CB30EB8009F88A0 /* LoopAudioConfirmationView.swift */; };
+		990E4A882CB30EC0009F88A0 /* WavyBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A872CB30EC0009F88A0 /* WavyBackground.swift */; };
 		99A0C8F12CA9EF2400F9281A /* LoopApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C8F02CA9EF2400F9281A /* LoopApp.swift */; };
 		99A0C8F32CA9EF2400F9281A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C8F22CA9EF2400F9281A /* ContentView.swift */; };
 		99A0C8F52CA9EF2600F9281A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 99A0C8F42CA9EF2600F9281A /* Assets.xcassets */; };
@@ -26,6 +29,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		990E4A832CB30EAB009F88A0 /* ThankYouView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThankYouView.swift; sourceTree = "<group>"; };
+		990E4A852CB30EB8009F88A0 /* LoopAudioConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopAudioConfirmationView.swift; sourceTree = "<group>"; };
+		990E4A872CB30EC0009F88A0 /* WavyBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WavyBackground.swift; sourceTree = "<group>"; };
 		99A0C8ED2CA9EF2400F9281A /* Loop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Loop.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		99A0C8F02CA9EF2400F9281A /* LoopApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopApp.swift; sourceTree = "<group>"; };
 		99A0C8F22CA9EF2400F9281A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -105,6 +111,9 @@
 				99F7F6E62CAC77F4009858AC /* HomeView.swift */,
 				99F7F6EC2CAC796E009858AC /* RecordLoopView.swift */,
 				99F7F6FC2CAF814B009858AC /* RecordLoopsView.swift */,
+				990E4A832CB30EAB009F88A0 /* ThankYouView.swift */,
+				990E4A852CB30EB8009F88A0 /* LoopAudioConfirmationView.swift */,
+				990E4A872CB30EC0009F88A0 /* WavyBackground.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -212,15 +221,18 @@
 				99F7F6FD2CAF814B009858AC /* RecordLoopsView.swift in Sources */,
 				99F7F6F52CAC7DB4009858AC /* LoopManager.swift in Sources */,
 				99A0C8F32CA9EF2400F9281A /* ContentView.swift in Sources */,
+				990E4A882CB30EC0009F88A0 /* WavyBackground.swift in Sources */,
 				99F7F6F12CAC7B5B009858AC /* LoopCloudKitUtility.swift in Sources */,
 				99F7F6ED2CAC796E009858AC /* RecordLoopView.swift in Sources */,
 				99F7F6F72CAC93B4009858AC /* LoopRevealDate.swift in Sources */,
 				99F7F6F32CAC7D0F009858AC /* Loop.swift in Sources */,
 				99F7F6E52CAC77E7009858AC /* IntroView.swift in Sources */,
+				990E4A862CB30EB8009F88A0 /* LoopAudioConfirmationView.swift in Sources */,
 				99A0C8F12CA9EF2400F9281A /* LoopApp.swift in Sources */,
 				99F7F6E72CAC77F4009858AC /* HomeView.swift in Sources */,
 				99A0C9042CA9F70500F9281A /* UserCloudKitUtility.swift in Sources */,
 				99F7F6FF2CAF8580009858AC /* Extensions.swift in Sources */,
+				990E4A842CB30EAB009F88A0 /* ThankYouView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
