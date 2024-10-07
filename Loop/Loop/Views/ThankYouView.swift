@@ -9,107 +9,64 @@ import SwiftUI
 
 struct ThankYouView: View {
     @Environment(\.dismiss) var dismiss
+    @State private var opacity: Double = 0
     
-    @State private var showParticles = false
+    let accentColor = Color(hex: "A28497")
     
     var body: some View {
-        ZStack {
+        VStack {
+            Spacer()
 
-            Color.white.edgesIgnoringSafeArea(.all)
-            
-            VStack(spacing: 20) {
-                Spacer()
-                
-                // Primary message
-                Text("Well Done!")
-                    .font(.system(size: 40, weight: .bold, design: .rounded))
-                    .foregroundColor(Color.black)
+            VStack(spacing: 16) {
+                Text("Thanks for Looping!")
+                    .font(.system(size: 36, weight: .semibold))
+                    .foregroundColor(Color(hex: "333333"))
                     .multilineTextAlignment(.center)
-                    .scaleEffect(showParticles ? 1 : 0.8)
-                    .animation(.spring(response: 0.6, dampingFraction: 0.5, blendDuration: 0), value: showParticles)
-                
-                // Motivational message
-                Text("You're making great progress on your journey.")
-                    .font(.system(size: 20, weight: .light, design: .rounded))
+                    .padding(.horizontal, 20)
+
+                Text("You're making great progress\non your journey.")
+                    .font(.system(size: 20, weight: .light))
                     .foregroundColor(Color.gray)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 30)
-                
-                Spacer()
-                
-                // Call to action
-                Text("Come back tomorrow for another Loop!")
-                    .font(.system(size: 18, weight: .medium, design: .rounded))
-                    .foregroundColor(Color.gray)
-                    .padding(.bottom, 20)
-                
-                // Done button
+            }
+            .padding(.bottom, 40)
+            Spacer()
+
+            VStack(spacing: 20) {
+                Text("See you tomorrow for more Loops.")
+                    .font(.system(size: 25, weight: .regular))
+                    .foregroundColor(accentColor)
+                    .multilineTextAlignment(.center)
+
                 Button(action: {
                     dismiss()
                 }) {
                     Text("Close")
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
-                        .padding()
-                        .frame(width: 150)
-                        .background(Color.black)
-                        .cornerRadius(12)
+                        .frame(width: 150, height: 50)
+                        .background(accentColor)
+                        .cornerRadius(10)
+                        .shadow(radius: 5)
                 }
-                
-                Spacer()
             }
-            .padding(.horizontal, 16)
-            
-            // Subtle particle effect for celebration
-            if showParticles {
-                ParticleEffect()
-                    .transition(.scale)
-            }
+
+            Spacer()
         }
+        .padding(.horizontal, 30)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.white)
+        .opacity(opacity)
         .onAppear {
             withAnimation(.easeIn(duration: 1.5)) {
-                showParticles = true
+                opacity = 1
             }
         }
     }
 }
 
 
-struct ParticleEffect: View {
-    @State private var particles: [Particle] = []
-    
-    let particleCount = 25
-
-    var body: some View {
-        GeometryReader { geometry in
-            ForEach(particles) { particle in
-                Circle()
-                    .fill(Color.black.opacity(0.4))
-                    .frame(width: particle.size, height: particle.size)
-                    .position(x: particle.xPosition(in: geometry.size),
-                              y: particle.yPosition(in: geometry.size))
-                    .scaleEffect(particle.isActive ? 1.5 : 1)
-                    .animation(
-                        Animation.easeInOut(duration: 2)
-                            .repeatForever()
-                            .delay(Double(particle.id) * 0.1),
-                        value: particle.isActive
-                    )
-            }
-        }
-        .onAppear {
-            // Create particles with random starting values
-            particles = Array(0..<particleCount).map { Particle(id: $0) }
-            
-            // Activate particles to start animation
-            for index in 0..<particleCount {
-                DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.1) {
-                    particles[index].isActive = true
-                }
-            }
-        }
-    }
-}
 #Preview {
     ThankYouView()
 }

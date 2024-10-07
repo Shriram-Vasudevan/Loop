@@ -10,6 +10,11 @@
 		990E4A842CB30EAB009F88A0 /* ThankYouView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A832CB30EAB009F88A0 /* ThankYouView.swift */; };
 		990E4A862CB30EB8009F88A0 /* LoopAudioConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A852CB30EB8009F88A0 /* LoopAudioConfirmationView.swift */; };
 		990E4A882CB30EC0009F88A0 /* WavyBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A872CB30EC0009F88A0 /* WavyBackground.swift */; };
+		990E4A8A2CB47FEE009F88A0 /* LaunchManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A892CB47FEE009F88A0 /* LaunchManager.swift */; };
+		990E4A8C2CB48BAF009F88A0 /* PagesHolderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A8B2CB48BAF009F88A0 /* PagesHolderView.swift */; };
+		990E4A8E2CB48BB9009F88A0 /* SplashScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A8D2CB48BB9009F88A0 /* SplashScreen.swift */; };
+		990E4A902CB48BDD009F88A0 /* PageType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A8F2CB48BDD009F88A0 /* PageType.swift */; };
+		990E4A922CB48CEF009F88A0 /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A912CB48CEF009F88A0 /* InsightsView.swift */; };
 		99A0C8F12CA9EF2400F9281A /* LoopApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C8F02CA9EF2400F9281A /* LoopApp.swift */; };
 		99A0C8F32CA9EF2400F9281A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C8F22CA9EF2400F9281A /* ContentView.swift */; };
 		99A0C8F52CA9EF2600F9281A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 99A0C8F42CA9EF2600F9281A /* Assets.xcassets */; };
@@ -32,6 +37,11 @@
 		990E4A832CB30EAB009F88A0 /* ThankYouView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThankYouView.swift; sourceTree = "<group>"; };
 		990E4A852CB30EB8009F88A0 /* LoopAudioConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopAudioConfirmationView.swift; sourceTree = "<group>"; };
 		990E4A872CB30EC0009F88A0 /* WavyBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WavyBackground.swift; sourceTree = "<group>"; };
+		990E4A892CB47FEE009F88A0 /* LaunchManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchManager.swift; sourceTree = "<group>"; };
+		990E4A8B2CB48BAF009F88A0 /* PagesHolderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagesHolderView.swift; sourceTree = "<group>"; };
+		990E4A8D2CB48BB9009F88A0 /* SplashScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreen.swift; sourceTree = "<group>"; };
+		990E4A8F2CB48BDD009F88A0 /* PageType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageType.swift; sourceTree = "<group>"; };
+		990E4A912CB48CEF009F88A0 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
 		99A0C8ED2CA9EF2400F9281A /* Loop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Loop.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		99A0C8F02CA9EF2400F9281A /* LoopApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopApp.swift; sourceTree = "<group>"; };
 		99A0C8F22CA9EF2400F9281A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -114,6 +124,9 @@
 				990E4A832CB30EAB009F88A0 /* ThankYouView.swift */,
 				990E4A852CB30EB8009F88A0 /* LoopAudioConfirmationView.swift */,
 				990E4A872CB30EC0009F88A0 /* WavyBackground.swift */,
+				990E4A8B2CB48BAF009F88A0 /* PagesHolderView.swift */,
+				990E4A8D2CB48BB9009F88A0 /* SplashScreen.swift */,
+				990E4A912CB48CEF009F88A0 /* InsightsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -124,6 +137,7 @@
 				99F7F6E82CAC792C009858AC /* NotificationManager.swift */,
 				99F7F6EA2CAC7935009858AC /* AudioManager.swift */,
 				99F7F6F42CAC7DB4009858AC /* LoopManager.swift */,
+				990E4A892CB47FEE009F88A0 /* LaunchManager.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -133,6 +147,7 @@
 			children = (
 				99F7F6F22CAC7D0F009858AC /* Loop.swift */,
 				99F7F6F62CAC93B4009858AC /* LoopRevealDate.swift */,
+				990E4A8F2CB48BDD009F88A0 /* PageType.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -216,8 +231,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				990E4A8E2CB48BB9009F88A0 /* SplashScreen.swift in Sources */,
 				99F7F6E92CAC792C009858AC /* NotificationManager.swift in Sources */,
+				990E4A902CB48BDD009F88A0 /* PageType.swift in Sources */,
 				99F7F6EB2CAC7935009858AC /* AudioManager.swift in Sources */,
+				990E4A8C2CB48BAF009F88A0 /* PagesHolderView.swift in Sources */,
 				99F7F6FD2CAF814B009858AC /* RecordLoopsView.swift in Sources */,
 				99F7F6F52CAC7DB4009858AC /* LoopManager.swift in Sources */,
 				99A0C8F32CA9EF2400F9281A /* ContentView.swift in Sources */,
@@ -228,10 +246,12 @@
 				99F7F6F32CAC7D0F009858AC /* Loop.swift in Sources */,
 				99F7F6E52CAC77E7009858AC /* IntroView.swift in Sources */,
 				990E4A862CB30EB8009F88A0 /* LoopAudioConfirmationView.swift in Sources */,
+				990E4A922CB48CEF009F88A0 /* InsightsView.swift in Sources */,
 				99A0C8F12CA9EF2400F9281A /* LoopApp.swift in Sources */,
 				99F7F6E72CAC77F4009858AC /* HomeView.swift in Sources */,
 				99A0C9042CA9F70500F9281A /* UserCloudKitUtility.swift in Sources */,
 				99F7F6FF2CAF8580009858AC /* Extensions.swift in Sources */,
+				990E4A8A2CB47FEE009F88A0 /* LaunchManager.swift in Sources */,
 				990E4A842CB30EAB009F88A0 /* ThankYouView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

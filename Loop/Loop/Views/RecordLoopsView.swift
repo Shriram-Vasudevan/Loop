@@ -8,6 +8,7 @@
 import SwiftUI
 import AVKit
 
+
 struct RecordLoopsView: View {
     @ObservedObject var loopManager = LoopManager.shared
     @ObservedObject var audioManager = AudioManager.shared
@@ -20,11 +21,12 @@ struct RecordLoopsView: View {
     @State private var recordingTimer: Timer?
     @State private var timeRemaining: Int = 30
     
+    @State private var showingFirstLaunchScreen = true
+    @State var isFirstLaunch: Bool
+    
     @Environment(\.dismiss) var dismiss
 
     let accentColor = Color(hex: "A28497")
-    
-    let sampleAudioWaveform: [CGFloat] = Array(repeating: 20, count: 30)
     
     var body: some View {
         ZStack {
@@ -35,15 +37,22 @@ struct RecordLoopsView: View {
             
             VStack(spacing: 0) {
                 if isAllPromptsCompleted {
-                    ThankYouView()
+                    thankYouScreen
                         .transition(.opacity.animation(.easeInOut(duration: 0.5)))
                         .edgesIgnoringSafeArea(.all)
                 } else if isPostRecording {
-                    LoopAudioConfirmationView(audioWaveform: sampleAudioWaveform, onComplete: {
-                        completeRecording()
-                    }, onRetry: {
-                        retryRecording()
-                    })
+                    LoopAudioConfirmationView(
+                        audioURL: audioManager.getRecordedAudioFile() ?? URL(fileURLWithPath: ""),
+                        waveformData: generateRandomWaveform(count: 30),
+                        onComplete: {
+                            completeRecording()
+                        },
+                        onRetry: {
+                            retryRecording()
+                        })
+                    .transition(.opacity.animation(.easeInOut(duration: 0.5)))
+                } else if showingFirstLaunchScreen {
+                    firstLaunchOrQuietSpaceScreen
                         .transition(.opacity.animation(.easeInOut(duration: 0.5)))
                 } else {
                     recordingScreen
@@ -56,7 +65,40 @@ struct RecordLoopsView: View {
             audioManager.resetRecording()
         }
     }
+
+    private var firstLaunchOrQuietSpaceScreen: some View {
+        Group {
+            if isFirstLaunch {
+                Text("It’s time to Loop")
+                    .font(.system(size: 44, weight: .ultraLight))
+                    .foregroundColor(Color(hex: "333333"))
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                            withAnimation {
+                                isFirstLaunch = false
+                            }
+                        }
+                    }
+            } else {
+                Text("Find a Quiet Space")
+                    .font(.system(size: 44, weight: .ultraLight))
+                    .foregroundColor(Color(hex: "333333"))
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                            withAnimation {
+                                showingFirstLaunchScreen = false
+                            }
+                        }
+                    }
+            }
+        }
+    }
     
+    // MARK: - Recording Screen (Main screen for recording the loop)
     private var recordingScreen: some View {
         VStack(spacing: 0) {
             topBar
@@ -71,6 +113,7 @@ struct RecordLoopsView: View {
         }
     }
 
+    // MARK: - Thank You Screen (Post-recording completion)
     private var thankYouScreen: some View {
         VStack(spacing: 16) {
             Text("Thanks for Looping!")
@@ -235,15 +278,17 @@ struct RecordLoopsView: View {
         if let audioFileURL = audioManager.getRecordedAudioFile() {
             let currentPrompt = loopManager.getCurrentPrompt()
             loopManager.addLoop(audioURL: audioFileURL, prompt: currentPrompt)
-            loopManager.nextPrompt()
-
+            loopManager.fetchRandomPastLoop()
+            
             if loopManager.areAllPromptsDone() {
                 isAllPromptsCompleted = true
-                print("all prompts completed")
-            } else {
-                isPostRecording = false
-                print("all prompts not completed")
             }
+            else {
+                isPostRecording = false
+                loopManager.nextPrompt()
+            }
+
+            
         }
     }
 
@@ -300,9 +345,14 @@ struct RecordLoopsView: View {
         recordingTimer?.invalidate()
         recordingTimer = nil
     }
+    
+    func generateRandomWaveform(count: Int, minHeight: CGFloat = 10, maxHeight: CGFloat = 60) -> [CGFloat] {
+        (0..<count).map { _ in
+            CGFloat.random(in: minHeight...maxHeight)
+        }
+    }
 }
 
-
 #Preview {
-    RecordLoopsView()
+    RecordLoopsView(isFirstLaunch: true)
 }

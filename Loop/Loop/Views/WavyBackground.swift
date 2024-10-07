@@ -28,6 +28,7 @@ struct WavyBackground: View {
                 }
             }
             .drawingGroup()
+            
         }
     }
 }

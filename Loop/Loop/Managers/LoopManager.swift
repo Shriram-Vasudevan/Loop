@@ -51,6 +51,8 @@ class LoopManager: ObservableObject {
     private let retryAttemptsKey = "RetryAttemptsLeft"
     private let lastPromptDateKey = "LastPromptDate"
     
+    @Published var pastLoops: [Loop] = []
+    
     init() {
         loadCachedState()
         if prompts.isEmpty || !isCacheValidForToday() || !areAllPromptsDone() {
@@ -59,8 +61,8 @@ class LoopManager: ObservableObject {
     }
 
     func selectRandomPrompts() {
-        prompts = ["Free Response"] + availablePrompts.shuffled().prefix(2)
-        saveCachedState() 
+        prompts = ["Free Response"] + availablePrompts.shuffled().prefix(2) 
+        saveCachedState()
     }
 
     func resetPromptProgress() {
@@ -69,10 +71,11 @@ class LoopManager: ObservableObject {
         saveCachedState()
     }
 
-    func nextPrompt() {
+    func nextPrompt()  {
         if currentPromptIndex < prompts.count - 1 {
             currentPromptIndex += 1
         }
+        
         saveCachedState()
     }
 
@@ -84,7 +87,7 @@ class LoopManager: ObservableObject {
     }
     
     func areAllPromptsDone() -> Bool {
-        return currentPromptIndex >= prompts.count - 1
+        return currentPromptIndex == prompts.count - 1
     }
     
     func retryRecording() {
@@ -114,10 +117,16 @@ class LoopManager: ObservableObject {
         }
     }
 
-    
-    func getTodaysLoops() {
-        
-    }
+    func fetchRandomPastLoop() {
+       LoopCloudKitUtility.getRandomPastLoop { [weak self] randomLoop in
+           guard let self = self else { return }
+           if let loop = randomLoop {
+               DispatchQueue.main.async {
+                   self.pastLoops.append(loop)
+               }
+           }
+       }
+   }
     
     func addLoop(audioURL: URL, prompt: String, mood: String? = nil, freeResponse: Bool = false) {
             let loopID = UUID().uuidString
@@ -130,11 +139,11 @@ class LoopManager: ObservableObject {
     }
 
     private func saveCachedState() {
-            UserDefaults.standard.set(currentPromptIndex, forKey: promptIndexKey)
-            UserDefaults.standard.set(prompts, forKey: promptCacheKey)
-            UserDefaults.standard.set(retryAttemptsLeft, forKey: retryAttemptsKey)
-            UserDefaults.standard.set(Date(), forKey: lastPromptDateKey)
-        }
+        UserDefaults.standard.set(currentPromptIndex, forKey: promptIndexKey)
+        UserDefaults.standard.set(prompts, forKey: promptCacheKey)
+        UserDefaults.standard.set(retryAttemptsLeft, forKey: retryAttemptsKey)
+        UserDefaults.standard.set(Date(), forKey: lastPromptDateKey)
+    }
 
     private func loadCachedState() {
         currentPromptIndex = UserDefaults.standard.integer(forKey: promptIndexKey)
@@ -143,7 +152,9 @@ class LoopManager: ObservableObject {
     }
 
     private func isCacheValidForToday() -> Bool {
+        print("is cache valid")
         if let lastPromptDate = UserDefaults.standard.object(forKey: lastPromptDateKey) as? Date {
+            print(lastPromptDate)
             return Calendar.current.isDateInToday(lastPromptDate)
         }
         return false
