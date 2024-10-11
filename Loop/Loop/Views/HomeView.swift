@@ -16,7 +16,7 @@ struct HomeView: View {
         let backgroundColor = Color.white
         let groupBackgroundColor = Color(hex: "F8F5F7")
         
-    var body: some View {
+        var body: some View {
             ScrollView {
                 VStack(spacing: 20) {
                     topBar
@@ -27,19 +27,22 @@ struct HomeView: View {
                 .padding(.horizontal)
                 .padding(.top, 20)
             }
-            .background(
-                WaveBackground()
-                    .edgesIgnoringSafeArea(.all)
-            )
             .onAppear {
-                loopManager.selectRandomPrompts()
-                loopManager.fetchRandomPastLoop()
+                loopManager.checkAndResetIfNeeded() 
             }
             .fullScreenCover(isPresented: $showingRecordLoopsView) {
                 RecordLoopsView(isFirstLaunch: false)
+                    .onDisappear {
+                        // Once the user records, ensure to update to the next prompt or loop
+                        if loopManager.areAllPromptsDone() {
+                            loopManager.fetchRandomPastLoop()
+                        } else {
+                            loopManager.nextPrompt()
+                        }
+                    }
             }
         }
-        
+
         private var topBar: some View {
             HStack {
                 Text("loop")
@@ -48,7 +51,7 @@ struct HomeView: View {
                 Spacer()
             }
         }
-        
+
         private var loopsWidget: some View {
             VStack(alignment: .leading, spacing: 20) {
                 VStack(spacing: 10) {
@@ -88,7 +91,6 @@ struct HomeView: View {
             )
         }
 
-        
         private var progressView: some View {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Progress")
@@ -103,7 +105,7 @@ struct HomeView: View {
                     }
                 }
                 
-                Text("\(loopManager.currentPromptIndex + 1) / \(loopManager.prompts.count)")
+                Text("\(loopManager.areAllPromptsDone() ? loopManager.currentPromptIndex : loopManager.currentPromptIndex + 1) / \(loopManager.prompts.count)")
                     .font(.system(size: 18, weight: .medium))
                     .foregroundColor(accentColor)
             }
@@ -294,7 +296,6 @@ struct PastLoopCard: View {
             }
         }
         .padding()
-        .frame(width: 200, height: 180)
         .background(Color.white)
         .cornerRadius(15)
         .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)

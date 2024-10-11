@@ -113,7 +113,6 @@ struct RecordLoopsView: View {
         }
     }
 
-    // MARK: - Thank You Screen (Post-recording completion)
     private var thankYouScreen: some View {
         VStack(spacing: 16) {
             Text("Thanks for Looping!")
@@ -123,7 +122,7 @@ struct RecordLoopsView: View {
             
             Spacer()
             
-            Text("See you tomorrow for another Loop.")
+            Text("See you tomorrow for more Loops.")
                 .font(.system(size: 24, weight: .thin))
                 .foregroundColor(Color.gray)
                 .multilineTextAlignment(.center)
@@ -280,12 +279,17 @@ struct RecordLoopsView: View {
             loopManager.addLoop(audioURL: audioFileURL, prompt: currentPrompt)
             loopManager.fetchRandomPastLoop()
             
-            if loopManager.areAllPromptsDone() {
+            print("the index \(loopManager.currentPromptIndex)")
+            print("the count \(loopManager.prompts.count)")
+            if loopManager.isLastLoop() {
+                loopManager.nextPrompt()
+                print("the index \(loopManager.currentPromptIndex)")
                 isAllPromptsCompleted = true
             }
             else {
                 isPostRecording = false
                 loopManager.nextPrompt()
+                print("the index \(loopManager.currentPromptIndex)")
             }
 
             

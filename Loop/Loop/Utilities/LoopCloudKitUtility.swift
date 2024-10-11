@@ -11,6 +11,8 @@ import CloudKit
 class LoopCloudKitUtility {
     static let container = CloudKit.CKContainer(identifier: "iCloud.LoopContainer")
     
+    static let fetchLimit = 25
+    
     static func getLoopRevealDate(completion: @escaping (LoopRevealDate?) -> Void) {
         let publicDB = container.publicCloudDatabase
 
@@ -61,93 +63,111 @@ class LoopCloudKitUtility {
             }
         }
     }
-    
-    // Fetch a limited number of loops that haven’t been retrieved within a threshold, or fallback to newer ones
-    static func fetchFlexibleOlderLoops(thresholdDays: Int = 7, limit: Int = 15, completion: @escaping ([Loop]) -> Void) {
-        let privateDB = container.privateCloudDatabase
-        
-        // Start by fetching loops older than the threshold
-        fetchOlderLoops(thresholdDays: thresholdDays, limit: limit) { loops in
-            if !loops.isEmpty {
-                // If we found loops older than the threshold, return them
-                completion(loops)
-            } else {
-                // If no loops are found, loosen the threshold and try again (e.g., use 0 days to get all loops)
-                print("No loops found older than \(thresholdDays) days. Trying a smaller threshold.")
-                fetchOlderLoops(thresholdDays: 0, limit: limit, completion: completion)
-            }
-        }
+
+    static func computePriority(loop: Loop) -> Double {
+        let now = Date()
+        let timeSinceCreated = now.timeIntervalSince(loop.timestamp)
+        let timeSinceLastRetrieved = loop.lastRetrieved != nil ? now.timeIntervalSince(loop.lastRetrieved!) : timeSinceCreated
+
+        let ageFactor = timeSinceCreated / (60 * 60 * 24)
+        let recencyFactor = timeSinceLastRetrieved / (60 * 60 * 24)
+
+        return ageFactor * 0.5 + recencyFactor * 0.5
     }
 
-    private static func fetchOlderLoops(thresholdDays: Int, limit: Int, completion: @escaping ([Loop]) -> Void) {
-        let privateDB = container.privateCloudDatabase
-
-        let thresholdDate = Calendar.current.date(byAdding: .day, value: -thresholdDays, to: Date())!
-
-        let predicate = NSPredicate(format: "LastRetrieved == nil OR LastRetrieved < %@", thresholdDate as NSDate)
-
-        let query = CKQuery(recordType: "LoopRecord", predicate: predicate)
-        query.sortDescriptors = [NSSortDescriptor(key: "LastRetrieved", ascending: true)] // Oldest first
-        let operation = CKQueryOperation(query: query)
-        operation.resultsLimit = limit
-
-        var fetchedLoops: [Loop] = []
+    static func getRandomLoop(completion: @escaping (Loop?) -> Void) {
+        let privateUserDB = container.privateCloudDatabase
         
-        operation.recordFetchedBlock = { record in
-            if let loopID = record["ID"] as? String,
-               let audioData = record["AudioData"] as? CKAsset,
-               let timestamp = record["Timestamp"] as? Date,
-               let promptText = record["Prompt"] as? String {
-                
-                let lastRetrieved = record["LastRetrieved"] as? Date
-                let mood = record["Mood"] as? String
-                let freeResponse = record["FreeResponse"] as? Bool ?? false
-                
-                let loop = Loop(loopID: loopID, audioData: audioData, timestamp: timestamp, lastRetrieved: lastRetrieved, promptText: promptText, mood: mood, freeResponse: freeResponse)
-                fetchedLoops.append(loop)
+        var allLoops: [Loop] = []
+
+        let queryOld = CKQuery(recordType: "LoopRecord", predicate: NSPredicate(value: true))
+        queryOld.sortDescriptors = [
+            NSSortDescriptor(key: "Timestamp", ascending: true),
+        ]
+        let oldRecordsOperation = CKQueryOperation(query: queryOld)
+        oldRecordsOperation.resultsLimit = fetchLimit
+        
+        oldRecordsOperation.recordFetchedBlock = { record in
+            if let loop = self.loopFromRecord(record) {
+                allLoops.append(loop)
             }
         }
         
-        operation.queryCompletionBlock = { _, error in
-            if let error = error {
-                print("Error fetching loops: \(error.localizedDescription)")
-            }
-            completion(fetchedLoops)
-        }
-        
-        privateDB.add(operation)
-    }
-
-    static func getRandomPastLoop(completion: @escaping (Loop?) -> Void) {
-        fetchFlexibleOlderLoops { loops in
-            guard !loops.isEmpty else {
+        oldRecordsOperation.queryCompletionBlock = { cursor, error in
+            guard error == nil else {
+                print("Error fetching old records: \(String(describing: error))")
                 completion(nil)
                 return
             }
+
+            let queryNew = CKQuery(recordType: "LoopRecord", predicate: NSPredicate(value: true))
+            queryNew.sortDescriptors = [
+                NSSortDescriptor(key: "Timestamp", ascending: false)
+            ]
+            let newRecordsOperation = CKQueryOperation(query: queryNew)
+            newRecordsOperation.resultsLimit = self.fetchLimit
             
-            let currentDate = Date()
-            var loopScores: [(loop: Loop, score: Double)] = []
-
-            for loop in loops {
-                let lastRetrieved = loop.lastRetrieved ?? loop.timestamp
-                let timeSinceRetrieved = currentDate.timeIntervalSince(lastRetrieved)
-                let timeDecayScore = timeSinceRetrieved / (60 * 60 * 24)
-                
-                let score = exp(timeDecayScore)
-                loopScores.append((loop, score))
-            }
-
-            let totalScore = loopScores.reduce(0) { $0 + $1.score }
-            let randomValue = Double.random(in: 0..<totalScore)
-
-            var cumulativeScore = 0.0
-            for (loop, score) in loopScores {
-                cumulativeScore += score
-                if cumulativeScore >= randomValue {
-                    completion(loop)
-                    return
+            newRecordsOperation.recordFetchedBlock = { record in
+                if let loop = self.loopFromRecord(record) {
+                    allLoops.append(loop)
                 }
             }
+            
+            newRecordsOperation.queryCompletionBlock = { cursor, error in
+                guard error == nil else {
+                    print("Error fetching new records: \(String(describing: error))")
+                    completion(nil)
+                    return
+                }
+                
+                if allLoops.isEmpty {
+                    completion(nil)
+                    return
+                }
+
+                let weightedLoops = allLoops.map { loop -> (Loop, Double) in
+                    return (loop, self.computePriority(loop: loop))
+                }
+
+                if let selectedLoop = weightedRandomSelection(weightedLoops: weightedLoops) {
+                    completion(selectedLoop)
+                } else {
+                    completion(nil)
+                }
+            }
+            
+            privateUserDB.add(newRecordsOperation)
         }
+
+        privateUserDB.add(oldRecordsOperation)
+    }
+
+    static func loopFromRecord(_ record: CKRecord) -> Loop? {
+        guard let loopID = record["ID"] as? String,
+              let audioData = record["AudioData"] as? CKAsset,
+              let timestamp = record["Timestamp"] as? Date,
+              let promptText = record["Prompt"] as? String else {
+            return nil
+        }
+        
+        let lastRetrieved = record["LastRetrieved"] as? Date
+        let mood = record["Mood"] as? String
+        let freeResponse = record["FreeResponse"] as? Bool ?? false
+        
+        return Loop(loopID: loopID, audioData: audioData, timestamp: timestamp, lastRetrieved: lastRetrieved, promptText: promptText, mood: mood, freeResponse: freeResponse)
+    }
+
+    static func weightedRandomSelection(weightedLoops: [(Loop, Double)]) -> Loop? {
+        let totalWeight = weightedLoops.reduce(0) { $0 + $1.1 }
+        let randomWeight = Double.random(in: 0..<totalWeight)
+        
+        var cumulativeWeight: Double = 0
+        for (loop, weight) in weightedLoops {
+            cumulativeWeight += weight
+            if randomWeight < cumulativeWeight {
+                return loop
+            }
+        }
+        return nil
     }
 }

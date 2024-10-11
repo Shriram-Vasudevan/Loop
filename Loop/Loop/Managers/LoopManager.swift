@@ -10,13 +10,11 @@ import CloudKit
 
 class LoopManager: ObservableObject {
     static let shared = LoopManager()
-    
-    @Published var loopRevealDate: Date?
-    @Published var retrieveUserLoops: Bool = false
-    
+        
     @Published var prompts: [String] = []
     @Published var currentPromptIndex: Int = 0
     @Published var retryAttemptsLeft: Int = 1
+    @Published var pastLoops: [Loop] = []
     
     private let availablePrompts = [
         "What’s something you’re grateful for today?",
@@ -50,113 +48,92 @@ class LoopManager: ObservableObject {
     private let promptIndexKey = "CurrentPromptIndex"
     private let retryAttemptsKey = "RetryAttemptsLeft"
     private let lastPromptDateKey = "LastPromptDate"
-    
-    @Published var pastLoops: [Loop] = []
-    
-    init() {
-        loadCachedState()
-        if prompts.isEmpty || !isCacheValidForToday() || !areAllPromptsDone() {
-            selectRandomPrompts()
-        }
-    }
 
-    func selectRandomPrompts() {
-        prompts = ["Free Response"] + availablePrompts.shuffled().prefix(2) 
-        saveCachedState()
-    }
+       
+       init() {
+           loadCachedState()
+           checkAndResetIfNeeded()
+       }
 
-    func resetPromptProgress() {
-        currentPromptIndex = 0
-        retryAttemptsLeft = 1
-        saveCachedState()
-    }
-
-    func nextPrompt()  {
-        if currentPromptIndex < prompts.count - 1 {
-            currentPromptIndex += 1
-        }
-        
-        saveCachedState()
-    }
-
-    func getCurrentPrompt() -> String {
-        if areAllPromptsDone() {
-            return "Nothing to record for now."
-        }
-        return prompts[currentPromptIndex]
-    }
-    
-    func areAllPromptsDone() -> Bool {
-        return currentPromptIndex == prompts.count - 1
-    }
-    
-    func retryRecording() {
-        if retryAttemptsLeft > 0 {
-            retryAttemptsLeft -= 1
-            saveCachedState()
-        }
-    }
-    
-    func getLoopRevealDate() {
-        if loopRevealDate == nil {
-            print("Fetching loop reveal date...")
-            LoopCloudKitUtility.getLoopRevealDate { loopRevealDate in
-                if let date = loopRevealDate?.date {
-                    print("Received loop reveal date from CloudKit: \(date)")
-                    
-                    let localRevealDate = Calendar.current.date(byAdding: .second, value: TimeZone.current.secondsFromGMT(), to: date)
-                    
-                    DispatchQueue.main.sync {
-                        self.loopRevealDate = localRevealDate
-                        print("Set local reveal date: \(String(describing: self.loopRevealDate))")
-                    }
-                } else {
-                    print("Failed to retrieve loop reveal date.")
-                }
-            }
-        }
-    }
-
-    func fetchRandomPastLoop() {
-       LoopCloudKitUtility.getRandomPastLoop { [weak self] randomLoop in
-           guard let self = self else { return }
-           if let loop = randomLoop {
-               DispatchQueue.main.async {
-                   self.pastLoops.append(loop)
-               }
+       func checkAndResetIfNeeded() {
+           if !isCacheValidForToday() || areAllPromptsDone() {
+               selectRandomPrompts()
+               resetPromptProgress()
            }
        }
-   }
-    
-    func addLoop(audioURL: URL, prompt: String, mood: String? = nil, freeResponse: Bool = false) {
-            let loopID = UUID().uuidString
-            let timestamp = Date()
-            let ckAsset = CKAsset(fileURL: audioURL)
-            
-            let loop = Loop(loopID: loopID, audioData: ckAsset, timestamp: timestamp, lastRetrieved: nil, promptText: prompt, mood: mood, freeResponse: freeResponse)
-            
-            LoopCloudKitUtility.addLoop(loop: loop)
-    }
 
-    private func saveCachedState() {
-        UserDefaults.standard.set(currentPromptIndex, forKey: promptIndexKey)
-        UserDefaults.standard.set(prompts, forKey: promptCacheKey)
-        UserDefaults.standard.set(retryAttemptsLeft, forKey: retryAttemptsKey)
-        UserDefaults.standard.set(Date(), forKey: lastPromptDateKey)
-    }
+       func selectRandomPrompts() {
+           prompts = ["Free Response"] + availablePrompts.shuffled().prefix(2)
+           saveCachedState()
+       }
 
-    private func loadCachedState() {
-        currentPromptIndex = UserDefaults.standard.integer(forKey: promptIndexKey)
-        prompts = UserDefaults.standard.stringArray(forKey: promptCacheKey) ?? []
-        retryAttemptsLeft = UserDefaults.standard.integer(forKey: retryAttemptsKey)
-    }
+       func resetPromptProgress() {
+           currentPromptIndex = 0
+           retryAttemptsLeft = 1
+           saveCachedState()
+       }
 
-    private func isCacheValidForToday() -> Bool {
-        print("is cache valid")
-        if let lastPromptDate = UserDefaults.standard.object(forKey: lastPromptDateKey) as? Date {
-            print(lastPromptDate)
-            return Calendar.current.isDateInToday(lastPromptDate)
+       func nextPrompt() {
+           currentPromptIndex += 1
+           saveCachedState()
+       }
+
+       func getCurrentPrompt() -> String {
+           return prompts[currentPromptIndex]
+       }
+       
+        func isLastLoop() -> Bool {
+                return currentPromptIndex == prompts.count - 1
         }
-        return false
+    
+        func areAllPromptsDone() -> Bool {
+                return currentPromptIndex > prompts.count - 1
+        }
+
+       func retryRecording() {
+           if retryAttemptsLeft > 0 {
+               retryAttemptsLeft -= 1
+               saveCachedState()
+           }
+       }
+
+    func fetchRandomPastLoop() {
+        LoopCloudKitUtility.getRandomLoop(completion: { randomLoop in
+            if let loop = randomLoop {
+                DispatchQueue.main.async {
+                    self.pastLoops.append(loop)
+                }
+            }
+        })
+        
     }
+        func addLoop(audioURL: URL, prompt: String, mood: String? = nil, freeResponse: Bool = false) {
+                let loopID = UUID().uuidString
+                let timestamp = Date()
+                let ckAsset = CKAsset(fileURL: audioURL)
+                
+                let loop = Loop(loopID: loopID, audioData: ckAsset, timestamp: timestamp, lastRetrieved: timestamp, promptText: prompt, mood: mood, freeResponse: freeResponse)
+                
+                LoopCloudKitUtility.addLoop(loop: loop)
+        }
+       
+       private func saveCachedState() {
+           UserDefaults.standard.set(currentPromptIndex, forKey: promptIndexKey)
+           UserDefaults.standard.set(prompts, forKey: promptCacheKey)
+           UserDefaults.standard.set(retryAttemptsLeft, forKey: retryAttemptsKey)
+           UserDefaults.standard.set(Date(), forKey: lastPromptDateKey)
+       }
+
+       private func loadCachedState() {
+           currentPromptIndex = UserDefaults.standard.integer(forKey: promptIndexKey)
+           prompts = UserDefaults.standard.stringArray(forKey: promptCacheKey) ?? []
+           retryAttemptsLeft = UserDefaults.standard.integer(forKey: retryAttemptsKey)
+       }
+
+       private func isCacheValidForToday() -> Bool {
+           if let lastPromptDate = UserDefaults.standard.object(forKey: lastPromptDateKey) as? Date {
+               return Calendar.current.isDateInToday(lastPromptDate)
+           }
+           return false
+       }
 }
