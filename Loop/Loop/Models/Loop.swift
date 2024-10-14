@@ -8,12 +8,14 @@
 import Foundation
 import CloudKit
 
-struct Loop : Hashable {
+struct Loop: Hashable {
     var loopID: String
-    var audioData: CKAsset
+    var data: CKAsset
     var timestamp: Date
     var lastRetrieved: Date?
     var promptText: String
     var mood: String?
     var freeResponse: Bool
+    var isVideo: Bool  
 }
+

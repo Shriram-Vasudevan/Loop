@@ -15,6 +15,10 @@
 		990E4A8E2CB48BB9009F88A0 /* SplashScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A8D2CB48BB9009F88A0 /* SplashScreen.swift */; };
 		990E4A902CB48BDD009F88A0 /* PageType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A8F2CB48BDD009F88A0 /* PageType.swift */; };
 		990E4A922CB48CEF009F88A0 /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A912CB48CEF009F88A0 /* InsightsView.swift */; };
+		990E4A942CBDCA24009F88A0 /* VideoManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A932CBDCA24009F88A0 /* VideoManager.swift */; };
+		990E4A962CBDCA51009F88A0 /* VideoRecordingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A952CBDCA51009F88A0 /* VideoRecordingView.swift */; };
+		990E4A9A2CBDD091009F88A0 /* VideoRecordButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A992CBDD091009F88A0 /* VideoRecordButton.swift */; };
+		990E4A9C2CBDD1BB009F88A0 /* LoopVideoConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A9B2CBDD1BB009F88A0 /* LoopVideoConfirmationView.swift */; };
 		99A0C8F12CA9EF2400F9281A /* LoopApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C8F02CA9EF2400F9281A /* LoopApp.swift */; };
 		99A0C8F32CA9EF2400F9281A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C8F22CA9EF2400F9281A /* ContentView.swift */; };
 		99A0C8F52CA9EF2600F9281A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 99A0C8F42CA9EF2600F9281A /* Assets.xcassets */; };
@@ -42,6 +46,10 @@
 		990E4A8D2CB48BB9009F88A0 /* SplashScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreen.swift; sourceTree = "<group>"; };
 		990E4A8F2CB48BDD009F88A0 /* PageType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageType.swift; sourceTree = "<group>"; };
 		990E4A912CB48CEF009F88A0 /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
+		990E4A932CBDCA24009F88A0 /* VideoManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoManager.swift; sourceTree = "<group>"; };
+		990E4A952CBDCA51009F88A0 /* VideoRecordingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoRecordingView.swift; sourceTree = "<group>"; };
+		990E4A992CBDD091009F88A0 /* VideoRecordButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoRecordButton.swift; sourceTree = "<group>"; };
+		990E4A9B2CBDD1BB009F88A0 /* LoopVideoConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopVideoConfirmationView.swift; sourceTree = "<group>"; };
 		99A0C8ED2CA9EF2400F9281A /* Loop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Loop.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		99A0C8F02CA9EF2400F9281A /* LoopApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopApp.swift; sourceTree = "<group>"; };
 		99A0C8F22CA9EF2400F9281A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -127,6 +135,9 @@
 				990E4A8B2CB48BAF009F88A0 /* PagesHolderView.swift */,
 				990E4A8D2CB48BB9009F88A0 /* SplashScreen.swift */,
 				990E4A912CB48CEF009F88A0 /* InsightsView.swift */,
+				990E4A952CBDCA51009F88A0 /* VideoRecordingView.swift */,
+				990E4A992CBDD091009F88A0 /* VideoRecordButton.swift */,
+				990E4A9B2CBDD1BB009F88A0 /* LoopVideoConfirmationView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -138,6 +149,7 @@
 				99F7F6EA2CAC7935009858AC /* AudioManager.swift */,
 				99F7F6F42CAC7DB4009858AC /* LoopManager.swift */,
 				990E4A892CB47FEE009F88A0 /* LaunchManager.swift */,
+				990E4A932CBDCA24009F88A0 /* VideoManager.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -233,6 +245,7 @@
 			files = (
 				990E4A8E2CB48BB9009F88A0 /* SplashScreen.swift in Sources */,
 				99F7F6E92CAC792C009858AC /* NotificationManager.swift in Sources */,
+				990E4A962CBDCA51009F88A0 /* VideoRecordingView.swift in Sources */,
 				990E4A902CB48BDD009F88A0 /* PageType.swift in Sources */,
 				99F7F6EB2CAC7935009858AC /* AudioManager.swift in Sources */,
 				990E4A8C2CB48BAF009F88A0 /* PagesHolderView.swift in Sources */,
@@ -247,11 +260,14 @@
 				99F7F6E52CAC77E7009858AC /* IntroView.swift in Sources */,
 				990E4A862CB30EB8009F88A0 /* LoopAudioConfirmationView.swift in Sources */,
 				990E4A922CB48CEF009F88A0 /* InsightsView.swift in Sources */,
+				990E4A942CBDCA24009F88A0 /* VideoManager.swift in Sources */,
 				99A0C8F12CA9EF2400F9281A /* LoopApp.swift in Sources */,
 				99F7F6E72CAC77F4009858AC /* HomeView.swift in Sources */,
 				99A0C9042CA9F70500F9281A /* UserCloudKitUtility.swift in Sources */,
 				99F7F6FF2CAF8580009858AC /* Extensions.swift in Sources */,
 				990E4A8A2CB47FEE009F88A0 /* LaunchManager.swift in Sources */,
+				990E4A9C2CBDD1BB009F88A0 /* LoopVideoConfirmationView.swift in Sources */,
+				990E4A9A2CBDD091009F88A0 /* VideoRecordButton.swift in Sources */,
 				990E4A842CB30EAB009F88A0 /* ThankYouView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -390,6 +406,7 @@
 				DEVELOPMENT_TEAM = NDZ2DG6484;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Required to record video loops";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "So that you can Loop!";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -421,6 +438,7 @@
 				DEVELOPMENT_TEAM = NDZ2DG6484;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Required to record video loops";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "So that you can Loop!";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
