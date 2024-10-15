@@ -104,17 +104,17 @@ struct ViewPastLoopView: View {
     }
 }
 
-#Preview {
-    let mockAudioLoop = Loop(
-        loopID: "123",
-        data: CKAsset(fileURL: Bundle.main.url(forResource: "sample_audio", withExtension: "mp3")!),
-        timestamp: Date(),
-        lastRetrieved: Date(),
-        promptText: "What are you grateful for today?",
-        mood: "Happy",
-        freeResponse: false, isVideo: false
-    )
-    
-    ViewPastLoopView(loop: mockAudioLoop)
-}
+//#Preview {
+//    let mockAudioLoop = Loop(
+//        loopID: "123",
+//        data: CKAsset(fileURL: Bundle.main.url(forResource: "sample_audio", withExtension: "mp3")!),
+//        timestamp: Date(),
+//        lastRetrieved: Date(),
+//        promptText: "What are you grateful for today?",
+//        mood: "Happy",
+//        freeResponse: false, isVideo: false
+//    )
+//    
+//    ViewPastLoopView(loop: mockAudioLoop)
+//}
 

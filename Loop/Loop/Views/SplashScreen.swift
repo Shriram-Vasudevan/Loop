@@ -17,7 +17,12 @@ struct SplashScreen: View {
         }
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: {
-                showLoops = LaunchManager.shared.isFirstLaunchOfDay()
+                if FirstLaunchManager.shared.isFirstLaunch {
+                    showLoops = false
+                }
+                else {
+                    showLoops = LaunchManager.shared.isFirstLaunchOfDay()
+                }
                 showingSplashScreen = false
             })
         }
