@@ -15,19 +15,38 @@ struct ViewPastLoopView: View {
     @State private var audioPlayer: AVAudioPlayer?
     @State private var isPlaying = false
     
+    @Environment(\.dismiss) var dismiss
+    
     var body: some View {
         VStack(spacing: 20) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(loop.promptText)
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .multilineTextAlignment(.leading)
-                    .padding(.horizontal)
+            HStack {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text(loop.promptText)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .multilineTextAlignment(.leading)
+                        
+                        Spacer()
+                    }
+                    
+                    HStack {
+                        Text(formattedDate)
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                        
+                        Spacer()
+                    }
+                }
                 
-                Text(formattedDate)
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-                    .padding(.horizontal)
+                Spacer()
+                
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark")
+                        .foregroundColor(.black)
+
+                }
+
             }
             .padding(.top)
             

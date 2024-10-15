@@ -9,39 +9,46 @@ import SwiftUI
 
 struct HomeView: View {
     @ObservedObject var loopManager = LoopManager.shared
-        @State private var showingRecordLoopsView = false
-        @State private var currentMood: Int = 3 // Default to neutral
+    @State private var showingRecordLoopsView = false
+    @State private var showPastLoopSheet = false
+    @State private var currentMood: Int = 3
 
-        let accentColor = Color(hex: "A28497")
-        let backgroundColor = Color.white
-        let groupBackgroundColor = Color(hex: "F8F5F7")
+    let accentColor = Color(hex: "A28497")
+    let backgroundColor = Color.white
+    let groupBackgroundColor = Color(hex: "F8F5F7")
         
-        var body: some View {
-            ScrollView {
-                VStack(spacing: 20) {
-                    topBar
-                    loopsWidget
-                    pastLoopsCarousel
-                    insightsView
-                }
-                .padding(.horizontal)
-                .padding(.top, 20)
+    @State var selectedLoop: Loop?
+    
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                topBar
+                loopsWidget
+                pastLoopsCarousel
+                insightsView
             }
-            .onAppear {
-                loopManager.checkAndResetIfNeeded() 
-            }
-            .fullScreenCover(isPresented: $showingRecordLoopsView) {
-                RecordLoopsView(isFirstLaunch: false)
-                    .onDisappear {
-                        // Once the user records, ensure to update to the next prompt or loop
-                        if loopManager.areAllPromptsDone() {
-                            loopManager.fetchRandomPastLoop()
-                        } else {
-                            loopManager.nextPrompt()
-                        }
+            .padding(.horizontal)
+            .padding(.top, 20)
+        }
+        .onAppear {
+            loopManager.checkAndResetIfNeeded()
+        }
+        .fullScreenCover(isPresented: $showingRecordLoopsView) {
+            RecordLoopsView(isFirstLaunch: false)
+                .onDisappear {
+                    if loopManager.areAllPromptsDone() {
+                        loopManager.fetchRandomPastLoop()
+                    } else {
+                        loopManager.nextPrompt()
                     }
+                }
+        }
+        .fullScreenCover(isPresented: $showPastLoopSheet) {
+            if let loop = selectedLoop {
+                ViewPastLoopView(loop: loop)
             }
         }
+    }
 
         private var topBar: some View {
             HStack {
@@ -136,6 +143,10 @@ struct HomeView: View {
                     HStack(spacing: 15) {
                         ForEach(LoopManager.shared.pastLoops, id: \.self) { loop in
                             PastLoopCard(loop: loop, accentColor: accentColor)
+                                .onTapGesture {
+                                    self.selectedLoop = loop
+                                    showPastLoopSheet = true
+                                }
                         }
                     }
                 }
