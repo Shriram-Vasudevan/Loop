@@ -316,29 +316,19 @@ struct RecordLoopsView: View {
         }
     }
 
-    private func retryRecording() {
-        loopManager.retryRecording()
-        audioManager.resetRecording()
-        videoManager.resetRecording()
-        isPostRecording = false
-        isRecording = false
-        timeRemaining = 30
-    }
 
     private func completeRecording() {
         let currentPrompt = loopManager.getCurrentPrompt()
-        if isVideoMode {
-            if let videoFileURL = videoManager.videoFileURL {
-                loopManager.addLoop(mediaURL: videoFileURL, isVideo: true, prompt: currentPrompt)
-                loopManager.fetchRandomPastLoop()
-                proceedToNextPrompt()
-            }
-        } else {
-            if let audioFileURL = audioManager.getRecordedAudioFile() {
-                loopManager.addLoop(mediaURL: audioFileURL, isVideo: false, prompt: currentPrompt)
-                loopManager.fetchRandomPastLoop()
-                proceedToNextPrompt()
-            }
+        if isVideoMode, let videoFileURL = videoManager.videoFileURL {
+            loopManager.addLoop(mediaURL: videoFileURL, isVideo: true, prompt: currentPrompt)
+            loopManager.fetchRandomPastLoop()
+            
+            proceedToNextPrompt()
+        } else if let audioFileURL = audioManager.getRecordedAudioFile() {
+            loopManager.addLoop(mediaURL: audioFileURL, isVideo: false, prompt: currentPrompt)
+            loopManager.fetchRandomPastLoop()
+            
+            proceedToNextPrompt()
         }
     }
 
@@ -347,10 +337,21 @@ struct RecordLoopsView: View {
             loopManager.nextPrompt()
             isAllPromptsCompleted = true
         } else {
+            loopManager.nextPrompt()
             isPostRecording = false
             isRecording = false
             timeRemaining = 30
-            loopManager.nextPrompt()
+        }
+    }
+
+    private func retryRecording() {
+        if loopManager.retryAttemptsLeft > 0 {
+            loopManager.retryRecording()
+            audioManager.resetRecording()
+            videoManager.resetRecording()
+            isPostRecording = false
+            isRecording = false
+            timeRemaining = 30
         }
     }
 

@@ -171,4 +171,82 @@ class LoopCloudKitUtility {
         }
         return nil
     }
+    
+    static func fetchRecentLoopDates(
+        startingFrom startDate: Date? = nil,
+        limit: Int = 6,
+        completion: @escaping (Result<[Date], Error>) -> Void
+    ) {
+        let privateDB = container.privateCloudDatabase
+
+        // Predicate to fetch loops starting from the given date or all dates if startDate is nil.
+        var predicate: NSPredicate
+        if let startDate = startDate {
+            predicate = NSPredicate(format: "Timestamp < %@", startDate as NSDate)
+        } else {
+            predicate = NSPredicate(value: true) // No filter for the first batch.
+        }
+
+        let query = CKQuery(recordType: "LoopRecord", predicate: predicate)
+        query.sortDescriptors = [NSSortDescriptor(key: "Timestamp", ascending: false)] // Most recent first.
+
+        let operation = CKQueryOperation(query: query)
+        operation.resultsLimit = limit * 10 // Adjust to account for multiple loops per day.
+
+        var uniqueDates: Set<Date> = [] // Store unique days only.
+        var dateArray: [Date] = [] // Maintain the order of dates.
+
+        operation.recordFetchedBlock = { record in
+            if let timestamp = record["Timestamp"] as? Date {
+                let loopDate = Calendar.current.startOfDay(for: timestamp) // Extract only the date part.
+                
+                // Add to the set if it doesn't already exist.
+                if uniqueDates.insert(loopDate).inserted {
+                    dateArray.append(loopDate)
+                }
+            }
+        }
+
+        operation.queryCompletionBlock = { _, error in
+            if let error = error {
+                completion(.failure(error))
+            } else {
+                // Return exactly `limit` most recent unique dates.
+                let sortedDates = Array(dateArray.prefix(limit))
+                completion(.success(sortedDates))
+            }
+        }
+
+        privateDB.add(operation)
+    }
+    
+
+    static func fetchLoops(for date: Date, completion: @escaping (Result<[Loop], Error>) -> Void) {
+        let privateDB = container.privateCloudDatabase
+        let startOfDay = Calendar.current.startOfDay(for: date)
+        let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
+
+        let predicate = NSPredicate(format: "Timestamp >= %@ AND Timestamp < %@", startOfDay as NSDate, endOfDay as NSDate)
+
+        let query = CKQuery(recordType: "LoopRecord", predicate: predicate)
+        let operation = CKQueryOperation(query: query)
+
+        var loops: [Loop] = []
+
+        operation.recordFetchedBlock = { record in
+            if let loop = Loop.from(record: record) {
+                loops.append(loop)
+            }
+        }
+
+        operation.queryCompletionBlock = { _, error in
+            if let error = error {
+                completion(.failure(error))
+            } else {
+                completion(.success(loops))
+            }
+        }
+
+        privateDB.add(operation)
+    }
 }

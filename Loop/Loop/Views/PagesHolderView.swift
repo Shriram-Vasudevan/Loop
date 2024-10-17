@@ -22,7 +22,9 @@ struct PagesHolderView: View {
                             HomeView()
                         case .insights:
                             InsightsView()
-                        }
+                        case .allLoops:
+                            ViewAllLoopsView()
+                    }
                     
                     Spacer()
                                                         
@@ -63,6 +65,28 @@ struct PagesHolderView: View {
                                         Text("Insights")
                                             .font(.caption)
                                             .foregroundColor(pageType == .insights ? accentColor : .white)
+                                    }
+                                    .padding(.bottom)
+                                })
+                            }
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            
+                        }
+                        
+                        ZStack {
+                            VStack {
+                                Button(action: {
+                                    pageType = .allLoops
+                                }, label: {
+                                    VStack {
+                                        Image(pageType == .allLoops ? "HomeAccent" : "HomeWhite")
+                                            .resizable()
+                                            .frame(width: 30, height: 30)
+                                            .aspectRatio(contentMode:  .fill)
+                                        
+                                        Text("Loops")
+                                            .font(.caption)
+                                            .foregroundColor(pageType == .allLoops ? accentColor : .white)
                                     }
                                     .padding(.bottom)
                                 })
