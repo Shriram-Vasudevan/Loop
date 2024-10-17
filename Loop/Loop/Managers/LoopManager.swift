@@ -114,7 +114,7 @@ class LoopManager: ObservableObject {
         let ckAsset = CKAsset(fileURL: mediaURL)
 
         // Create a Loop object, marking it as video or audio based on isVideo
-        let loop = Loop(loopID: loopID, data: ckAsset, timestamp: timestamp, lastRetrieved: timestamp, promptText: prompt, mood: mood, freeResponse: freeResponse, isVideo: isVideo)
+        let loop = Loop(id: loopID, data: ckAsset, timestamp: timestamp, lastRetrieved: timestamp, promptText: prompt, mood: mood, freeResponse: freeResponse, isVideo: isVideo)
 
         LoopCloudKitUtility.addLoop(loop: loop)
     }

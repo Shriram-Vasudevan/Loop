@@ -48,7 +48,8 @@ struct ViewPastLoopView: View {
                 }
 
             }
-            .padding(.top)
+            .padding([.top, .horizontal])
+            
             
             Spacer()
             

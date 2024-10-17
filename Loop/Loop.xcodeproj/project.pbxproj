@@ -21,6 +21,8 @@
 		990E4A9C2CBDD1BB009F88A0 /* LoopVideoConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A9B2CBDD1BB009F88A0 /* LoopVideoConfirmationView.swift */; };
 		990E4A9E2CBDE063009F88A0 /* ViewPastLoopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A9D2CBDE063009F88A0 /* ViewPastLoopView.swift */; };
 		990E4AA02CBF0E29009F88A0 /* FirstLaunchManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A9F2CBF0E29009F88A0 /* FirstLaunchManager.swift */; };
+		990E4AA22CC095BE009F88A0 /* ViewAllLoopsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4AA12CC095BE009F88A0 /* ViewAllLoopsView.swift */; };
+		990E4AA42CC0A7CD009F88A0 /* InsightModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4AA32CC0A7CD009F88A0 /* InsightModels.swift */; };
 		99A0C8F12CA9EF2400F9281A /* LoopApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C8F02CA9EF2400F9281A /* LoopApp.swift */; };
 		99A0C8F32CA9EF2400F9281A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C8F22CA9EF2400F9281A /* ContentView.swift */; };
 		99A0C8F52CA9EF2600F9281A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 99A0C8F42CA9EF2600F9281A /* Assets.xcassets */; };
@@ -54,6 +56,8 @@
 		990E4A9B2CBDD1BB009F88A0 /* LoopVideoConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopVideoConfirmationView.swift; sourceTree = "<group>"; };
 		990E4A9D2CBDE063009F88A0 /* ViewPastLoopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewPastLoopView.swift; sourceTree = "<group>"; };
 		990E4A9F2CBF0E29009F88A0 /* FirstLaunchManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstLaunchManager.swift; sourceTree = "<group>"; };
+		990E4AA12CC095BE009F88A0 /* ViewAllLoopsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewAllLoopsView.swift; sourceTree = "<group>"; };
+		990E4AA32CC0A7CD009F88A0 /* InsightModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightModels.swift; sourceTree = "<group>"; };
 		99A0C8ED2CA9EF2400F9281A /* Loop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Loop.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		99A0C8F02CA9EF2400F9281A /* LoopApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopApp.swift; sourceTree = "<group>"; };
 		99A0C8F22CA9EF2400F9281A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -143,6 +147,7 @@
 				990E4A992CBDD091009F88A0 /* VideoRecordButton.swift */,
 				990E4A9B2CBDD1BB009F88A0 /* LoopVideoConfirmationView.swift */,
 				990E4A9D2CBDE063009F88A0 /* ViewPastLoopView.swift */,
+				990E4AA12CC095BE009F88A0 /* ViewAllLoopsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -166,6 +171,7 @@
 				99F7F6F22CAC7D0F009858AC /* Loop.swift */,
 				99F7F6F62CAC93B4009858AC /* LoopRevealDate.swift */,
 				990E4A8F2CB48BDD009F88A0 /* PageType.swift */,
+				990E4AA32CC0A7CD009F88A0 /* InsightModels.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -249,6 +255,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				990E4AA42CC0A7CD009F88A0 /* InsightModels.swift in Sources */,
 				990E4A9E2CBDE063009F88A0 /* ViewPastLoopView.swift in Sources */,
 				990E4A8E2CB48BB9009F88A0 /* SplashScreen.swift in Sources */,
 				99F7F6E92CAC792C009858AC /* NotificationManager.swift in Sources */,
@@ -265,6 +272,7 @@
 				990E4AA02CBF0E29009F88A0 /* FirstLaunchManager.swift in Sources */,
 				99F7F6F72CAC93B4009858AC /* LoopRevealDate.swift in Sources */,
 				99F7F6F32CAC7D0F009858AC /* Loop.swift in Sources */,
+				990E4AA22CC095BE009F88A0 /* ViewAllLoopsView.swift in Sources */,
 				99F7F6E52CAC77E7009858AC /* IntroView.swift in Sources */,
 				990E4A862CB30EB8009F88A0 /* LoopAudioConfirmationView.swift in Sources */,
 				990E4A922CB48CEF009F88A0 /* InsightsView.swift in Sources */,

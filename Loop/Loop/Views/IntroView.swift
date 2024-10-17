@@ -10,10 +10,13 @@ import SwiftUI
 struct IntroView: View {
     @State private var currentStep: Int = 0
     @State private var showPermissionsScreen: Bool = false
+    @State private var showUserInfoScreen: Bool = false
     @State private var showReminderScreen: Bool = false
     @State private var showiCloudPrompt: Bool = false
     @State private var permissionsGranted: Bool = false
     @State private var reminderTime: Date = Date()
+    @State private var username: String = ""
+    @State private var phoneNumber: String = ""
     private let totalSteps = 4
     var onIntroCompletion: () -> Void
     
@@ -28,6 +31,8 @@ struct IntroView: View {
             VStack {
                 if showReminderScreen {
                     reminderScreen
+                } else if showUserInfoScreen {
+                    userInfoScreen
                 } else if showPermissionsScreen {
                     permissionsScreen
                 } else if showiCloudPrompt {
@@ -59,7 +64,6 @@ struct IntroView: View {
                     .multilineTextAlignment(.center)
                     .padding(.top)
                 
-                // Subheader
                 Text(getDescription(for: currentStep))
                     .font(.system(size: 18, weight: .regular, design: .rounded))
                     .foregroundColor(.gray)
@@ -141,7 +145,7 @@ struct IntroView: View {
                     DispatchQueue.main.async {
                         permissionsGranted = granted
                         if granted {
-                            showReminderScreen = true
+                            showUserInfoScreen = true
                         }
                     }
                 }
@@ -155,6 +159,45 @@ struct IntroView: View {
                     .shadow(color: accentColor.opacity(0.3), radius: 10, x: 0, y: 5)
             }
             .padding(.bottom, 25)
+        }
+        .padding(.horizontal)
+    }
+    
+    // MARK: - User Information Screen
+    private var userInfoScreen: some View {
+        VStack(spacing: 30) {
+            Text("Create Your Profile")
+                .font(.system(size: 36, weight: .thin, design: .rounded))
+                .foregroundColor(.black)
+            
+            Text("Let's set up your Loop account")
+                .font(.system(size: 18, weight: .regular, design: .rounded))
+                .foregroundColor(.gray)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+            
+            VStack(spacing: 25) {
+                CustomTextField(text: $username, placeholder: "Username", imageName: "person")
+                CustomTextField(text: $phoneNumber, placeholder: "Phone Number", imageName: "phone")
+            }
+            .padding(.top, 30)
+            
+            Spacer()
+            
+            Button(action: {
+                createUserRecord()
+                showReminderScreen = true
+            }) {
+                Text("Continue")
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white)
+                    .frame(width: 250, height: 60)
+                    .background(accentColor)
+                    .cornerRadius(30)
+                    .shadow(color: accentColor.opacity(0.3), radius: 10, x: 0, y: 5)
+            }
+            .padding(.bottom, 25)
+            .disabled(username.isEmpty || phoneNumber.isEmpty)
         }
         .padding(.horizontal)
     }
@@ -255,7 +298,7 @@ struct IntroView: View {
         }
     }
 
-    // MARK: - Get Onboarding Titles and Descriptions
+    // MARK: - Helper Functions
     func getTitle(for step: Int) -> String {
         switch step {
         case 0: return "Welcome to Loop"
@@ -276,15 +319,39 @@ struct IntroView: View {
         }
     }
     
-    // MARK: - Save Reminder to UserDefaults
     func saveReminderTime() {
         ReminderManager.shared.saveReminderTime(reminderTime)
-        
-//        let dateFormatter = DateFormatter()
-//        dateFormatter.dateFormat = "HH:mm"
-//        let reminderTimeString = dateFormatter.string(from: reminderTime)
-//
-//        UserDefaults.standard.set(reminderTimeString, forKey: "LoopReminderTime")
+    }
+    
+    private func createUserRecord() {
+        UserCloudKitUtility.createUser(username: username, phoneNumber: phoneNumber) { result in
+            if case .failure(let error) = result {
+                print("Error creating user: \(error.localizedDescription)")
+            }
+        }
+    }
+}
+
+struct CustomTextField: View {
+    @Binding var text: String
+    var placeholder: String
+    var imageName: String
+    
+    var body: some View {
+        VStack {
+            HStack {
+                Image(systemName: imageName)
+                    .foregroundColor(Color.gray)
+                TextField(placeholder, text: $text)
+                    .font(.system(size: 18, weight: .regular, design: .rounded))
+            }
+            .padding(.vertical, 10)
+            
+            Rectangle()
+                .frame(height: 1)
+                .foregroundColor(Color.gray.opacity(0.5))
+        }
+        .padding(.horizontal)
     }
 }
 
@@ -302,7 +369,7 @@ struct IntroView: View {
 //            }
 //            .onAppear {
 //                withAnimation(Animation.easeInOut(duration: 10).repeatForever(autoreverses: true)) {
-//                    waveOffset = 30 // Slow vertical oscillation for calmness
+//                    waveOffset = 30
 //                }
 //            }
 //        }
@@ -321,7 +388,7 @@ struct IntroView: View {
 //            let midHeight = size.height * 0.5
 //            let width = size.width
 //
-//            let stepSize: CGFloat = 5.0 // Reduce the number of points calculated
+//            let stepSize: CGFloat = 5.0
 //
 //            path.move(to: CGPoint(x: 0, y: midHeight))
 //
@@ -336,7 +403,7 @@ struct IntroView: View {
 //            path.closeSubpath()
 //        }
 //        .fill(color)
-//        .offset(y: phase) // Vertical oscillation
+//        .offset(y: phase)
 //    }
 //}
 
@@ -345,4 +412,3 @@ struct IntroView: View {
         print("Intro completed")
     })
 }
-

@@ -8,8 +8,8 @@
 import Foundation
 import CloudKit
 
-struct Loop: Hashable {
-    var loopID: String
+struct Loop: Hashable, Identifiable {
+    var id: String
     var data: CKAsset
     var timestamp: Date
     var lastRetrieved: Date?

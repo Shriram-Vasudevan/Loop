@@ -8,38 +8,39 @@
 import SwiftUI
 import AVKit
 
-import SwiftUI
-import AVKit
-
 struct LoopAudioConfirmationView: View {
-    @State private var isPlaying = false
-    @State private var progress: CGFloat = 0
-    @State private var audioPlayer: AVAudioPlayer?
-    @State private var timer: Timer?
-    
     let audioURL: URL
     let waveformData: [CGFloat]
     let accentColor = Color(hex: "A28497")
+    let backgroundColor = Color(hex: "F5F5F5")
+    
+    @State private var audioPlayer: AVAudioPlayer?
+    @State private var isPlaying = false
+    @State private var progress: CGFloat = 0
+    @State private var timer: Timer?
     
     let onComplete: () -> Void
     let onRetry: () -> Void
     
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Review Your Recording")
-                .font(.system(size: 24, weight: .semibold))
-                .foregroundColor(Color(hex: "333333"))
+        ZStack {
+            backgroundColor.edgesIgnoringSafeArea(.all)
             
-            waveformView
-                .frame(height: 60)
-                .padding(.horizontal)
-            
-            playbackControls
-            
-            retryAndCompleteButtons
+            VStack(spacing: 24) {
+                Text("Review Your Recording")
+                    .font(.system(size: 28, weight: .light))
+                    .foregroundColor(Color(hex: "333333"))
+                
+                waveformView
+                    .frame(height: 100)
+                    .padding(.horizontal)
+                
+                playbackControls
+                
+                retryAndCompleteButtons
+            }
+            .padding()
         }
-        .padding()
-        .background(Color.white)
         .onAppear(perform: setupAudioPlayer)
         .onDisappear {
             stopPlayback()

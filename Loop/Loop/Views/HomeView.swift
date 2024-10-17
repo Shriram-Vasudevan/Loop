@@ -11,20 +11,22 @@ struct HomeView: View {
     @ObservedObject var loopManager = LoopManager.shared
     @State private var showingRecordLoopsView = false
     @State private var showPastLoopSheet = false
-    @State private var currentMood: Int = 3
-
+    @State private var selectedLoop: Loop? // Optional Loop
+    
     let accentColor = Color(hex: "A28497")
     let backgroundColor = Color.white
     let groupBackgroundColor = Color(hex: "F8F5F7")
-        
-    @State var selectedLoop: Loop?
-    
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
                 topBar
                 loopsWidget
-                pastLoopsCarousel
+                
+                if loopManager.pastLoops.count > 0 {
+                    pastLoopsCarousel
+                }
+                
                 insightsView
             }
             .padding(.horizontal)
@@ -32,6 +34,9 @@ struct HomeView: View {
         }
         .onAppear {
             loopManager.checkAndResetIfNeeded()
+        }
+        .fullScreenCover(item: $selectedLoop) { loop in
+            ViewPastLoopView(loop: loop)
         }
         .fullScreenCover(isPresented: $showingRecordLoopsView) {
             RecordLoopsView(isFirstLaunch: false)
@@ -43,151 +48,111 @@ struct HomeView: View {
                     }
                 }
         }
-        .fullScreenCover(isPresented: $showPastLoopSheet) {
-            if let loop = selectedLoop {
-                ViewPastLoopView(loop: loop)
-            }
+    }
+
+    private var topBar: some View {
+        HStack {
+            Text("loop")
+                .font(.system(size: 36, weight: .light, design: .default))
+                .foregroundColor(.black)
+            Spacer()
         }
     }
 
-        private var topBar: some View {
-            HStack {
-                Text("loop")
-                    .font(.system(size: 36, weight: .light, design: .default))
-                    .foregroundColor(.black)
-                Spacer()
-            }
-        }
-
-        private var loopsWidget: some View {
-            VStack(alignment: .leading, spacing: 20) {
-                VStack(spacing: 10) {
-                    Text("Today's Reflection")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    
-                    progressView
-                }
-                
-                promptView
-                
-                if !loopManager.areAllPromptsDone() {
-                    Button(action: {
-                        showingRecordLoopsView = true
-                    }) {
-                        HStack {
-                            Image(systemName: "mic")
-                            Text("Record Loop")
-                        }
-                        .padding()
-                        .background(accentColor)
-                        .foregroundColor(.white)
-                        .cornerRadius(25)
-                    }
-                }
-            }
-            .padding(15)
-            .background(
-                RoundedRectangle(cornerRadius: 15)
-                    .fill(groupBackgroundColor)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 15)
-                            .stroke(accentColor.opacity(0.2), lineWidth: 1)
-                    )
-            )
-        }
-
-        private var progressView: some View {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Progress")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.gray)
-                
-                HStack(spacing: 6) {
-                    ForEach(0..<loopManager.prompts.count, id: \.self) { index in
-                        Capsule()
-                            .fill(index <= loopManager.currentPromptIndex ? accentColor : Color(hex: "DDDDDD"))
-                            .frame(height: 4)
-                    }
-                }
-                
-                Text("\(loopManager.areAllPromptsDone() ? loopManager.currentPromptIndex : loopManager.currentPromptIndex + 1) / \(loopManager.prompts.count)")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(accentColor)
-            }
-        }
-        
-        private var promptView: some View {
-            VStack(alignment: .leading, spacing: 10) {
-                Text(loopManager.areAllPromptsDone() ? "All Prompts Completed!" : "Next Prompt")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.gray)
-                
-                if !loopManager.areAllPromptsDone() {
-                    Text(loopManager.getCurrentPrompt())
-                        .font(.system(size: 18, weight: .regular))
-                        .foregroundColor(.black)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-    
-        private var pastLoopsCarousel: some View {
-            VStack(alignment: .leading, spacing: 15) {
-                Text("Memory Lane")
+    private var loopsWidget: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(spacing: 10) {
+                Text("Today's Reflection")
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(.black)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 15) {
-                        ForEach(LoopManager.shared.pastLoops, id: \.self) { loop in
-                            PastLoopCard(loop: loop, accentColor: accentColor)
-                                .onTapGesture {
-                                    self.selectedLoop = loop
-                                    showPastLoopSheet = true
-                                }
-                        }
+                progressView
+            }
+            
+            promptView
+            
+            if !loopManager.areAllPromptsDone() {
+                Button(action: {
+                    showingRecordLoopsView = true
+                }) {
+                    HStack {
+                        Image(systemName: "mic")
+                        Text("Record Loop")
                     }
+                    .padding()
+                    .background(accentColor)
+                    .foregroundColor(.white)
+                    .cornerRadius(25)
                 }
             }
-            .padding(.vertical, 10)
+        }
+        .padding(15)
+        .background(
+            RoundedRectangle(cornerRadius: 15)
+                .fill(groupBackgroundColor)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 15)
+                        .stroke(accentColor.opacity(0.2), lineWidth: 1)
+                )
+        )
     }
-    
-    private var pastLoopPlayer: some View {
+
+    private var progressView: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Memory Replay")
+            Text("Progress")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.gray)
+            
+            HStack(spacing: 6) {
+                ForEach(0..<loopManager.prompts.count, id: \.self) { index in
+                    Capsule()
+                        .fill(index <= loopManager.currentPromptIndex ? accentColor : Color(hex: "DDDDDD"))
+                        .frame(height: 4)
+                }
+            }
+            
+            Text("\(loopManager.areAllPromptsDone() ? loopManager.currentPromptIndex : loopManager.currentPromptIndex + 1) / \(loopManager.prompts.count)")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundColor(accentColor)
+        }
+    }
+
+    private var promptView: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(loopManager.areAllPromptsDone() ? "All Prompts Completed!" : "Next Prompt")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.gray)
+            
+            if !loopManager.areAllPromptsDone() {
+                Text(loopManager.getCurrentPrompt())
+                    .font(.system(size: 18, weight: .regular))
+                    .foregroundColor(.black)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var pastLoopsCarousel: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            Text("Memory Lane")
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundColor(.black)
             
-            HStack {
-                Image(systemName: "play.circle.fill")
-                    .foregroundColor(accentColor)
-                    .font(.system(size: 24))
-                Text("Loop from the Past")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.gray)
-                Spacer()
-                Image(systemName: "lock")
-                    .foregroundColor(.gray)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 15) {
+                    ForEach(LoopManager.shared.pastLoops, id: \.self) { loop in
+                        PastLoopCard(loop: loop, accentColor: accentColor)
+                            .onTapGesture {
+                                self.selectedLoop = loop // Assign selected loop
+                            }
+                    }
+                }
             }
-            .padding()
-            .background(groupBackgroundColor)
-            .cornerRadius(15)
         }
+        .padding(.vertical, 10)
     }
-    
-    private func moodEmoji(for value: Int) -> String {
-        switch value {
-        case 1: return "😢"
-        case 2: return "😕"
-        case 3: return "😐"
-        case 4: return "🙂"
-        case 5: return "😄"
-        default: return "😐"
-        }
-    }
-    
+
     private var insightsView: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Loop Insights")

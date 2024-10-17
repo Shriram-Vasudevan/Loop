@@ -47,7 +47,7 @@ class LoopCloudKitUtility {
         
         let loopRecord = CKRecord(recordType: "LoopRecord")
         
-        loopRecord["ID"] = loop.loopID as CKRecordValue
+        loopRecord["ID"] = loop.id as CKRecordValue
         loopRecord["Data"] = loop.data
         loopRecord["Timestamp"] = loop.timestamp as CKRecordValue
         loopRecord["LastRetrieved"] = loop.lastRetrieved as CKRecordValue?
@@ -155,7 +155,7 @@ class LoopCloudKitUtility {
         let freeResponse = record["FreeResponse"] as? Bool ?? false
         let isVideo = record["IsVideo"] as? Bool ?? false
         
-        return Loop(loopID: loopID, data: data, timestamp: timestamp, lastRetrieved: lastRetrieved, promptText: promptText, mood: mood, freeResponse: freeResponse, isVideo: isVideo)
+        return Loop(id: loopID, data: data, timestamp: timestamp, lastRetrieved: lastRetrieved, promptText: promptText, mood: mood, freeResponse: freeResponse, isVideo: isVideo)
     }
 
     static func weightedRandomSelection(weightedLoops: [(Loop, Double)]) -> Loop? {
