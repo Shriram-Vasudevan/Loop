@@ -166,15 +166,18 @@ struct IntroView: View {
     // MARK: - User Information Screen
     private var userInfoScreen: some View {
         VStack(spacing: 30) {
-            Text("Create Your Profile")
-                .font(.system(size: 36, weight: .thin, design: .rounded))
-                .foregroundColor(.black)
-            
-            Text("Let's set up your Loop account")
-                .font(.system(size: 18, weight: .regular, design: .rounded))
-                .foregroundColor(.gray)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
+            VStack (spacing: 10) {
+                Text("Create Your Profile")
+                    .font(.system(size: 36, weight: .thin, design: .rounded))
+                    .foregroundColor(.black)
+                
+                Text("Let's set up your Loop account")
+                    .font(.system(size: 18, weight: .regular, design: .rounded))
+                    .foregroundColor(.gray)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+            }
+            .padding(.vertical, 30)
             
             VStack(spacing: 25) {
                 CustomTextField(text: $username, placeholder: "Username", imageName: "person")
