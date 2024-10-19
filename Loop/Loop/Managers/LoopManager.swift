@@ -45,6 +45,7 @@ class LoopManager: ObservableObject {
     ]
       
     private let promptCacheKey = "PromptsForTheDay"
+    private let randomPastLoops = "RandomPastLoops"
     private let promptIndexKey = "CurrentPromptIndex"
     private let retryAttemptsKey = "RetryAttemptsLeft"
     private let lastPromptDateKey = "LastPromptDate"
@@ -204,6 +205,7 @@ class LoopManager: ObservableObject {
         UserDefaults.standard.set(prompts, forKey: promptCacheKey)
         UserDefaults.standard.set(currentPromptIndex, forKey: promptIndexKey)
         UserDefaults.standard.set(retryAttemptsLeft, forKey: retryAttemptsKey)
+        UserDefaults.standard.set(pastLoops, forKey: lastPromptDateKey)
         UserDefaults.standard.set(Date(), forKey: lastPromptDateKey)
     }
 
@@ -212,6 +214,7 @@ class LoopManager: ObservableObject {
         prompts = UserDefaults.standard.stringArray(forKey: promptCacheKey) ?? []
         currentPromptIndex = UserDefaults.standard.integer(forKey: promptIndexKey)
         retryAttemptsLeft = UserDefaults.standard.integer(forKey: retryAttemptsKey)
+        pastLoops = (UserDefaults.standard.array(forKey: lastPromptDateKey) ?? []) as? [Loop] ?? []
     }
 
     // Check if the cache is still valid for today.

@@ -142,10 +142,9 @@ struct HomeView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 15) {
                     ForEach(LoopManager.shared.pastLoops, id: \.self) { loop in
-                        PastLoopCard(loop: loop, accentColor: accentColor)
-                            .onTapGesture {
-                                self.selectedLoop = loop // Assign selected loop
-                            }
+                        PastLoopCard(loop: loop, accentColor: accentColor, onClicked: {
+                            self.selectedLoop = loop
+                        })
                     }
                 }
             }
@@ -232,6 +231,7 @@ struct PastLoopCard: View {
     let loop: Loop
     let accentColor: Color
     
+    var onClicked: () -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -260,7 +260,7 @@ struct PastLoopCard: View {
             }
             
             Button(action: {
-                // Play audio action
+                onClicked()
             }) {
                 Text("Listen")
                     .font(.caption)
