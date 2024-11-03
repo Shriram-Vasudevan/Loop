@@ -66,7 +66,6 @@ struct ViewPastLoopView: View {
                         .padding()
                 }
             } else {
-                // Play Button for audio loop
                 if let audioURL = loop.data.fileURL {
                     VStack {
                         Button(action: {
