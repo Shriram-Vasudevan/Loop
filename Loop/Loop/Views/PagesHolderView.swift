@@ -128,6 +128,9 @@ struct PagesHolderView: View {
                 WaveBackground()
                     .edgesIgnoringSafeArea(.all)
             )
+            .onAppear {
+                UserCloudKitUtility.getCurrentUserData()
+            }
         }
     }
 }

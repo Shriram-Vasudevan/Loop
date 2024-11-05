@@ -16,6 +16,7 @@ struct IntroView: View {
     @State private var permissionsGranted: Bool = false
     @State private var reminderTime: Date = Date()
     @State private var username: String = ""
+    @State private var name: String = ""
     @State private var phoneNumber: String = ""
     private let totalSteps = 4
     var onIntroCompletion: () -> Void
@@ -181,6 +182,7 @@ struct IntroView: View {
             
             VStack(spacing: 25) {
                 CustomTextField(text: $username, placeholder: "Username", imageName: "person")
+                CustomTextField(text: $name, placeholder: "Name", imageName: "person")
                 CustomTextField(text: $phoneNumber, placeholder: "Phone Number", imageName: "phone")
             }
             .padding(.top, 30)
@@ -327,7 +329,7 @@ struct IntroView: View {
     }
     
     private func createUserRecord() {
-        UserCloudKitUtility.createUser(username: username, phoneNumber: phoneNumber) { result in
+        UserCloudKitUtility.createUser(username: username, phoneNumber: phoneNumber, name: name) { result in
             if case .failure(let error) = result {
                 print("Error creating user: \(error.localizedDescription)")
             }
@@ -345,7 +347,7 @@ struct CustomTextField: View {
             HStack {
                 Image(systemName: imageName)
                     .foregroundColor(Color.gray)
-                TextField(placeholder, text: $text)
+                TextField(placeholder,text: $text)
                     .font(.system(size: 18, weight: .regular, design: .rounded))
             }
             .padding(.vertical, 10)

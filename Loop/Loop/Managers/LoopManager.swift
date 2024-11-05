@@ -16,7 +16,7 @@ class LoopManager: ObservableObject {
     @Published var retryAttemptsLeft: Int = 1
     @Published var pastLoops: [Loop] = []
     
-    private let availablePrompts = [
+    let availablePrompts = [
         "What’s something you’re grateful for today?",
         "Describe a challenge you faced recently.",
         "What’s a goal you’re working towards?",
@@ -84,6 +84,7 @@ class LoopManager: ObservableObject {
      func nextPrompt() {
          if currentPromptIndex < prompts.count - 1 {
              currentPromptIndex += 1
+             retryAttemptsLeft = 1
              saveCachedState()
          }
      }

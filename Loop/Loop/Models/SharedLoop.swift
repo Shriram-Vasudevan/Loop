@@ -8,5 +8,12 @@
 import Foundation
 
 struct SharedLoop: Codable {
-    
+    var id: String
+    var senderID: String
+    var recipientID: String
+    var prompt: String
+    var availableAt: Date
+    var timestamp: Date
+    var isVideo: Bool
+    var anonymous: Bool
 }
