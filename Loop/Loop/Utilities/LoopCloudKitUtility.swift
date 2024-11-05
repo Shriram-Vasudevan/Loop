@@ -7,6 +7,7 @@
 
 import Foundation
 import CloudKit
+import Contacts
 
 class LoopCloudKitUtility {
     static let container = CloudKit.CKContainer(identifier: "iCloud.LoopContainer")
@@ -249,4 +250,5 @@ class LoopCloudKitUtility {
 
         privateDB.add(operation)
     }
+    
 }

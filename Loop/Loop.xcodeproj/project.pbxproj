@@ -23,6 +23,12 @@
 		990E4AA02CBF0E29009F88A0 /* FirstLaunchManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A9F2CBF0E29009F88A0 /* FirstLaunchManager.swift */; };
 		990E4AA22CC095BE009F88A0 /* ViewAllLoopsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4AA12CC095BE009F88A0 /* ViewAllLoopsView.swift */; };
 		990E4AA42CC0A7CD009F88A0 /* InsightModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4AA32CC0A7CD009F88A0 /* InsightModels.swift */; };
+		9988DB7C2CD9B69D005628DE /* SendLoopToFriends.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB7B2CD9B69D005628DE /* SendLoopToFriends.swift */; };
+		9988DB7F2CD9BEDD005628DE /* PhoneNumberKit in Frameworks */ = {isa = PBXBuildFile; productRef = 9988DB7E2CD9BEDD005628DE /* PhoneNumberKit */; };
+		9988DB812CD9BEDD005628DE /* PhoneNumberKit-Dynamic in Frameworks */ = {isa = PBXBuildFile; productRef = 9988DB802CD9BEDD005628DE /* PhoneNumberKit-Dynamic */; };
+		9988DB832CD9BEDD005628DE /* PhoneNumberKit-Static in Frameworks */ = {isa = PBXBuildFile; productRef = 9988DB822CD9BEDD005628DE /* PhoneNumberKit-Static */; };
+		9988DB852CD9BFAC005628DE /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB842CD9BFAC005628DE /* FriendsView.swift */; };
+		9988DB8B2CD9CAEE005628DE /* SharedLoop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */; };
 		99A0C8F12CA9EF2400F9281A /* LoopApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C8F02CA9EF2400F9281A /* LoopApp.swift */; };
 		99A0C8F32CA9EF2400F9281A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C8F22CA9EF2400F9281A /* ContentView.swift */; };
 		99A0C8F52CA9EF2600F9281A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 99A0C8F42CA9EF2600F9281A /* Assets.xcassets */; };
@@ -58,6 +64,9 @@
 		990E4A9F2CBF0E29009F88A0 /* FirstLaunchManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstLaunchManager.swift; sourceTree = "<group>"; };
 		990E4AA12CC095BE009F88A0 /* ViewAllLoopsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewAllLoopsView.swift; sourceTree = "<group>"; };
 		990E4AA32CC0A7CD009F88A0 /* InsightModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightModels.swift; sourceTree = "<group>"; };
+		9988DB7B2CD9B69D005628DE /* SendLoopToFriends.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendLoopToFriends.swift; sourceTree = "<group>"; };
+		9988DB842CD9BFAC005628DE /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
+		9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedLoop.swift; sourceTree = "<group>"; };
 		99A0C8ED2CA9EF2400F9281A /* Loop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Loop.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		99A0C8F02CA9EF2400F9281A /* LoopApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopApp.swift; sourceTree = "<group>"; };
 		99A0C8F22CA9EF2400F9281A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -83,6 +92,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9988DB7F2CD9BEDD005628DE /* PhoneNumberKit in Frameworks */,
+				9988DB812CD9BEDD005628DE /* PhoneNumberKit-Dynamic in Frameworks */,
+				9988DB832CD9BEDD005628DE /* PhoneNumberKit-Static in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -136,6 +148,7 @@
 				99F7F6E42CAC77E7009858AC /* IntroView.swift */,
 				99F7F6E62CAC77F4009858AC /* HomeView.swift */,
 				99F7F6EC2CAC796E009858AC /* RecordLoopView.swift */,
+				9988DB842CD9BFAC005628DE /* FriendsView.swift */,
 				99F7F6FC2CAF814B009858AC /* RecordLoopsView.swift */,
 				990E4A832CB30EAB009F88A0 /* ThankYouView.swift */,
 				990E4A852CB30EB8009F88A0 /* LoopAudioConfirmationView.swift */,
@@ -148,6 +161,7 @@
 				990E4A9B2CBDD1BB009F88A0 /* LoopVideoConfirmationView.swift */,
 				990E4A9D2CBDE063009F88A0 /* ViewPastLoopView.swift */,
 				990E4AA12CC095BE009F88A0 /* ViewAllLoopsView.swift */,
+				9988DB7B2CD9B69D005628DE /* SendLoopToFriends.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -172,6 +186,7 @@
 				99F7F6F62CAC93B4009858AC /* LoopRevealDate.swift */,
 				990E4A8F2CB48BDD009F88A0 /* PageType.swift */,
 				990E4AA32CC0A7CD009F88A0 /* InsightModels.swift */,
+				9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -201,6 +216,11 @@
 			dependencies = (
 			);
 			name = Loop;
+			packageProductDependencies = (
+				9988DB7E2CD9BEDD005628DE /* PhoneNumberKit */,
+				9988DB802CD9BEDD005628DE /* PhoneNumberKit-Dynamic */,
+				9988DB822CD9BEDD005628DE /* PhoneNumberKit-Static */,
+			);
 			productName = Loop;
 			productReference = 99A0C8ED2CA9EF2400F9281A /* Loop.app */;
 			productType = "com.apple.product-type.application";
@@ -229,6 +249,9 @@
 				Base,
 			);
 			mainGroup = 99A0C8E42CA9EF2400F9281A;
+			packageReferences = (
+				9988DB7D2CD9BEDD005628DE /* XCRemoteSwiftPackageReference "PhoneNumberKit" */,
+			);
 			productRefGroup = 99A0C8EE2CA9EF2400F9281A /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -273,11 +296,14 @@
 				99F7F6F72CAC93B4009858AC /* LoopRevealDate.swift in Sources */,
 				99F7F6F32CAC7D0F009858AC /* Loop.swift in Sources */,
 				990E4AA22CC095BE009F88A0 /* ViewAllLoopsView.swift in Sources */,
+				9988DB852CD9BFAC005628DE /* FriendsView.swift in Sources */,
 				99F7F6E52CAC77E7009858AC /* IntroView.swift in Sources */,
 				990E4A862CB30EB8009F88A0 /* LoopAudioConfirmationView.swift in Sources */,
 				990E4A922CB48CEF009F88A0 /* InsightsView.swift in Sources */,
+				9988DB8B2CD9CAEE005628DE /* SharedLoop.swift in Sources */,
 				990E4A942CBDCA24009F88A0 /* VideoManager.swift in Sources */,
 				99A0C8F12CA9EF2400F9281A /* LoopApp.swift in Sources */,
+				9988DB7C2CD9B69D005628DE /* SendLoopToFriends.swift in Sources */,
 				99F7F6E72CAC77F4009858AC /* HomeView.swift in Sources */,
 				99A0C9042CA9F70500F9281A /* UserCloudKitUtility.swift in Sources */,
 				99F7F6FF2CAF8580009858AC /* Extensions.swift in Sources */,
@@ -496,6 +522,35 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		9988DB7D2CD9BEDD005628DE /* XCRemoteSwiftPackageReference "PhoneNumberKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/marmelroy/PhoneNumberKit.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		9988DB7E2CD9BEDD005628DE /* PhoneNumberKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9988DB7D2CD9BEDD005628DE /* XCRemoteSwiftPackageReference "PhoneNumberKit" */;
+			productName = PhoneNumberKit;
+		};
+		9988DB802CD9BEDD005628DE /* PhoneNumberKit-Dynamic */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9988DB7D2CD9BEDD005628DE /* XCRemoteSwiftPackageReference "PhoneNumberKit" */;
+			productName = "PhoneNumberKit-Dynamic";
+		};
+		9988DB822CD9BEDD005628DE /* PhoneNumberKit-Static */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9988DB7D2CD9BEDD005628DE /* XCRemoteSwiftPackageReference "PhoneNumberKit" */;
+			productName = "PhoneNumberKit-Static";
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 99A0C8E52CA9EF2400F9281A /* Project object */;
 }
