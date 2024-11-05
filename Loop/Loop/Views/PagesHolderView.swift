@@ -129,7 +129,8 @@ struct PagesHolderView: View {
                     .edgesIgnoringSafeArea(.all)
             )
             .onAppear {
-                UserCloudKitUtility.getCurrentUserData()
+                let userData = UserCloudKitUtility.getCurrentUserData()
+                
             }
         }
     }

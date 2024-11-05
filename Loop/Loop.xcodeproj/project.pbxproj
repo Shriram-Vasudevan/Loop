@@ -24,9 +24,6 @@
 		990E4AA22CC095BE009F88A0 /* ViewAllLoopsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4AA12CC095BE009F88A0 /* ViewAllLoopsView.swift */; };
 		990E4AA42CC0A7CD009F88A0 /* InsightModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4AA32CC0A7CD009F88A0 /* InsightModels.swift */; };
 		9988DB7C2CD9B69D005628DE /* SendLoopToFriends.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB7B2CD9B69D005628DE /* SendLoopToFriends.swift */; };
-		9988DB7F2CD9BEDD005628DE /* PhoneNumberKit in Frameworks */ = {isa = PBXBuildFile; productRef = 9988DB7E2CD9BEDD005628DE /* PhoneNumberKit */; };
-		9988DB812CD9BEDD005628DE /* PhoneNumberKit-Dynamic in Frameworks */ = {isa = PBXBuildFile; productRef = 9988DB802CD9BEDD005628DE /* PhoneNumberKit-Dynamic */; };
-		9988DB832CD9BEDD005628DE /* PhoneNumberKit-Static in Frameworks */ = {isa = PBXBuildFile; productRef = 9988DB822CD9BEDD005628DE /* PhoneNumberKit-Static */; };
 		9988DB852CD9BFAC005628DE /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB842CD9BFAC005628DE /* FriendsView.swift */; };
 		9988DB8B2CD9CAEE005628DE /* SharedLoop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */; };
 		9988DB8D2CDA77C8005628DE /* PrivateUserRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8C2CDA77C8005628DE /* PrivateUserRecord.swift */; };
@@ -51,6 +48,19 @@
 		99F7F6FD2CAF814B009858AC /* RecordLoopsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6FC2CAF814B009858AC /* RecordLoopsView.swift */; };
 		99F7F6FF2CAF8580009858AC /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6FE2CAF8580009858AC /* Extensions.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		9988DBAC2CDADE4E005628DE /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		990E4A832CB30EAB009F88A0 /* ThankYouView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThankYouView.swift; sourceTree = "<group>"; };
@@ -102,9 +112,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9988DB7F2CD9BEDD005628DE /* PhoneNumberKit in Frameworks */,
-				9988DB812CD9BEDD005628DE /* PhoneNumberKit-Dynamic in Frameworks */,
-				9988DB832CD9BEDD005628DE /* PhoneNumberKit-Static in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -225,6 +232,7 @@
 				99A0C8E92CA9EF2400F9281A /* Sources */,
 				99A0C8EA2CA9EF2400F9281A /* Frameworks */,
 				99A0C8EB2CA9EF2400F9281A /* Resources */,
+				9988DBAC2CDADE4E005628DE /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -232,9 +240,6 @@
 			);
 			name = Loop;
 			packageProductDependencies = (
-				9988DB7E2CD9BEDD005628DE /* PhoneNumberKit */,
-				9988DB802CD9BEDD005628DE /* PhoneNumberKit-Dynamic */,
-				9988DB822CD9BEDD005628DE /* PhoneNumberKit-Static */,
 			);
 			productName = Loop;
 			productReference = 99A0C8ED2CA9EF2400F9281A /* Loop.app */;
@@ -265,7 +270,7 @@
 			);
 			mainGroup = 99A0C8E42CA9EF2400F9281A;
 			packageReferences = (
-				9988DB7D2CD9BEDD005628DE /* XCRemoteSwiftPackageReference "PhoneNumberKit" */,
+				9988DBA42CDADE37005628DE /* XCRemoteSwiftPackageReference "PhoneNumberKit" */,
 			);
 			productRefGroup = 99A0C8EE2CA9EF2400F9281A /* Products */;
 			projectDirPath = "";
@@ -469,12 +474,13 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Required to record video loops";
+				INFOPLIST_KEY_NSContactsUsageDescription = "To See Users using loop";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "So that you can Loop!";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -501,12 +507,13 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Required to record video loops";
+				INFOPLIST_KEY_NSContactsUsageDescription = "To See Users using loop";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "So that you can Loop!";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -544,7 +551,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		9988DB7D2CD9BEDD005628DE /* XCRemoteSwiftPackageReference "PhoneNumberKit" */ = {
+		9988DBA42CDADE37005628DE /* XCRemoteSwiftPackageReference "PhoneNumberKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/marmelroy/PhoneNumberKit.git";
 			requirement = {
@@ -553,24 +560,6 @@
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		9988DB7E2CD9BEDD005628DE /* PhoneNumberKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 9988DB7D2CD9BEDD005628DE /* XCRemoteSwiftPackageReference "PhoneNumberKit" */;
-			productName = PhoneNumberKit;
-		};
-		9988DB802CD9BEDD005628DE /* PhoneNumberKit-Dynamic */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 9988DB7D2CD9BEDD005628DE /* XCRemoteSwiftPackageReference "PhoneNumberKit" */;
-			productName = "PhoneNumberKit-Dynamic";
-		};
-		9988DB822CD9BEDD005628DE /* PhoneNumberKit-Static */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 9988DB7D2CD9BEDD005628DE /* XCRemoteSwiftPackageReference "PhoneNumberKit" */;
-			productName = "PhoneNumberKit-Static";
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 99A0C8E52CA9EF2400F9281A /* Project object */;
 }

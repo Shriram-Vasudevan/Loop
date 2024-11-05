@@ -8,8 +8,44 @@
 import SwiftUI
 
 struct FriendsView: View {
+    @State var showAddFriendsSheet: Bool = false
+    
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        ZStack {
+            VStack {
+                HStack {
+                    Spacer()
+                    
+                    Button(action: {
+                        showAddFriendsSheet = true
+                    }, label: {
+                        Image(systemName: "plus")
+                            .foregroundColor(.white)
+                            .padding(7)
+                            .background(
+                                Circle()
+                                    .foregroundColor(.black)
+                            )
+                    })
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal)
+        }
+        .fullScreenCover(isPresented: $showAddFriendsSheet, content: {
+            AddFriends()
+        })
+    }
+    
+   
+}
+
+struct FriendWidget: View {
+    var body: some View {
+        ZStack {
+            
+        }
     }
 }
 

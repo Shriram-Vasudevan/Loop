@@ -20,7 +20,7 @@ class UserCloudKitUtility {
         let userRecord = CKRecord(recordType: "UserRecord")
     }
     
-    static func getCurrentUserData() {
+    static func getCurrentUserData() -> PublicUserRecord? {
         let privateDB = container.privateCloudDatabase
         
         let query = CKQuery(recordType: "UserRecord", predicate: NSPredicate(value: true))
@@ -31,16 +31,37 @@ class UserCloudKitUtility {
             if let userRecord = UserRecord.from(record: record) {
                 self.userData = userRecord
             }
+            
         }
         
         queryOperation.queryCompletionBlock = { cursor, error in
             if let error = error {
-                print("Error fetching LoopRevealDate: \(error.localizedDescription)")
+                print("Error fetching Record: \(error.localizedDescription)")
             }
         }
         
         privateDB.add(queryOperation)
         
+        guard let selectedUserRecord = selectedUserRecord else { return nil }
+        
+        let publicQuery = CKQuery(recordType: "PublicUserRecord", predicate: NSPredicate(format: "%@", argumentArray: [selectedUserRecord.userID]))
+        let pubicQueryOperation = CKQueryOperation(query: query)
+        pubicQueryOperation.resultsLimit = 1
+        
+        var userRecord: PublicUserRecord?
+        pubicQueryOperation.recordFetchedBlock = { record in
+            if let userRecord = UserRecord.from(record: record) {
+                self.userData = userRecord
+            }
+        }
+        
+        pubicQueryOperation.queryCompletionBlock = { cursor, error in
+            if let error = error {
+                print("Error fetching Record: \(error.localizedDescription)")
+            }
+        }
+        
+        return userRecord
     }
     
     static func getPublicUserData(userID: String) -> PublicUserRecord? {
@@ -102,62 +123,144 @@ class UserCloudKitUtility {
     }
 
     static func findMatchingContactsInCloudKit(completion: @escaping (Result<[CKRecord], Error>) -> Void) {
-        let publicDatabase = container.publicCloudDatabase
-        let contactNumbers = prepareContactPhoneNumbers()
-        
-        let batchSize = 10
-        var allMatchedRecords = [CKRecord]()
-        var batchesCompleted = 0
-        let batchCount = Int(ceil(Double(contactNumbers.count) / Double(batchSize)))
-        var batchErrors = [Error]()
-
-        for batchStart in stride(from: 0, to: contactNumbers.count, by: batchSize) {
-            let batchNumbers = Array(contactNumbers[batchStart..<min(batchStart + batchSize, contactNumbers.count)])
-            let predicates = batchNumbers.map { NSPredicate(format: "Phone == %@", $0) }
-            let compoundPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: predicates)
+        // Move the entire operation to a background queue
+        DispatchQueue.global(qos: .userInitiated).async {
+            // First check contacts authorization
+            let contactStore = CNContactStore()
             
-            let query = CKQuery(recordType: "PublicUserRecord", predicate: compoundPredicate)
-            
-            publicDatabase.perform(query, inZoneWith: nil) { records, error in
+            contactStore.requestAccess(for: .contacts) { granted, error in
                 if let error = error {
-                    batchErrors.append(error)
-                } else if let records = records {
-                    allMatchedRecords.append(contentsOf: records)
+                    print("Contact access request error: \(error.localizedDescription)")
+                    DispatchQueue.main.async {
+                        completion(.failure(UserCloudKitError.contactFetchError(error)))
+                    }
+                    return
                 }
                 
-                batchesCompleted += 1
-                if batchesCompleted == batchCount {
-                    if batchErrors.isEmpty {
-                        completion(.success(allMatchedRecords))
-                    } else {
-                        completion(.failure(batchErrors.first!))
+                guard granted else {
+                    print("Contact access denied by user.")
+                    DispatchQueue.main.async {
+                        completion(.failure(UserCloudKitError.contactAccessDenied))
+                    }
+                    return
+                }
+                
+                // Fetch contact numbers in background
+                Task {
+                    do {
+                        let contactNumbers = try await prepareContactPhoneNumbers()
+                        try await performBatchQueries(with: contactNumbers, completion: completion)
+                    } catch {
+                        print("Error during contact number preparation or batch query execution: \(error)")
+                        DispatchQueue.main.async {
+                            completion(.failure(error))
+                        }
                     }
                 }
             }
         }
     }
-    
-    private static func prepareContactPhoneNumbers() -> [String] {
-        let contactStore = CNContactStore()
-        var formattedNumbers = [String]()
 
-        let keysToFetch = [CNContactPhoneNumbersKey] as [CNKeyDescriptor]
-        let fetchRequest = CNContactFetchRequest(keysToFetch: keysToFetch)
-        do {
-            try contactStore.enumerateContacts(with: fetchRequest) { contact, _ in
-                for phoneNumber in contact.phoneNumbers {
-                    let strippedNumber = stripPhoneNumber(phoneNumber.value.stringValue)
-                    formattedNumbers.append(strippedNumber)
+    private static func performBatchQueries(
+        with contactNumbers: [String],
+        completion: @escaping (Result<[CKRecord], Error>) -> Void
+    ) async throws {
+        let publicDatabase = container.publicCloudDatabase
+        let batchSize = 5  // Reduce batch size to limit complexity
+        var allMatchedRecords = [CKRecord]()
+        var batchErrors = [Error]()
+        
+        // Create smaller batches of phone numbers to avoid complex predicates
+        let batches = stride(from: 0, to: contactNumbers.count, by: batchSize).map { start -> [String] in
+            let end = min(start + batchSize, contactNumbers.count)
+            return Array(contactNumbers[start..<end])
+        }
+        
+        // Process each batch concurrently
+        await withTaskGroup(of: Result<[CKRecord], Error>.self) { group in
+            for batch in batches {
+                group.addTask {
+                    await processBatch(batch, database: publicDatabase)
                 }
             }
-        } catch {
-            print("Error accessing contacts: \(error.localizedDescription)")
+            
+            // Collect results from all batches
+            for await result in group {
+                switch result {
+                case .success(let records):
+                    allMatchedRecords.append(contentsOf: records)
+                case .failure(let error):
+                    print("Batch processing error: \(error)")
+                    batchErrors.append(error)
+                }
+            }
         }
-        return formattedNumbers
+        
+        // Handle final results
+        DispatchQueue.main.async {
+            if batchErrors.isEmpty {
+                completion(.success(allMatchedRecords))
+            } else {
+                print("Completed with batch errors: \(batchErrors)")
+                completion(.failure(UserCloudKitError.batchProcessingError(batchErrors)))
+            }
+        }
+    }
+
+    private static func processBatch(_ numbers: [String], database: CKDatabase) async -> Result<[CKRecord], Error> {
+        let predicates = numbers.map { NSPredicate(format: "Phone == %@", $0) }
+        let compoundPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: predicates)
+        let query = CKQuery(recordType: "PublicUserRecord", predicate: compoundPredicate)
+        
+        do {
+            let records = try await database.records(matching: query)
+            return .success(records.matchResults.compactMap { result in
+                do {
+                    return try result.1.get()
+                } catch {
+                    print("Failed to retrieve record result for \(result.0): \(error)")
+                    return nil
+                }
+            })
+        } catch {
+            // Check if the error is due to the predicate complexity
+            print("CloudKit query error: \(error.localizedDescription)")
+            if error.localizedDescription.contains("Invalid predicate") {
+                print("Predicate too complex for CloudKit. Consider further reducing batch size.")
+            }
+            return .failure(UserCloudKitError.cloudKitError(error))
+        }
+    }
+
+
+    private static func prepareContactPhoneNumbers() async throws -> [String] {
+        return try await withCheckedThrowingContinuation { continuation in
+            let contactStore = CNContactStore()
+            var formattedNumbers = [String]()
+            
+            let keysToFetch = [CNContactPhoneNumbersKey] as [CNKeyDescriptor]
+            let fetchRequest = CNContactFetchRequest(keysToFetch: keysToFetch)
+            
+            do {
+                try contactStore.enumerateContacts(with: fetchRequest) { contact, _ in
+                    for phoneNumber in contact.phoneNumbers {
+                        let strippedNumber = stripPhoneNumber(phoneNumber.value.stringValue)
+                        formattedNumbers.append(strippedNumber)
+                    }
+                }
+                print("Successfully fetched and formatted \(formattedNumbers.count) contact numbers.")
+                continuation.resume(returning: formattedNumbers)
+            } catch {
+                print("Error fetching contacts: \(error.localizedDescription)")
+                continuation.resume(throwing: UserCloudKitError.contactFetchError(error))
+            }
+        }
     }
 
     private static func stripPhoneNumber(_ number: String) -> String {
-        return number.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+        let stripped = number.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+        print("Stripped phone number: \(stripped)")
+        return stripped
     }
 
 
@@ -242,4 +345,11 @@ class UserCloudKitUtility {
     }
 
     
+}
+
+enum UserCloudKitError: Error {
+    case contactAccessDenied
+    case contactFetchError(Error)
+    case cloudKitError(Error)
+    case batchProcessingError([Error])
 }
