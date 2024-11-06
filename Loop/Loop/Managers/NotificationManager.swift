@@ -13,7 +13,8 @@ class ReminderManager {
     static let shared = ReminderManager()
     private let reminderKey = "LoopReminderTime"
     
-    private init() {}
+    private init() {
+    }
     
     func saveReminderTime(_ time: Date) {
         UserDefaults.standard.set(time, forKey: reminderKey)

@@ -91,17 +91,19 @@ class UserCloudKitUtility {
     }
     
     static func createUser(username: String, phoneNumber: String, name: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        let userID = UUID().uuidString
+
         let userRecord = CKRecord(recordType: "UserRecord")
-        userRecord["UserID"] = UUID().uuidString as CKRecordValue
-        userRecord["Name"] = name as CKRecordValue
-        userRecord["Username"] = username as CKRecordValue
-        userRecord["Phone"] = phoneNumber as CKRecordValue
+        userRecord["UserID"] = userID
+        userRecord["Name"] = name
+        userRecord["Username"] = username
+        userRecord["Phone"] = phoneNumber
         
         let publicUserRecord = CKRecord(recordType: "PublicUserRecord")
-        publicUserRecord["UserID"] = UUID().uuidString as CKRecordValue
-        publicUserRecord["Name"] = name as CKRecordValue
-        publicUserRecord["Username"] = username as CKRecordValue
-        publicUserRecord["Phone"] = phoneNumber as CKRecordValue
+        publicUserRecord["UserID"] = userID
+        publicUserRecord["Name"] = name
+        publicUserRecord["Username"] = username
+        publicUserRecord["Phone"] = phoneNumber
         publicUserRecord["Friends"] = [] as CKRecordValue
         
         let container = CKContainer.default()
@@ -121,6 +123,7 @@ class UserCloudKitUtility {
             }
         }
     }
+
 
     static func findMatchingContactsInCloudKit(completion: @escaping (Result<[CKRecord], Error>) -> Void) {
         // Move the entire operation to a background queue

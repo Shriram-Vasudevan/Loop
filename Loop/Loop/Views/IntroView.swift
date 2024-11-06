@@ -325,13 +325,17 @@ struct IntroView: View {
     }
     
     func saveReminderTime() {
-        ReminderManager.shared.saveReminderTime(reminderTime)
+        ReminderManager.shared.requestNotificationPermissions { success in
+            if success {
+                ReminderManager.shared.saveReminderTime(reminderTime)
+            }
+        }
     }
     
     private func createUserRecord() {
         UserCloudKitUtility.createUser(username: username, phoneNumber: phoneNumber, name: name) { result in
             if case .failure(let error) = result {
-                print("Error creating user: \(error.localizedDescription)")
+                print("Error creating user: \(error)")
             }
         }
     }
