@@ -14,6 +14,10 @@ class FriendsManager: ObservableObject {
     @Published var recievedLoops: [SharedLoop]?
     @Published var friendRequests: [FriendRequest] = []
     
+    @Published var matchedContacts: [PublicUserRecord] = []
+    @Published var friendRequestsSent: Set<String> = []
+    @Published var recievedRequests: [FriendRequest: PublicUserRecord] = [:]
+    
     init() {
         
     }

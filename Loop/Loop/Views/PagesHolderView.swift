@@ -20,12 +20,10 @@ struct PagesHolderView: View {
                     switch pageType {
                         case .home:
                             HomeView()
-                        case .insights:
+                        case .loopCenter:
                             InsightsView()
                         case .friends:
                             FriendsView()
-                        case .allLoops:
-                            ViewAllLoopsView()
                     }
                     
                     Spacer()
@@ -56,17 +54,17 @@ struct PagesHolderView: View {
                         ZStack {
                             VStack {
                                 Button(action: {
-                                    pageType = .insights
+                                    pageType = .loopCenter
                                 }, label: {
                                     VStack {
-                                        Image(pageType == .insights ? "InsightsAccent" : "InsightsWhite")
+                                        Image(pageType == .loopCenter ? "InsightsAccent" : "InsightsWhite")
                                             .resizable()
                                             .frame(width: 30, height: 30)
                                             .aspectRatio(contentMode:  .fill)
                                         
                                         Text("Insights")
                                             .font(.caption)
-                                            .foregroundColor(pageType == .insights ? accentColor : .white)
+                                            .foregroundColor(pageType == .loopCenter ? accentColor : .white)
                                     }
                                     .padding(.bottom)
                                 })
@@ -96,28 +94,7 @@ struct PagesHolderView: View {
                             .frame(maxWidth: .infinity, alignment: .center)
                             
                         }
-                        
-                        ZStack {
-                            VStack {
-                                Button(action: {
-                                    pageType = .allLoops
-                                }, label: {
-                                    VStack {
-                                        Image(pageType == .allLoops ? "HomeAccent" : "HomeWhite")
-                                            .resizable()
-                                            .frame(width: 30, height: 30)
-                                            .aspectRatio(contentMode:  .fill)
-                                        
-                                        Text("Loops")
-                                            .font(.caption)
-                                            .foregroundColor(pageType == .allLoops ? accentColor : .white)
-                                    }
-                                    .padding(.bottom)
-                                })
-                            }
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            
-                        }
+
                         
                     }
                     
@@ -130,8 +107,13 @@ struct PagesHolderView: View {
             )
             .onAppear {
                 Task {
-                    let userData = try await UserCloudKitUtility.getCurrentUserData()
-                    print("the userid \(userData?.userID)")
+                    guard let userData 
+                            = try await UserCloudKitUtility.getCurrentUserData() else { return }
+                    print("the userid \(userData.userID)")
+                    
+                    let name = await UserCloudKitUtility.getPublicUserData(phone: "9736109630")?.name
+                    
+                    print("the name \(name)")
                 }
             }
         }

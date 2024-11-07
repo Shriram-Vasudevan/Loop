@@ -11,26 +11,42 @@ struct HomeView: View {
     @ObservedObject var loopManager = LoopManager.shared
     @State private var showingRecordLoopsView = false
     @State private var showPastLoopSheet = false
-    @State private var selectedLoop: Loop? // Optional Loop
+    @State private var selectedLoop: Loop?
+    @State private var backgroundOpacity: Double = 0
     
     let accentColor = Color(hex: "A28497")
+    let complementaryColor = Color(hex: "84A297")
     let backgroundColor = Color.white
-    let groupBackgroundColor = Color(hex: "F8F5F7")
-
+    let surfaceColor = Color(hex: "F8F5F7")
+    
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                topBar
-                loopsWidget
-                
-                if loopManager.pastLoops.count > 0 {
-                    pastLoopsCarousel
+        ZStack {
+            // Animated background
+            HomeBackground()
+                .opacity(backgroundOpacity)
+                .onAppear {
+                    withAnimation(.easeIn(duration: 1.2)) {
+                        backgroundOpacity = 1
+                    }
                 }
-                
-                insightsView
+            
+            ScrollView {
+                VStack(spacing: 24) {
+                    topBar
+                    
+                    if !loopManager.areAllPromptsDone() {
+                        todayPromptCard
+                    }
+                    
+                    if loopManager.pastLoops.count > 0 {
+                        memoryLaneSection
+                    }
+                    
+                    insightsCard
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
             }
-            .padding(.horizontal)
-            .padding(.top, 20)
         }
         .onAppear {
             loopManager.checkAndResetIfNeeded()
@@ -49,127 +65,258 @@ struct HomeView: View {
                 }
         }
     }
-
+    
     private var topBar: some View {
         HStack {
             Text("loop")
-                .font(.system(size: 36, weight: .light, design: .default))
+                .font(.system(size: 36, weight: .light))
                 .foregroundColor(.black)
             Spacer()
         }
     }
-
-    private var loopsWidget: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(spacing: 10) {
-                Text("Today's Reflection")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.black)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                
-                progressView
-            }
-            
-            promptView
-            
-            if !loopManager.areAllPromptsDone() {
-                Button(action: {
-                    showingRecordLoopsView = true
-                }) {
-                    HStack {
-                        Image(systemName: "mic")
-                        Text("Record Loop")
+    
+    private var todayPromptCard: some View {
+        VStack(spacing: 24) {
+            // Progress section
+            HStack {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("today's reflection")
+                        .font(.system(size: 22, weight: .light))
+                        .foregroundColor(Color.black.opacity(0.8))
+                    
+                    // Progress indicators
+                    HStack(spacing: 6) {
+                        ForEach(0..<loopManager.prompts.count, id: \.self) { index in
+                            Capsule()
+                                .fill(index <= loopManager.currentPromptIndex ? accentColor : Color(hex: "DDDDDD"))
+                                .frame(width: 24, height: 2)
+                        }
                     }
-                    .padding()
-                    .background(accentColor)
-                    .foregroundColor(.white)
-                    .cornerRadius(25)
+                    
+                    Text("\(loopManager.currentPromptIndex + 1)/\(loopManager.prompts.count)")
+                        .font(.system(size: 16, weight: .light))
+                        .foregroundColor(accentColor)
                 }
-            }
-        }
-        .padding(15)
-        .background(
-            RoundedRectangle(cornerRadius: 15)
-                .fill(groupBackgroundColor)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 15)
-                        .stroke(accentColor.opacity(0.2), lineWidth: 1)
-                )
-        )
-    }
-
-    private var progressView: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Progress")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.gray)
-            
-            HStack(spacing: 6) {
-                ForEach(0..<loopManager.prompts.count, id: \.self) { index in
-                    Capsule()
-                        .fill(index <= loopManager.currentPromptIndex ? accentColor : Color(hex: "DDDDDD"))
-                        .frame(height: 4)
-                }
+                
+                Spacer()
             }
             
-            Text("\(loopManager.areAllPromptsDone() ? loopManager.currentPromptIndex : loopManager.currentPromptIndex + 1) / \(loopManager.prompts.count)")
-                .font(.system(size: 18, weight: .medium))
-                .foregroundColor(accentColor)
-        }
-    }
-
-    private var promptView: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(loopManager.areAllPromptsDone() ? "All Prompts Completed!" : "Next Prompt")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.gray)
-            
-            if !loopManager.areAllPromptsDone() {
+            // Prompt section
+            VStack(alignment: .leading, spacing: 12) {
                 Text(loopManager.getCurrentPrompt())
-                    .font(.system(size: 18, weight: .regular))
+                    .font(.system(size: 24, weight: .light))
                     .foregroundColor(.black)
                     .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            
+            // Record button
+            Button(action: {
+                showingRecordLoopsView = true
+            }) {
+                HStack(spacing: 12) {
+                    Image(systemName: "mic")
+                        .font(.system(size: 18, weight: .light))
+                    Text("record your loop")
+                        .font(.system(size: 18, weight: .light))
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 54)
+                .background(accentColor)
+                .foregroundColor(.white)
+                .cornerRadius(27)
+                .shadow(color: accentColor.opacity(0.2), radius: 10, y: 5)
+            }
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color.white.opacity(0.9))
+                .shadow(color: Color.black.opacity(0.05), radius: 20, y: 10)
+        )
+    }
+    
+    private var memoryLaneSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("memory lane")
+                .font(.system(size: 22, weight: .light))
+                .foregroundColor(Color.black.opacity(0.8))
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(loopManager.pastLoops, id: \.self) { loop in
+                        PastLoopCard(loop: loop, accentColor: accentColor) {
+                            selectedLoop = loop
+                        }
+                    }
+                }
+                .padding(.bottom, 8) // For shadow space
             }
         }
     }
-
-    private var pastLoopsCarousel: some View {
-        VStack(alignment: .leading, spacing: 15) {
-            Text("Memory Lane")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(.black)
+    
+    private var insightsCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("loop insights")
+                .font(.system(size: 22, weight: .light))
+                .foregroundColor(Color.black.opacity(0.8))
             
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 15) {
-                    ForEach(LoopManager.shared.pastLoops, id: \.self) { loop in
-                        PastLoopCard(loop: loop, accentColor: accentColor, onClicked: {
-                            self.selectedLoop = loop
-                        })
-                    }
+            VStack(alignment: .leading, spacing: 12) {
+                InsightRow(
+                    icon: "chart.line.uptrend.xyaxis",
+                    title: "monthly reflection",
+                    detail: "you've mentioned 'stress' 8 times"
+                )
+                
+                Divider()
+                    .background(accentColor.opacity(0.1))
+                
+                InsightRow(
+                    icon: "leaf",
+                    title: "goal suggestion",
+                    detail: "meditate for 5 minutes today"
+                )
+            }
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(surfaceColor)
+            )
+        }
+    }
+}
+
+struct InsightRow: View {
+    let icon: String
+    let title: String
+    let detail: String
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            Image(systemName: icon)
+                .font(.system(size: 20, weight: .light))
+                .foregroundColor(Color(hex: "A28497"))
+                .frame(width: 24, height: 24)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 16, weight: .light))
+                    .foregroundColor(.gray)
+                
+                Text(detail)
+                    .font(.system(size: 18, weight: .light))
+                    .foregroundColor(.black)
+            }
+        }
+    }
+}
+
+struct HomeBackground: View {
+    let accentColor = Color(hex: "A28497")
+    let complementaryColor = Color(hex: "84A297")
+    @State private var phase: Double = 0
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                // Base gradient
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.white,
+                        Color(hex: "F8F5F7").opacity(0.8)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                
+                // Animated waves
+                ForEach(0..<3) { index in
+                    Wave(
+                        phase: phase + Double(index) * .pi / 2,
+                        amplitude: 8 + Double(index) * 4,
+                        frequency: 0.3 - Double(index) * 0.05
+                    )
+                    .fill(
+                        index % 2 == 0 ? accentColor : complementaryColor
+                    )
+                    .opacity(0.05 - Double(index) * 0.01)
+                    .blendMode(.plusLighter)
+                }
+                
+                // Gradient overlays for depth
+                RadialGradient(
+                    gradient: Gradient(colors: [
+                        accentColor.opacity(0.05),
+                        Color.clear
+                    ]),
+                    center: .topLeading,
+                    startRadius: 0,
+                    endRadius: geometry.size.width * 0.8
+                )
+                
+                RadialGradient(
+                    gradient: Gradient(colors: [
+                        complementaryColor.opacity(0.05),
+                        Color.clear
+                    ]),
+                    center: .bottomTrailing,
+                    startRadius: 0,
+                    endRadius: geometry.size.width * 0.8
+                )
+            }
+            .onAppear {
+                withAnimation(
+                    .linear(duration: 20)
+                    .repeatForever(autoreverses: false)
+                ) {
+                    phase += 2 * .pi
                 }
             }
         }
-        .padding(.vertical, 10)
+        .ignoresSafeArea()
     }
+}
 
-    private var insightsView: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Loop Insights")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(.black)
-            
-            Text("You've mentioned 'stress' 8 times this month")
-                .font(.system(size: 16, weight: .regular))
-                .foregroundColor(.gray)
-            
-            Text("Goal Suggestion: Meditate for 5 minutes today")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(accentColor)
-                .padding(.top, 5)
+struct Wave: Shape {
+    let phase: Double
+    let amplitude: Double
+    let frequency: Double
+    
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let width = rect.width
+        let height = rect.height
+        let midHeight = height * 0.5
+        
+        let points = stride(
+            from: 0,
+            to: width + 10, // Overlap slightly
+            by: 5 // Adjust point density for performance
+        ).map { x -> CGPoint in
+            let relativeX = x / width
+            let y = midHeight +
+                amplitude * sin(relativeX * frequency * 2 * .pi + phase)
+            return CGPoint(x: x, y: y)
         }
-        .padding()
-        .background(groupBackgroundColor)
-        .cornerRadius(15)
+        
+        path.move(to: CGPoint(x: 0, y: height))
+        path.addLine(to: points[0])
+        
+        for idx in 0..<points.count - 1 {
+            let control = CGPoint(
+                x: (points[idx].x + points[idx + 1].x) / 2,
+                y: (points[idx].y + points[idx + 1].y) / 2
+            )
+            path.addQuadCurve(
+                to: points[idx + 1],
+                control: control
+            )
+        }
+        
+        path.addLine(to: CGPoint(x: width, y: height))
+        path.closeSubpath()
+        
+        return path
     }
 }
 
@@ -226,63 +373,6 @@ struct WaveLayer: View {
     }
 }
 
-
-struct PastLoopCard: View {
-    let loop: Loop
-    let accentColor: Color
-    
-    var onClicked: () -> Void
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Image(systemName: "waveform")
-                    .foregroundColor(accentColor)
-                Spacer()
-                Text(formattedDate(loop.timestamp))
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            }
-            
-            Text(loop.promptText)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.black)
-                .lineLimit(2)
-            
-            if let mood = loop.mood {
-                HStack {
-                    Text("Mood:")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                    Text(mood)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(accentColor)
-                }
-            }
-            
-            Button(action: {
-                onClicked()
-            }) {
-                Text("Listen")
-                    .font(.caption)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(accentColor)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-            }
-        }
-        .padding()
-        .background(Color.white)
-        .cornerRadius(15)
-        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
-    }
-    
-    private func formattedDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d, yyyy"
-        return formatter.string(from: date)
-    }
-}
 
 #Preview {
     HomeView()

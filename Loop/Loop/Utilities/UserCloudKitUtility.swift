@@ -34,7 +34,8 @@ class UserCloudKitUtility {
                 return nil
             }
             
-            // Then query public database
+            self.userData = userRecord
+            
             let publicDB = container.publicCloudDatabase
             let publicQuery = CKQuery(
                 recordType: "PublicUserRecord",
@@ -56,30 +57,48 @@ class UserCloudKitUtility {
         }
     }
     
-    static func getPublicUserData(userID: String) -> PublicUserRecord? {
+    
+    static func getPublicUserData(userID: String) async -> PublicUserRecord? {
         let publicDB = container.publicCloudDatabase
-        guard let userID = self.userData?.userID else { return nil }
-        
+
         let query = CKQuery(recordType: "PublicUserRecord", predicate: NSPredicate(format: "UserID == %@", argumentArray: [userID]))
-        let queryOperation = CKQueryOperation(query: query)
         
-        var userRecord: PublicUserRecord?
-        
-        queryOperation.recordFetchedBlock = { record in
-            if let uRecord = record as? PublicUserRecord { 
-                userRecord = uRecord
+        do {
+            let (publicRecords, _) = try await publicDB.records(matching: query, resultsLimit: 1)
+            
+            guard let publicRecord = publicRecords.first?.1,
+                  let publicUserRecord = PublicUserRecord.from(record: try publicRecord.get()) else {
+                print("No public user record found")
+                return nil
             }
+            
+            return publicUserRecord
+        } catch {
+            print("Error fetching public user record: \(error.localizedDescription)")
+            return nil
         }
+    }
+    
+    static func getPublicUserData(phone: String) async -> PublicUserRecord? {
+        let publicDB = container.publicCloudDatabase
+
+        let query = CKQuery(recordType: "PublicUserRecord", predicate: NSPredicate(format: "Phone == %@", argumentArray: [phone]))
         
-        queryOperation.queryCompletionBlock = { _, error in
-            if let error = error {
-                print("An error with getting recievd loops occured: \(error)")
+        do {
+            let (publicRecords, _) = try await publicDB.records(matching: query, resultsLimit: 1)
+            
+            print(publicRecords)
+            guard let publicRecord = publicRecords.first?.1,
+                  let publicUserRecord = PublicUserRecord.from(record: try publicRecord.get()) else {
+                print("No public user record found")
+                return nil
             }
+            
+            return publicUserRecord
+        } catch {
+            print("Error fetching public user record: \(error.localizedDescription)")
+            return nil
         }
-        
-        publicDB.add(queryOperation)
-        
-        return userRecord
     }
     
     static func createUser(username: String, phoneNumber: String, name: String, completion: @escaping (Result<Void, Error>) -> Void) {
@@ -113,170 +132,137 @@ class UserCloudKitUtility {
             }
         }
     }
-
-    static func findMatchingContactsInCloudKit(completion: @escaping (Result<[CKRecord], Error>) -> Void) async {
-            print("Starting findMatchingContactsInCloudKit function")
-            
-            DispatchQueue.global(qos: .userInitiated).async {
-                let contactStore = CNContactStore()
-                
-                contactStore.requestAccess(for: .contacts) { granted, error in
-                    if let error = error {
-                        print("Error requesting contact access: \(error.localizedDescription)")
-                        DispatchQueue.main.async {
-                            completion(.failure(UserCloudKitError.contactAccessDenied))
-                        }
-                        return
-                    }
-                    
-                    guard granted else {
-                        print("Access to contacts denied by user.")
-                        DispatchQueue.main.async {
-                            completion(.failure(UserCloudKitError.contactAccessDenied))
-                        }
-                        return
-                    }
-                    
-                    print("Access to contacts granted.")
-                    
-                    do {
-                        let contactNumbers = try fetchContactPhoneNumbers()
-                        print("Fetched contact numbers: \(contactNumbers)")
-                        Task {
-                            try await processBatches(contactNumbers: contactNumbers)
-                        }
-                    } catch {
-                        print("Error fetching contact phone numbers: \(error.localizedDescription)")
-                        DispatchQueue.main.async {
-                            completion(.failure(error))
-                        }
-                    }
-                }
-            }
-        }
-        
+    
     static func findMatchingContactsInCloudKit() async throws -> [CKRecord] {
-            print("Starting findMatchingContactsInCloudKit function")
-            
-            let contactStore = CNContactStore()
-            let granted = try await contactStore.requestAccess(for: .contacts)
-            
-            guard granted else {
-                print("Access to contacts denied by user.")
-                throw UserCloudKitError.contactAccessDenied
-            }
-            
-            print("Access to contacts granted.")
-            
-            let contactNumbers = try fetchContactPhoneNumbers()
-            print("Fetched contact numbers: \(contactNumbers)")
-            
-            return try await processBatches(contactNumbers: contactNumbers)
+        print("Starting optimized findMatchingContactsInCloudKit function")
+        
+        let contactStore = CNContactStore()
+        let granted = try await contactStore.requestAccess(for: .contacts)
+        
+        guard granted else {
+            print("Access to contacts denied by user.")
+            throw UserCloudKitError.contactAccessDenied
         }
         
-        private static func fetchContactPhoneNumbers() throws -> [String] {
-            print("Starting fetchContactPhoneNumbers function")
-            
-            let contactStore = CNContactStore()
-            var phoneNumbers = [String]()
-            
-            let keysToFetch = [CNContactPhoneNumbersKey] as [CNKeyDescriptor]
-            let fetchRequest = CNContactFetchRequest(keysToFetch: keysToFetch)
-            
-            try contactStore.enumerateContacts(with: fetchRequest) { contact, _ in
-                for phoneNumber in contact.phoneNumbers {
-                    let strippedNumber = stripPhoneNumber(phoneNumber.value.stringValue)
-                    print("Original phone number: \(phoneNumber.value.stringValue), Stripped: \(strippedNumber)")
-                    phoneNumbers.append(strippedNumber)
+        print("Access to contacts granted.")
+        
+        let contactNumbers = try await fetchContactPhoneNumbers()
+        print("Fetched contact numbers: \(contactNumbers.count)")
+        
+        let matchedRecords = try await processBatchesConcurrently(contactNumbers: Array(Set(contactNumbers)))
+        return Array(Set(matchedRecords))  // Remove any duplicate records
+    }
+    
+    private static func fetchContactPhoneNumbers() async throws -> Set<String> {
+        print("Starting fetchContactPhoneNumbers function")
+        
+        let contactStore = CNContactStore()
+        var phoneNumbers = Set<String>()
+        
+        let keysToFetch = [CNContactPhoneNumbersKey] as [CNKeyDescriptor]
+        let fetchRequest = CNContactFetchRequest(keysToFetch: keysToFetch)
+        
+        // Create a task to perform the contact enumeration
+        return try await withCheckedThrowingContinuation { continuation in
+            do {
+                try contactStore.enumerateContacts(with: fetchRequest) { contact, _ in
+                    for phoneNumber in contact.phoneNumbers {
+                        let strippedNumber = stripPhoneNumber(phoneNumber.value.stringValue)
+                        phoneNumbers.insert(strippedNumber)
+                    }
+                }
+                continuation.resume(returning: phoneNumbers)
+            } catch {
+                continuation.resume(throwing: error)
+            }
+        }
+    }
+    
+    private static func processBatchesConcurrently(contactNumbers: [String]) async throws -> [CKRecord] {
+        print("Starting concurrent batch processing for \(contactNumbers.count) numbers")
+        
+        let batchSize = 150 // Increased batch size for better throughput
+        let batches = stride(from: 0, to: contactNumbers.count, by: batchSize).map {
+            Array(contactNumbers[$0..<min($0 + batchSize, contactNumbers.count)])
+        }
+        
+        // Process all batches concurrently
+        async let batchResults = withTaskGroup(of: [CKRecord].self) { group in
+            for batch in batches {
+                group.addTask {
+                    do {
+                        return try await performBatchQueryConcurrently(contactNumbers: batch)
+                    } catch {
+                        print("Error processing batch: \(error)")
+                        return []
+                    }
                 }
             }
             
-            print("Total formatted phone numbers fetched: \(phoneNumbers.count)")
-            return phoneNumbers
+            var allRecords = [CKRecord]()
+            for await batchResult in group {
+                allRecords.append(contentsOf: batchResult)
+            }
+            return allRecords
         }
         
-        private static func processBatches(contactNumbers: [String]) async throws -> [CKRecord] {
-            print("Starting processBatches with contactNumbers: \(contactNumbers)")
-            
-            let batchSize = 75
-            let batches = stride(from: 0, to: contactNumbers.count, by: batchSize).map {
-                Array(contactNumbers[$0..<min($0 + batchSize, contactNumbers.count)])
-            }
-            
-            var allMatchedRecords = [CKRecord]()
-            
-            for (index, batch) in batches.enumerated() {
-                print("Processing batch \(index + 1) of \(batches.count) with \(batch.count) contact numbers")
-                let records = try await performBatchQuery(contactNumbers: batch)
-                allMatchedRecords.append(contentsOf: records)
-            }
-            
-            print("All batches completed successfully. Total matched records: \(allMatchedRecords.count)")
-            return allMatchedRecords
-        }
-        
+        return try await batchResults
+    }
+    
     private static func stripPhoneNumber(_ number: String) -> String {
-        print("Stripping phone number: \(number)")
-        
         let stripped = number.replacingOccurrences(of: "[^0-9]", with: "", options: .regularExpression)
         
         if stripped.hasPrefix("1") && stripped.count == 11 {
-            print("US number with country code 1, removing prefix.")
             return String(stripped.dropFirst())
         } else if stripped.count == 10 {
-            print("Valid 10-digit number.")
             return stripped
         }
         
-        print("Unusual phone number format detected: \(stripped) (original: \(number))")
         return stripped
     }
     
-        private static func performBatchQuery(contactNumbers: [String]) async throws -> [CKRecord] {
-            print("Performing batch query for contact numbers: \(contactNumbers)")
-            
-            let publicDatabase = container.publicCloudDatabase
-            var matchedRecords = [CKRecord]()
-            
-            try await withThrowingTaskGroup(of: [CKRecord].self) { group in
-                // Process up to 5 queries concurrently to avoid overwhelming CloudKit
-                let batchSize = 5
-                for batch in stride(from: 0, to: contactNumbers.count, by: batchSize) {
-                    let end = min(batch + batchSize, contactNumbers.count)
-                    let currentBatch = Array(contactNumbers[batch..<end])
-                    
-                    for number in currentBatch {
-                        group.addTask {
-                            let query = CKQuery(
-                                recordType: "PublicUserRecord",
-                                predicate: NSPredicate(format: "Phone == %@", number)
-                            )
-                            
-                            let (records, _) = try await publicDatabase.records(matching: query, resultsLimit: 1)
-                            
-                            if let record = try records.first?.1.get() {
-                                if let recordPhone = record["Phone"] as? String {
-                                    print("✅ Found match for phone: \(recordPhone)")
-                                }
-                                return [record]
-                            } else {
-                                print("❌ No match found for phone: \(number)")
-                                return []
-                            }
+    private static func performBatchQueryConcurrently(contactNumbers: [String]) async throws -> [CKRecord] {
+        print("Performing concurrent batch query for \(contactNumbers.count) numbers")
+        
+        let publicDatabase = container.publicCloudDatabase
+        
+        // Create concurrent queries for each phone number
+        async let queries = withTaskGroup(of: [CKRecord].self) { group in
+            for number in contactNumbers {
+                group.addTask {
+                    do {
+                        let query = CKQuery(
+                            recordType: "PublicUserRecord",
+                            predicate: NSPredicate(format: "Phone == %@", number)
+                        )
+                        
+                        let (records, _) = try await publicDatabase.records(
+                            matching: query,
+                            resultsLimit: 1  // Limit to 1 since we only need one match per number
+                        )
+                        
+                        if let record = try records.first?.1.get(),
+                           record["Phone"] as? String != nil {
+                            return [record]
                         }
+                    } catch {
+                        print("Error querying for number \(number): \(error)")
                     }
-                    
-                    // Collect results from this batch
-                    for try await batchResults in group {
-                        matchedRecords.append(contentsOf: batchResults)
-                    }
+                    return []
                 }
             }
             
-            print("✨ Batch query completed. Total matched records: \(matchedRecords.count)")
-            return matchedRecords
+            var allRecords = [CKRecord]()
+            for await result in group {
+                allRecords.append(contentsOf: result)
+            }
+            return allRecords
         }
-
+        
+        return try await queries
+    }
+        
+    
     static func sendLoopToOtherUser(recipientID: String, data: CKAsset, prompt: String, timestamp: Date, availableAt: Date, anonymous: Bool, completion: @escaping (Result<Void, Error>) -> Void) {
         let publicDatabase = container.publicCloudDatabase
         
@@ -335,27 +321,51 @@ class UserCloudKitUtility {
     
     static func makeFriendRequest(to userID: String, completion: @escaping (Result<CKRecord, Error>) -> Void) {
         guard let senderID = self.userData?.userID else {
+            print("🚫 Error: User ID not found. Cannot proceed with friend request.")
             completion(.failure(NSError(domain: "FriendRequestError", code: 0, userInfo: [NSLocalizedDescriptionKey: "User ID not found"])))
             return
         }
         
+        print("✅ User ID found: \(senderID)")
+        print("📨 Initiating friend request to recipient with ID: \(userID)")
+        
+        // Creating a new FriendRequest record
         let record = CKRecord(recordType: "FriendRequest")
-        record["ID"] = UUID().uuidString as CKRecordValue
+        let uniqueID = UUID().uuidString
+        record["ID"] = uniqueID as CKRecordValue
         record["SenderID"] = senderID as CKRecordValue
         record["RecipientID"] = userID as CKRecordValue
+        record["IsAccepted"] = false as CKRecordValue
+        
+        print("📄 FriendRequest Record Created:")
+        print("   - Record ID: \(uniqueID)")
+        print("   - Sender ID: \(senderID)")
+        print("   - Recipient ID: \(userID)")
+        print("   - IsAccepted: false")
         
         let publicDB = container.publicCloudDatabase
+        print("🌐 Saving FriendRequest record to the public database...")
+
         publicDB.save(record) { savedRecord, error in
             DispatchQueue.main.async {
                 if let error = error {
+                    print("❌ Error saving FriendRequest record: \(error.localizedDescription)")
                     completion(.failure(error))
                 } else if let savedRecord = savedRecord {
+                    print("✅ FriendRequest record saved successfully.")
+                    print("   - Record ID: \(savedRecord.recordID)")
+                    print("   - Saved Sender ID: \(savedRecord["SenderID"] ?? "N/A")")
+                    print("   - Saved Recipient ID: \(savedRecord["RecipientID"] ?? "N/A")")
+                    print("   - Saved IsAccepted: \(savedRecord["IsAccepted"] ?? "N/A")")
                     completion(.success(savedRecord))
+                } else {
+                    print("⚠️ Unexpected outcome: Record was neither saved nor did an error occur.")
+                    completion(.failure(NSError(domain: "FriendRequestError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Unexpected outcome: Record was neither saved nor did an error occur."])))
                 }
             }
         }
     }
-    
+
     static func getFriendRequests() async -> [FriendRequest] {
         guard let userID = self.userData?.userID else {
             return []
@@ -380,6 +390,10 @@ class UserCloudKitUtility {
         }
         
         return friendRequests
+    }
+    
+    static func acceptFriendRequest(requestID: String) {
+        
     }
 }
 

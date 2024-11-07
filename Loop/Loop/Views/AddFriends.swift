@@ -9,14 +9,16 @@ import SwiftUI
 import CloudKit
 
 struct AddFriends: View {
-    @State private var matchedContacts: [CKRecord] = []
-    @State private var friendRequestsSent: Set<String> = []
+    @ObservedObject var friendManager = FriendsManager()
+    
     @State private var loading = true
     @State private var errorMessage: String?
     @State private var showError = false
     
+    
     let accentColor = Color(hex: "A28497")
     
+    @Environment (\.dismiss) var dismiss
     var body: some View {
         ZStack {
             WaveBackground()
@@ -26,19 +28,74 @@ struct AddFriends: View {
                     Text("Add Friends")
                         .font(.system(size: 36, weight: .thin))
                         .foregroundColor(.black)
-                        .padding(.top, 20)
-                        .padding(.horizontal)
                     
                     Spacer()
+                    
+                    Button(action: { dismiss() }) {
+                       Image(systemName: "xmark")
+                           .foregroundColor(.black)
+       
+                   }
+                }
+                .padding(.top, 20)
+                .padding(.horizontal)
+                
+                if !friendManager.recievedRequests.isEmpty {
+                    HStack {
+                        Text("Pending Requests")
+                            .font(.system(size: 22, weight: .regular))
+                            .foregroundColor(.black)
+                            .padding(.top, 20)
+                            .padding(.horizontal)
+                        
+                        Spacer()
+                        
+                        Button(action: { dismiss() }) {
+                           Image(systemName: "xmark")
+                               .foregroundColor(.black)
+           
+                       }
+                    }
+                    
+                    ScrollView {
+                        LazyVStack(spacing: 15) {
+                            ForEach(Array(friendManager.recievedRequests.enumerated()), id: \.element.key.id) { index, element in
+                                let request = element.key
+                                let contact = element.value
+                                
+                                IncomingRequestWidget(
+                                    contact: contact,
+                                    friendRequestsSent: $friendManager.friendRequestsSent,
+                                    onError: { error in
+                                        errorMessage = error
+                                        showError = true
+                                    },
+                                    accepted: { isAccepted in
+                                        if isAccepted {
+                                            // Call function to handle friend acceptance
+                                        } else {
+                                            // Call function to handle friend rejection
+                                        }
+                                        // Remove the request from the dictionary
+                                        friendManager.recievedRequests.removeValue(forKey: request)
+                                    }
+                                )
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
                 }
                 
                 if loading {
-                    Spacer()
-                    ProgressView("Searching Contacts...")
-                        .progressViewStyle(CircularProgressViewStyle(tint: accentColor))
-                    Spacer()
+                    HStack {
+                        Spacer()
+                        ProgressView("Searching Contacts...")
+                            .progressViewStyle(CircularProgressViewStyle(tint: accentColor))
+                        Spacer()
+                    }
                 } else if let error = errorMessage {
                     Spacer()
+                    
                     VStack(spacing: 10) {
                         Text("Oops!")
                             .font(.system(size: 24, weight: .medium))
@@ -55,8 +112,9 @@ struct AddFriends: View {
                         .padding(.top, 10)
                     }
                     .padding()
+                    
                     Spacer()
-                } else if matchedContacts.isEmpty {
+                } else if friendManager.matchedContacts.isEmpty {
                     Spacer()
                     VStack(spacing: 10) {
                         Text("No contacts found")
@@ -78,10 +136,10 @@ struct AddFriends: View {
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 15) {
-                            ForEach(matchedContacts, id: \.recordID) { contact in
+                            ForEach(friendManager.matchedContacts, id: \.userID) { contact in
                                 FriendContactWidget(
                                     contact: contact,
-                                    friendRequestsSent: $friendRequestsSent,
+                                    friendRequestsSent: $friendManager.friendRequestsSent,
                                     onError: { error in
                                         errorMessage = error
                                         showError = true
@@ -109,27 +167,48 @@ struct AddFriends: View {
         }
     }
     
+    private func getFriendRequests() async {
+        var friendRequests = await UserCloudKitUtility.getFriendRequests()
+        
+        var records: [PublicUserRecord] = []
+        for friendRequest in friendRequests {
+            guard let record = await UserCloudKitUtility.getPublicUserData(userID: friendRequest.senderID) else {
+                continue
+            }
+            
+            friendManager.recievedRequests[friendRequest] = record
+        }
+        
+
+    }
+    
     private func findMatchingContacts() async {
         loading = true
         errorMessage = nil
-        
-        await UserCloudKitUtility.findMatchingContactsInCloudKit { result in
-            DispatchQueue.main.async {
-                loading = false
-                switch result {
-                case .success(let records):
-                    matchedContacts = records
-                case .failure(let error):
-                    errorMessage = error.localizedDescription
-                    showError = true
-                }
+    
+        do {
+            var matchedContacts = try await UserCloudKitUtility.findMatchingContactsInCloudKit()
+            
+            var friendRecords: [PublicUserRecord] = []
+            
+            for contact in matchedContacts {
+                guard let record = await UserCloudKitUtility.getPublicUserData(userID: contact["UserID"] as? String ?? "nil") else { continue }
+                
+                friendRecords.append(record)
             }
+            
+            friendManager.matchedContacts = friendRecords
+            loading = false
+        } catch {
+            loading = false
+            errorMessage = error.localizedDescription
+            showError = true
         }
     }
 }
 
 struct FriendContactWidget: View {
-    let contact: CKRecord
+    let contact: PublicUserRecord
     @Binding var friendRequestsSent: Set<String>
     let onError: (String) -> Void
     
@@ -139,22 +218,19 @@ struct FriendContactWidget: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 5) {
-                if let username = contact["Username"] as? String {
-                    Text(username)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.black)
-                }
-                
-                if let phone = contact["Phone"] as? String {
-                    Text(phone)
-                        .font(.system(size: 14, weight: .light))
-                        .foregroundColor(.gray)
-                }
+                Text(contact.name)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.black)
+
+                Text(contact.phone)
+                    .font(.system(size: 14, weight: .light))
+                    .foregroundColor(.gray)
+    
             }
             
             Spacer()
             
-            if friendRequestsSent.contains(contact.recordID.recordName) {
+            if friendRequestsSent.contains(contact.userID) {
                 Text("Request Sent")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(accentColor)
@@ -164,7 +240,7 @@ struct FriendContactWidget: View {
                     .cornerRadius(12)
             } else {
                 Button(action: {
-                    sendFriendRequest(to: contact.recordID.recordName)
+                    sendFriendRequest(to: contact.userID)
                 }) {
                     if isProcessing {
                         ProgressView()
@@ -225,8 +301,64 @@ struct FriendContactWidget: View {
     }
 }
 
-#Preview {
-    NavigationView {
-        AddFriends()
+struct IncomingRequestWidget: View {
+    let contact: PublicUserRecord
+    @Binding var friendRequestsSent: Set<String>
+    let onError: (String) -> Void
+    let accepted: (Bool) -> Void
+    
+    @State private var isProcessing = false
+    
+    let accentColor = Color(hex: "A28497")
+    
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 5) {
+                Text(contact.name)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.black)
+
+                Text(contact.phone)
+                    .font(.system(size: 14, weight: .light))
+                    .foregroundColor(.gray)
+            }
+            
+            Spacer()
+            
+            // Accept Button
+            Button(action: {
+                isProcessing = true
+                accepted(true)  // Call closure with true for acceptance
+                isProcessing = false
+            }) {
+                Text("Accept")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(accentColor)
+                    .cornerRadius(12)
+            }
+            .disabled(isProcessing)
+
+            Button(action: {
+                isProcessing = true
+                accepted(false)
+                isProcessing = false
+            }) {
+                Image(systemName: "xmark")
+                    .foregroundColor(.black)
+            }
+            .disabled(isProcessing)
+        }
+        .padding()
+        .background(Color.white)
+        .cornerRadius(15)
+        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
     }
+}
+
+
+#Preview {
+    AddFriends()
 }

@@ -31,6 +31,7 @@
 		9988DB912CDA792F005628DE /* FriendsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB902CDA792F005628DE /* FriendsManager.swift */; };
 		9988DB952CDA7F92005628DE /* FriendRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB942CDA7F92005628DE /* FriendRequest.swift */; };
 		9988DB972CDA8508005628DE /* AddFriends.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB962CDA8508005628DE /* AddFriends.swift */; };
+		9988DBAE2CDD25C8005628DE /* PastLoopCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DBAD2CDD25C7005628DE /* PastLoopCard.swift */; };
 		99A0C8F12CA9EF2400F9281A /* LoopApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C8F02CA9EF2400F9281A /* LoopApp.swift */; };
 		99A0C8F32CA9EF2400F9281A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C8F22CA9EF2400F9281A /* ContentView.swift */; };
 		99A0C8F52CA9EF2600F9281A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 99A0C8F42CA9EF2600F9281A /* Assets.xcassets */; };
@@ -87,6 +88,7 @@
 		9988DB902CDA792F005628DE /* FriendsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsManager.swift; sourceTree = "<group>"; };
 		9988DB942CDA7F92005628DE /* FriendRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendRequest.swift; sourceTree = "<group>"; };
 		9988DB962CDA8508005628DE /* AddFriends.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddFriends.swift; sourceTree = "<group>"; };
+		9988DBAD2CDD25C7005628DE /* PastLoopCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PastLoopCard.swift; sourceTree = "<group>"; };
 		99A0C8ED2CA9EF2400F9281A /* Loop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Loop.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		99A0C8F02CA9EF2400F9281A /* LoopApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopApp.swift; sourceTree = "<group>"; };
 		99A0C8F22CA9EF2400F9281A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -166,6 +168,7 @@
 				99F7F6E62CAC77F4009858AC /* HomeView.swift */,
 				99F7F6EC2CAC796E009858AC /* RecordLoopView.swift */,
 				9988DB842CD9BFAC005628DE /* FriendsView.swift */,
+				9988DB962CDA8508005628DE /* AddFriends.swift */,
 				99F7F6FC2CAF814B009858AC /* RecordLoopsView.swift */,
 				990E4A832CB30EAB009F88A0 /* ThankYouView.swift */,
 				990E4A852CB30EB8009F88A0 /* LoopAudioConfirmationView.swift */,
@@ -178,8 +181,8 @@
 				990E4A9B2CBDD1BB009F88A0 /* LoopVideoConfirmationView.swift */,
 				990E4A9D2CBDE063009F88A0 /* ViewPastLoopView.swift */,
 				990E4AA12CC095BE009F88A0 /* ViewAllLoopsView.swift */,
-				9988DB962CDA8508005628DE /* AddFriends.swift */,
 				9988DB7B2CD9B69D005628DE /* SendLoopToFriends.swift */,
+				9988DBAD2CDD25C7005628DE /* PastLoopCard.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -306,6 +309,7 @@
 				990E4A902CB48BDD009F88A0 /* PageType.swift in Sources */,
 				99F7F6EB2CAC7935009858AC /* AudioManager.swift in Sources */,
 				990E4A8C2CB48BAF009F88A0 /* PagesHolderView.swift in Sources */,
+				9988DBAE2CDD25C8005628DE /* PastLoopCard.swift in Sources */,
 				99F7F6FD2CAF814B009858AC /* RecordLoopsView.swift in Sources */,
 				9988DB952CDA7F92005628DE /* FriendRequest.swift in Sources */,
 				99F7F6F52CAC7DB4009858AC /* LoopManager.swift in Sources */,
