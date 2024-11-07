@@ -12,13 +12,14 @@ class FriendsManager: ObservableObject {
     
     @Published var friendsID: [String]?
     @Published var recievedLoops: [SharedLoop]?
+    @Published var friendRequests: [FriendRequest] = []
     
     init() {
         
     }
     
     func getRecievedLoops() {
-        
+        self.recievedLoops = UserCloudKitUtility.getRecievedLoops()
     }
     
     func getAllFriends() {

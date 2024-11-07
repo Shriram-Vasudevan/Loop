@@ -129,8 +129,10 @@ struct PagesHolderView: View {
                     .edgesIgnoringSafeArea(.all)
             )
             .onAppear {
-                let userData = UserCloudKitUtility.getCurrentUserData()
-                
+                Task {
+                    let userData = try await UserCloudKitUtility.getCurrentUserData()
+                    print("the userid \(userData?.userID)")
+                }
             }
         }
     }

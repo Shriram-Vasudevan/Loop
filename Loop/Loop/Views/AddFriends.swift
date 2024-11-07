@@ -47,7 +47,9 @@ struct AddFriends: View {
                             .multilineTextAlignment(.center)
                             .foregroundColor(.gray)
                         Button("Try Again") {
-                            findMatchingContacts()
+                            Task {
+                                await findMatchingContacts()
+                            }
                         }
                         .foregroundColor(accentColor)
                         .padding(.top, 10)
@@ -64,7 +66,9 @@ struct AddFriends: View {
                             .foregroundColor(.gray)
                             .multilineTextAlignment(.center)
                         Button("Refresh") {
-                            findMatchingContacts()
+                            Task {
+                                await findMatchingContacts()
+                            }
                         }
                         .foregroundColor(accentColor)
                         .padding(.top, 10)
@@ -90,7 +94,9 @@ struct AddFriends: View {
                 }
             }
             .onAppear {
-                findMatchingContacts()
+                Task {
+                    await findMatchingContacts()
+                }
             }
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -103,11 +109,11 @@ struct AddFriends: View {
         }
     }
     
-    private func findMatchingContacts() {
+    private func findMatchingContacts() async {
         loading = true
         errorMessage = nil
         
-        UserCloudKitUtility.findMatchingContactsInCloudKit { result in
+        await UserCloudKitUtility.findMatchingContactsInCloudKit { result in
             DispatchQueue.main.async {
                 loading = false
                 switch result {
