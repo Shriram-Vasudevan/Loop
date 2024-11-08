@@ -30,7 +30,7 @@ struct HomeView: View {
                 }
             
             ScrollView {
-                VStack(spacing: 32) {
+                VStack(spacing: 16) {
                     topBar
                         .padding(.top, 16)
                     
@@ -86,16 +86,20 @@ struct HomeView: View {
     
     private var todayPromptCard: some View {
         VStack(spacing: 28) {
-            VStack(alignment: .leading, spacing: 20) {
-                Text("today's reflection")
-                    .font(.system(size: 24, weight: .ultraLight))
-                    .foregroundColor(textColor)
+            HStack {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text("today's reflection")
+                        .font(.system(size: 24, weight: .ultraLight))
+                        .foregroundColor(textColor)
+                    
+                    ProgressIndicator(
+                        totalSteps: loopManager.prompts.count,
+                        currentStep: loopManager.currentPromptIndex,
+                        accentColor: accentColor
+                    )
+                }
                 
-                ProgressIndicator(
-                    totalSteps: loopManager.prompts.count,
-                    currentStep: loopManager.currentPromptIndex,
-                    accentColor: accentColor
-                )
+                Spacer()
             }
             
             VStack(alignment: .leading, spacing: 16) {
@@ -131,7 +135,7 @@ struct HomeView: View {
         }
         .padding(28)
         .background(
-            RoundedRectangle(cornerRadius: 32)
+            RoundedRectangle(cornerRadius: 10)
                 .fill(Color.white)
                 .shadow(
                     color: Color.black.opacity(0.04),
