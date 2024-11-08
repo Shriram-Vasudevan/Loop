@@ -21,7 +21,7 @@ struct AddFriends: View {
     @Environment (\.dismiss) var dismiss
     var body: some View {
         ZStack {
-            WaveBackground()
+         //   WaveBackground()
             
             VStack(alignment: .leading, spacing: 20) {
                 HStack {

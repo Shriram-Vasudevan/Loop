@@ -102,8 +102,8 @@ struct PagesHolderView: View {
                 }
             }
             .background(
-                WaveBackground()
-                    .edgesIgnoringSafeArea(.all)
+//                WaveBackground()
+//                    .edgesIgnoringSafeArea(.all)
             )
             .onAppear {
                 Task {

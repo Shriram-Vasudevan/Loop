@@ -8,9 +8,6 @@
 import SwiftUI
 import AVKit
 
-import SwiftUI
-import AVKit
-
 struct RecordLoopsView: View {
     @ObservedObject var loopManager = LoopManager.shared
     @ObservedObject var audioManager = AudioManager.shared
@@ -24,15 +21,17 @@ struct RecordLoopsView: View {
     @State private var showingFirstLaunchScreen = true
     @State var isFirstLaunch: Bool
     @State private var backgroundOpacity: Double = 0
+    @State private var wavePhase: Double = 0
     
     @Environment(\.dismiss) var dismiss
     
     let accentColor = Color(hex: "A28497")
-    let textColor = Color(hex: "333333")
+    let secondaryColor = Color(hex: "B7A284")
+    let textColor = Color(hex: "2C3E50")
     
     var body: some View {
         ZStack {
-            RecordLoopsBackground()
+            AnimatedBackground()
                 .opacity(backgroundOpacity)
                 .onAppear {
                     withAnimation(.easeIn(duration: 1.2)) {
@@ -55,7 +54,7 @@ struct RecordLoopsView: View {
                         .transition(.opacity.animation(.easeInOut(duration: 0.8)))
                 }
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, 32)
         }
         .onAppear {
             audioManager.resetRecording()
@@ -66,7 +65,7 @@ struct RecordLoopsView: View {
         GeometryReader { geometry in
             VStack(spacing: 0) {
                 topBar
-                    .padding(.bottom, 32)
+                    .padding(.bottom, 40)
                 
                 Spacer()
                 
@@ -75,13 +74,13 @@ struct RecordLoopsView: View {
                 Spacer()
                 
                 recordingButton
-                    .padding(.bottom, 48)
+                    .padding(.bottom, 60)
             }
         }
     }
     
     private var topBar: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 24) {
             HStack {
                 Button(action: {
                     if isPostRecording {
@@ -92,7 +91,7 @@ struct RecordLoopsView: View {
                 }) {
                     Image(systemName: isPostRecording ? "arrow.backward" : "xmark")
                         .font(.system(size: 20, weight: .light))
-                        .foregroundColor(accentColor.opacity(0.7))
+                        .foregroundColor(accentColor.opacity(0.8))
                 }
                 
                 Spacer()
@@ -106,37 +105,31 @@ struct RecordLoopsView: View {
                 }
             }
             
-            // Centered progress indicators with fixed width
-            HStack(spacing: 8) {
-                Spacer()
-                HStack(spacing: 6) {
-                    ForEach(0..<loopManager.prompts.count, id: \.self) { index in
-                        Capsule()
-                            .fill(index == loopManager.currentPromptIndex ? accentColor : Color(hex: "DDDDDD"))
-                            .frame(width: 24, height: 2)
-                    }
-                }
-                .frame(height: 2)
-                Spacer()
-            }
+            ProgressIndicator(totalSteps: loopManager.prompts.count,
+                            currentStep: loopManager.currentPromptIndex,
+                            accentColor: accentColor)
         }
         .padding(.top, 16)
     }
     
     private var promptArea: some View {
-        VStack(spacing: isRecording ? 16 : 40) {
+        VStack(spacing: isRecording ? 20 : 44) {
             Text(loopManager.getCurrentPrompt())
                 .font(.system(size: 44, weight: .ultraLight))
-                .foregroundColor(Color(hex: "333333"))
+                .foregroundColor(textColor)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .transition(.opacity)
+                .animation(.easeInOut, value: loopManager.getCurrentPrompt())
 
             if isRecording {
-                Text("Recording... \(timeRemaining)s")
-                    .font(.system(size: 26, weight: .ultraLight))
-                    .foregroundColor(accentColor)
-                    .transition(.opacity)
+                HStack(spacing: 12) {
+                    PulsingDot()
+                    Text("\(timeRemaining)s")
+                        .font(.system(size: 26, weight: .ultraLight))
+                        .foregroundColor(accentColor)
+                }
+                .transition(.opacity)
             }
         }
         .frame(maxWidth: .infinity)
@@ -147,39 +140,48 @@ struct RecordLoopsView: View {
             ZStack {
                 Circle()
                     .fill(Color.white)
-                    .frame(width: 88)
-                    .shadow(color: Color.black.opacity(0.15), radius: 15, x: 0, y: 8)
+                    .frame(width: 96)
+                    .shadow(color: accentColor.opacity(0.2), radius: 20, x: 0, y: 8)
                 
-                // Main button circle
                 Circle()
-                    .fill(isRecording ? accentColor : .white)
-                    .frame(width: 84)
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                isRecording ? accentColor : .white,
+                                isRecording ? accentColor.opacity(0.9) : .white
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 88)
                     .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                 
                 if isRecording {
-                    // Stop recording symbol
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(.white)
-                        .frame(width: 28, height: 28)
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.white)
+                        .frame(width: 26, height: 26)
                 } else {
-                    // Record symbol with gradient
                     Circle()
                         .fill(
                             LinearGradient(
                                 gradient: Gradient(colors: [
                                     accentColor,
-                                    accentColor.opacity(0.8)
+                                    accentColor.opacity(0.85)
                                 ]),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .frame(width: 72)
-                        .shadow(color: accentColor.opacity(0.3), radius: 8, x: 0, y: 4)
+                        .frame(width: 74)
+                }
+            
+                if isRecording {
+                    PulsingRing(color: accentColor)
                 }
             }
-            .scaleEffect(isRecording ? 1.05 : 1.0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isRecording)
+            .scaleEffect(isRecording ? 1.08 : 1.0)
+            .animation(.spring(response: 0.35, dampingFraction: 0.6), value: isRecording)
         }
     }
     
@@ -187,7 +189,7 @@ struct RecordLoopsView: View {
         VStack {
             LoopAudioConfirmationView(
                 audioURL: audioManager.getRecordedAudioFile() ?? URL(fileURLWithPath: ""),
-                waveformData: generateRandomWaveform(count: 30),
+                waveformData: generateRandomWaveform(count: 40),
                 onComplete: { completeRecording() },
                 onRetry: { retryRecording() }
             )
@@ -195,25 +197,30 @@ struct RecordLoopsView: View {
     }
     
     private var thankYouScreen: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 24) {
             Text("thank you for looping")
-                .font(.system(size: 32, weight: .thin))
+                .font(.system(size: 36, weight: .thin))
                 .foregroundColor(textColor)
                 .multilineTextAlignment(.center)
             
             Spacer()
             
-            Text("see you tomorrow for more loops")
-                .font(.system(size: 22, weight: .thin))
-                .foregroundColor(Color.gray)
-                .multilineTextAlignment(.center)
+            VStack(spacing: 12) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 32, weight: .thin))
+                    .foregroundColor(accentColor)
+                
+                Text("see you tomorrow")
+                    .font(.system(size: 24, weight: .thin))
+                    .foregroundColor(Color.gray)
+            }
             
             Spacer()
         }
         .frame(maxWidth: .infinity)
         .onAppear {
             audioManager.resetRecording()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                 dismiss()
             }
         }
@@ -222,34 +229,54 @@ struct RecordLoopsView: View {
     private var firstLaunchOrQuietSpaceScreen: some View {
         Group {
             if isFirstLaunch {
-                Text("it's time to loop")
-                    .font(.system(size: 32, weight: .thin))
-                    .foregroundColor(textColor)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                            withAnimation {
-                                isFirstLaunch = false
-                            }
-                        }
-                    }
+                welcomeView
             } else {
-                Text("find a quiet space")
-                    .font(.system(size: 32, weight: .thin))
-                    .foregroundColor(textColor)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                            withAnimation {
-                                showingFirstLaunchScreen = false
-                            }
-                        }
-                    }
+                quietSpaceView
             }
         }
     }
+    
+    private var welcomeView: some View {
+        VStack(spacing: 24) {
+            Text("it's time to loop")
+                .font(.system(size: 36, weight: .thin))
+                .foregroundColor(textColor)
+                .multilineTextAlignment(.center)
+            
+            FloatingElements()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                withAnimation {
+                    isFirstLaunch = false
+                }
+            }
+        }
+    }
+    
+    private var quietSpaceView: some View {
+        VStack(spacing: 24) {
+            Text("find a quiet space")
+                .font(.system(size: 36, weight: .thin))
+                .foregroundColor(textColor)
+                .multilineTextAlignment(.center)
+            
+            Image(systemName: "ear")
+                .font(.system(size: 32, weight: .thin))
+                .foregroundColor(accentColor.opacity(0.8))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                withAnimation {
+                    showingFirstLaunchScreen = false
+                }
+            }
+        }
+    }
+    
+    // MARK: - Helper Functions
     
     private func toggleRecording() {
         withAnimation(.easeInOut(duration: 0.3)) {
@@ -320,120 +347,160 @@ struct RecordLoopsView: View {
         }
     }
     
-    func generateRandomWaveform(count: Int, minHeight: CGFloat = 10, maxHeight: CGFloat = 60) -> [CGFloat] {
+    func generateRandomWaveform(count: Int, minHeight: CGFloat = 12, maxHeight: CGFloat = 64) -> [CGFloat] {
         (0..<count).map { _ in
             CGFloat.random(in: minHeight...maxHeight)
         }
     }
 }
 
-struct RecordLoopsBackground: View {
-    let accentColor = Color(hex: "A28497")
-    let complementaryColor = Color(hex: "84A297")
+struct AnimatedBackground: View {
     @State private var animate = false
-    @State private var pulseScale: CGFloat = 1.0
     
     var body: some View {
         ZStack {
-            // Base background color
-            Color(hex: "F5F5F5").edgesIgnoringSafeArea(.all)
+
+            Color(hex: "FAFBFC").edgesIgnoringSafeArea(.all)
             
-            // Large gradient spheres
-            ZStack {
-                // Bottom right sphere
-                Circle()
+            ForEach(0..<3) { index in
+                WaveShape(frequency: Double(index + 1) * 0.5,
+                         amplitude: 100 - Double(index) * 20,
+                         phase: animate ? .pi * 2 : 0)
                     .fill(
-                        RadialGradient(
-                            gradient: Gradient(colors: [
-                                complementaryColor.opacity(0.2),
-                                complementaryColor.opacity(0.05)
-                            ]),
-                            center: .center,
-                            startRadius: 100,
-                            endRadius: 300
+                        LinearGradient(
+                            colors: [
+                                Color(hex: "94A7B7").opacity(0.03),
+                                Color(hex: "94A7B7").opacity(0.06)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
                         )
                     )
-                    .frame(width: 600, height: 600)
-                    .offset(x: 150, y: 300)
-                    .blur(radius: 60)
-                    .scaleEffect(animate ? 1.1 : 1.0)
-                    .animation(
-                        Animation.easeInOut(duration: 8)
-                        .repeatForever(autoreverses: true),
-                        value: animate
-                    )
-                
-                // Top left sphere
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            gradient: Gradient(colors: [
-                                accentColor.opacity(0.2),
-                                accentColor.opacity(0.05)
-                            ]),
-                            center: .center,
-                            startRadius: 50,
-                            endRadius: 250
-                        )
-                    )
-                    .frame(width: 500, height: 500)
-                    .offset(x: -100, y: -200)
-                    .blur(radius: 50)
-                    .scaleEffect(animate ? 1.15 : 1.0)
-                    .animation(
-                        Animation.easeInOut(duration: 10)
-                        .repeatForever(autoreverses: true),
-                        value: animate
-                    )
-            }
-            
-            // Pulsating rings
-            ZStack {
-                ForEach(0..<3) { index in
-                    Circle()
-                        .stroke(
-                            accentColor.opacity(0.1),
-                            lineWidth: 1
-                        )
-                        .frame(width: 200 + CGFloat(index * 80))
-                        .scaleEffect(pulseScale)
-                        .animation(
-                            Animation.easeInOut(duration: 3)
-                            .repeatForever(autoreverses: true)
-                            .delay(Double(index) * 0.5),
-                            value: pulseScale
-                        )
-                }
-            }
-            .offset(y: -50) // Adjust position of rings
-            
-            // Additional subtle animated elements
-            ForEach(0..<2) { index in
-                Circle()
-                    .fill(accentColor.opacity(0.05))
-                    .frame(width: 100)
-                    .offset(
-                        x: index == 0 ? -120 : 120,
-                        y: index == 0 ? 200 : -150
-                    )
-                    .blur(radius: 20)
-                    .scaleEffect(animate ? 1.2 : 0.8)
-                    .animation(
-                        Animation.easeInOut(duration: 6)
-                        .repeatForever(autoreverses: true)
-                        .delay(Double(index) * 1.5),
-                        value: animate
-                    )
+                    .offset(y: CGFloat(index) * 50)
             }
         }
         .onAppear {
-            withAnimation(.linear(duration: 1)) {
+            withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
                 animate = true
-                pulseScale = 1.15
             }
         }
     }
 }
+
+struct WaveShape: Shape {
+    let frequency: Double
+    let amplitude: Double
+    var phase: Double
+    
+    var animatableData: Double {
+        get { phase }
+        set { phase = newValue }
+    }
+    
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let width = rect.width
+        let height = rect.height
+        let midHeight = height / 2
+        
+        path.move(to: CGPoint(x: 0, y: midHeight))
+        
+        for x in stride(from: 0, through: width, by: 1) {
+            let relativeX = x / width
+            let y = sin(relativeX * .pi * frequency * 2 + phase) * amplitude + midHeight
+            path.addLine(to: CGPoint(x: x, y: y))
+        }
+        
+        path.addLine(to: CGPoint(x: width, y: height))
+        path.addLine(to: CGPoint(x: 0, y: height))
+        path.closeSubpath()
+        
+        return path
+    }
+}
+
+struct ProgressIndicator: View {
+    let totalSteps: Int
+    let currentStep: Int
+    let accentColor: Color
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(0..<totalSteps, id: \.self) { index in
+                Capsule()
+                    .fill(index == currentStep ? accentColor : Color(hex: "E8ECF1"))
+                    .frame(width: 24, height: 2)
+                    .animation(.easeInOut, value: currentStep)
+            }
+        }
+    }
+}
+
+struct PulsingDot: View {
+    @State private var isAnimating = false
+    
+    var body: some View {
+        Circle()
+            .fill(Color.red.opacity(0.8))
+            .frame(width: 8, height: 8)
+            .scaleEffect(isAnimating ? 1.5 : 1)
+            .opacity(isAnimating ? 0.5 : 1)
+            .animation(Animation.easeInOut(duration: 1).repeatForever(autoreverses: true), value: isAnimating)
+            .onAppear {
+                isAnimating = true
+            }
+    }
+}
+
+struct PulsingRing: View {
+    let color: Color
+    @State private var scale: CGFloat = 1.0
+    @State private var opacity: Double = 0.6
+    
+    var body: some View {
+        Circle()
+            .stroke(color.opacity(opacity), lineWidth: 2)
+            .frame(width: 100, height: 100)
+            .scaleEffect(scale)
+            .opacity(opacity)
+            .onAppear {
+                withAnimation(Animation.easeInOut(duration: 1.2).repeatForever(autoreverses: false)) {
+                    scale = 1.3
+                    opacity = 0
+                }
+            }
+    }
+}
+
+struct FloatingElements: View {
+    @State private var offsetY: CGFloat = 0
+    
+    var body: some View {
+        ZStack {
+            ForEach(0..<3) { index in
+                Circle()
+                    .fill(Color(hex: "94A7B7").opacity(0.1))
+                    .frame(width: 12, height: 12)
+                    .offset(
+                        x: CGFloat(index * 20 - 20),
+                        y: offsetY + CGFloat(index * 15)
+                    )
+                    .animation(
+                        Animation.easeInOut(duration: 2)
+                            .repeatForever(autoreverses: true)
+                            .delay(Double(index) * 0.3),
+                        value: offsetY
+                    )
+            }
+        }
+        .onAppear {
+            offsetY = -20
+        }
+    }
+}
+
+
+
 
 #Preview {
     RecordLoopsView(isFirstLaunch: true)

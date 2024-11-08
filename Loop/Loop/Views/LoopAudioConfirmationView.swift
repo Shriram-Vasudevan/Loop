@@ -11,157 +11,104 @@ import AVKit
 struct LoopAudioConfirmationView: View {
     let audioURL: URL
     let waveformData: [CGFloat]
-    let accentColor = Color(hex: "A28497")
-    let backgroundColor = Color(hex: "F5F5F5")
-    
-    @State private var audioPlayer: AVAudioPlayer?
-    @State private var isPlaying = false
-    @State private var progress: CGFloat = 0
-    @State private var timer: Timer?
-    
     let onComplete: () -> Void
     let onRetry: () -> Void
     
+    let accentColor = Color(hex: "A28497")
+    let secondaryColor = Color(hex: "B7A284")
+    let textColor = Color(hex: "2C3E50")
+    
     var body: some View {
-        ZStack {
-            backgroundColor.edgesIgnoringSafeArea(.all)
+        VStack(spacing: 40) {
+            Text("review your loop")
+                .font(.system(size: 32, weight: .thin))
+                .foregroundColor(textColor)
+                .padding(.top, 24)
             
             VStack(spacing: 24) {
-                Text("Review Your Recording")
-                    .font(.system(size: 28, weight: .light))
-                    .foregroundColor(Color(hex: "333333"))
-                
-                waveformView
-                    .frame(height: 100)
-                    .padding(.horizontal)
-                
-                playbackControls
-                
-                retryAndCompleteButtons
+                WaveformView(waveformData: waveformData, color: accentColor.opacity(0.8))
+                AudioPlayerControls(audioURL: audioURL, accentColor: accentColor)
             }
-            .padding()
-        }
-        .onAppear(perform: setupAudioPlayer)
-        .onDisappear {
-            stopPlayback()
-            timer?.invalidate()
-        }
-    }
-    
-    private var waveformView: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .leading) {
-                waveformShape(for: geometry.size, progress: 1.0)
-                    .fill(Color(hex: "DDDDDD"))
-                
-                waveformShape(for: geometry.size, progress: progress)
-                    .fill(accentColor)
-            }
-        }
-    }
-    
-    private func waveformShape(for size: CGSize, progress: CGFloat) -> Path {
-        Path { path in
-            let width = size.width
-            let height = size.height
-            let midY = height / 2
-            let sampleCount = waveformData.count
-            let step = width / CGFloat(sampleCount)
+            .padding(.vertical, 20)
             
-            for i in 0..<sampleCount {
-                let x = CGFloat(i) * step
-                if x > width * progress { break }
+            VStack(spacing: 16) {
+                Button(action: onComplete) {
+                    Text("sounds good")
+                        .font(.system(size: 18, weight: .light))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(accentColor)
+                        )
+                }
                 
-                let normalizedAmplitude = CGFloat(waveformData[i])
-                let y1 = midY - (normalizedAmplitude * height / 2)
-                let y2 = midY + (normalizedAmplitude * height / 2)
-                
-                path.move(to: CGPoint(x: x, y: y1))
-                path.addLine(to: CGPoint(x: x, y: y2))
+                Button(action: onRetry) {
+                    Text("try again")
+                        .font(.system(size: 18, weight: .light))
+                        .foregroundColor(accentColor)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(accentColor, lineWidth: 1)
+                        )
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 40)
+        }
+    }
+}
+
+struct WaveformView: View {
+    let waveformData: [CGFloat]
+    let color: Color
+    @State private var showBars = false
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(Array(waveformData.enumerated()), id: \.offset) { index, height in
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(color)
+                    .frame(width: 3, height: showBars ? height : 0)
+                    .animation(
+                        .spring(response: 0.5, dampingFraction: 0.7)
+                        .delay(Double(index) * 0.02),
+                        value: showBars
+                    )
             }
         }
-    }
-    
-    private var playbackControls: some View {
-        HStack(spacing: 20) {
-            Button(action: togglePlayback) {
-                Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 44, height: 44)
-                    .foregroundColor(accentColor)
-            }
-            
-            Text(formattedProgress)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(Color(hex: "333333"))
+        .frame(height: 70)
+        .onAppear {
+            showBars = true
         }
     }
+}
+
+struct AudioPlayerControls: View {
+    let audioURL: URL
+    @State private var isPlaying = false
+    let accentColor: Color
     
-    private var retryAndCompleteButtons: some View {
-        HStack(spacing: 20) {
-            Button(action: onRetry) {
-                Text("Retry")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 120, height: 44)
-                    .background(Color.red)
-                    .cornerRadius(8)
-            }
-            
-            Button(action: onComplete) {
-                Text("Complete")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 120, height: 44)
-                    .background(accentColor)
-                    .cornerRadius(8)
-            }
-        }
-    }
-    
-    private var formattedProgress: String {
-        let duration = audioPlayer?.duration ?? 0
-        let currentTime = duration * Double(progress)
-        return String(format: "%.2f / %.2f", currentTime, duration)
-    }
-    
-    private func setupAudioPlayer() {
-        do {
-            audioPlayer = try AVAudioPlayer(contentsOf: audioURL)
-            audioPlayer?.prepareToPlay()
-        } catch {
-            print("Error setting up audio player: \(error.localizedDescription)")
-        }
-    }
-    
-    private func togglePlayback() {
-        if isPlaying {
-            audioPlayer?.pause()
-            timer?.invalidate()
-        } else {
-            audioPlayer?.play()
-            startUpdatingProgress()
-        }
-        isPlaying.toggle()
-    }
-    
-    private func stopPlayback() {
-        audioPlayer?.stop()
-        isPlaying = false
-        progress = 0
-    }
-    
-    private func startUpdatingProgress() {
-        guard let player = audioPlayer else { return }
-        
-        timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { timer in
-            if player.isPlaying {
-                self.progress = CGFloat(player.currentTime / player.duration)
-            } else {
-                timer.invalidate()
-                self.isPlaying = false
+    var body: some View {
+        HStack(spacing: 24) {
+            Button(action: {
+                isPlaying.toggle()
+            }) {
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 56, height: 56)
+                    .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                    .overlay(
+                        Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                            .font(.system(size: 22))
+                            .foregroundColor(accentColor)
+                            .offset(x: isPlaying ? 0 : 2)
+                    )
             }
         }
     }
 }
+

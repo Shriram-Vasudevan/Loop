@@ -54,7 +54,7 @@ struct InsightsView: View {
                 goalSuggestionView
             }
             .padding(.horizontal, 16)
-            .background(WaveBackground())
+          //  .background(WaveBackground())
         }
     }
 

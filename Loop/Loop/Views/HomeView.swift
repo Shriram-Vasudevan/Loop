@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-
 struct HomeView: View {
     @ObservedObject var loopManager = LoopManager.shared
     @State private var showingRecordLoopsView = false
@@ -15,13 +14,13 @@ struct HomeView: View {
     @State private var backgroundOpacity: Double = 0
     
     let accentColor = Color(hex: "A28497")
-    let complementaryColor = Color(hex: "84A297")
-    let backgroundColor = Color.white
+    let secondaryColor = Color(hex: "B7A284")
+    let backgroundColor = Color(hex: "FAFBFC")
     let surfaceColor = Color(hex: "F8F5F7")
+    let textColor = Color(hex: "2C3E50")
     
     var body: some View {
         ZStack {
-            // Animated background
             HomeBackground()
                 .opacity(backgroundOpacity)
                 .onAppear {
@@ -31,21 +30,25 @@ struct HomeView: View {
                 }
             
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: 32) {
                     topBar
+                        .padding(.top, 16)
                     
                     if !loopManager.areAllPromptsDone() {
                         todayPromptCard
+                            .transition(.opacity)
                     }
                     
                     if loopManager.pastLoops.count > 0 {
                         memoryLaneSection
+                            .transition(.opacity)
                     }
                     
                     insightsCard
+                        .transition(.opacity)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
             }
         }
         .onAppear {
@@ -69,48 +72,40 @@ struct HomeView: View {
     private var topBar: some View {
         HStack {
             Text("loop")
-                .font(.system(size: 36, weight: .light))
-                .foregroundColor(.black)
+                .font(.system(size: 40, weight: .ultraLight))
+                .foregroundColor(textColor)
             Spacer()
+            
+            CircularProgressRing(
+                progress: Double(loopManager.currentPromptIndex) / Double(loopManager.prompts.count),
+                color: accentColor
+            )
+            .frame(width: 32, height: 32)
         }
     }
     
     private var todayPromptCard: some View {
-        VStack(spacing: 24) {
-            // Progress section
-            HStack {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("today's reflection")
-                        .font(.system(size: 22, weight: .light))
-                        .foregroundColor(Color.black.opacity(0.8))
-                    
-                    // Progress indicators
-                    HStack(spacing: 6) {
-                        ForEach(0..<loopManager.prompts.count, id: \.self) { index in
-                            Capsule()
-                                .fill(index <= loopManager.currentPromptIndex ? accentColor : Color(hex: "DDDDDD"))
-                                .frame(width: 24, height: 2)
-                        }
-                    }
-                    
-                    Text("\(loopManager.currentPromptIndex + 1)/\(loopManager.prompts.count)")
-                        .font(.system(size: 16, weight: .light))
-                        .foregroundColor(accentColor)
-                }
+        VStack(spacing: 28) {
+            VStack(alignment: .leading, spacing: 20) {
+                Text("today's reflection")
+                    .font(.system(size: 24, weight: .ultraLight))
+                    .foregroundColor(textColor)
                 
-                Spacer()
+                ProgressIndicator(
+                    totalSteps: loopManager.prompts.count,
+                    currentStep: loopManager.currentPromptIndex,
+                    accentColor: accentColor
+                )
             }
             
-            // Prompt section
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 16) {
                 Text(loopManager.getCurrentPrompt())
-                    .font(.system(size: 24, weight: .light))
-                    .foregroundColor(.black)
+                    .font(.system(size: 28, weight: .ultraLight))
+                    .foregroundColor(textColor)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             
-            // Record button
             Button(action: {
                 showingRecordLoopsView = true
             }) {
@@ -121,51 +116,71 @@ struct HomeView: View {
                         .font(.system(size: 18, weight: .light))
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 54)
-                .background(accentColor)
+                .frame(height: 56)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [accentColor, accentColor.opacity(0.9)]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
                 .foregroundColor(.white)
-                .cornerRadius(27)
-                .shadow(color: accentColor.opacity(0.2), radius: 10, y: 5)
+                .cornerRadius(28)
+                .shadow(color: accentColor.opacity(0.15), radius: 12, y: 6)
             }
         }
-        .padding(24)
+        .padding(28)
         .background(
-            RoundedRectangle(cornerRadius: 24)
-                .fill(Color.white.opacity(0.9))
-                .shadow(color: Color.black.opacity(0.05), radius: 20, y: 10)
+            RoundedRectangle(cornerRadius: 32)
+                .fill(Color.white)
+                .shadow(
+                    color: Color.black.opacity(0.04),
+                    radius: 20,
+                    x: 0,
+                    y: 10
+                )
         )
     }
     
     private var memoryLaneSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("memory lane")
-                .font(.system(size: 22, weight: .light))
-                .foregroundColor(Color.black.opacity(0.8))
+        VStack(alignment: .leading, spacing: 20) {
+            HStack {
+                Text("memory lane")
+                    .font(.system(size: 24, weight: .ultraLight))
+                    .foregroundColor(textColor)
+                
+                Spacer()
+                
+                Text("\(loopManager.pastLoops.count) loops")
+                    .font(.system(size: 16, weight: .light))
+                    .foregroundColor(accentColor)
+            }
             
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
+                HStack(spacing: 20) {
                     ForEach(loopManager.pastLoops, id: \.self) { loop in
                         PastLoopCard(loop: loop, accentColor: accentColor) {
                             selectedLoop = loop
                         }
                     }
                 }
-                .padding(.bottom, 8) // For shadow space
+                .padding(.bottom, 12)
             }
         }
     }
     
     private var insightsCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 20) {
             Text("loop insights")
-                .font(.system(size: 22, weight: .light))
-                .foregroundColor(Color.black.opacity(0.8))
+                .font(.system(size: 24, weight: .ultraLight))
+                .foregroundColor(textColor)
             
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(spacing: 16) {
                 InsightRow(
                     icon: "chart.line.uptrend.xyaxis",
                     title: "monthly reflection",
-                    detail: "you've mentioned 'stress' 8 times"
+                    detail: "you've mentioned 'stress' 8 times",
+                    accentColor: accentColor
                 )
                 
                 Divider()
@@ -174,12 +189,13 @@ struct HomeView: View {
                 InsightRow(
                     icon: "leaf",
                     title: "goal suggestion",
-                    detail: "meditate for 5 minutes today"
+                    detail: "meditate for 5 minutes today",
+                    accentColor: accentColor
                 )
             }
-            .padding(20)
+            .padding(24)
             .background(
-                RoundedRectangle(cornerRadius: 20)
+                RoundedRectangle(cornerRadius: 24)
                     .fill(surfaceColor)
             )
         }
@@ -190,189 +206,171 @@ struct InsightRow: View {
     let icon: String
     let title: String
     let detail: String
+    let accentColor: Color
     
     var body: some View {
         HStack(spacing: 16) {
-            Image(systemName: icon)
-                .font(.system(size: 20, weight: .light))
-                .foregroundColor(Color(hex: "A28497"))
-                .frame(width: 24, height: 24)
+            ZStack {
+                Circle()
+                    .fill(accentColor.opacity(0.1))
+                    .frame(width: 40, height: 40)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .light))
+                    .foregroundColor(accentColor)
+            }
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.system(size: 16, weight: .light))
-                    .foregroundColor(.gray)
+                    .foregroundColor(Color(hex: "2C3E50").opacity(0.6))
                 
                 Text(detail)
                     .font(.system(size: 18, weight: .light))
-                    .foregroundColor(.black)
+                    .foregroundColor(Color(hex: "2C3E50"))
             }
         }
+    }
+}
+
+struct CircularProgressRing: View {
+    let progress: Double
+    let color: Color
+    
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(color.opacity(0.2), lineWidth: 2)
+            
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(color, lineWidth: 2)
+                .rotationEffect(.degrees(-90))
+        }
+    }
+}
+
+struct PastLoopCard: View {
+    let loop: Loop
+    let accentColor: Color
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Image(systemName: "quote.opening")
+                        .font(.system(size: 24, weight: .ultraLight))
+                        .foregroundColor(accentColor)
+                    Spacer()
+                }
+                
+                Text(loop.promptText)
+                    .font(.system(size: 18, weight: .light))
+                    .foregroundColor(Color(hex: "2C3E50"))
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(3)
+                
+                HStack {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 14, weight: .light))
+                    Text(formatDate(loop.timestamp))
+                        .font(.system(size: 14, weight: .light))
+                }
+                .foregroundColor(Color(hex: "2C3E50").opacity(0.6))
+            }
+            .frame(width: 240)
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color.white)
+                    .shadow(
+                        color: Color.black.opacity(0.04),
+                        radius: 15,
+                        x: 0,
+                        y: 8
+                    )
+            )
+        }
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter.string(from: date)
     }
 }
 
 struct HomeBackground: View {
     let accentColor = Color(hex: "A28497")
-    let complementaryColor = Color(hex: "84A297")
-    @State private var phase: Double = 0
+    let secondaryColor = Color(hex: "B7A284")
+    @State private var isAnimating = false
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Base gradient
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color.white,
-                        Color(hex: "F8F5F7").opacity(0.8)
-                    ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                
-                // Animated waves
-                ForEach(0..<3) { index in
-                    Wave(
-                        phase: phase + Double(index) * .pi / 2,
-                        amplitude: 8 + Double(index) * 4,
-                        frequency: 0.3 - Double(index) * 0.05
-                    )
-                    .fill(
-                        index % 2 == 0 ? accentColor : complementaryColor
-                    )
-                    .opacity(0.05 - Double(index) * 0.01)
-                    .blendMode(.plusLighter)
-                }
-                
-                // Gradient overlays for depth
-                RadialGradient(
-                    gradient: Gradient(colors: [
-                        accentColor.opacity(0.05),
-                        Color.clear
-                    ]),
-                    center: .topLeading,
-                    startRadius: 0,
-                    endRadius: geometry.size.width * 0.8
-                )
-                
-                RadialGradient(
-                    gradient: Gradient(colors: [
-                        complementaryColor.opacity(0.05),
-                        Color.clear
-                    ]),
-                    center: .bottomTrailing,
-                    startRadius: 0,
-                    endRadius: geometry.size.width * 0.8
-                )
-            }
-            .onAppear {
-                withAnimation(
-                    .linear(duration: 20)
-                    .repeatForever(autoreverses: false)
-                ) {
-                    phase += 2 * .pi
-                }
-            }
-        }
-        .ignoresSafeArea()
-    }
-}
-
-struct Wave: Shape {
-    let phase: Double
-    let amplitude: Double
-    let frequency: Double
-    
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let width = rect.width
-        let height = rect.height
-        let midHeight = height * 0.5
-        
-        let points = stride(
-            from: 0,
-            to: width + 10, // Overlap slightly
-            by: 5 // Adjust point density for performance
-        ).map { x -> CGPoint in
-            let relativeX = x / width
-            let y = midHeight +
-                amplitude * sin(relativeX * frequency * 2 * .pi + phase)
-            return CGPoint(x: x, y: y)
-        }
-        
-        path.move(to: CGPoint(x: 0, y: height))
-        path.addLine(to: points[0])
-        
-        for idx in 0..<points.count - 1 {
-            let control = CGPoint(
-                x: (points[idx].x + points[idx + 1].x) / 2,
-                y: (points[idx].y + points[idx + 1].y) / 2
-            )
-            path.addQuadCurve(
-                to: points[idx + 1],
-                control: control
-            )
-        }
-        
-        path.addLine(to: CGPoint(x: width, y: height))
-        path.closeSubpath()
-        
-        return path
-    }
-}
-
-// MARK: - Wave Background
-struct WaveBackground: View {
-    @State private var waveOffset: CGFloat = 0
-    
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                LinearGradient(gradient: Gradient(colors: [Color.white, Color(hex: "F8F5F7")]),
-                               startPoint: .topLeading, endPoint: .bottomTrailing)
-                    .edgesIgnoringSafeArea(.all)
-                
-                WaveLayer(phase: waveOffset, amplitude: 20, frequency: 1.5, color: Color(hex: "A28497").opacity(0.2), size: geometry.size)
-            }
-            .onAppear {
-                withAnimation(Animation.easeInOut(duration: 10).repeatForever(autoreverses: true)) {
-                    waveOffset = 30 // Slow vertical oscillation for calmness
+        ZStack {
+            Color(hex: "FAFBFC").edgesIgnoringSafeArea(.all)
+            
+            GeometryReader { geometry in
+                ZStack {
+                    // Gradient circles
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                gradient: Gradient(colors: [
+                                    accentColor.opacity(0.04),
+                                    accentColor.opacity(0.01)
+                                ]),
+                                center: .center,
+                                startRadius: 50,
+                                endRadius: 250
+                            )
+                        )
+                        .frame(width: geometry.size.width * 0.8)
+                        .offset(x: -geometry.size.width * 0.3, y: -geometry.size.height * 0.2)
+                        .blur(radius: 40)
+                    
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                gradient: Gradient(colors: [
+                                    secondaryColor.opacity(0.04),
+                                    secondaryColor.opacity(0.01)
+                                ]),
+                                center: .center,
+                                startRadius: 50,
+                                endRadius: 200
+                            )
+                        )
+                        .frame(width: geometry.size.width * 0.6)
+                        .offset(x: geometry.size.width * 0.3, y: geometry.size.height * 0.4)
+                        .blur(radius: 40)
+                    
+                    // Floating elements
+                    ForEach(0..<3) { index in
+                        Circle()
+                            .fill(accentColor.opacity(0.05))
+                            .frame(width: CGFloat(40 + index * 20))
+                            .offset(
+                                x: CGFloat(index * 100 - 100),
+                                y: CGFloat(index * 120 - 120)
+                            )
+                            .blur(radius: 20)
+                            .opacity(isAnimating ? 0.8 : 0.4)
+                            .animation(
+                                Animation.easeInOut(duration: 4)
+                                    .repeatForever(autoreverses: true)
+                                    .delay(Double(index) * 0.5),
+                                value: isAnimating
+                            )
+                    }
                 }
             }
         }
-    }
-}
-
-struct WaveLayer: View {
-    let phase: CGFloat
-    let amplitude: CGFloat
-    let frequency: CGFloat
-    let color: Color
-    let size: CGSize
-
-    var body: some View {
-        Path { path in
-            let midHeight = size.height * 0.5
-            let width = size.width
-
-            let stepSize: CGFloat = 5.0 // Reduce the number of points calculated
-
-            path.move(to: CGPoint(x: 0, y: midHeight))
-
-            for x in stride(from: 0, to: width, by: stepSize) {
-                let relativeX = x / width
-                let y = midHeight + amplitude * sin(relativeX * frequency * 2 * .pi + phase)
-                path.addLine(to: CGPoint(x: x, y: y))
-            }
-
-            path.addLine(to: CGPoint(x: width, y: size.height))
-            path.addLine(to: CGPoint(x: 0, y: size.height))
-            path.closeSubpath()
+        .onAppear {
+            isAnimating = true
         }
-        .fill(color)
-        .offset(y: phase) // Vertical oscillation
     }
 }
-
 
 #Preview {
     HomeView()

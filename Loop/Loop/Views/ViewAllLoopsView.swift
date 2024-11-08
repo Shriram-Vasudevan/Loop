@@ -24,7 +24,7 @@ struct ViewAllLoopsView: View {
     
     var body: some View {
         ZStack {
-            WaveBackground()
+//            WaveBackground()
 
             VStack(alignment: .leading, spacing: 16) {
                 Text("Your Loops")

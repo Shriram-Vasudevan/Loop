@@ -45,9 +45,9 @@ struct SendLoopToFriends: View {
     @State private var timer: Timer?
     var body: some View {
         ZStack {
-            WaveBackground()
-                .edgesIgnoringSafeArea(.all)
-            
+//            WaveBackground()
+//                .edgesIgnoringSafeArea(.all)
+//            
             VStack(spacing: 20) {
                 HStack {
                     Text("Send Loop to \(name)")

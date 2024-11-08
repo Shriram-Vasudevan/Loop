@@ -27,7 +27,7 @@ struct IntroView: View {
     
     var body: some View {
         ZStack {
-            WaveBackground()
+        //    WaveBackground()
             
             VStack {
                 if showReminderScreen {
