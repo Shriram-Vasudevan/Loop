@@ -10,20 +10,25 @@ import Foundation
 class FriendsManager: ObservableObject {
     static let shared = FriendsManager()
     
-    @Published var friendsID: [String]?
+    @Published var userData: PublicUserRecord?
+    
     @Published var recievedLoops: [SharedLoop]?
-    @Published var friendRequests: [FriendRequest] = []
+    @Published var incomingfriendRequests: [FriendRequest] = []
+    @Published var outgoingFriendRequests: [FriendRequest] = []
     
     @Published var matchedContacts: [PublicUserRecord] = []
-    @Published var friendRequestsSent: Set<String> = []
-    @Published var recievedRequests: [FriendRequest: PublicUserRecord] = [:]
     
+    @Published var anonymousLoops: [SharedLoop] = []
     init() {
         
     }
     
     func getRecievedLoops() {
         self.recievedLoops = UserCloudKitUtility.getRecievedLoops()
+    }
+    
+    func sendLoopToFriend(sharedLoop: SharedLoop, userID: String) {
+        
     }
     
     func getAllFriends() {

@@ -319,17 +319,16 @@ class UserCloudKitUtility {
         return loops
     }
     
-    static func makeFriendRequest(to userID: String, completion: @escaping (Result<CKRecord, Error>) -> Void) {
+    static func makeFriendRequest(to userID: String, completion: @escaping (FriendRequest?, Error?) -> Void) {
         guard let senderID = self.userData?.userID else {
             print("🚫 Error: User ID not found. Cannot proceed with friend request.")
-            completion(.failure(NSError(domain: "FriendRequestError", code: 0, userInfo: [NSLocalizedDescriptionKey: "User ID not found"])))
+            completion(nil, UserCloudKitError.friendRequestFailed)
             return
         }
         
         print("✅ User ID found: \(senderID)")
         print("📨 Initiating friend request to recipient with ID: \(userID)")
-        
-        // Creating a new FriendRequest record
+
         let record = CKRecord(recordType: "FriendRequest")
         let uniqueID = UUID().uuidString
         record["ID"] = uniqueID as CKRecordValue
@@ -350,30 +349,69 @@ class UserCloudKitUtility {
             DispatchQueue.main.async {
                 if let error = error {
                     print("❌ Error saving FriendRequest record: \(error.localizedDescription)")
-                    completion(.failure(error))
+                    completion(nil, UserCloudKitError.friendRequestFailed)
                 } else if let savedRecord = savedRecord {
                     print("✅ FriendRequest record saved successfully.")
                     print("   - Record ID: \(savedRecord.recordID)")
                     print("   - Saved Sender ID: \(savedRecord["SenderID"] ?? "N/A")")
                     print("   - Saved Recipient ID: \(savedRecord["RecipientID"] ?? "N/A")")
                     print("   - Saved IsAccepted: \(savedRecord["IsAccepted"] ?? "N/A")")
-                    completion(.success(savedRecord))
+                    
+                    let record = FriendRequest.from(record: savedRecord)
+                    completion(record, nil)
                 } else {
                     print("⚠️ Unexpected outcome: Record was neither saved nor did an error occur.")
-                    completion(.failure(NSError(domain: "FriendRequestError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Unexpected outcome: Record was neither saved nor did an error occur."])))
+                    completion(nil, UserCloudKitError.friendRequestFailed)
                 }
             }
         }
     }
 
-    static func getFriendRequests() async -> [FriendRequest] {
+    static func getIncomingFriendRequests() async -> [FriendRequest] {
+        guard let userID = self.userData?.userID else {
+            print("Error: No userID found in userData. Returning an empty list.")
+            return []
+        }
+        
+        print("Starting to fetch incoming friend requests for userID: \(userID)")
+        let publicDB = container.publicCloudDatabase
+        
+        let query = CKQuery(recordType: "FriendRequest", predicate: NSPredicate(format: "RecipientID == %@", argumentArray: [userID]))
+        
+        var friendRequests: [FriendRequest] = []
+        
+        do {
+            let (publicRecords, _) = try await publicDB.records(matching: query)
+            print("Fetched \(publicRecords.count) friend requests from database.")
+            
+            friendRequests = publicRecords.compactMap { id, result in
+                if let record = try? result.get() {
+                    print("Successfully parsed FriendRequest with ID: \(id.recordName)")
+                    print("Request ID: \(record["ID"])")
+                    return FriendRequest.from(record: record)
+                } else {
+                    print("Error: Failed to parse FriendRequest with ID: \(id.recordName)")
+                    return nil
+                }
+            }
+        } catch {
+            print("Error fetching friend requests: \(error.localizedDescription)")
+            return friendRequests
+        }
+        
+        print("Returning \(friendRequests.count) friend requests.")
+        return friendRequests
+    }
+
+    
+    static func getOutgoingFriendRequests() async -> [FriendRequest] {
         guard let userID = self.userData?.userID else {
             return []
         }
         
         let publicDB = container.publicCloudDatabase
         
-        let query = CKQuery(recordType: "FriendRequest", predicate: NSPredicate(format: "RecipientID == %@", argumentArray: [userID]))
+        let query = CKQuery(recordType: "FriendRequest", predicate: NSPredicate(format: "SenderID == %@", argumentArray: [userID]))
         
         var friendRequests: [FriendRequest] = []
         do {
@@ -392,8 +430,142 @@ class UserCloudKitUtility {
         return friendRequests
     }
     
-    static func acceptFriendRequest(requestID: String) {
+    static func acceptFriendRequest(requestID: String, senderID: String, recipientID: String) async throws {
+        print("Starting friend request acceptance process")
+        print("Request ID: \(requestID)")
+        print("Sender ID: \(senderID)")
+        print("Recipient ID: \(recipientID)")
         
+        let publicDB = container.publicCloudDatabase
+        
+        // Step 1: Find and delete the friend request
+        print("\n1. Finding friend request record...")
+        let predicate = NSPredicate(format: "ID == %@", requestID)
+        let query = CKQuery(recordType: "FriendRequest", predicate: predicate)
+        
+        do {
+            let (results, _) = try await publicDB.records(matching: query, resultsLimit: 1)
+            guard let friendRequestRecord = results.first?.1 else {
+                print("❌ Friend request not found in database")
+                throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Friend request not found"])
+            }
+            print("✅ Found friend request record")
+            
+            let id = try friendRequestRecord.get().recordID
+            try await publicDB.deleteRecord(withID: id)
+            print("✅ Successfully deleted friend request record")
+        } catch {
+            print("❌ Error in friend request deletion: \(error.localizedDescription)")
+            throw error
+        }
+        
+        // Step 2: Find sender and recipient records
+        print("\n2. Finding user records...")
+        let senderPredicate = NSPredicate(format: "UserID == %@", senderID)
+        let recipientPredicate = NSPredicate(format: "UserID == %@", recipientID)
+        
+        let senderQuery = CKQuery(recordType: "PublicUserRecord", predicate: senderPredicate)
+        let recipientQuery = CKQuery(recordType: "PublicUserRecord", predicate: recipientPredicate)
+        
+        do {
+            print("Querying for sender...")
+            let (senderResults, _) = try await publicDB.records(matching: senderQuery, resultsLimit: 1)
+            print("Sender results count: \(senderResults.count)")
+            
+            print("Querying for recipient...")
+            let (recipientResults, _) = try await publicDB.records(matching: recipientQuery, resultsLimit: 1)
+            print("Recipient results count: \(recipientResults.count)")
+            
+            guard let sender = try senderResults.first?.1.get() else {
+                print("❌ Sender record not found")
+                throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Sender not found"])
+            }
+            print("✅ Found sender record")
+            
+            guard let recipient = try recipientResults.first?.1.get() else {
+                print("❌ Recipient record not found")
+                throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Recipient not found"])
+            }
+            print("✅ Found recipient record")
+            
+            // Step 3: Update friend lists
+            print("\n3. Updating friend lists...")
+            var senderFriends = sender["Friends"] as? [String] ?? []
+            print("Current sender friends: \(senderFriends)")
+            
+            if !senderFriends.contains(recipientID) {
+                senderFriends.append(recipientID)
+                sender["Friends"] = senderFriends
+                print("Updated sender friends: \(senderFriends)")
+            } else {
+                print("Recipient already in sender's friend list")
+            }
+            
+            var recipientFriends = recipient["Friends"] as? [String] ?? []
+            print("Current recipient friends: \(recipientFriends)")
+            
+            if !recipientFriends.contains(senderID) {
+                recipientFriends.append(senderID)
+                recipient["Friends"] = recipientFriends
+                print("Updated recipient friends: \(recipientFriends)")
+            } else {
+                print("Sender already in recipient's friend list")
+            }
+            
+            // Step 4: Save the updated records
+            print("\n4. Saving updated records...")
+            let operation = CKModifyRecordsOperation(recordsToSave: [sender, recipient])
+            operation.savePolicy = .changedKeys
+            
+            // Add completion block to track operation status
+            let operationGroup = DispatchGroup()
+            operationGroup.enter()
+            
+            operation.modifyRecordsResultBlock = { result in
+                switch result {
+                case .success:
+                    print("✅ Successfully saved updated records")
+                case .failure(let error):
+                    print("❌ Failed to save records: \(error.localizedDescription)")
+                    if let ckError = error as? CKError {
+                        print("CloudKit error code: \(ckError.code.rawValue)")
+                        print("CloudKit error description: \(ckError.localizedDescription)")
+                        if let serverRecord = ckError.serverRecord {
+                            print("Server record details: \(serverRecord)")
+                        }
+                    }
+                }
+                operationGroup.leave()
+            }
+            
+            publicDB.add(operation)
+            
+            // Wait for operation to complete
+            operationGroup.wait()
+            print("Friend request acceptance process completed")
+        } catch {
+            print("❌ Error in user records processing: \(error.localizedDescription)")
+            if let ckError = error as? CKError {
+                print("CloudKit error code: \(ckError.code.rawValue)")
+                print("CloudKit error description: \(ckError.localizedDescription)")
+            }
+            throw error
+        }
+    }
+    
+    static func declineFriendRequest(requestID: String) async throws {
+        let publicDB = container.publicCloudDatabase
+
+        let predicate = NSPredicate(format: "ID == %@", requestID)
+        let query = CKQuery(recordType: "FriendRequest", predicate: predicate)
+        
+        let (results, _) = try await publicDB.records(matching: query, resultsLimit: 1)
+        guard let friendRequestRecord = results.first?.1 else {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Friend request not found"])
+        }
+        
+        let id = try friendRequestRecord.get().recordID
+        try await publicDB.deleteRecord(withID: id)
     }
 }
 
@@ -402,4 +574,5 @@ enum UserCloudKitError: Error {
     case contactFetchError(Error)
     case cloudKitError(Error)
     case batchProcessingError([Error])
+    case friendRequestFailed
 }

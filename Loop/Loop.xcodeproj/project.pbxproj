@@ -23,7 +23,6 @@
 		990E4AA02CBF0E29009F88A0 /* FirstLaunchManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A9F2CBF0E29009F88A0 /* FirstLaunchManager.swift */; };
 		990E4AA22CC095BE009F88A0 /* ViewAllLoopsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4AA12CC095BE009F88A0 /* ViewAllLoopsView.swift */; };
 		990E4AA42CC0A7CD009F88A0 /* InsightModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4AA32CC0A7CD009F88A0 /* InsightModels.swift */; };
-		9988DB7C2CD9B69D005628DE /* SendLoopToFriends.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB7B2CD9B69D005628DE /* SendLoopToFriends.swift */; };
 		9988DB852CD9BFAC005628DE /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB842CD9BFAC005628DE /* FriendsView.swift */; };
 		9988DB8B2CD9CAEE005628DE /* SharedLoop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */; };
 		9988DB8D2CDA77C8005628DE /* PrivateUserRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8C2CDA77C8005628DE /* PrivateUserRecord.swift */; };
@@ -37,6 +36,12 @@
 		99A0C8F52CA9EF2600F9281A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 99A0C8F42CA9EF2600F9281A /* Assets.xcassets */; };
 		99A0C8F82CA9EF2600F9281A /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 99A0C8F72CA9EF2600F9281A /* Preview Assets.xcassets */; };
 		99A0C9042CA9F70500F9281A /* UserCloudKitUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C9032CA9F70500F9281A /* UserCloudKitUtility.swift */; };
+		99AC6DD42CDED81100B0D0D6 /* LoopsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99AC6DD32CDED81100B0D0D6 /* LoopsView.swift */; };
+		99AC6DD62CDFFAFA00B0D0D6 /* LoopChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99AC6DD52CDFFAFA00B0D0D6 /* LoopChatView.swift */; };
+		99AC6DD82CE0199800B0D0D6 /* FluidParticleBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99AC6DD72CE0199800B0D0D6 /* FluidParticleBackground.swift */; };
+		99AC6DDA2CE01A3E00B0D0D6 /* SendLoopOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99AC6DD92CE01A3E00B0D0D6 /* SendLoopOverlay.swift */; };
+		99AC6DDC2CE0226500B0D0D6 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99AC6DDB2CE0226500B0D0D6 /* SettingsView.swift */; };
+		99AC6DDE2CE03CC600B0D0D6 /* AudioBulletJournal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99AC6DDD2CE03CC600B0D0D6 /* AudioBulletJournal.swift */; };
 		99F7F6E52CAC77E7009858AC /* IntroView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6E42CAC77E7009858AC /* IntroView.swift */; };
 		99F7F6E72CAC77F4009858AC /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6E62CAC77F4009858AC /* HomeView.swift */; };
 		99F7F6E92CAC792C009858AC /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6E82CAC792C009858AC /* NotificationManager.swift */; };
@@ -80,7 +85,6 @@
 		990E4A9F2CBF0E29009F88A0 /* FirstLaunchManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstLaunchManager.swift; sourceTree = "<group>"; };
 		990E4AA12CC095BE009F88A0 /* ViewAllLoopsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewAllLoopsView.swift; sourceTree = "<group>"; };
 		990E4AA32CC0A7CD009F88A0 /* InsightModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightModels.swift; sourceTree = "<group>"; };
-		9988DB7B2CD9B69D005628DE /* SendLoopToFriends.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendLoopToFriends.swift; sourceTree = "<group>"; };
 		9988DB842CD9BFAC005628DE /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedLoop.swift; sourceTree = "<group>"; };
 		9988DB8C2CDA77C8005628DE /* PrivateUserRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateUserRecord.swift; sourceTree = "<group>"; };
@@ -96,6 +100,12 @@
 		99A0C8F72CA9EF2600F9281A /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		99A0C9012CA9F5CA00F9281A /* Loop.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Loop.entitlements; sourceTree = "<group>"; };
 		99A0C9032CA9F70500F9281A /* UserCloudKitUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserCloudKitUtility.swift; sourceTree = "<group>"; };
+		99AC6DD32CDED81100B0D0D6 /* LoopsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopsView.swift; sourceTree = "<group>"; };
+		99AC6DD52CDFFAFA00B0D0D6 /* LoopChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopChatView.swift; sourceTree = "<group>"; };
+		99AC6DD72CE0199800B0D0D6 /* FluidParticleBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FluidParticleBackground.swift; sourceTree = "<group>"; };
+		99AC6DD92CE01A3E00B0D0D6 /* SendLoopOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendLoopOverlay.swift; sourceTree = "<group>"; };
+		99AC6DDB2CE0226500B0D0D6 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		99AC6DDD2CE03CC600B0D0D6 /* AudioBulletJournal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioBulletJournal.swift; sourceTree = "<group>"; };
 		99F7F6E42CAC77E7009858AC /* IntroView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntroView.swift; sourceTree = "<group>"; };
 		99F7F6E62CAC77F4009858AC /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		99F7F6E82CAC792C009858AC /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
@@ -164,16 +174,20 @@
 		99A0C8FE2CA9EF6500F9281A /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				990E4A8B2CB48BAF009F88A0 /* PagesHolderView.swift */,
 				99F7F6E42CAC77E7009858AC /* IntroView.swift */,
 				99F7F6E62CAC77F4009858AC /* HomeView.swift */,
+				99AC6DD32CDED81100B0D0D6 /* LoopsView.swift */,
+				99AC6DDB2CE0226500B0D0D6 /* SettingsView.swift */,
 				99F7F6EC2CAC796E009858AC /* RecordLoopView.swift */,
+				99AC6DD52CDFFAFA00B0D0D6 /* LoopChatView.swift */,
+				99AC6DD92CE01A3E00B0D0D6 /* SendLoopOverlay.swift */,
 				9988DB842CD9BFAC005628DE /* FriendsView.swift */,
 				9988DB962CDA8508005628DE /* AddFriends.swift */,
 				99F7F6FC2CAF814B009858AC /* RecordLoopsView.swift */,
 				990E4A832CB30EAB009F88A0 /* ThankYouView.swift */,
 				990E4A852CB30EB8009F88A0 /* LoopAudioConfirmationView.swift */,
 				990E4A872CB30EC0009F88A0 /* WavyBackground.swift */,
-				990E4A8B2CB48BAF009F88A0 /* PagesHolderView.swift */,
 				990E4A8D2CB48BB9009F88A0 /* SplashScreen.swift */,
 				990E4A912CB48CEF009F88A0 /* InsightsView.swift */,
 				990E4A952CBDCA51009F88A0 /* VideoRecordingView.swift */,
@@ -181,8 +195,9 @@
 				990E4A9B2CBDD1BB009F88A0 /* LoopVideoConfirmationView.swift */,
 				990E4A9D2CBDE063009F88A0 /* ViewPastLoopView.swift */,
 				990E4AA12CC095BE009F88A0 /* ViewAllLoopsView.swift */,
-				9988DB7B2CD9B69D005628DE /* SendLoopToFriends.swift */,
 				9988DBAD2CDD25C7005628DE /* PastLoopCard.swift */,
+				99AC6DD72CE0199800B0D0D6 /* FluidParticleBackground.swift */,
+				99AC6DDD2CE03CC600B0D0D6 /* AudioBulletJournal.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -301,15 +316,20 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				99AC6DDE2CE03CC600B0D0D6 /* AudioBulletJournal.swift in Sources */,
+				99AC6DDA2CE01A3E00B0D0D6 /* SendLoopOverlay.swift in Sources */,
 				990E4AA42CC0A7CD009F88A0 /* InsightModels.swift in Sources */,
 				990E4A9E2CBDE063009F88A0 /* ViewPastLoopView.swift in Sources */,
+				99AC6DD62CDFFAFA00B0D0D6 /* LoopChatView.swift in Sources */,
 				990E4A8E2CB48BB9009F88A0 /* SplashScreen.swift in Sources */,
+				99AC6DD82CE0199800B0D0D6 /* FluidParticleBackground.swift in Sources */,
 				99F7F6E92CAC792C009858AC /* NotificationManager.swift in Sources */,
 				990E4A962CBDCA51009F88A0 /* VideoRecordingView.swift in Sources */,
 				990E4A902CB48BDD009F88A0 /* PageType.swift in Sources */,
 				99F7F6EB2CAC7935009858AC /* AudioManager.swift in Sources */,
 				990E4A8C2CB48BAF009F88A0 /* PagesHolderView.swift in Sources */,
 				9988DBAE2CDD25C8005628DE /* PastLoopCard.swift in Sources */,
+				99AC6DDC2CE0226500B0D0D6 /* SettingsView.swift in Sources */,
 				99F7F6FD2CAF814B009858AC /* RecordLoopsView.swift in Sources */,
 				9988DB952CDA7F92005628DE /* FriendRequest.swift in Sources */,
 				99F7F6F52CAC7DB4009858AC /* LoopManager.swift in Sources */,
@@ -331,10 +351,10 @@
 				9988DB8B2CD9CAEE005628DE /* SharedLoop.swift in Sources */,
 				990E4A942CBDCA24009F88A0 /* VideoManager.swift in Sources */,
 				99A0C8F12CA9EF2400F9281A /* LoopApp.swift in Sources */,
-				9988DB7C2CD9B69D005628DE /* SendLoopToFriends.swift in Sources */,
 				99F7F6E72CAC77F4009858AC /* HomeView.swift in Sources */,
 				99A0C9042CA9F70500F9281A /* UserCloudKitUtility.swift in Sources */,
 				99F7F6FF2CAF8580009858AC /* Extensions.swift in Sources */,
+				99AC6DD42CDED81100B0D0D6 /* LoopsView.swift in Sources */,
 				990E4A8A2CB47FEE009F88A0 /* LaunchManager.swift in Sources */,
 				990E4A9C2CBDD1BB009F88A0 /* LoopVideoConfirmationView.swift in Sources */,
 				990E4A9A2CBDD091009F88A0 /* VideoRecordButton.swift in Sources */,

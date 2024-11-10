@@ -17,6 +17,9 @@ struct ViewPastLoopView: View {
     
     @Environment(\.dismiss) var dismiss
     
+    @State var waveformData: [CGFloat] = Array(repeating: 0, count: 40)
+    @State private var showBars = false
+    
     var body: some View {
         VStack(spacing: 20) {
             HStack {
@@ -68,6 +71,21 @@ struct ViewPastLoopView: View {
             } else {
                 if let audioURL = loop.data.fileURL {
                     VStack {
+                        HStack(spacing: 4) {
+                            ForEach(Array(waveformData.enumerated()), id: \.offset) { index, height in
+                                RoundedRectangle(cornerRadius: 3)
+                                    .fill(Color(hex: "A28497"))
+                                    .frame(width: 2, height: showBars ? height : 0)
+                                    .animation(
+                                        .spring(response: 0.5, dampingFraction: 0.7).delay(Double(index) * 0.02),
+                                        value: showBars
+                                    )
+                            }
+                        }
+                        .onAppear {
+                            generateWaveFormData()
+                        }
+                        
                         Button(action: {
                             toggleAudioPlayback(audioURL: audioURL)
                         }) {
@@ -120,6 +138,15 @@ struct ViewPastLoopView: View {
     private func stopAudioPlayback() {
         audioPlayer?.stop()
         isPlaying = false
+    }
+    
+    func generateWaveFormData() {
+        let numBars = waveformData.count
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            waveformData = (0..<numBars).map { _ in CGFloat.random(in: 12...64) }
+            showBars = true
+        }
     }
 }
 

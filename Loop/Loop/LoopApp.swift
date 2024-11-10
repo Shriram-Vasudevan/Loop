@@ -21,7 +21,7 @@ struct LoopApp: App {
 struct OpeningViewsContainer: View {
     @State var showingSplashScreen: Bool = true
     @State var showLoops: Bool = false
-    @State private var showIntroView = FirstLaunchManager.shared.isFirstLaunch
+    @State private var showIntroView = false
     
     var body: some View {
         ZStack {
@@ -29,14 +29,13 @@ struct OpeningViewsContainer: View {
                 SplashScreen(showingSplashScreen: $showingSplashScreen, showLoops: $showLoops)
                     .transition(.opacity.animation(.easeInOut(duration: 0.5)))
                     .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                            withAnimation {
-                                showingSplashScreen = false
-                            }
+                        Task {
+                            showIntroView = await FirstLaunchManager.shared.useIntroView()
                         }
+                        
                     }
                     .preferredColorScheme(.light)
-            } else if showIntroView {
+            } else if showIntroView && !showingSplashScreen{
                 IntroView(onIntroCompletion: {
                     withAnimation {
                         FirstLaunchManager.shared.markAsLaunched()

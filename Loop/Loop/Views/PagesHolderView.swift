@@ -21,9 +21,9 @@ struct PagesHolderView: View {
                         case .home:
                             HomeView()
                         case .loopCenter:
-                            InsightsView()
-                        case .friends:
-                            FriendsView()
+                            LoopsView()
+                        case .settings:
+                            SettingsView()
                     }
                     
                     Spacer()
@@ -76,17 +76,17 @@ struct PagesHolderView: View {
                         ZStack {
                             VStack {
                                 Button(action: {
-                                    pageType = .friends
+                                    pageType = .settings
                                 }, label: {
                                     VStack {
-                                        Image(pageType == .friends ? "HomeAccent" : "HomeWhite")
+                                        Image(pageType == .settings ? "HomeAccent" : "HomeWhite")
                                             .resizable()
                                             .frame(width: 30, height: 30)
                                             .aspectRatio(contentMode:  .fill)
                                         
                                         Text("Friends")
                                             .font(.caption)
-                                            .foregroundColor(pageType == .friends ? accentColor : .white)
+                                            .foregroundColor(pageType == .settings ? accentColor : .white)
                                     }
                                     .padding(.bottom)
                                 })
@@ -107,13 +107,14 @@ struct PagesHolderView: View {
             )
             .onAppear {
                 Task {
-                    guard let userData 
-                            = try await UserCloudKitUtility.getCurrentUserData() else { return }
-                    print("the userid \(userData.userID)")
-                    
-                    let name = await UserCloudKitUtility.getPublicUserData(phone: "9736109630")?.name
-                    
-                    print("the name \(name)")
+                    guard let userData
+                            = try await UserCloudKitUtility.getCurrentUserData() else { 
+                        print("failed")
+                        return }
+                    FriendsManager.shared.userData = userData
+                    print("HERE")
+                    FriendsManager.shared.incomingfriendRequests = await UserCloudKitUtility.getIncomingFriendRequests()
+                    FriendsManager.shared.outgoingFriendRequests = await UserCloudKitUtility.getOutgoingFriendRequests()
                 }
             }
         }

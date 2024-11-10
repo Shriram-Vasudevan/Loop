@@ -14,7 +14,6 @@ struct RecordLoopsView: View {
     
     @State private var isRecording = false
     @State private var isPostRecording = false
-    @State private var isAllPromptsCompleted = false
     @State private var retryAttempts = 1
     @State private var recordingTimer: Timer?
     @State private var timeRemaining: Int = 30
@@ -40,7 +39,7 @@ struct RecordLoopsView: View {
                 }
             
             VStack(spacing: 0) {
-                if isAllPromptsCompleted {
+                if loopManager.hasCompletedToday {
                     thankYouScreen
                         .transition(.opacity.animation(.easeInOut(duration: 0.8)))
                 } else if isPostRecording {
@@ -83,13 +82,9 @@ struct RecordLoopsView: View {
         VStack(spacing: 24) {
             HStack {
                 Button(action: {
-                    if isPostRecording {
-                        retryRecording()
-                    } else {
-                        dismiss()
-                    }
+                    dismiss()
                 }) {
-                    Image(systemName: isPostRecording ? "arrow.backward" : "xmark")
+                    Image(systemName: "xmark")
                         .font(.system(size: 20, weight: .light))
                         .foregroundColor(accentColor.opacity(0.8))
                 }
@@ -197,13 +192,13 @@ struct RecordLoopsView: View {
     }
     
     private var thankYouScreen: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 12) {
+            Spacer()
+            
             Text("thank you for looping")
                 .font(.system(size: 36, weight: .thin))
                 .foregroundColor(textColor)
                 .multilineTextAlignment(.center)
-            
-            Spacer()
             
             VStack(spacing: 12) {
                 Image(systemName: "sparkles")
@@ -276,8 +271,6 @@ struct RecordLoopsView: View {
         }
     }
     
-    // MARK: - Helper Functions
-    
     private func toggleRecording() {
         withAnimation(.easeInOut(duration: 0.3)) {
             isRecording.toggle()
@@ -317,23 +310,13 @@ struct RecordLoopsView: View {
     }
     
     private func completeRecording() {
-        let currentPrompt = loopManager.getCurrentPrompt()
         if let audioFileURL = audioManager.getRecordedAudioFile() {
-            loopManager.addLoop(mediaURL: audioFileURL, isVideo: false, prompt: currentPrompt)
-            loopManager.fetchRandomPastLoop()
-            proceedToNextPrompt()
-        }
-    }
-    
-    private func proceedToNextPrompt() {
-        if loopManager.isLastLoop() {
-            loopManager.nextPrompt()
-            isAllPromptsCompleted = true
-        } else {
-            loopManager.nextPrompt()
+            loopManager.addLoop(mediaURL: audioFileURL, isVideo: false, prompt: loopManager.getCurrentPrompt())
             isPostRecording = false
             isRecording = false
             timeRemaining = 30
+            
+            loopManager.moveToNextPrompt()
         }
     }
     
@@ -348,7 +331,7 @@ struct RecordLoopsView: View {
     }
     
     func generateRandomWaveform(count: Int, minHeight: CGFloat = 12, maxHeight: CGFloat = 64) -> [CGFloat] {
-        (0..<count).map { _ in
+        return (0..<count).map { _ in
             CGFloat.random(in: minHeight...maxHeight)
         }
     }

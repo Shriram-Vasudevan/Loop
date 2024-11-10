@@ -8,5 +8,5 @@
 import Foundation
 
 enum PageType {
-    case home, loopCenter, friends
+    case home, loopCenter, settings
 }

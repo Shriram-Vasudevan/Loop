@@ -25,6 +25,14 @@ class FirstLaunchManager {
         }
     }
     
+    func useIntroView() async -> Bool {
+        if let _ = try? await UserCloudKitUtility.getCurrentUserData() {
+            return false
+        }
+        
+        return isFirstLaunch
+    }
+    
     func markAsLaunched() {
         isFirstLaunch = false
     }

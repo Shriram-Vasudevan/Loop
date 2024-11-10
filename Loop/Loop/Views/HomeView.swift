@@ -34,10 +34,8 @@ struct HomeView: View {
                     topBar
                         .padding(.top, 16)
                     
-                    if !loopManager.areAllPromptsDone() {
-                        todayPromptCard
-                            .transition(.opacity)
-                    }
+                    todayPromptCard
+                        .transition(.opacity)
                     
                     if loopManager.pastLoops.count > 0 {
                         memoryLaneSection
@@ -62,8 +60,6 @@ struct HomeView: View {
                 .onDisappear {
                     if loopManager.areAllPromptsDone() {
                         loopManager.fetchRandomPastLoop()
-                    } else {
-                        loopManager.nextPrompt()
                     }
                 }
         }
@@ -76,11 +72,11 @@ struct HomeView: View {
                 .foregroundColor(textColor)
             Spacer()
             
-            CircularProgressRing(
-                progress: Double(loopManager.currentPromptIndex) / Double(loopManager.prompts.count),
-                color: accentColor
-            )
-            .frame(width: 32, height: 32)
+//            CircularProgressRing(
+//                progress: Double(loopManager.currentPromptIndex) / Double(loopManager.prompts.count),
+//                color: accentColor
+//            )
+//            .frame(width: 32, height: 32)
         }
     }
     
@@ -103,11 +99,20 @@ struct HomeView: View {
             }
             
             VStack(alignment: .leading, spacing: 16) {
-                Text(loopManager.getCurrentPrompt())
-                    .font(.system(size: 28, weight: .ultraLight))
-                    .foregroundColor(textColor)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                if !loopManager.hasCompletedToday {
+                    Text(loopManager.getCurrentPrompt())
+                        .font(.system(size: 28, weight: .ultraLight))
+                        .foregroundColor(textColor)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                else {
+                    Text("thanks for looping")
+                        .font(.system(size: 28, weight: .ultraLight))
+                        .foregroundColor(textColor)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
             
             Button(action: {
@@ -131,6 +136,8 @@ struct HomeView: View {
                 .foregroundColor(.white)
                 .cornerRadius(28)
                 .shadow(color: accentColor.opacity(0.15), radius: 12, y: 6)
+                .opacity(loopManager.hasCompletedToday ? 0.5 : 1)
+                .disabled(loopManager.hasCompletedToday)
             }
         }
         .padding(28)

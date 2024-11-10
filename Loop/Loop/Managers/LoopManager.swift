@@ -7,111 +7,134 @@
 
 import Foundation
 import CloudKit
+import SwiftUI
 
 class LoopManager: ObservableObject {
     static let shared = LoopManager()
-        
+    
     @Published var prompts: [String] = []
     @Published var currentPromptIndex: Int = 0
     @Published var retryAttemptsLeft: Int = 1
     @Published var pastLoops: [Loop] = []
+    @Published var loopsByDate: [Date: [Loop]] = [:]
+    @Published var recentDates: [Date] = []
+    @Published var hasCompletedToday: Bool = false
     
     let availablePrompts = [
-        "What’s something you’re grateful for today?",
+        "What's something you're grateful for today?",
         "Describe a challenge you faced recently.",
-        "What’s a goal you’re working towards?",
+        "What's a goal you're working towards?",
         "How are you feeling emotionally?",
-        "What’s something you’re looking forward to?",
+        "What's something you're looking forward to?",
         "Reflect on a recent accomplishment.",
         "Describe your current mood in one word.",
         "What did you learn today?",
-        "What’s one thing that made you smile today?",
-        "What’s a personal strength you’ve relied on lately?",
+        "What's one thing that made you smile today?",
+        "What's a personal strength you've relied on lately?",
         "How can you improve tomorrow?",
-        "What’s been on your mind lately?",
-        "What’s something you’re proud of?",
+        "What's been on your mind lately?",
+        "What's something you're proud of?",
         "How did you overcome a recent obstacle?",
         "What motivates you?",
-        "Who’s someone that inspires you?",
-        "What’s something you need to let go of?",
-        "What’s a recent positive experience?",
+        "Who's someone that inspires you?",
+        "What's something you need to let go of?",
+        "What's a recent positive experience?",
         "How do you handle stress?",
-        "What’s one thing you want to focus on tomorrow?",
-        "What’s something that challenged you today?",
+        "What's one thing you want to focus on tomorrow?",
+        "What's something that challenged you today?",
         "Describe your ideal day.",
-        "What’s something you appreciate about yourself?",
-        "What’s a habit you want to develop?",
+        "What's something you appreciate about yourself?",
+        "What's a habit you want to develop?",
         "What makes you feel energized?"
     ]
-      
+    
     private let promptCacheKey = "PromptsForTheDay"
-    private let randomPastLoops = "RandomPastLoops"
     private let promptIndexKey = "CurrentPromptIndex"
     private let retryAttemptsKey = "RetryAttemptsLeft"
     private let lastPromptDateKey = "LastPromptDate"
-    
-    @Published var loopsByDate: [Date: [Loop]] = [:]
-    @Published var recentDates: [Date] = []
+    private let stateKey = "CurrentLoopState"
     private var lastFetchedDate: Date?
     
+    @Published var moodData: [Date: String] = [
+            Date(timeIntervalSinceNow: -6 * 24 * 60 * 60): "happy",
+            Date(timeIntervalSinceNow: -5 * 24 * 60 * 60): "sad",
+            Date(timeIntervalSinceNow: -4 * 24 * 60 * 60): "stressed",
+            Date(timeIntervalSinceNow: -3 * 24 * 60 * 60): "energetic",
+            Date(timeIntervalSinceNow: -2 * 24 * 60 * 60): "anxious",
+            Date(timeIntervalSinceNow: -1 * 24 * 60 * 60): "happy"
+        ]
+
+    let moodColors: [String: Color] = [
+        "happy": Color(hex: "6FCF97"),
+        "sad": Color(hex: "56CCF2"),
+        "stressed": Color(hex: "F2994A"),
+        "energetic": Color(hex: "9B51E0"),
+        "anxious": Color(hex: "EB5757")
+    ]
+    
     init() {
-        loadCachedState()
-         checkAndResetIfNeeded()
-     }
+        checkAndResetIfNeeded()
+    
+    }
+    
+    func checkAndResetIfNeeded() {
+        if !isCacheValidForToday() {
+            selectRandomPrompts()
+            resetPromptProgress()
+            saveCachedState()
+        } else {
+            loadCachedState()
+        }
+    }
+    
+    func selectRandomPrompts() {
+        prompts = ["Share Anything"] + availablePrompts.shuffled().prefix(2).map { $0 }
+    }
+    
+    func resetPromptProgress() {
+        currentPromptIndex = 0
+        retryAttemptsLeft = 1
+        hasCompletedToday = false
+    }
+    
+    func moveToNextPrompt() {
+        guard currentPromptIndex < prompts.count - 1 else {
+            completeAllPrompts()
+            return
+        }
+        
+        currentPromptIndex += 1
+        retryAttemptsLeft = 1
 
-     // Reset logic if a new day has started or all prompts are done.
-     func checkAndResetIfNeeded() {
-         if !isCacheValidForToday() || areAllPromptsDone() {
-             selectRandomPrompts()
-             resetPromptProgress()
-         }
-     }
-
-     // Select random prompts for the day and cache them.
-     func selectRandomPrompts() {
-         prompts = ["Free Response"] + availablePrompts.shuffled().prefix(2).map { $0 }
-         saveCachedState()
-     }
-
-     // Reset prompt progress and retry attempts.
-     func resetPromptProgress() {
-         currentPromptIndex = 0
-         retryAttemptsLeft = 1
-         saveCachedState()
-     }
-
-     // Move to the next prompt and save the state.
-     func nextPrompt() {
-         if currentPromptIndex < prompts.count - 1 {
-             currentPromptIndex += 1
-             retryAttemptsLeft = 1
-             saveCachedState()
-         }
-     }
-
-     // Retrieve the current prompt.
-     func getCurrentPrompt() -> String {
-         return prompts[currentPromptIndex]
-     }
-
-     // Check if the user is on the last prompt.
-     func isLastLoop() -> Bool {
-         return currentPromptIndex == prompts.count - 1
-     }
-
-     // Check if all prompts for the day are complete.
-     func areAllPromptsDone() -> Bool {
-         return currentPromptIndex >= prompts.count
-     }
-
-     // Retry recording logic with decrementing retry attempts.
-     func retryRecording() {
-         if retryAttemptsLeft > 0 {
-             retryAttemptsLeft -= 1
-             saveCachedState()
-         }
-     }
-
+        saveCachedState()
+    }
+    
+    
+    private func completeAllPrompts() {
+        hasCompletedToday = true
+        saveCachedState()
+    }
+    
+    func getCurrentPrompt() -> String {
+        return prompts[currentPromptIndex]
+    }
+    
+    func isLastPrompt() -> Bool {
+        return currentPromptIndex == prompts.count - 1
+    }
+    
+    func retryRecording() {
+        if retryAttemptsLeft > 0 {
+            retryAttemptsLeft -= 1
+            saveCachedState()
+        }
+    }
+    
+    
+    func areAllPromptsDone() -> Bool {
+        return hasCompletedToday
+    }
+    
     func fetchRandomPastLoop() {
         LoopCloudKitUtility.getRandomLoop(completion: { randomLoop in
             if let loop = randomLoop {
@@ -122,18 +145,23 @@ class LoopManager: ObservableObject {
         })
         
     }
-
+    
     func addLoop(mediaURL: URL, isVideo: Bool, prompt: String, mood: String? = nil, freeResponse: Bool = false) {
         let loopID = UUID().uuidString
         let timestamp = Date()
         let ckAsset = CKAsset(fileURL: mediaURL)
-
-        // Create a Loop object, marking it as video or audio based on isVideo
-        let loop = Loop(id: loopID, data: ckAsset, timestamp: timestamp, lastRetrieved: timestamp, promptText: prompt, mood: mood, freeResponse: freeResponse, isVideo: isVideo)
-
+        
+        let loop = Loop(id: loopID,
+                       data: ckAsset,
+                       timestamp: timestamp,
+                       lastRetrieved: timestamp,
+                       promptText: prompt,
+                       mood: mood,
+                       freeResponse: freeResponse,
+                       isVideo: isVideo)
+        
         LoopCloudKitUtility.addLoop(loop: loop)
     }
-
     
     func fetchRecentDates(limit: Int = 6, completion: @escaping () -> Void) {
        LoopCloudKitUtility.fetchRecentLoopDates(limit: limit) { [weak self] result in
@@ -177,7 +205,7 @@ class LoopManager: ObservableObject {
     }
 
     func fetchLoopsForAllRecentDates(dates: [Date], completion: @escaping () -> Void) {
-        let group = DispatchGroup() // Manage multiple fetch requests.
+        let group = DispatchGroup()
 
         for date in dates {
             group.enter()
@@ -199,26 +227,22 @@ class LoopManager: ObservableObject {
             completion()
         }
     }
-
     
-    // Cache the current state of the prompts, index, and retries.
     private func saveCachedState() {
         UserDefaults.standard.set(prompts, forKey: promptCacheKey)
         UserDefaults.standard.set(currentPromptIndex, forKey: promptIndexKey)
         UserDefaults.standard.set(retryAttemptsLeft, forKey: retryAttemptsKey)
-        UserDefaults.standard.set(pastLoops, forKey: lastPromptDateKey)
+        UserDefaults.standard.set(hasCompletedToday, forKey: "hasCompletedToday")
         UserDefaults.standard.set(Date(), forKey: lastPromptDateKey)
     }
-
-    // Load the cached state on app launch.
+    
     private func loadCachedState() {
         prompts = UserDefaults.standard.stringArray(forKey: promptCacheKey) ?? []
         currentPromptIndex = UserDefaults.standard.integer(forKey: promptIndexKey)
         retryAttemptsLeft = UserDefaults.standard.integer(forKey: retryAttemptsKey)
-        pastLoops = (UserDefaults.standard.array(forKey: lastPromptDateKey) ?? []) as? [Loop] ?? []
+        hasCompletedToday = UserDefaults.standard.bool(forKey: "hasCompletedToday")
     }
-
-    // Check if the cache is still valid for today.
+    
     private func isCacheValidForToday() -> Bool {
         if let lastPromptDate = UserDefaults.standard.object(forKey: lastPromptDateKey) as? Date {
             return Calendar.current.isDateInToday(lastPromptDate)

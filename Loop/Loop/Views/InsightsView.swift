@@ -7,15 +7,6 @@
 
 import SwiftUI
 
-//
-//  InsightsView.swift
-//  Loop
-//
-//  Created by Shriram Vasudevan on 10/15/24.
-//
-
-import SwiftUI
-
 struct InsightsView: View {
     private let mockInsights = Insights(
         recentLoop: LoopSummary(
