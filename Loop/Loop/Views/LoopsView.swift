@@ -631,7 +631,6 @@ struct DateCell: View {
     }
 }
 
-// Continue with TimelineSection and CalendarPickerView...
 #Preview {
     LoopsView()
 }

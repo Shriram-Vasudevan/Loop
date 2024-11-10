@@ -13,6 +13,8 @@ struct HomeView: View {
     @State private var selectedLoop: Loop?
     @State private var backgroundOpacity: Double = 0
     
+    @State private var showingNewLoops = false
+    
     let accentColor = Color(hex: "A28497")
     let secondaryColor = Color(hex: "B7A284")
     let backgroundColor = Color(hex: "FAFBFC")
@@ -51,6 +53,7 @@ struct HomeView: View {
         }
         .onAppear {
             loopManager.checkAndResetIfNeeded()
+            showQueuedLoopsIfAvailable()
         }
         .fullScreenCover(item: $selectedLoop) { loop in
             ViewPastLoopView(loop: loop)
@@ -173,9 +176,11 @@ struct HomeView: View {
                         PastLoopCard(loop: loop, accentColor: accentColor) {
                             selectedLoop = loop
                         }
+                        .transition(.scale.combined(with: .opacity))
                     }
                 }
                 .padding(.bottom, 12)
+                .animation(.spring(response: 0.5, dampingFraction: 0.8), value: loopManager.pastLoops.count)
             }
         }
     }
@@ -209,6 +214,20 @@ struct HomeView: View {
                 RoundedRectangle(cornerRadius: 24)
                     .fill(surfaceColor)
             )
+        }
+    }
+    
+    private func showQueuedLoopsIfAvailable() {
+        guard !loopManager.queuedLoops.isEmpty else { return }
+        
+        withAnimation {
+            showingNewLoops = true
+        }
+        
+        loopManager.showQueuedLoops {
+            withAnimation {
+                showingNewLoops = false
+            }
         }
     }
 }

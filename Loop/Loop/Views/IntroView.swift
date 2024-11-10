@@ -250,7 +250,7 @@ struct IntroView: View {
             UserDefaults.standard.set(reminderTime, forKey: "reminderTime")
             ReminderManager.shared.requestNotificationPermissions { success in
                 if success {
-                    ReminderManager.shared.saveReminderTime(reminderTime)
+                    ReminderManager.shared.scheduleDailyReminder(at: reminderTime)
                 }
             }
         }

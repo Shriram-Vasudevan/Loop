@@ -24,6 +24,8 @@ struct PagesHolderView: View {
                             LoopsView()
                         case .settings:
                             SettingsView()
+                        case .friends:
+                            FriendsView()
                     }
                     
                     Spacer()
@@ -62,7 +64,7 @@ struct PagesHolderView: View {
                                             .frame(width: 30, height: 30)
                                             .aspectRatio(contentMode:  .fill)
                                         
-                                        Text("Insights")
+                                        Text("Loop")
                                             .font(.caption)
                                             .foregroundColor(pageType == .loopCenter ? accentColor : .white)
                                     }
@@ -84,9 +86,31 @@ struct PagesHolderView: View {
                                             .frame(width: 30, height: 30)
                                             .aspectRatio(contentMode:  .fill)
                                         
-                                        Text("Friends")
+                                        Text("Settings")
                                             .font(.caption)
                                             .foregroundColor(pageType == .settings ? accentColor : .white)
+                                    }
+                                    .padding(.bottom)
+                                })
+                            }
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            
+                        }
+                        
+                        ZStack {
+                            VStack {
+                                Button(action: {
+                                    pageType = .friends
+                                }, label: {
+                                    VStack {
+                                        Image(pageType == .friends ? "HomeAccent" : "HomeWhite")
+                                            .resizable()
+                                            .frame(width: 30, height: 30)
+                                            .aspectRatio(contentMode:  .fill)
+                                        
+                                        Text("Friends")
+                                            .font(.caption)
+                                            .foregroundColor(pageType == .friends ? accentColor : .white)
                                     }
                                     .padding(.bottom)
                                 })

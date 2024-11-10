@@ -20,6 +20,10 @@ class LoopManager: ObservableObject {
     @Published var recentDates: [Date] = []
     @Published var hasCompletedToday: Bool = false
     
+    @Published var queuedLoops: [Loop] = []
+    private let queuedLoopsKey = "QueuedLoopsKey"
+    private let pastLoopsKey = "PastLoopsKey"
+    
     let availablePrompts = [
         "What's something you're grateful for today?",
         "Describe a challenge you faced recently.",
@@ -135,6 +139,17 @@ class LoopManager: ObservableObject {
         return hasCompletedToday
     }
     
+    func handleLoopCompletion() {
+        LoopCloudKitUtility.getRandomLoop { [weak self] randomLoop in
+            if let loop = randomLoop {
+                DispatchQueue.main.async {
+                    self?.queuedLoops.append(loop)
+                    self?.saveQueuedLoops()
+                }
+            }
+        }
+    }
+    
     func fetchRandomPastLoop() {
         LoopCloudKitUtility.getRandomLoop(completion: { randomLoop in
             if let loop = randomLoop {
@@ -146,6 +161,7 @@ class LoopManager: ObservableObject {
         
     }
     
+    // Modified addLoop method
     func addLoop(mediaURL: URL, isVideo: Bool, prompt: String, mood: String? = nil, freeResponse: Bool = false) {
         let loopID = UUID().uuidString
         let timestamp = Date()
@@ -161,6 +177,158 @@ class LoopManager: ObservableObject {
                        isVideo: isVideo)
         
         LoopCloudKitUtility.addLoop(loop: loop)
+        handleLoopCompletion() 
+    }
+    
+    private func saveQueuedLoops() {
+        let cachedLoops = queuedLoops.map { loop -> [String: Any] in
+            return [
+                "id": loop.id,
+                "timestamp": loop.timestamp.timeIntervalSince1970,
+                "promptText": loop.promptText,
+                "mood": loop.mood ?? "",
+                "freeResponse": loop.freeResponse,
+                "isVideo": loop.isVideo,
+                "assetURLString": loop.data.fileURL?.absoluteString ?? "",
+                "cacheDate": Date().timeIntervalSince1970
+            ]
+        }
+        
+        // Make sure all values are property list compatible
+        if JSONSerialization.isValidJSONObject(cachedLoops) {
+            UserDefaults.standard.set(cachedLoops, forKey: queuedLoopsKey)
+        }
+    }
+    
+    private func savePastLoops() {
+        let cachedLoops = pastLoops.map { loop -> [String: Any] in
+            return [
+                "id": loop.id,
+                "timestamp": loop.timestamp.timeIntervalSince1970,
+                "promptText": loop.promptText,
+                "mood": loop.mood ?? "",
+                "freeResponse": loop.freeResponse,
+                "isVideo": loop.isVideo,
+                "assetURLString": loop.data.fileURL?.absoluteString ?? "",
+                "cacheDate": Date().timeIntervalSince1970
+            ]
+        }
+        
+        // Make sure all values are property list compatible
+        if JSONSerialization.isValidJSONObject(cachedLoops) {
+            UserDefaults.standard.set(cachedLoops, forKey: pastLoopsKey)
+        }
+    }
+    
+    private func loadCachedLoops() {
+        if let queuedData = UserDefaults.standard.array(forKey: queuedLoopsKey) as? [[String: Any]] {
+            let today = Calendar.current.startOfDay(for: Date())
+            
+            queuedLoops = queuedData.compactMap { data -> Loop? in
+                // Check if cache is from today
+                let cacheDate = Date(timeIntervalSince1970: data["cacheDate"] as? Double ?? 0)
+                guard Calendar.current.isDate(cacheDate, inSameDayAs: today),
+                      let id = data["id"] as? String,
+                      let timestampDouble = data["timestamp"] as? Double,
+                      let promptText = data["promptText"] as? String,
+                      let freeResponse = data["freeResponse"] as? Bool,
+                      let isVideo = data["isVideo"] as? Bool else {
+                    return nil
+                }
+                
+                let timestamp = Date(timeIntervalSince1970: timestampDouble)
+                let mood = (data["mood"] as? String)?.nilIfEmpty
+                let assetURLString = data["assetURLString"] as? String
+                
+                // Create CKAsset from cached URL string
+                let asset: CKAsset
+                if let urlString = assetURLString,
+                   let url = URL(string: urlString) {
+                    asset = CKAsset(fileURL: url)
+                } else {
+                    // Create empty asset if URL is missing
+                    let tempURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+                    try? Data().write(to: tempURL)
+                    asset = CKAsset(fileURL: tempURL)
+                }
+                
+                return Loop(
+                    id: id,
+                    data: asset,
+                    timestamp: timestamp,
+                    lastRetrieved: nil,
+                    promptText: promptText,
+                    mood: mood,
+                    freeResponse: freeResponse,
+                    isVideo: isVideo
+                )
+            }
+        }
+        
+        if let pastData = UserDefaults.standard.array(forKey: pastLoopsKey) as? [[String: Any]] {
+            let today = Calendar.current.startOfDay(for: Date())
+            
+            pastLoops = pastData.compactMap { data -> Loop? in
+                // Check if cache is from today
+                let cacheDate = Date(timeIntervalSince1970: data["cacheDate"] as? Double ?? 0)
+                guard Calendar.current.isDate(cacheDate, inSameDayAs: today),
+                      let id = data["id"] as? String,
+                      let timestampDouble = data["timestamp"] as? Double,
+                      let promptText = data["promptText"] as? String,
+                      let freeResponse = data["freeResponse"] as? Bool,
+                      let isVideo = data["isVideo"] as? Bool else {
+                    return nil
+                }
+                
+                let timestamp = Date(timeIntervalSince1970: timestampDouble)
+                let mood = (data["mood"] as? String)?.nilIfEmpty
+                let assetURLString = data["assetURLString"] as? String
+                
+                // Create CKAsset from cached URL string
+                let asset: CKAsset
+                if let urlString = assetURLString,
+                   let url = URL(string: urlString) {
+                    asset = CKAsset(fileURL: url)
+                } else {
+                    // Create empty asset if URL is missing
+                    let tempURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+                    try? Data().write(to: tempURL)
+                    asset = CKAsset(fileURL: tempURL)
+                }
+                
+                return Loop(
+                    id: id,
+                    data: asset,
+                    timestamp: timestamp,
+                    lastRetrieved: nil,
+                    promptText: promptText,
+                    mood: mood,
+                    freeResponse: freeResponse,
+                    isVideo: isVideo
+                )
+            }
+        }
+    }
+
+    func showQueuedLoops(completion: @escaping () -> Void) {
+        let loops = queuedLoops
+        queuedLoops.removeAll()
+        saveQueuedLoops()
+
+        for (index, loop) in loops.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.5) { [weak self] in
+                self?.pastLoops.append(loop)
+                self?.savePastLoops()
+                
+                if index == loops.count - 1 {
+                    completion()
+                }
+            }
+        }
+        
+        if loops.isEmpty {
+            completion()
+        }
     }
     
     func fetchRecentDates(limit: Int = 6, completion: @escaping () -> Void) {
