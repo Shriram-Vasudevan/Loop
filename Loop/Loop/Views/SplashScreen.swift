@@ -47,7 +47,7 @@ struct SplashScreen: View {
             .ignoresSafeArea()
             
             VStack {
-                VStack(spacing: 12) {
+                VStack(spacing: 8) {
                     Text("loop")
                         .font(.system(size: 44, weight: .ultraLight))
                         .foregroundColor(textColor)
@@ -57,6 +57,7 @@ struct SplashScreen: View {
                         .foregroundColor(textColor.opacity(0.6))
                 }
                 .opacity(textOpacity)
+                .padding(.bottom, 60)
                 
                 ZStack {
                     Circle()
