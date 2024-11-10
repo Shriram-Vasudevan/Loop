@@ -9,139 +9,132 @@ import SwiftUI
 
 struct PagesHolderView: View {
     @State var pageType: PageType
-    
-    
     let accentColor = Color(hex: "A28497")
     
     var body: some View {
         NavigationStack {
             ZStack {
-                VStack {
+                VStack(spacing: 0) {
+                    // Main content
                     switch pageType {
-                        case .home:
-                            HomeView()
-                        case .loopCenter:
-                            LoopsView()
-                        case .settings:
-                            SettingsView()
-                        case .friends:
-                            FriendsView()
+                    case .home:
+                        HomeView()
+                    case .journal:
+                        LoopsView()
+                    case .settings:
+                        SettingsView()
+                    case .insights:
+                        InsightsView()
                     }
                     
-                    Spacer()
-                                                        
-                    HStack {
-                        ZStack {
-                            VStack {
-                                Button(action: {
-                                    pageType = .home
-                                }, label: {
-                                    VStack {
-                                        Image(pageType == .home ? "HomeAccent" : "HomeWhite")
-                                            .resizable()
-                                            .frame(width: 30, height: 30)
-                                            .aspectRatio(contentMode:  .fill)
-                                        
-                                        Text("Home")
-                                            .font(.caption)
-                                            .foregroundColor(pageType == .home ? accentColor : .white)
-                                    }
-                                    .padding(.bottom)
-                                })
-                            }
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            
+                    // Custom tab bar
+                    HStack(spacing: 0) {
+                        // Home tab
+                        TabBarButton(
+                            icon: "house",
+                            label: "home",
+                            isSelected: pageType == .home,
+                            accentColor: accentColor
+                        ) {
+                            pageType = .home
                         }
                         
-                        ZStack {
-                            VStack {
-                                Button(action: {
-                                    pageType = .loopCenter
-                                }, label: {
-                                    VStack {
-                                        Image(pageType == .loopCenter ? "InsightsAccent" : "InsightsWhite")
-                                            .resizable()
-                                            .frame(width: 30, height: 30)
-                                            .aspectRatio(contentMode:  .fill)
-                                        
-                                        Text("Loop")
-                                            .font(.caption)
-                                            .foregroundColor(pageType == .loopCenter ? accentColor : .white)
-                                    }
-                                    .padding(.bottom)
-                                })
-                            }
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            
+                        // Journal tab
+                        TabBarButton(
+                            icon: "book",
+                            label: "journal",
+                            isSelected: pageType == .journal,
+                            accentColor: accentColor
+                        ) {
+                            pageType = .journal
                         }
                         
-                        ZStack {
-                            VStack {
-                                Button(action: {
-                                    pageType = .settings
-                                }, label: {
-                                    VStack {
-                                        Image(pageType == .settings ? "HomeAccent" : "HomeWhite")
-                                            .resizable()
-                                            .frame(width: 30, height: 30)
-                                            .aspectRatio(contentMode:  .fill)
-                                        
-                                        Text("Settings")
-                                            .font(.caption)
-                                            .foregroundColor(pageType == .settings ? accentColor : .white)
-                                    }
-                                    .padding(.bottom)
-                                })
-                            }
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            
+                        // Center Record Button
+                        RecordButton(accentColor: accentColor) {
+                            // Handle record action
                         }
                         
-                        ZStack {
-                            VStack {
-                                Button(action: {
-                                    pageType = .friends
-                                }, label: {
-                                    VStack {
-                                        Image(pageType == .friends ? "HomeAccent" : "HomeWhite")
-                                            .resizable()
-                                            .frame(width: 30, height: 30)
-                                            .aspectRatio(contentMode:  .fill)
-                                        
-                                        Text("Friends")
-                                            .font(.caption)
-                                            .foregroundColor(pageType == .friends ? accentColor : .white)
-                                    }
-                                    .padding(.bottom)
-                                })
-                            }
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            
-                        }
 
+                        TabBarButton(
+                            icon: "chart.bar",
+                            label: "insights",
+                            isSelected: pageType == .insights,
+                            accentColor: accentColor
+                        ) {
+                            pageType = .insights
+                        }
                         
+                        // Settings tab
+                        TabBarButton(
+                            icon: "gearshape",
+                            label: "settings",
+                            isSelected: pageType == .settings,
+                            accentColor: accentColor
+                        ) {
+                            pageType = .settings
+                        }
                     }
-                    
-                    
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 8)
+                    .background(
+                        Color.white
+                            .shadow(color: Color.black.opacity(0.05), radius: 20, y: -5)
+                    )
                 }
             }
-            .background(
-//                WaveBackground()
-//                    .edgesIgnoringSafeArea(.all)
-            )
-            .onAppear {
-                Task {
-                    guard let userData
-                            = try await UserCloudKitUtility.getCurrentUserData() else { 
-                        print("failed")
-                        return }
-                    FriendsManager.shared.userData = userData
-                    print("HERE")
-                    FriendsManager.shared.incomingfriendRequests = await UserCloudKitUtility.getIncomingFriendRequests()
-                    FriendsManager.shared.outgoingFriendRequests = await UserCloudKitUtility.getOutgoingFriendRequests()
-                }
+            .edgesIgnoringSafeArea(.bottom)
+        }
+    }
+}
+
+struct TabBarButton: View {
+    let icon: String
+    let label: String
+    let isSelected: Bool
+    let accentColor: Color
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 22))
+                    .foregroundColor(isSelected ? accentColor : .gray.opacity(0.8))
+                
+                Text(label)
+                    .font(.system(size: 11))
+                    .foregroundColor(isSelected ? accentColor : .gray.opacity(0.8))
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+}
+
+struct RecordButton: View {
+    let accentColor: Color
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [accentColor, accentColor.opacity(0.8)]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 64, height: 64)
+                    .shadow(color: accentColor.opacity(0.3), radius: 10)
+                
+                Image(systemName: "waveform")
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundColor(.white)
             }
         }
+        .frame(maxWidth: .infinity)
     }
 }
 
