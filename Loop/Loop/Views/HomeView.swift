@@ -99,6 +99,23 @@ struct HomeView: View {
                 }
                 
                 Spacer()
+                
+                // Added decorative circle
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [accentColor, accentColor.opacity(0.7)]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 30, height: 30)
+                    
+                    Circle()
+                        .stroke(Color.white.opacity(0.3), lineWidth: 2)
+                        .frame(width: 20, height: 20)
+                }
             }
             
             VStack(alignment: .leading, spacing: 16) {

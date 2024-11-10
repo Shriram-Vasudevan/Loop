@@ -42,22 +42,22 @@ struct FloatingParticle: View {
     }
 }
 
-struct ParticleBackground: View {
-    let particleCount = 20
-    
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                ForEach(0..<particleCount, id: \.self) { index in
-                    FloatingParticle(
-                        initialPosition: CGPoint(
-                            x: CGFloat.random(in: 0...geometry.size.width),
-                            y: CGFloat.random(in: 0...geometry.size.height)
-                        ),
-                        size: CGFloat.random(in: 4...12)
-                    )
-                }
-            }
-        }
-    }
-}
+//struct ParticleBackground: View {
+//    let particleCount = 20
+//    
+//    var body: some View {
+//        GeometryReader { geometry in
+//            ZStack {
+//                ForEach(0..<particleCount, id: \.self) { index in
+//                    FloatingParticle(
+//                        initialPosition: CGPoint(
+//                            x: CGFloat.random(in: 0...geometry.size.width),
+//                            y: CGFloat.random(in: 0...geometry.size.height)
+//                        ),
+//                        size: CGFloat.random(in: 4...12)
+//                    )
+//                }
+//            }
+//        }
+//    }
+//}
