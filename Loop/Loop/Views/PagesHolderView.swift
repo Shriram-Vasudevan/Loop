@@ -76,7 +76,7 @@ struct PagesHolderView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 12)
-                    .padding(.bottom, 8)
+                    .padding(.bottom, 20)
                     .background(
                         Color.white
                             .shadow(color: Color.black.opacity(0.05), radius: 20, y: -5)

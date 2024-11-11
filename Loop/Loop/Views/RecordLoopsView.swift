@@ -11,19 +11,21 @@ import AVKit
 struct RecordLoopsView: View {
     @ObservedObject var loopManager = LoopManager.shared
     @ObservedObject var audioManager = AudioManager.shared
-    
+
     @State private var isRecording = false
     @State private var isPostRecording = false
-    @State private var retryAttempts = 1
+    @State private var isShowingMemory = false
+    @State private var isShowingMemoryMessage = false
     @State private var recordingTimer: Timer?
     @State private var timeRemaining: Int = 30
     @State private var showingFirstLaunchScreen = true
     @State var isFirstLaunch: Bool
     @State private var backgroundOpacity: Double = 0
+    @State private var messageOpacity: Double = 0
     @State private var wavePhase: Double = 0
     
     @Environment(\.dismiss) var dismiss
-    
+
     let accentColor = Color(hex: "A28497")
     let secondaryColor = Color(hex: "B7A284")
     let textColor = Color(hex: "2C3E50")
@@ -38,9 +40,16 @@ struct RecordLoopsView: View {
                     }
                 }
             
+            // Main Content
             VStack(spacing: 0) {
                 if loopManager.hasCompletedToday {
                     thankYouScreen
+                        .transition(.opacity.animation(.easeInOut(duration: 0.8)))
+                } else if isShowingMemory {
+                    memoryPlaybackView
+                        .transition(.opacity.animation(.easeInOut(duration: 0.8)))
+                } else if isShowingMemoryMessage {
+                    memoryMessageView
                         .transition(.opacity.animation(.easeInOut(duration: 0.8)))
                 } else if isPostRecording {
                     postRecordingView
@@ -133,11 +142,13 @@ struct RecordLoopsView: View {
     private var recordingButton: some View {
         Button(action: toggleRecording) {
             ZStack {
+                // Outer shadow
                 Circle()
                     .fill(Color.white)
                     .frame(width: 96)
                     .shadow(color: accentColor.opacity(0.2), radius: 20, x: 0, y: 8)
                 
+                // Main circle
                 Circle()
                     .fill(
                         LinearGradient(
@@ -153,10 +164,12 @@ struct RecordLoopsView: View {
                     .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                 
                 if isRecording {
+                    // Stop icon
                     RoundedRectangle(cornerRadius: 6)
                         .fill(Color.white)
                         .frame(width: 26, height: 26)
                 } else {
+                    // Record icon
                     Circle()
                         .fill(
                             LinearGradient(
@@ -181,13 +194,92 @@ struct RecordLoopsView: View {
     }
     
     private var postRecordingView: some View {
-        VStack {
-            LoopAudioConfirmationView(
-                audioURL: audioManager.getRecordedAudioFile() ?? URL(fileURLWithPath: ""),
-                waveformData: generateRandomWaveform(count: 40),
-                onComplete: { completeRecording() },
-                onRetry: { retryRecording() }
-            )
+            VStack {
+                LoopAudioConfirmationView(
+                    audioURL: audioManager.getRecordedAudioFile() ?? URL(fileURLWithPath: ""),
+                    waveformData: generateRandomWaveform(count: 40),
+                    onComplete: { completeRecording() },
+                    onRetry: { retryRecording() }
+                )
+            }
+        }
+        
+        private var memoryPlaybackView: some View {
+            VStack(spacing: 32) {
+                // Header
+                VStack(spacing: 16) {
+                    Text("from your past")
+                        .font(.system(size: 24, weight: .ultraLight))
+                        .foregroundColor(textColor)
+                    
+                    if let pastLoop = loopManager.currentPastLoop {
+                        Text(formatDate(pastLoop.timestamp))
+                            .font(.system(size: 18, weight: .ultraLight))
+                            .foregroundColor(accentColor)
+                    }
+                }
+                
+                Spacer()
+                
+                // Audio Player
+                if let pastLoop = loopManager.currentPastLoop {
+                    PastLoopPlayer(loop: pastLoop)
+                }
+                
+                Spacer()
+                
+                // Continue Button
+                Button(action: {
+                    withAnimation {
+                        isShowingMemory = false
+                        loopManager.moveToNextPrompt()
+                    }
+                }) {
+                    HStack(spacing: 8) {
+                        Text("continue")
+                            .font(.system(size: 18, weight: .light))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 16, weight: .light))
+                    }
+                    .frame(height: 56)
+                    .frame(maxWidth: .infinity)
+                    .background(accentColor)
+                    .foregroundColor(.white)
+                    .cornerRadius(28)
+                    .shadow(color: accentColor.opacity(0.2), radius: 10, y: 5)
+                }
+            }
+            .padding(.bottom, 40)
+        }
+        
+    private var memoryMessageView: some View {
+        VStack(spacing: 24) {
+            VStack(spacing: 16) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 44, weight: .light))
+                    .foregroundColor(accentColor)
+                
+                Text("added to memories")
+                    .font(.system(size: 32, weight: .ultraLight))
+                    .foregroundColor(textColor)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .opacity(messageOpacity)
+        .onAppear {
+            withAnimation(.easeIn(duration: 0.6)) {
+                messageOpacity = 1
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                withAnimation {
+                    messageOpacity = 0
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    isShowingMemoryMessage = false
+                    loopManager.moveToNextPrompt()
+                }
+            }
         }
     }
     
@@ -270,7 +362,7 @@ struct RecordLoopsView: View {
             }
         }
     }
-    
+
     private func toggleRecording() {
         withAnimation(.easeInOut(duration: 0.3)) {
             isRecording.toggle()
@@ -312,12 +404,33 @@ struct RecordLoopsView: View {
     private func completeRecording() {
         if let audioFileURL = audioManager.getRecordedAudioFile() {
             loopManager.addLoop(mediaURL: audioFileURL, isVideo: false, prompt: loopManager.getCurrentPrompt())
-            isPostRecording = false
-            isRecording = false
-            timeRemaining = 30
             
-            loopManager.moveToNextPrompt()
+            // Check memory bank status and handle accordingly
+            switch loopManager.memoryBankStatus {
+            case .ready:
+                Task {
+                    // Check for matching past loop
+                    if let pastLoop = try? await loopManager.fetchPastLoopForCurrentPrompt() {
+                        await MainActor.run {
+                            loopManager.currentPastLoop = pastLoop
+                            isPostRecording = false
+                            isShowingMemory = true
+                        }
+                    } else {
+                        await MainActor.run {
+                            showMemoryAddedMessage()
+                        }
+                    }
+                }
+            default:
+                showMemoryAddedMessage()
+            }
         }
+    }
+    
+    private func showMemoryAddedMessage() {
+        isPostRecording = false
+        isShowingMemoryMessage = true
     }
     
     private func retryRecording() {
@@ -330,10 +443,100 @@ struct RecordLoopsView: View {
         }
     }
     
-    func generateRandomWaveform(count: Int, minHeight: CGFloat = 12, maxHeight: CGFloat = 64) -> [CGFloat] {
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM d, yyyy"
+        return formatter.string(from: date)
+    }
+    
+    private func generateRandomWaveform(count: Int, minHeight: CGFloat = 12, maxHeight: CGFloat = 64) -> [CGFloat] {
         return (0..<count).map { _ in
             CGFloat.random(in: minHeight...maxHeight)
         }
+    }
+}
+
+struct PastLoopPlayer: View {
+    let loop: Loop
+    @State private var isPlaying = false
+    @State private var progress: Double = 0
+    @State private var audioPlayer: AVAudioPlayer?
+    @State private var timer: Timer?
+    
+    var body: some View {
+        VStack(spacing: 32) {
+            // Waveform visualization
+            HStack(spacing: 3) {
+                ForEach(0..<50) { index in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color(hex: "A28497").opacity(progress > Double(index) / 50 ? 0.8 : 0.3))
+                        .frame(width: 3, height: CGFloat.random(in: 10...50))
+                }
+            }
+            .frame(height: 50)
+            
+            // Playback controls
+            HStack(spacing: 40) {
+                Button(action: {
+                    if isPlaying {
+                        stopPlayback()
+                    } else {
+                        startPlayback()
+                    }
+                }) {
+                    Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                        .font(.system(size: 44))
+                        .foregroundColor(Color(hex: "A28497"))
+                }
+            }
+        }
+        .onAppear(perform: setupAudioPlayer)
+        .onDisappear(perform: cleanup)
+    }
+    
+    private func setupAudioPlayer() {
+        guard let url = loop.data.fileURL else { return }
+        
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.prepareToPlay()
+        } catch {
+            print("Error setting up audio player: \(error)")
+        }
+    }
+    
+    private func startPlayback() {
+        audioPlayer?.play()
+        isPlaying = true
+        startProgressTimer()
+    }
+    
+    private func stopPlayback() {
+        audioPlayer?.stop()
+        audioPlayer?.currentTime = 0
+        isPlaying = false
+        progress = 0
+        timer?.invalidate()
+        timer = nil
+    }
+    
+    private func startProgressTimer() {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
+            guard let player = audioPlayer else { return }
+            progress = player.currentTime / player.duration
+            
+            if player.currentTime >= player.duration {
+                stopPlayback()
+            }
+        }
+    }
+    
+    private func cleanup() {
+        timer?.invalidate()
+        timer = nil
+        audioPlayer?.stop()
+        audioPlayer = nil
     }
 }
 
@@ -342,7 +545,6 @@ struct AnimatedBackground: View {
     
     var body: some View {
         ZStack {
-
             Color(hex: "FAFBFC").edgesIgnoringSafeArea(.all)
             
             ForEach(0..<3) { index in
@@ -402,22 +604,22 @@ struct WaveShape: Shape {
     }
 }
 
-struct ProgressIndicator: View {
-    let totalSteps: Int
-    let currentStep: Int
-    let accentColor: Color
-    
-    var body: some View {
-        HStack(spacing: 8) {
-            ForEach(0..<totalSteps, id: \.self) { index in
-                Capsule()
-                    .fill(index == currentStep ? accentColor : Color(hex: "E8ECF1"))
-                    .frame(width: 24, height: 2)
-                    .animation(.easeInOut, value: currentStep)
-            }
-        }
-    }
-}
+//struct ProgressIndicator: View {
+//    let totalSteps: Int
+//    let currentStep: Int
+//    let accentColor: Color
+//    
+//    var body: some View {
+//        HStack(spacing: 8) {
+//            ForEach(0..<totalSteps, id: \.self) { index in
+//                Capsule()
+//                    .fill(index == currentStep ? accentColor : Color(hex: "E8ECF1"))
+//                    .frame(width: 24, height: 2)
+//                    .animation(.easeInOut, value: currentStep)
+//            }
+//        }
+//    }
+//}
 
 struct PulsingDot: View {
     @State private var isAnimating = false
@@ -481,8 +683,6 @@ struct FloatingElements: View {
         }
     }
 }
-
-
 
 
 #Preview {

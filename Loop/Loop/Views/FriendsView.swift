@@ -24,13 +24,13 @@ struct FriendsView: View {
     var body: some View {
         ZStack {
             // Animated background from HomeView
-            HomeBackground()
-                .opacity(backgroundOpacity)
-                .onAppear {
-                    withAnimation(.easeIn(duration: 1.2)) {
-                        backgroundOpacity = 1
-                    }
-                }
+//            HomeBackground()
+//                .opacity(backgroundOpacity)
+//                .onAppear {
+//                    withAnimation(.easeIn(duration: 1.2)) {
+//                        backgroundOpacity = 1
+//                    }
+//                }
             
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 32) {

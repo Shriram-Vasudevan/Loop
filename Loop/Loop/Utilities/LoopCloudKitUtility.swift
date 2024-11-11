@@ -14,6 +14,31 @@ class LoopCloudKitUtility {
     
     static let fetchLimit = 25
     
+    static private var distinctDaysCache: Int?
+    static private var lastCacheUpdate: Date?
+    static private let cacheValidityDuration: TimeInterval = 3600 // 1 hour
+    
+    static func checkDailyCompletion(for dates: [Date]) async throws -> [Date: Bool] {
+        let privateDB = container.privateCloudDatabase
+        var completionStatus: [Date: Bool] = [:]
+        let calendar = Calendar.current
+        
+        for date in dates {
+            let startOfDay = calendar.startOfDay(for: date)
+            let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+            
+            let predicate = NSPredicate(format: "Timestamp >= %@ AND Timestamp < %@",
+                                      startOfDay as NSDate,
+                                      endOfDay as NSDate)
+            
+            let query = CKQuery(recordType: "LoopRecord", predicate: predicate)
+            let records = try await privateDB.records(matching: query, inZoneWith: nil)
+            completionStatus[startOfDay] = records.count >= 3
+        }
+        
+        return completionStatus
+    }
+    
     static func getLoopRevealDate(completion: @escaping (LoopRevealDate?) -> Void) {
         let publicDB = container.publicCloudDatabase
 
@@ -65,112 +90,163 @@ class LoopCloudKitUtility {
         }
     }
 
-    static func computePriority(loop: Loop) -> Double {
-        let now = Date()
-        let timeSinceCreated = now.timeIntervalSince(loop.timestamp)
-        let timeSinceLastRetrieved = loop.lastRetrieved != nil ? now.timeIntervalSince(loop.lastRetrieved!) : timeSinceCreated
-
-        let ageFactor = timeSinceCreated / (60 * 60 * 24)
-        let recencyFactor = timeSinceLastRetrieved / (60 * 60 * 24)
-
-        return ageFactor * 0.5 + recencyFactor * 0.5
+    static func checkSevenDayRequirement() async throws -> Bool {
+        // Check cache first
+        if let cached = distinctDaysCache,
+           let lastUpdate = lastCacheUpdate,
+           Date().timeIntervalSince(lastUpdate) < cacheValidityDuration {
+            return cached >= 7
+        }
+        
+        let distinctDays = try await fetchDistinctLoopingDays()
+        
+        // Update cache
+        distinctDaysCache = distinctDays
+        lastCacheUpdate = Date()
+        
+        return distinctDays >= 7
     }
-
-    static func getRandomLoop(completion: @escaping (Loop?) -> Void) {
-        let privateUserDB = container.privateCloudDatabase
+    
+    static private func fetchDistinctLoopingDays() async throws -> Int {
+        let privateDB = container.privateCloudDatabase
         
-        var allLoops: [Loop] = []
-
-        let queryOld = CKQuery(recordType: "LoopRecord", predicate: NSPredicate(value: true))
-        queryOld.sortDescriptors = [
-            NSSortDescriptor(key: "Timestamp", ascending: true),
-        ]
-        let oldRecordsOperation = CKQueryOperation(query: queryOld)
-        oldRecordsOperation.resultsLimit = fetchLimit
+        // Create a query for all loops
+        let query = CKQuery(recordType: "LoopRecord", predicate: NSPredicate(value: true))
+        query.sortDescriptors = [NSSortDescriptor(key: "Timestamp", ascending: false)]
         
-        oldRecordsOperation.recordFetchedBlock = { record in
-            if let loop = self.loopFromRecord(record) {
-                allLoops.append(loop)
+        // Use calendar for date comparison
+        let calendar = Calendar.current
+        var distinctDates = Set<Date>()
+        
+        // Fetch records
+        let records = try await privateDB.records(matching: query, inZoneWith: nil)
+        
+        // Process records to find distinct days
+        for record in records {
+            if let timestamp = record["Timestamp"] as? Date {
+                let startOfDay = calendar.startOfDay(for: timestamp)
+                distinctDates.insert(startOfDay)
             }
         }
         
-        oldRecordsOperation.queryCompletionBlock = { cursor, error in
-            guard error == nil else {
-                print("Error fetching old records: \(String(describing: error))")
-                completion(nil)
-                return
-            }
-
-            let queryNew = CKQuery(recordType: "LoopRecord", predicate: NSPredicate(value: true))
-            queryNew.sortDescriptors = [
-                NSSortDescriptor(key: "Timestamp", ascending: false)
-            ]
-            let newRecordsOperation = CKQueryOperation(query: queryNew)
-            newRecordsOperation.resultsLimit = self.fetchLimit
-            
-            newRecordsOperation.recordFetchedBlock = { record in
-                if let loop = self.loopFromRecord(record) {
-                    allLoops.append(loop)
-                }
-            }
-            
-            newRecordsOperation.queryCompletionBlock = { cursor, error in
-                guard error == nil else {
-                    print("Error fetching new records: \(String(describing: error))")
-                    completion(nil)
-                    return
-                }
-                
-                if allLoops.isEmpty {
-                    completion(nil)
-                    return
-                }
-
-                let weightedLoops = allLoops.map { loop -> (Loop, Double) in
-                    return (loop, self.computePriority(loop: loop))
-                }
-
-                if let selectedLoop = weightedRandomSelection(weightedLoops: weightedLoops) {
-                    completion(selectedLoop)
-                } else {
-                    completion(nil)
-                }
-            }
-            
-            privateUserDB.add(newRecordsOperation)
-        }
-
-        privateUserDB.add(oldRecordsOperation)
+        // Return count after processing all records
+        return distinctDates.count
     }
-
-    static func loopFromRecord(_ record: CKRecord) -> Loop? {
-        guard let loopID = record["ID"] as? String,
-              let data = record["Data"] as? CKAsset,
-              let timestamp = record["Timestamp"] as? Date,
-              let promptText = record["Prompt"] as? String else {
+    
+    // MARK: - Past Loop Retrieval
+    
+    static func fetchPastLoopForPrompt(_ promptText: String) async throws -> Loop? {
+        // First verify 7-day requirement
+        guard try await checkSevenDayRequirement() else {
             return nil
         }
         
-        let lastRetrieved = record["LastRetrieved"] as? Date
-        let mood = record["Mood"] as? String
-        let freeResponse = record["FreeResponse"] as? Bool ?? false
-        let isVideo = record["IsVideo"] as? Bool ?? false
-        
-        return Loop(id: loopID, data: data, timestamp: timestamp, lastRetrieved: lastRetrieved, promptText: promptText, mood: mood, freeResponse: freeResponse, isVideo: isVideo)
-    }
+        let privateDB = container.privateCloudDatabase
+  
+        let predicate = NSPredicate(format: "Prompt == %@ AND Timestamp < %@", promptText, Date() as NSDate)
+        let query = CKQuery(recordType: "LoopRecord", predicate: predicate)
 
-    static func weightedRandomSelection(weightedLoops: [(Loop, Double)]) -> Loop? {
-        let totalWeight = weightedLoops.reduce(0) { $0 + $1.1 }
-        let randomWeight = Double.random(in: 0..<totalWeight)
+        let records = try await privateDB.records(matching: query, inZoneWith: nil)
         
-        var cumulativeWeight: Double = 0
+        var pastLoops: [Loop] = []
+        for record in records {
+            if let loop = Loop.from(record: record) {
+                pastLoops.append(loop)
+            }
+        }
+        
+        return selectAppropriateLoop(from: pastLoops)
+    }
+    
+    // MARK: - Loop Selection Strategy
+    
+    static func selectAppropriateLoop(from loops: [Loop]) -> Loop? {
+        guard !loops.isEmpty else { return nil }
+        
+        let weightedLoops = loops.map { loop -> (Loop, Double) in
+            let priority = computeLoopPriority(loop)
+            return (loop, priority)
+        }
+        
+        return weightedRandomSelection(from: weightedLoops)
+    }
+    
+    static func computeLoopPriority(_ loop: Loop) -> Double {
+        let now = Date()
+        let calendar = Calendar.current
+        
+        // Calculate days since creation
+        let daysSinceCreation = calendar.dateComponents([.day], from: loop.timestamp, to: now).day ?? 0
+        
+        // Calculate days since last retrieval
+        let daysSinceRetrieval = calendar.dateComponents(
+            [.day],
+            from: loop.lastRetrieved ?? loop.timestamp,
+            to: now
+        ).day ?? 0
+        
+        // Priority factors
+        let agePriority = 1.0 / Double(max(daysSinceCreation, 1))
+        let retrievalPriority = Double(daysSinceRetrieval)
+        
+        // Combine factors with weights
+        return (agePriority * 0.3) + (retrievalPriority * 0.7)
+    }
+    
+    static func weightedRandomSelection(from weightedLoops: [(Loop, Double)]) -> Loop? {
+        let totalWeight = weightedLoops.reduce(0.0) { $0 + $1.1 }
+        let randomValue = Double.random(in: 0..<totalWeight)
+        
+        var accumulatedWeight = 0.0
         for (loop, weight) in weightedLoops {
-            cumulativeWeight += weight
-            if randomWeight < cumulativeWeight {
+            accumulatedWeight += weight
+            if randomValue <= accumulatedWeight {
                 return loop
             }
         }
-        return nil
+        
+        return weightedLoops.first?.0
+    }
+    
+    // MARK: - Streak Tracking
+    
+    static func calculateStreak() async throws -> LoopingStreak {
+        let privateDB = container.privateCloudDatabase
+        let query = CKQuery(recordType: "LoopRecord", predicate: NSPredicate(value: true))
+        query.sortDescriptors = [NSSortDescriptor(key: "Timestamp", ascending: false)]
+        
+        let records = try await privateDB.records(matching: query, inZoneWith: nil)
+        
+        let calendar = Calendar.current
+        var dates = Set<Date>()
+        var consecutiveDays = 0
+        var longestStreak = 0
+        var lastDate: Date?
+        
+        // Process records
+        for record in records {
+            if let timestamp = record["Timestamp"] as? Date {
+                let startOfDay = calendar.startOfDay(for: timestamp)
+                dates.insert(startOfDay)
+                
+                if let last = lastDate {
+                    let daysDifference = calendar.dateComponents([.day], from: startOfDay, to: last).day ?? 0
+                    if daysDifference == 1 {
+                        consecutiveDays += 1
+                        longestStreak = max(longestStreak, consecutiveDays)
+                    } else {
+                        consecutiveDays = 0
+                    }
+                }
+                lastDate = startOfDay
+            }
+        }
+        
+        return LoopingStreak(
+            currentStreak: consecutiveDays,
+            longestStreak: longestStreak,
+            distinctDays: dates.count
+        )
     }
     
     static func fetchRecentLoopDates(
