@@ -44,7 +44,7 @@ class LoopManager: ObservableObject {
     ]
     
     // MARK: - Private Properties
-    private let container = CKContainer(identifier: "iCloud.com.yourapp.Loop")
+    private let container = CKContainer(identifier: "iCloud.LoopContainer")
     private let queuedLoopsKey = "QueuedLoopsKey"
     private let pastLoopsKey = "PastLoopsKey"
     private let promptCacheKey = "PromptsForTheDay"
