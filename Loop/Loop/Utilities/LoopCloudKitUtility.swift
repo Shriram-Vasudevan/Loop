@@ -133,16 +133,13 @@ class LoopCloudKitUtility {
         return distinctDates.count
     }
     
-    // MARK: - Past Loop Retrieval
-    
     static func fetchPastLoopForPrompt(_ promptText: String) async throws -> Loop? {
-        // First verify 7-day requirement
         guard try await checkSevenDayRequirement() else {
             return nil
         }
         
         let privateDB = container.privateCloudDatabase
-  
+
         let predicate = NSPredicate(format: "Prompt == %@ AND Timestamp < %@", promptText, Date() as NSDate)
         let query = CKQuery(recordType: "LoopRecord", predicate: predicate)
 
@@ -155,11 +152,28 @@ class LoopCloudKitUtility {
             }
         }
         
-        return selectAppropriateLoop(from: pastLoops)
+        if let selectedLoop = selectAppropriateLoop(from: pastLoops) {
+            let recordID = CKRecord.ID(recordName: selectedLoop.id)
+            let record = try await privateDB.record(for: recordID)
+            record["LastRetrieved"] = Date()
+            
+            _ = try await privateDB.save(record)
+            
+            return Loop(
+                id: selectedLoop.id,
+                data: selectedLoop.data,
+                timestamp: selectedLoop.timestamp,
+                lastRetrieved: Date(),
+                promptText: selectedLoop.promptText,
+                mood: selectedLoop.mood,
+                freeResponse: selectedLoop.freeResponse,
+                isVideo: selectedLoop.isVideo
+            )
+        }
+        
+        return nil
     }
-    
-    // MARK: - Loop Selection Strategy
-    
+
     static func selectAppropriateLoop(from loops: [Loop]) -> Loop? {
         guard !loops.isEmpty else { return nil }
         
@@ -174,22 +188,18 @@ class LoopCloudKitUtility {
     static func computeLoopPriority(_ loop: Loop) -> Double {
         let now = Date()
         let calendar = Calendar.current
-        
-        // Calculate days since creation
+
         let daysSinceCreation = calendar.dateComponents([.day], from: loop.timestamp, to: now).day ?? 0
-        
-        // Calculate days since last retrieval
+
         let daysSinceRetrieval = calendar.dateComponents(
             [.day],
             from: loop.lastRetrieved ?? loop.timestamp,
             to: now
         ).day ?? 0
         
-        // Priority factors
         let agePriority = 1.0 / Double(max(daysSinceCreation, 1))
         let retrievalPriority = Double(daysSinceRetrieval)
         
-        // Combine factors with weights
         return (agePriority * 0.3) + (retrievalPriority * 0.7)
     }
     
@@ -208,8 +218,7 @@ class LoopCloudKitUtility {
         return weightedLoops.first?.0
     }
     
-    // MARK: - Streak Tracking
-    
+
     static func calculateStreak() async throws -> LoopingStreak {
         let privateDB = container.privateCloudDatabase
         let query = CKQuery(recordType: "LoopRecord", predicate: NSPredicate(value: true))

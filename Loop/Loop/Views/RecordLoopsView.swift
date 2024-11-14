@@ -108,10 +108,12 @@ struct RecordLoopsView: View {
                     }
                 }
             }
-            
+              
             ProgressIndicator(totalSteps: loopManager.prompts.count,
                             currentStep: loopManager.currentPromptIndex,
                             accentColor: accentColor)
+            
+            
         }
         .padding(.top, 16)
     }
@@ -405,11 +407,9 @@ struct RecordLoopsView: View {
         if let audioFileURL = audioManager.getRecordedAudioFile() {
             loopManager.addLoop(mediaURL: audioFileURL, isVideo: false, prompt: loopManager.getCurrentPrompt())
             
-            // Check memory bank status and handle accordingly
             switch loopManager.memoryBankStatus {
             case .ready:
                 Task {
-                    // Check for matching past loop
                     if let pastLoop = try? await loopManager.fetchPastLoopForCurrentPrompt() {
                         await MainActor.run {
                             loopManager.currentPastLoop = pastLoop
@@ -441,6 +441,12 @@ struct RecordLoopsView: View {
             isRecording = false
             timeRemaining = 30
         }
+    }
+    
+    private var formattedDate: String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMMM d, yyyy"
+        return dateFormatter.string(from: Date())
     }
     
     private func formatDate(_ date: Date) -> String {

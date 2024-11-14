@@ -8,13 +8,15 @@
 import SwiftUI
 import SwiftUI
 
+import SwiftUI
+
 struct LoopsView: View {
     @ObservedObject private var loopManager = LoopManager.shared
     @State private var selectedLoop: Loop?
     @State private var showingRecordView = false
     @State private var selectedDate: Date = Date()
     @State private var calendarShown = false
-    @State private var animationPhase: Double = 0
+    @State private var viewMode: ViewMode = .recent
     
     @State private var loading = true
     @State private var loadingMore = false
@@ -24,7 +26,9 @@ struct LoopsView: View {
     private let backgroundColor = Color(hex: "FAFBFC")
     private let textColor = Color(hex: "2C3E50")
     
-    @State var navigateToFullYearInSqaures: Bool = false
+    enum ViewMode {
+        case recent, month, year
+    }
     
     var body: some View {
         ZStack {
@@ -33,14 +37,16 @@ struct LoopsView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 32) {
                     headerSection
+                    viewModeSelector
                     
-                    if loopManager.hasCompletedToday {
-                        dailyInsightsSection
+                    switch viewMode {
+                    case .recent:
+                        timelineSection
+                    case .month:
+                        MonthView(loopManager: loopManager, selectedDate: $selectedDate)
+                    case .year:
+                        YearView(loopManager: loopManager, selectedDate: $selectedDate)
                     }
-                    
-                    MoodPreviewWidget(loopManager: loopManager)
-                    
-                    timelineSection
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 16)
@@ -62,10 +68,9 @@ struct LoopsView: View {
             CalendarPickerView(selectedDate: $selectedDate)
         }
         .onAppear {
-            fetchInitialLoops()
-        }
-        .navigationDestination(isPresented: $navigateToFullYearInSqaures) {
-            YearMoodView(loopManager: loopManager)
+            if loopManager.loopsByDate.isEmpty {
+                fetchInitialLoops()
+            }
         }
     }
     
@@ -99,59 +104,19 @@ struct LoopsView: View {
         }
     }
     
-    private var dailyInsightsSection: some View {
-        VStack(spacing: 24) {
-            HStack {
-                Text("today's reflection")
-                    .font(.system(size: 24, weight: .ultraLight))
-                    .foregroundColor(textColor)
-                Spacer()
+    private var viewModeSelector: some View {
+        HStack(spacing: 16) {
+            ViewModeButton(title: "Recent", systemImage: "clock", isSelected: viewMode == .recent) {
+                viewMode = .recent
             }
-
-            HStack(spacing: 16) {
-                DailyInsightCard(
-                    title: "mood",
-                    icon: "heart.fill",
-                    content: {
-                        VStack(spacing: 8) {
-                            Text("Grateful")
-                                .font(.system(size: 24, weight: .light))
-                                .foregroundColor(textColor)
-                            
-                            Text("+15% from yesterday")
-                                .font(.system(size: 14, weight: .light))
-                                .foregroundColor(.green)
-                        }
-                    }
-                )
-                DailyInsightCard(
-                    title: "reflection time",
-                    icon: "clock.fill",
-                    content: {
-                        VStack(spacing: 8) {
-                            Text("2:34")
-                                .font(.system(size: 24, weight: .light))
-                                .foregroundColor(textColor)
-                            
-                            Text("morning person")
-                                .font(.system(size: 14, weight: .light))
-                                .foregroundColor(textColor.opacity(0.6))
-                        }
-                    }
-                )
+            
+            ViewModeButton(title: "Month", systemImage: "calendar", isSelected: viewMode == .month) {
+                viewMode = .month
             }
-
-            DailyInsightCard(
-                title: "ai analysis",
-                icon: "sparkles",
-                isWide: true,
-                content: {
-                    Text("Your reflections today show increased positivity and gratitude. You mentioned family 3 times and expressed excitement about upcoming plans.")
-                        .font(.system(size: 15, weight: .light))
-                        .foregroundColor(textColor)
-                        .multilineTextAlignment(.leading)
-                }
-            )
+            
+            ViewModeButton(title: "Year", systemImage: "calendar.badge.clock", isSelected: viewMode == .year) {
+                viewMode = .year
+            }
         }
     }
     
@@ -209,7 +174,6 @@ struct LoopsView: View {
             .padding(.bottom, 16)
         }
     }
-
     
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
@@ -234,6 +198,77 @@ struct LoopsView: View {
         }
     }
 }
+
+struct ViewModeButton: View {
+    let title: String
+    let systemImage: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 14))
+                Text(title)
+                    .font(.system(size: 14, weight: .medium))
+            }
+            .foregroundColor(isSelected ? .white : textColor)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(
+                Capsule()
+                    .fill(isSelected ? accentColor : Color.white)
+                    .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
+            )
+        }
+    }
+}
+
+struct MonthView: View {
+    let loopManager: LoopManager
+    @Binding var selectedDate: Date
+    
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            Text("monthly view")
+                .font(.system(size: 24, weight: .ultraLight))
+                .foregroundColor(textColor)
+            
+            // Placeholder for month calendar grid
+            Text("Monthly calendar view will be implemented here")
+                .font(.system(size: 16, weight: .light))
+                .foregroundColor(textColor.opacity(0.6))
+        }
+    }
+}
+
+struct YearView: View {
+    let loopManager: LoopManager
+    @Binding var selectedDate: Date
+    
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            Text("yearly view")
+                .font(.system(size: 24, weight: .ultraLight))
+                .foregroundColor(textColor)
+            
+            // Placeholder for year summary
+            Text("Yearly summary view will be implemented here")
+                .font(.system(size: 16, weight: .light))
+                .foregroundColor(textColor.opacity(0.6))
+        }
+    }
+}
+
+
 
 struct AnimatedGradientBackground: View {
     @State private var phase = 0.0

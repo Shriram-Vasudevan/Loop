@@ -8,6 +8,9 @@
 import SwiftUI
 import AVKit
 
+import SwiftUI
+import AVKit
+
 struct LoopAudioConfirmationView: View {
     let audioURL: URL
     let waveformData: [CGFloat]
@@ -89,14 +92,14 @@ struct WaveformView: View {
 
 struct AudioPlayerControls: View {
     let audioURL: URL
-    @State private var isPlaying = false
     let accentColor: Color
+    
+    @State private var audioPlayer: AVAudioPlayer?
+    @State private var isPlaying = false
     
     var body: some View {
         HStack(spacing: 24) {
-            Button(action: {
-                isPlaying.toggle()
-            }) {
+            Button(action: togglePlayback) {
                 Circle()
                     .fill(Color.white)
                     .frame(width: 56, height: 56)
@@ -109,6 +112,57 @@ struct AudioPlayerControls: View {
                     )
             }
         }
+        .onAppear(perform: setupAudioPlayer)
+        .onDisappear(perform: cleanup)
+    }
+    
+    private func setupAudioPlayer() {
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+            try AVAudioSession.sharedInstance().setActive(true)
+            
+            audioPlayer = try AVAudioPlayer(contentsOf: audioURL)
+            audioPlayer?.prepareToPlay()
+            
+            // Add completion handler
+            audioPlayer?.delegate = AudioPlayerDelegate(onComplete: {
+                isPlaying = false
+            })
+        } catch {
+            print("Error setting up audio player: \(error)")
+        }
+    }
+    
+    private func togglePlayback() {
+        if isPlaying {
+            audioPlayer?.pause()
+        } else {
+            audioPlayer?.play()
+        }
+        isPlaying.toggle()
+    }
+    
+    private func cleanup() {
+        audioPlayer?.stop()
+        audioPlayer = nil
+        
+        do {
+            try AVAudioSession.sharedInstance().setActive(false)
+        } catch {
+            print("Failed to deactivate audio session: \(error)")
+        }
     }
 }
 
+class AudioPlayerDelegate: NSObject, AVAudioPlayerDelegate {
+    let onComplete: () -> Void
+    
+    init(onComplete: @escaping () -> Void) {
+        self.onComplete = onComplete
+        super.init()
+    }
+    
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        onComplete()
+    }
+}

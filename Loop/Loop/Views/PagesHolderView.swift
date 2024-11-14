@@ -27,59 +27,36 @@ struct PagesHolderView: View {
                         InsightsView()
                     }
                     
-                    // Custom tab bar
+                    // Modern tab bar
                     HStack(spacing: 0) {
-                        // Home tab
-                        TabBarButton(
-                            icon: "house",
-                            label: "home",
-                            isSelected: pageType == .home,
-                            accentColor: accentColor
-                        ) {
-                            pageType = .home
-                        }
-                        
-                        // Journal tab
-                        TabBarButton(
-                            icon: "book",
-                            label: "journal",
-                            isSelected: pageType == .journal,
-                            accentColor: accentColor
-                        ) {
-                            pageType = .journal
-                        }
-                        
-                        // Center Record Button
-                        RecordButton(accentColor: accentColor) {
-                            // Handle record action
-                        }
-                        
-
-                        TabBarButton(
-                            icon: "chart.bar",
-                            label: "insights",
-                            isSelected: pageType == .insights,
-                            accentColor: accentColor
-                        ) {
-                            pageType = .insights
-                        }
-                        
-                        // Settings tab
-                        TabBarButton(
-                            icon: "gearshape",
-                            label: "settings",
-                            isSelected: pageType == .settings,
-                            accentColor: accentColor
-                        ) {
-                            pageType = .settings
+                        ForEach([
+                            (icon: "house", label: "Home", type: PageType.home),
+                            (icon: "book", label: "Journal", type: PageType.journal),
+                            (icon: "chart.bar", label: "Insights", type: PageType.insights),
+                            (icon: "gearshape", label: "Settings", type: PageType.settings)
+                        ], id: \.label) { item in
+                            TabBarButton(
+                                icon: item.icon,
+                                label: item.label,
+                                isSelected: pageType == item.type,
+                                accentColor: accentColor
+                            ) {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    pageType = item.type
+                                }
+                            }
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, 20)
                     .padding(.top, 12)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 24)
                     .background(
                         Color.white
-                            .shadow(color: Color.black.opacity(0.05), radius: 20, y: -5)
+                            .shadow(color: Color.black.opacity(0.07), radius: 15, y: -3)
+                            .mask(
+                                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                    .padding(.top, -20)
+                            )
                     )
                 }
             }
@@ -97,46 +74,31 @@ struct TabBarButton: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 4) {
+            VStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 22))
-                    .foregroundColor(isSelected ? accentColor : .gray.opacity(0.8))
+                    .font(.system(size: 24, weight: isSelected ? .semibold : .regular))
+                    .foregroundColor(isSelected ? accentColor : .gray.opacity(0.7))
+                    .frame(height: 24)
                 
                 Text(label)
-                    .font(.system(size: 11))
-                    .foregroundColor(isSelected ? accentColor : .gray.opacity(0.8))
+                    .font(.system(size: 12, weight: isSelected ? .medium : .regular))
+                    .foregroundColor(isSelected ? accentColor : .gray.opacity(0.7))
             }
             .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(TabBarButtonStyle())
     }
 }
 
-struct RecordButton: View {
-    let accentColor: Color
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [accentColor, accentColor.opacity(0.8)]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 64, height: 64)
-                    .shadow(color: accentColor.opacity(0.3), radius: 10)
-                
-                Image(systemName: "waveform")
-                    .font(.system(size: 24, weight: .medium))
-                    .foregroundColor(.white)
-            }
-        }
-        .frame(maxWidth: .infinity)
+struct TabBarButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.95 : 1)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }
+
 
 #Preview {
     PagesHolderView(pageType: .home)
