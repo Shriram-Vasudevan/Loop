@@ -24,6 +24,10 @@ struct RecordLoopsView: View {
     @State private var messageOpacity: Double = 0
     @State private var wavePhase: Double = 0
     
+    @State private var isShowingPastReflection = false
+    @State private var pastLoop: Loop?
+    @State private var allPrompts: [String] = []
+    
     @Environment(\.dismiss) var dismiss
 
     let accentColor = Color(hex: "A28497")
@@ -42,13 +46,18 @@ struct RecordLoopsView: View {
             
             // Main Content
             VStack(spacing: 0) {
-                if loopManager.hasCompletedToday {
+                if isShowingPastReflection {
+                    PastReflectionView(
+                        loop: pastLoop!,
+                        onComplete: {
+                            loopManager.hasCompletedToday = true
+                        }
+                    )
+                    .transition(.opacity.animation(.easeInOut(duration: 0.8)))
+                } else if loopManager.hasCompletedToday {
                     thankYouScreen
                         .transition(.opacity.animation(.easeInOut(duration: 0.8)))
-                } else if isShowingMemory {
-                    memoryPlaybackView
-                        .transition(.opacity.animation(.easeInOut(duration: 0.8)))
-                } else if isShowingMemoryMessage {
+                }  else if isShowingMemoryMessage {
                     memoryMessageView
                         .transition(.opacity.animation(.easeInOut(duration: 0.8)))
                 } else if isPostRecording {
@@ -405,24 +414,35 @@ struct RecordLoopsView: View {
     
     private func completeRecording() {
         if let audioFileURL = audioManager.getRecordedAudioFile() {
-            loopManager.addLoop(mediaURL: audioFileURL, isVideo: false, prompt: loopManager.getCurrentPrompt())
+            // Save the current loop
+            loopManager.addLoop(
+                mediaURL: audioFileURL,
+                isVideo: false,
+                prompt: loopManager.getCurrentPrompt()
+            )
             
-            switch loopManager.memoryBankStatus {
-            case .ready:
+            if loopManager.isLastPrompt() {
+    
+                allPrompts = loopManager.prompts
+                
                 Task {
-                    if let pastLoop = try? await loopManager.fetchPastLoopForCurrentPrompt() {
+                    if let pastLoop = try? await loopManager.getPastLoopForComparison(
+                        recordedPrompts: allPrompts
+                    ) {
                         await MainActor.run {
-                            loopManager.currentPastLoop = pastLoop
+                            self.pastLoop = pastLoop
                             isPostRecording = false
-                            isShowingMemory = true
-                        }
-                    } else {
-                        await MainActor.run {
-                            showMemoryAddedMessage()
+                            isShowingPastReflection = true
                         }
                     }
+                    else {
+                        await MainActor.run {
+                                              
+                           loopManager.hasCompletedToday = true
+                       }
+                    }
                 }
-            default:
+            } else {
                 showMemoryAddedMessage()
             }
         }
@@ -502,7 +522,7 @@ struct PastLoopPlayer: View {
     
     private func setupAudioPlayer() {
         guard let url = loop.data.fileURL else { return }
-        
+
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: url)
             audioPlayer?.prepareToPlay()
@@ -687,6 +707,160 @@ struct FloatingElements: View {
         .onAppear {
             offsetY = -20
         }
+    }
+}
+
+struct PastReflectionView: View {
+    let loop: Loop
+    let onComplete: () -> Void
+    
+    @State private var isPlaying = false
+    @State private var progress: Double = 0
+    @State private var audioPlayer: AVAudioPlayer?
+    @State private var timer: Timer?
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        VStack(spacing: 32) {
+            // Close button
+            HStack {
+                Spacer()
+                Button(action: onComplete) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 20, weight: .light))
+                        .foregroundColor(accentColor.opacity(0.8))
+                }
+            }
+            .padding(.horizontal)
+            
+            Spacer()
+            
+            // Past reflection content
+            VStack(spacing: 24) {
+                // Header
+                Text("a past reflection")
+                    .font(.system(size: 32, weight: .ultraLight))
+                    .foregroundColor(textColor)
+                
+                // Date
+                Text(formatDate(loop.timestamp))
+                    .font(.system(size: 18, weight: .light))
+                    .foregroundColor(accentColor)
+                
+                // Prompt
+                Text(loop.promptText)
+                    .font(.system(size: 24, weight: .ultraLight))
+                    .foregroundColor(textColor)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 20)
+            }
+            
+            Spacer()
+            
+            // Audio player
+            VStack(spacing: 24) {
+                // Waveform visualization
+                HStack(spacing: 3) {
+                    ForEach(0..<40) { index in
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(accentColor.opacity(
+                                progress > Double(index) / 40 ? 0.8 : 0.3
+                            ))
+                            .frame(width: 3, height: CGFloat.random(in: 10...50))
+                    }
+                }
+                .frame(height: 50)
+                .padding(.horizontal, 32)
+                
+                // Play button
+                Button(action: togglePlayback) {
+                    Circle()
+                        .fill(accentColor)
+                        .frame(width: 64, height: 64)
+                        .overlay(
+                            Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(.white)
+                        )
+                }
+            }
+            
+            Spacer()
+            
+            // Continue button
+            Button(action: onComplete) {
+                Text("continue")
+                    .font(.system(size: 18, weight: .light))
+                    .foregroundColor(.white)
+                    .frame(height: 56)
+                    .frame(maxWidth: .infinity)
+                    .background(accentColor)
+                    .cornerRadius(28)
+            }
+            .padding(.horizontal, 32)
+            .padding(.bottom, 40)
+        }
+        .onAppear(perform: setupAudioPlayer)
+        .onDisappear(perform: cleanup)
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM d, yyyy"
+        return formatter.string(from: date)
+    }
+    
+    private func setupAudioPlayer() {
+        guard let url = loop.data.fileURL else { return }
+        
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.prepareToPlay()
+        } catch {
+            print("Error setting up audio player: \(error)")
+        }
+    }
+    
+    private func togglePlayback() {
+        if isPlaying {
+            audioPlayer?.pause()
+            timer?.invalidate()
+        } else {
+            audioPlayer?.play()
+            startProgressTimer()
+        }
+        isPlaying.toggle()
+    }
+    
+    private func startProgressTimer() {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
+            guard let player = audioPlayer else { return }
+            progress = player.currentTime / player.duration
+            
+            if player.currentTime >= player.duration {
+                stopPlayback()
+            }
+        }
+    }
+    
+    private func stopPlayback() {
+        audioPlayer?.stop()
+        audioPlayer?.currentTime = 0
+        isPlaying = false
+        progress = 0
+        timer?.invalidate()
+    }
+    
+    private func cleanup() {
+        timer?.invalidate()
+        timer = nil
+        audioPlayer?.stop()
+        audioPlayer = nil
+        
     }
 }
 

@@ -107,7 +107,7 @@ class LoopCloudKitUtility {
         return distinctDays >= 7
     }
     
-    static private func fetchDistinctLoopingDays() async throws -> Int {
+    static func fetchDistinctLoopingDays() async throws -> Int {
         let privateDB = container.privateCloudDatabase
         
         // Create a query for all loops
@@ -129,94 +129,191 @@ class LoopCloudKitUtility {
             }
         }
         
+        print("days is \(distinctDates.count)")
         // Return count after processing all records
         return distinctDates.count
     }
     
-    static func fetchPastLoopForPrompt(_ promptText: String) async throws -> Loop? {
-        guard try await checkSevenDayRequirement() else {
+    
+    static func fetchPastLoop(
+            forPrompts prompts: [String],
+            minDaysAgo: Int,
+            maxDaysAgo: Int,
+            preferGeneralPrompts: Bool,
+            category: PromptCategory? = nil
+        ) async throws -> Loop? {
+            print("🔍 Starting loop search:")
+            print("   Time window: \(minDaysAgo)-\(maxDaysAgo) days ago")
+            print("   Category: \(category?.rawValue ?? "any")")
+            print("   Preferring general prompts: \(preferGeneralPrompts)")
+            
+            let privateDB = container.privateCloudDatabase
+            let calendar = Calendar.current
+            
+            // Calculate date range
+            let now = Date()
+            guard let minDate = calendar.date(byAdding: .day, value: -maxDaysAgo, to: now),
+                  let maxDate = calendar.date(byAdding: .day, value: -minDaysAgo, to: now) else {
+                print("❌ Date calculation failed")
+                throw NSError(domain: "DateCalculationError", code: -1)
+            }
+            
+            print("📅 Searching between:")
+            print("   \(minDate.formatted()) and \(maxDate.formatted())")
+            
+            // Build predicate
+            var predicates: [NSPredicate] = []
+            
+            // Date range predicate
+            let datePredicate = NSPredicate(
+                format: "Timestamp >= %@ AND Timestamp <= %@",
+                minDate as NSDate,
+                maxDate as NSDate
+            )
+            predicates.append(datePredicate)
+            
+            // Construct query
+            let query = CKQuery(
+                recordType: "LoopRecord",
+                predicate: NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+            )
+            
+            // Fetch records
+            let records = try await privateDB.records(matching: query, inZoneWith: nil)
+            
+            if records.isEmpty {
+                print("📭 No records found in time window")
+                return nil
+            }
+            
+            print("📊 Found \(records.count) potential loops")
+            
+            // Convert to loops and score them
+            var scoredLoops: [(Loop, Double)] = []
+            
+            for record in records {
+                guard let loop = Loop.from(record: record) else { continue }
+                
+                let score = calculateLoopScore(
+                    loop: loop,
+                    basedOn: prompts,
+                    category: category,
+                    preferGeneralPrompts: preferGeneralPrompts
+                )
+                
+                print("   Loop from \(loop.timestamp.formatted()):")
+                print("   - Prompt: \(loop.promptText)")
+                print("   - Score: \(score)")
+                printScoreBreakdown(
+                    loop: loop,
+                    prompts: prompts,
+                    category: category,
+                    preferGeneralPrompts: preferGeneralPrompts
+                )
+                
+                scoredLoops.append((loop, score))
+            }
+            
+            // Sort by score
+            scoredLoops.sort { $0.1 > $1.1 }
+            
+            if let bestMatch = scoredLoops.first {
+                if bestMatch.1 >= 0.3 { // Minimum acceptable score
+                    print("✅ Selected best match:")
+                    print("   Score: \(bestMatch.1)")
+                    print("   Prompt: \(bestMatch.0.promptText)")
+                    print("   Date: \(bestMatch.0.timestamp.formatted())")
+                    return bestMatch.0
+                } else {
+                    print("⚠️ Best match score too low: \(bestMatch.1)")
+                    print("   Required minimum: 0.3")
+                    return nil
+                }
+            }
+            
+            print("❌ No suitable matches found")
             return nil
         }
         
-        let privateDB = container.privateCloudDatabase
-
-        let predicate = NSPredicate(format: "Prompt == %@ AND Timestamp < %@", promptText, Date() as NSDate)
-        let query = CKQuery(recordType: "LoopRecord", predicate: predicate)
-
-        let records = try await privateDB.records(matching: query, inZoneWith: nil)
-        
-        var pastLoops: [Loop] = []
-        for record in records {
-            if let loop = Loop.from(record: record) {
-                pastLoops.append(loop)
+        private static func printScoreBreakdown(
+            loop: Loop,
+            prompts: [String],
+            category: PromptCategory?,
+            preferGeneralPrompts: Bool
+        ) {
+            // Age score
+            let ageInDays = Double(Calendar.current.dateComponents([.day], from: loop.timestamp, to: Date()).day ?? 0)
+            let ageScore = min(ageInDays / 365, 1.0) * 0.2
+            print("   - Age score: \(ageScore) (age: \(ageInDays) days)")
+            
+            // Category score
+            if let category = category,
+               let loopPrompt = LoopManager.shared.promptGroups.values
+                .flatMap({ $0 })
+                .first(where: { $0.text == loop.promptText }) {
+                let categoryScore = loopPrompt.category == category ? 0.3 : 0.0
+                print("   - Category score: \(categoryScore)")
+            }
+            
+            // Prompt type score
+            if let loopPrompt = LoopManager.shared.promptGroups.values
+                .flatMap({ $0 })
+                .first(where: { $0.text == loop.promptText }) {
+                let promptTypeScore = preferGeneralPrompts && !loopPrompt.isDailyPrompt ? 0.3 : 0.0
+                print("   - Prompt type score: \(promptTypeScore)")
+            }
+            
+            // Retrieval score
+            if let lastRetrieved = loop.lastRetrieved {
+                let daysSinceRetrieved = Double(Calendar.current.dateComponents([.day], from: lastRetrieved, to: Date()).day ?? 0)
+                let retrievalScore = min(daysSinceRetrieved / 30, 1.0) * 0.2
+                print("   - Retrieval score: \(retrievalScore) (last retrieved: \(daysSinceRetrieved) days ago)")
+            } else {
+                print("   - Retrieval score: 0.2 (never retrieved)")
             }
         }
         
-        if let selectedLoop = selectAppropriateLoop(from: pastLoops) {
-            let recordID = CKRecord.ID(recordName: selectedLoop.id)
-            let record = try await privateDB.record(for: recordID)
-            record["LastRetrieved"] = Date()
+        private static func calculateLoopScore(
+            loop: Loop,
+            basedOn prompts: [String],
+            category: PromptCategory?,
+            preferGeneralPrompts: Bool
+        ) -> Double {
+            var score: Double = 0
             
-            _ = try await privateDB.save(record)
+            // Base score for time (older gets slight preference)
+            let ageInDays = Double(Calendar.current.dateComponents([.day], from: loop.timestamp, to: Date()).day ?? 0)
+            score += min(ageInDays / 365, 1.0) * 0.2 // Max 0.2 points for age
             
-            return Loop(
-                id: selectedLoop.id,
-                data: selectedLoop.data,
-                timestamp: selectedLoop.timestamp,
-                lastRetrieved: Date(),
-                promptText: selectedLoop.promptText,
-                mood: selectedLoop.mood,
-                freeResponse: selectedLoop.freeResponse,
-                isVideo: selectedLoop.isVideo
-            )
-        }
-        
-        return nil
-    }
-
-    static func selectAppropriateLoop(from loops: [Loop]) -> Loop? {
-        guard !loops.isEmpty else { return nil }
-        
-        let weightedLoops = loops.map { loop -> (Loop, Double) in
-            let priority = computeLoopPriority(loop)
-            return (loop, priority)
-        }
-        
-        return weightedRandomSelection(from: weightedLoops)
-    }
-    
-    static func computeLoopPriority(_ loop: Loop) -> Double {
-        let now = Date()
-        let calendar = Calendar.current
-
-        let daysSinceCreation = calendar.dateComponents([.day], from: loop.timestamp, to: now).day ?? 0
-
-        let daysSinceRetrieval = calendar.dateComponents(
-            [.day],
-            from: loop.lastRetrieved ?? loop.timestamp,
-            to: now
-        ).day ?? 0
-        
-        let agePriority = 1.0 / Double(max(daysSinceCreation, 1))
-        let retrievalPriority = Double(daysSinceRetrieval)
-        
-        return (agePriority * 0.3) + (retrievalPriority * 0.7)
-    }
-    
-    static func weightedRandomSelection(from weightedLoops: [(Loop, Double)]) -> Loop? {
-        let totalWeight = weightedLoops.reduce(0.0) { $0 + $1.1 }
-        let randomValue = Double.random(in: 0..<totalWeight)
-        
-        var accumulatedWeight = 0.0
-        for (loop, weight) in weightedLoops {
-            accumulatedWeight += weight
-            if randomValue <= accumulatedWeight {
-                return loop
+            // Category matching (if specified)
+            if let category = category,
+               let loopPrompt = LoopManager.shared.promptGroups.values
+                .flatMap({ $0 })
+                .first(where: { $0.text == loop.promptText }) {
+                if loopPrompt.category == category {
+                    score += 0.3 // Significant boost for category match
+                }
             }
+            
+            // Prompt type matching
+            if let loopPrompt = LoopManager.shared.promptGroups.values
+                .flatMap({ $0 })
+                .first(where: { $0.text == loop.promptText }) {
+                if preferGeneralPrompts && !loopPrompt.isDailyPrompt {
+                    score += 0.3 // Boost for general prompts when preferred
+                }
+            }
+            
+            // Last retrieved penalty (prefer less recently retrieved loops)
+            if let lastRetrieved = loop.lastRetrieved {
+                let daysSinceRetrieved = Double(Calendar.current.dateComponents([.day], from: lastRetrieved, to: Date()).day ?? 0)
+                score += min(daysSinceRetrieved / 30, 1.0) * 0.2 // Max 0.2 points for retrieval age
+            } else {
+                score += 0.2 // Full points if never retrieved
+            }
+            
+            return score
         }
-        
-        return weightedLoops.first?.0
-    }
     
 
     static func calculateStreak() async throws -> LoopingStreak {
@@ -337,3 +434,26 @@ class LoopCloudKitUtility {
     }
     
 }
+enum FetchResult {
+    case success(Loop)
+    case noLoopsInTimeWindow
+    case lowScores(bestScore: Double)
+    case noRecordsFound
+    case error(Error)
+    
+    var logMessage: String {
+        switch self {
+        case .success(let loop):
+            return "✅ Selected loop from \(loop.timestamp.formatted()) with prompt: \(loop.promptText)"
+        case .noLoopsInTimeWindow:
+            return "⚠️ No loops found in specified time window"
+        case .lowScores(let bestScore):
+            return "ℹ️ Found loops but scores too low (best: \(bestScore))"
+        case .noRecordsFound:
+            return "❌ No records found in CloudKit query"
+        case .error(let error):
+            return "🚫 Error: \(error.localizedDescription)"
+        }
+    }
+}
+

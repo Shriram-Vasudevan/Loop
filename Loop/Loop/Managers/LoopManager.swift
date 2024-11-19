@@ -65,33 +65,110 @@ class LoopManager: ObservableObject {
 
         
     let promptGroups: [PromptCategory: [Prompt]] = [
-        .positiveReflection: [
-            Prompt(text: "What made you smile today?", category: .positiveReflection, isDailyPrompt: true),
-            Prompt(text: "What's something small you appreciated today?", category: .positiveReflection, isDailyPrompt: true),
-            Prompt(text: "What's the best thing that happened today?", category: .positiveReflection, isDailyPrompt: true)
+        .emotionalWellbeing: [
+            // Daily prompts
+            Prompt(text: "What made you smile today?", category: .emotionalWellbeing, isDailyPrompt: true),
+            Prompt(text: "What's something small you appreciated today?", category: .emotionalWellbeing, isDailyPrompt: true),
+            Prompt(text: "How did today feel different from yesterday?", category: .emotionalWellbeing, isDailyPrompt: true),
+            Prompt(text: "What moment today stands out?", category: .emotionalWellbeing, isDailyPrompt: true),
+            Prompt(text: "What lifted your mood today?", category: .emotionalWellbeing, isDailyPrompt: true),
+            Prompt(text: "When did you feel most yourself today?", category: .emotionalWellbeing, isDailyPrompt: true),
+            Prompt(text: "What felt meaningful about today?", category: .emotionalWellbeing, isDailyPrompt: true),
+            Prompt(text: "What surprised you today?", category: .emotionalWellbeing, isDailyPrompt: true),
+            Prompt(text: "What made you feel grounded today?", category: .emotionalWellbeing, isDailyPrompt: true),
+            Prompt(text: "What gave you peace today?", category: .emotionalWellbeing, isDailyPrompt: true),
+            
+            // Broader reflections
+            Prompt(text: "What's been bringing you joy lately?", category: .emotionalWellbeing, isDailyPrompt: false),
+            Prompt(text: "What feelings keep showing up?", category: .emotionalWellbeing, isDailyPrompt: false),
+            Prompt(text: "What's been on your mind a lot?", category: .emotionalWellbeing, isDailyPrompt: false),
+            Prompt(text: "How have your emotions surprised you lately?", category: .emotionalWellbeing, isDailyPrompt: false),
+            Prompt(text: "What's giving you hope right now?", category: .emotionalWellbeing, isDailyPrompt: false),
+            Prompt(text: "What part of life feels most alive?", category: .emotionalWellbeing, isDailyPrompt: false),
+            Prompt(text: "What feels different about you lately?", category: .emotionalWellbeing, isDailyPrompt: false),
+            Prompt(text: "What's helping you feel balanced?", category: .emotionalWellbeing, isDailyPrompt: false),
+            Prompt(text: "What's becoming clearer emotionally?", category: .emotionalWellbeing, isDailyPrompt: false),
+            Prompt(text: "Where do you feel most at peace?", category: .emotionalWellbeing, isDailyPrompt: false)
         ],
+        
         .challenges: [
-            Prompt(text: "What's stressing you out this week?", category: .challenges, isDailyPrompt: false),
-            Prompt(text: "What's been challenging you lately?", category: .challenges, isDailyPrompt: false),
-            Prompt(text: "What do you wish you could change about today?", category: .challenges, isDailyPrompt: true)
+            // Daily prompts
+            Prompt(text: "What challenged you today?", category: .challenges, isDailyPrompt: true),
+            Prompt(text: "What do you wish went differently today?", category: .challenges, isDailyPrompt: true),
+            Prompt(text: "What took unexpected effort today?", category: .challenges, isDailyPrompt: true),
+            Prompt(text: "What tested your patience today?", category: .challenges, isDailyPrompt: true),
+            Prompt(text: "What felt uncertain today?", category: .challenges, isDailyPrompt: true),
+            Prompt(text: "What decision was difficult today?", category: .challenges, isDailyPrompt: true),
+            Prompt(text: "What boundary felt important today?", category: .challenges, isDailyPrompt: true),
+            Prompt(text: "What made you pause today?", category: .challenges, isDailyPrompt: true),
+            
+            // Broader reflections
+            Prompt(text: "What's been testing you lately?", category: .challenges, isDailyPrompt: false),
+            Prompt(text: "What's something you're working through?", category: .challenges, isDailyPrompt: false),
+            Prompt(text: "What's been harder than expected?", category: .challenges, isDailyPrompt: false),
+            Prompt(text: "What are you trying to accept or change?", category: .challenges, isDailyPrompt: false),
+            Prompt(text: "What's been draining your energy?", category: .challenges, isDailyPrompt: false),
+            Prompt(text: "What pattern do you want to break free from?", category: .challenges, isDailyPrompt: false),
+            Prompt(text: "What feels like it's in transition?", category: .challenges, isDailyPrompt: false),
+            Prompt(text: "What are you learning to let go of?", category: .challenges, isDailyPrompt: false),
+            Prompt(text: "What assumption is being challenged?", category: .challenges, isDailyPrompt: false),
+            Prompt(text: "What boundary needs attention?", category: .challenges, isDailyPrompt: false)
         ],
-        .personalGrowth: [
-            Prompt(text: "What did you learn today?", category: .personalGrowth, isDailyPrompt: true),
-            Prompt(text: "What could you have done differently today?", category: .personalGrowth, isDailyPrompt: true),
-            Prompt(text: "What's giving you energy lately?", category: .personalGrowth, isDailyPrompt: false)
+        
+        .growth: [
+            // Daily prompts
+            Prompt(text: "What did you learn today?", category: .growth, isDailyPrompt: true),
+            Prompt(text: "What would you do differently next time?", category: .growth, isDailyPrompt: true),
+            Prompt(text: "What choice are you proud of today?", category: .growth, isDailyPrompt: true),
+            Prompt(text: "What strength did you use today?", category: .growth, isDailyPrompt: true),
+            Prompt(text: "What did you try new today?", category: .growth, isDailyPrompt: true),
+            Prompt(text: "What feedback helped you today?", category: .growth, isDailyPrompt: true),
+            Prompt(text: "What did you do for yourself today?", category: .growth, isDailyPrompt: true),
+            Prompt(text: "What responsibility did you handle well?", category: .growth, isDailyPrompt: true),
+            
+            // Broader reflections
+            Prompt(text: "How are you growing lately?", category: .growth, isDailyPrompt: false),
+            Prompt(text: "What's becoming clearer to you?", category: .growth, isDailyPrompt: false),
+            Prompt(text: "What are you getting better at?", category: .growth, isDailyPrompt: false),
+            Prompt(text: "What new side of yourself are you discovering?", category: .growth, isDailyPrompt: false),
+            Prompt(text: "What habit is serving you well?", category: .growth, isDailyPrompt: false),
+            Prompt(text: "What's your gut telling you lately?", category: .growth, isDailyPrompt: false),
+            Prompt(text: "What wisdom are you gaining?", category: .growth, isDailyPrompt: false),
+            Prompt(text: "What strength is developing?", category: .growth, isDailyPrompt: false),
+            Prompt(text: "What perspective is shifting?", category: .growth, isDailyPrompt: false),
+            Prompt(text: "What potential are you stepping into?", category: .growth, isDailyPrompt: false)
         ],
-        .futureFocus: [
-            Prompt(text: "What are you looking forward to tomorrow?", category: .futureFocus, isDailyPrompt: true),
-            Prompt(text: "What do you want to focus on this week?", category: .futureFocus, isDailyPrompt: false),
-            Prompt(text: "What do you hope will happen soon?", category: .futureFocus, isDailyPrompt: false)
+        
+        .connections: [
+            // Daily prompts
+            Prompt(text: "Who made an impact on you today?", category: .connections, isDailyPrompt: true),
+            Prompt(text: "What conversation mattered today?", category: .connections, isDailyPrompt: true),
+            Prompt(text: "How did you connect with someone today?", category: .connections, isDailyPrompt: true),
+            Prompt(text: "Who did you appreciate today?", category: .connections, isDailyPrompt: true),
+            Prompt(text: "What did you share today?", category: .connections, isDailyPrompt: true),
+            Prompt(text: "Who supported you today?", category: .connections, isDailyPrompt: true),
+            Prompt(text: "Who did you help today?", category: .connections, isDailyPrompt: true),
+            
+            // Broader reflections
+            Prompt(text: "Who's been on your mind lately?", category: .connections, isDailyPrompt: false),
+            Prompt(text: "What relationship is teaching you something?", category: .connections, isDailyPrompt: false),
+            Prompt(text: "How are your connections evolving?", category: .connections, isDailyPrompt: false),
+            Prompt(text: "What conversation changed something for you?", category: .connections, isDailyPrompt: false),
+            Prompt(text: "Who are you grateful for right now?", category: .connections, isDailyPrompt: false),
+            Prompt(text: "What boundary is shifting in a relationship?", category: .connections, isDailyPrompt: false),
+            Prompt(text: "What kind of friend are you becoming?", category: .connections, isDailyPrompt: false),
+            Prompt(text: "Which relationship needs attention?", category: .connections, isDailyPrompt: false),
+            Prompt(text: "What do you want to express to someone?", category: .connections, isDailyPrompt: false),
+            Prompt(text: "Who's influencing your growth?", category: .connections, isDailyPrompt: false)
         ]
     ]
     
     private let recentPromptsKey = "RecentPromptsKey"
     private let recentCategoriesKey = "RecentCategoriesKey"
-    private let maxPromptHistory = 4
-    private let maxCategoryHistory = 2
+    private let maxPromptHistory = 3
     
+    
+
     private func getCategoryForPrompt(_ promptText: String) -> PromptCategory? {
         for (category, prompts) in promptGroups {
             if prompts.contains(where: { $0.text == promptText }) {
@@ -111,10 +188,7 @@ class LoopManager: ObservableObject {
     private func getRecentPrompts() -> [String] {
         return UserDefaults.standard.stringArray(forKey: recentPromptsKey) ?? []
     }
-    
-    private func getRecentCategories() -> [String] {
-        return UserDefaults.standard.stringArray(forKey: recentCategoriesKey) ?? []
-    }
+
     
     private func saveRecentPrompt(_ prompt: String) {
         var recentPrompts = getRecentPrompts()
@@ -125,52 +199,35 @@ class LoopManager: ObservableObject {
         UserDefaults.standard.set(recentPrompts, forKey: recentPromptsKey)
     }
     
-    private func saveRecentCategory(_ category: PromptCategory) {
-        var recentCategories = getRecentCategories()
-        recentCategories.insert(category.rawValue, at: 0)
-        if recentCategories.count > maxCategoryHistory {
-            recentCategories = Array(recentCategories.prefix(maxCategoryHistory))
-        }
-        UserDefaults.standard.set(recentCategories, forKey: recentCategoriesKey)
-    }
     
     private func selectDailyPrompt() -> Prompt {
         let recentPrompts = getRecentPrompts()
-        let recentCategories = getRecentCategories()
         
-        // Get all daily prompts
         let dailyPrompts = promptGroups.values.flatMap { $0 }.filter { $0.isDailyPrompt }
         
-        // Filter out recently used prompts and categories
         let availablePrompts = dailyPrompts.filter { prompt in
-            !recentPrompts.contains(prompt.text) &&
-            !recentCategories.contains(prompt.category.rawValue)
+            !recentPrompts.contains(prompt.text)
         }
         
-        // If we have available prompts, choose randomly from them
         if let selectedPrompt = availablePrompts.randomElement() {
             return selectedPrompt
         }
-        
-        // If all prompts are recent, just pick any daily prompt
+
         return dailyPrompts.randomElement() ?? dailyPrompts[0]
     }
     
     private func selectGeneralPrompt(excluding category: PromptCategory) -> Prompt {
         let recentPrompts = getRecentPrompts()
-        
-        // Get all prompts except from the excluded category
+
         let availablePrompts = promptGroups.filter { $0.key != category }
             .values
             .flatMap { $0 }
             .filter { !recentPrompts.contains($0.text) }
-        
-        // If we have available prompts, choose randomly from them
+
         if let selectedPrompt = availablePrompts.randomElement() {
             return selectedPrompt
         }
         
-        // If all prompts are recent, just pick any prompt from a different category
         return promptGroups.filter { $0.key != category }
             .values
             .flatMap { $0 }
@@ -181,7 +238,6 @@ class LoopManager: ObservableObject {
     func selectRandomPrompts() {
         let firstPrompt = selectDailyPrompt()
         saveRecentPrompt(firstPrompt.text)
-        saveRecentCategory(firstPrompt.category)
         
         let secondPrompt = selectGeneralPrompt(excluding: firstPrompt.category)
         saveRecentPrompt(secondPrompt.text)
@@ -268,45 +324,128 @@ class LoopManager: ObservableObject {
         return distinctDates.count
     }
     
-    func fetchPastLoopForCurrentPrompt() async throws -> Loop? {
-        guard case .ready = memoryBankStatus else {
+    func getPastLoopForComparison(recordedPrompts: [String]) async throws -> Loop? {
+        print("\n🔄 Starting getPastLoopForComparison")
+        print("📝 Recorded prompts: \(recordedPrompts)")
+        
+        let userDays = try await LoopCloudKitUtility.fetchDistinctLoopingDays()
+        print("📅 User has been looping for \(userDays) days")
+        
+        // Need at least 4 days of history
+        guard userDays >= 4 else {
+            print("❌ Not enough history (need 4 days, have \(userDays))")
             return nil
         }
         
-        let currentPrompt = getCurrentPrompt()
-        
-        if let exactMatch = try await LoopCloudKitUtility.fetchPastLoopForPrompt(currentPrompt) {
-            return exactMatch
+        // Get Prompt objects for the recorded prompts
+        let promptObjects = recordedPrompts.compactMap { promptText in
+            promptGroups.values
+                .flatMap { $0 }
+                .first { $0.text == promptText }
         }
         
-
-        func fetchPastLoopForCurrentPrompt() async throws -> Loop? {
-            guard case .ready = memoryBankStatus else {
-                return nil
-            }
+        print("\n🔍 Analyzing prompts:")
+        for (index, prompt) in promptObjects.enumerated() {
+            print("   \(index + 1). \"\(prompt.text)\"")
+            print("      Category: \(prompt.category)")
+            print("      Type: \(prompt.isDailyPrompt ? "Daily" : "General")")
+        }
+        
+        // Separate into daily and general prompts
+        let generalPrompts = promptObjects.filter { !$0.isDailyPrompt }
+        let dailyPrompts = promptObjects.filter { $0.isDailyPrompt }
+        
+        print("\n📊 Found \(generalPrompts.count) general prompts and \(dailyPrompts.count) daily prompts")
+        
+        // First try to match with general prompts
+        if !generalPrompts.isEmpty {
+            print("\n🎯 Attempting to match general prompts first")
+            let timeWindows = [
+                (min: 30, max: 90),  // 1-3 months
+                (min: 14, max: 30),  // 2-4 weeks
+                (min: 7, max: 14),   // 1-2 weeks
+                (min: 4, max: 7)     // 4-7 days
+            ]
             
-            let currentPrompt = getCurrentPrompt()
-            
-            if let exactMatch = try await LoopCloudKitUtility.fetchPastLoopForPrompt(currentPrompt) {
-                pastLoops.append(exactMatch)
-                return exactMatch
-            }
-
-            if let category = getCategoryForPrompt(currentPrompt) {
-                for prompt in promptGroups[category] ?? [] {
-                    if let categoryMatch = try await LoopCloudKitUtility.fetchPastLoopForPrompt(prompt.text) {
-                        pastLoops.append(categoryMatch)
-                        return categoryMatch
+            for window in timeWindows {
+                print("\n⏰ Trying time window: \(window.min)-\(window.max) days ago")
+                
+                // Try category matches first
+                for prompt in generalPrompts {
+                    print("\n🔎 Searching for category match with prompt: \"\(prompt.text)\"")
+                    print("   Category: \(prompt.category)")
+                    
+                    if let loop = try await LoopCloudKitUtility.fetchPastLoop(
+                        forPrompts: recordedPrompts,
+                        minDaysAgo: window.min,
+                        maxDaysAgo: window.max,
+                        preferGeneralPrompts: true,
+                        category: prompt.category
+                    ) {
+                        print("✅ Found matching loop!")
+                        print("   Date: \(loop.timestamp)")
+                        print("   Prompt: \"\(loop.promptText)\"")
+                        return loop
                     }
+                    print("   ⚠️ No category match found")
+                }
+                
+                print("\n🔄 Trying without category preference for this time window")
+                if let loop = try await LoopCloudKitUtility.fetchPastLoop(
+                    forPrompts: recordedPrompts,
+                    minDaysAgo: window.min,
+                    maxDaysAgo: window.max,
+                    preferGeneralPrompts: true
+                ) {
+                    print("✅ Found matching loop (no category restriction)!")
+                    print("   Date: \(loop.timestamp)")
+                    print("   Prompt: \"\(loop.promptText)\"")
+                    return loop
+                }
+                print("   ⚠️ No matches found in this time window")
+            }
+            print("\n❌ No matches found for general prompts in any time window")
+        }
+        
+        // Fallback to daily prompts if we have enough history
+        if userDays >= 14 && !dailyPrompts.isEmpty {
+            print("\n📝 Falling back to daily prompts (user has \(userDays) days of history)")
+            let dailyTimeWindows = [
+                (min: 14, max: 45),  // 2-6 weeks
+                (min: 7, max: 14)    // 1-2 weeks
+            ]
+            
+            for window in dailyTimeWindows {
+                print("\n⏰ Trying daily prompt time window: \(window.min)-\(window.max) days ago")
+                
+                for prompt in dailyPrompts {
+                    print("\n🔎 Searching for daily prompt match: \"\(prompt.text)\"")
+                    print("   Category: \(prompt.category)")
+                    
+                    if let loop = try await LoopCloudKitUtility.fetchPastLoop(
+                        forPrompts: recordedPrompts,
+                        minDaysAgo: window.min,
+                        maxDaysAgo: window.max,
+                        preferGeneralPrompts: false,
+                        category: prompt.category
+                    ) {
+                        print("✅ Found matching daily loop!")
+                        print("   Date: \(loop.timestamp)")
+                        print("   Prompt: \"\(loop.promptText)\"")
+                        return loop
+                    }
+                    print("   ⚠️ No match found for this daily prompt")
                 }
             }
-            
-            return nil
+            print("\n❌ No matches found for daily prompts")
+        } else {
+            print("\n📝 Skipping daily prompts search (insufficient history or no daily prompts)")
         }
         
+        print("\n❌ No matching loops found after trying all strategies")
         return nil
     }
-
+    
     func checkAndResetIfNeeded() {
         if !isCacheValidForToday() {
             selectRandomPrompts()
@@ -397,16 +536,6 @@ class LoopManager: ObservableObject {
         )
         
         LoopCloudKitUtility.addLoop(loop: loop)
-
-        Task {
-            if let pastLoop = try? await fetchPastLoopForCurrentPrompt() {
-                await MainActor.run {
-                    self.currentPastLoop = pastLoop
-                    self.queuedLoops.append(loop)
-                    self.saveQueuedLoops()
-                }
-            }
-        }
     }
     
     func fetchRecentDates(limit: Int = 6, completion: @escaping () -> Void) {
@@ -646,11 +775,12 @@ enum MemoryBankStatus {
 
 
 enum PromptCategory: String, CaseIterable {
-        case positiveReflection = "Positive Reflection"
-        case challenges = "Challenges"
-        case personalGrowth = "Personal Growth"
-        case futureFocus = "Future Focus"
+    case emotionalWellbeing = "Emotional Wellbeing"
+    case challenges = "Challenges"
+    case growth = "Growth"
+    case connections = "Connections"
 }
+
 
 struct Prompt {
     let text: String

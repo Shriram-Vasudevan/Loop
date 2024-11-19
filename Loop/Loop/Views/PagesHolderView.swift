@@ -58,6 +58,11 @@ struct PagesHolderView: View {
                                     .padding(.top, -20)
                             )
                     )
+                    .onAppear {
+                        Task {
+                            try? await LoopCloudKitUtility.fetchDistinctLoopingDays()
+                        }
+                    }
                 }
             }
             .edgesIgnoringSafeArea(.bottom)
