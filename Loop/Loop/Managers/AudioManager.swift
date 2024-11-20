@@ -31,11 +31,21 @@ class AudioManager: NSObject, ObservableObject {
         }
     }
     
-    // Start recording a new audio file
-    func startRecording() {
+    func prepareForNewRecording() {
+        // Clean up previous recording
+        audioRecorder?.stop()
+        audioRecorder = nil
+        
+        // Configure new session
+        configureAudioSession()
+        
+        // Prepare new filename
         let directory = FileManager.default.temporaryDirectory
-        let filePath = directory.appendingPathComponent(UUID().uuidString + ".m4a")
-        audioFilename = filePath
+        audioFilename = directory.appendingPathComponent(UUID().uuidString + ".m4a")
+    }
+        
+    func startRecording() {
+        guard let filePath = audioFilename else { return }
         
         let settings = [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
@@ -53,18 +63,24 @@ class AudioManager: NSObject, ObservableObject {
         }
     }
     
-    // Stop recording
     func stopRecording() {
         audioRecorder?.stop()
         isRecording = false
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setActive(false)
+        } catch {
+            print("Failed to deactivate audio session: \(error.localizedDescription)")
+        }
     }
 
-    // Reset recording (remove any existing audio)
     func resetRecording() {
+        audioRecorder?.stop()
         audioRecorder = nil
         audioFilename = nil
         isRecording = false
     }
+
 
     // Return the URL of the recorded audio file
     func getRecordedAudioFile() -> URL? {

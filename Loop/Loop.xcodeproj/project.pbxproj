@@ -25,6 +25,9 @@
 		9915BAB52CE6AF8D00D3C44B /* DailyCheckinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB42CE6AF8D00D3C44B /* DailyCheckinView.swift */; };
 		9915BAB72CE6AF9E00D3C44B /* DailyCheckinManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB62CE6AF9E00D3C44B /* DailyCheckinManager.swift */; };
 		9915BAB92CEC332500D3C44B /* AnalysisManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB82CEC332500D3C44B /* AnalysisManager.swift */; };
+		9953BDDD2CEE620E00348AC3 /* AnimatedBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDDC2CEE620E00348AC3 /* AnimatedBackground.swift */; };
+		9953BDE02CEE623B00348AC3 /* PulsingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDDF2CEE623B00348AC3 /* PulsingView.swift */; };
+		9953BDE22CEE8D4C00348AC3 /* DailyAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDE12CEE8D4C00348AC3 /* DailyAnalysis.swift */; };
 		9988DB852CD9BFAC005628DE /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB842CD9BFAC005628DE /* FriendsView.swift */; };
 		9988DB8B2CD9CAEE005628DE /* SharedLoop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */; };
 		9988DB8D2CDA77C8005628DE /* PrivateUserRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8C2CDA77C8005628DE /* PrivateUserRecord.swift */; };
@@ -92,6 +95,9 @@
 		9915BAB42CE6AF8D00D3C44B /* DailyCheckinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckinView.swift; sourceTree = "<group>"; };
 		9915BAB62CE6AF9E00D3C44B /* DailyCheckinManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckinManager.swift; sourceTree = "<group>"; };
 		9915BAB82CEC332500D3C44B /* AnalysisManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisManager.swift; sourceTree = "<group>"; };
+		9953BDDC2CEE620E00348AC3 /* AnimatedBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedBackground.swift; sourceTree = "<group>"; };
+		9953BDDF2CEE623B00348AC3 /* PulsingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulsingView.swift; sourceTree = "<group>"; };
+		9953BDE12CEE8D4C00348AC3 /* DailyAnalysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyAnalysis.swift; sourceTree = "<group>"; };
 		9988DB842CD9BFAC005628DE /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedLoop.swift; sourceTree = "<group>"; };
 		9988DB8C2CDA77C8005628DE /* PrivateUserRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateUserRecord.swift; sourceTree = "<group>"; };
@@ -209,6 +215,8 @@
 				99AC6DDD2CE03CC600B0D0D6 /* AudioBulletJournal.swift */,
 				99AC6DE72CE1235400B0D0D6 /* LoopLogoView.swift */,
 				9915BAB42CE6AF8D00D3C44B /* DailyCheckinView.swift */,
+				9953BDDC2CEE620E00348AC3 /* AnimatedBackground.swift */,
+				9953BDDF2CEE623B00348AC3 /* PulsingView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -242,6 +250,7 @@
 				9988DB942CDA7F92005628DE /* FriendRequest.swift */,
 				99AC6DE52CE0F99800B0D0D6 /* CachedLoop.swift */,
 				99AC6DE92CE18E9900B0D0D6 /* LoopStreak.swift */,
+				9953BDE12CEE8D4C00348AC3 /* DailyAnalysis.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -343,6 +352,8 @@
 				9915BAB52CE6AF8D00D3C44B /* DailyCheckinView.swift in Sources */,
 				99AC6DD82CE0199800B0D0D6 /* FluidParticleBackground.swift in Sources */,
 				99AC6DEA2CE18E9900B0D0D6 /* LoopStreak.swift in Sources */,
+				9953BDE02CEE623B00348AC3 /* PulsingView.swift in Sources */,
+				9953BDDD2CEE620E00348AC3 /* AnimatedBackground.swift in Sources */,
 				99F7F6E92CAC792C009858AC /* NotificationManager.swift in Sources */,
 				990E4A962CBDCA51009F88A0 /* VideoRecordingView.swift in Sources */,
 				990E4A902CB48BDD009F88A0 /* PageType.swift in Sources */,
@@ -350,6 +361,7 @@
 				990E4A8C2CB48BAF009F88A0 /* PagesHolderView.swift in Sources */,
 				9988DBAE2CDD25C8005628DE /* PastLoopCard.swift in Sources */,
 				99AC6DDC2CE0226500B0D0D6 /* SettingsView.swift in Sources */,
+				9953BDE22CEE8D4C00348AC3 /* DailyAnalysis.swift in Sources */,
 				99F7F6FD2CAF814B009858AC /* RecordLoopsView.swift in Sources */,
 				9988DB952CDA7F92005628DE /* FriendRequest.swift in Sources */,
 				99F7F6F52CAC7DB4009858AC /* LoopManager.swift in Sources */,

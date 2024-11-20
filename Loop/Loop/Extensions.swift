@@ -35,6 +35,12 @@ extension Color {
     }
 }
 
+extension Array {
+    var array: [Element] {
+        return self
+    }
+}
+
 extension String {
     var nilIfEmpty: String? {
         self.isEmpty ? nil : self
