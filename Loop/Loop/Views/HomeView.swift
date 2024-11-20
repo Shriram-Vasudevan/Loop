@@ -43,6 +43,7 @@ struct HomeView: View {
                     todayPromptCard
                         .transition(.opacity)
                     
+                    
                     if loopManager.pastLoops.count > 0 {
                         memoryLaneSection
                             .transition(.opacity)
@@ -95,7 +96,7 @@ struct HomeView: View {
                         .foregroundColor(textColor)
                     
                     ProgressIndicator(
-                        totalSteps: loopManager.prompts.count,
+                        totalSteps: loopManager.dailyPrompts.count,
                         currentStep: loopManager.currentPromptIndex,
                         accentColor: accentColor
                     )
@@ -215,6 +216,29 @@ struct HomeView: View {
                 RoundedRectangle(cornerRadius: 24)
                     .fill(surfaceColor)
             )
+        }
+    }
+    
+    private var additionalLoops: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack {
+                Text("try these too")
+                    .font(.system(size: 24, weight: .ultraLight))
+                    .foregroundColor(textColor)
+                
+                Spacer()
+            }
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 20) {
+                    ForEach(loopManager.pastLoops, id: \.self) { loop in
+//                        PastLoopCard(loop: loop, accentColor: accentColor) {
+//                            selectedLoop = loop
+//                        }
+                    }
+                }
+                .padding(.bottom, 12)
+            }
         }
     }
     
@@ -458,6 +482,14 @@ struct ScheduleBar: View {
             .frame(maxWidth: .infinity)
         }
         .frame(height: 70)
+    }
+}
+
+struct AdditionalLoopCard: View {
+    var body: some View {
+        VStack {
+            
+        }
     }
 }
 

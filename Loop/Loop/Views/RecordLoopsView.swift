@@ -15,7 +15,6 @@ struct RecordLoopsView: View {
     @State private var isRecording = false
     @State private var isPostRecording = false
     @State private var isShowingMemory = false
-    @State private var isShowingMemoryMessage = false
     @State private var recordingTimer: Timer?
     @State private var timeRemaining: Int = 30
     @State private var showingFirstLaunchScreen = true
@@ -57,10 +56,7 @@ struct RecordLoopsView: View {
                 } else if loopManager.hasCompletedToday {
                     thankYouScreen
                         .transition(.opacity.animation(.easeInOut(duration: 0.8)))
-                }  else if isShowingMemoryMessage {
-                    memoryMessageView
-                        .transition(.opacity.animation(.easeInOut(duration: 0.8)))
-                } else if isPostRecording {
+                }  else if isPostRecording {
                     postRecordingView
                         .transition(.opacity.animation(.easeInOut(duration: 0.8)))
                 } else if showingFirstLaunchScreen {
@@ -99,6 +95,11 @@ struct RecordLoopsView: View {
     private var topBar: some View {
         VStack(spacing: 24) {
             HStack {
+                ZStack {
+                    if let promptCategory = loopManager.getCategoryForPrompt( loopManager.getCurrentPrompt()) {
+                        Text(promptCategory.rawValue)
+                    }
+                }
                 Button(action: {
                     dismiss()
                 }) {
@@ -118,7 +119,7 @@ struct RecordLoopsView: View {
                 }
             }
               
-            ProgressIndicator(totalSteps: loopManager.prompts.count,
+            ProgressIndicator(totalSteps: loopManager.dailyPrompts.count,
                             currentStep: loopManager.currentPromptIndex,
                             accentColor: accentColor)
             
@@ -287,7 +288,6 @@ struct RecordLoopsView: View {
                     messageOpacity = 0
                 }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                    isShowingMemoryMessage = false
                     loopManager.moveToNextPrompt()
                 }
             }
@@ -423,7 +423,7 @@ struct RecordLoopsView: View {
             
             if loopManager.isLastPrompt() {
     
-                allPrompts = loopManager.prompts
+                allPrompts = loopManager.dailyPrompts
                 
                 Task {
                     if let pastLoop = try? await loopManager.getPastLoopForComparison(
@@ -442,15 +442,8 @@ struct RecordLoopsView: View {
                        }
                     }
                 }
-            } else {
-                showMemoryAddedMessage()
             }
         }
-    }
-    
-    private func showMemoryAddedMessage() {
-        isPostRecording = false
-        isShowingMemoryMessage = true
     }
     
     private func retryRecording() {

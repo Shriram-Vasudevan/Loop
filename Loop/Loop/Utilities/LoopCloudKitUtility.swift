@@ -433,6 +433,22 @@ class LoopCloudKitUtility {
         privateDB.add(operation)
     }
     
+    static func saveAnalysisToCloudKit(loop: Loop, sentiment: Double, keywords: [String]) {
+        let recordID = CKRecord.ID(recordName: loop.id)
+        let record = CKRecord(recordType: "Loop", recordID: recordID)
+        record["sentimentScore"] = sentiment
+        record["keywords"] = keywords
+        
+        let container = CKContainer.default()
+        let privateDatabase = container.privateCloudDatabase
+        
+        privateDatabase.save(record) { _, error in
+            if let error = error {
+                print("Error saving analysis: \(error)")
+            }
+        }
+    }
+    
 }
 enum FetchResult {
     case success(Loop)

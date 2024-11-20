@@ -12,7 +12,7 @@ class LoopManager: ObservableObject {
     static let shared = LoopManager()
     
     // MARK: - Published Properties
-    @Published var prompts: [String] = []
+    @Published var dailyPrompts: [String] = []
     @Published var currentPromptIndex: Int = 0
     @Published var retryAttemptsLeft: Int = 1
     @Published var pastLoops: [Loop] = []
@@ -22,6 +22,8 @@ class LoopManager: ObservableObject {
     @Published var queuedLoops: [Loop] = []
     @Published var memoryBankStatus: MemoryBankStatus = .checking
     @Published var currentPastLoop: Loop?
+    
+    @Published var additionalPrompts: [String] = []
     
     @Published var moodData: [Date: String] = [
         Date(timeIntervalSinceNow: -6 * 24 * 60 * 60): "happy",
@@ -67,101 +69,102 @@ class LoopManager: ObservableObject {
     let promptGroups: [PromptCategory: [Prompt]] = [
         .emotionalWellbeing: [
             // Daily prompts
-            Prompt(text: "What made you smile today?", category: .emotionalWellbeing, isDailyPrompt: true),
-            Prompt(text: "What's something small you appreciated today?", category: .emotionalWellbeing, isDailyPrompt: true),
-            Prompt(text: "How did today feel different from yesterday?", category: .emotionalWellbeing, isDailyPrompt: true),
-            Prompt(text: "What moment today stands out?", category: .emotionalWellbeing, isDailyPrompt: true),
-            Prompt(text: "What lifted your mood today?", category: .emotionalWellbeing, isDailyPrompt: true),
-            Prompt(text: "When did you feel most yourself today?", category: .emotionalWellbeing, isDailyPrompt: true),
-            Prompt(text: "What felt meaningful about today?", category: .emotionalWellbeing, isDailyPrompt: true),
-            Prompt(text: "What surprised you today?", category: .emotionalWellbeing, isDailyPrompt: true),
-            Prompt(text: "What made you feel grounded today?", category: .emotionalWellbeing, isDailyPrompt: true),
-            Prompt(text: "What gave you peace today?", category: .emotionalWellbeing, isDailyPrompt: true),
+            Prompt(text: "What was the happiest moment of your day?", category: .emotionalWellbeing, isDailyPrompt: true),
+            Prompt(text: "What’s one small thing that brightened your day?", category: .emotionalWellbeing, isDailyPrompt: true),
+            Prompt(text: "What felt new or different about today compared to yesterday?", category: .emotionalWellbeing, isDailyPrompt: true),
+            Prompt(text: "Was there a moment today that stood out to you?", category: .emotionalWellbeing, isDailyPrompt: true),
+            Prompt(text: "What helped you feel good today?", category: .emotionalWellbeing, isDailyPrompt: true),
+            Prompt(text: "What moment made you feel most like yourself today?", category: .emotionalWellbeing, isDailyPrompt: true),
+            Prompt(text: "What made today meaningful to you?", category: .emotionalWellbeing, isDailyPrompt: true),
+            Prompt(text: "Did anything surprise you today? What was it?", category: .emotionalWellbeing, isDailyPrompt: true),
+            Prompt(text: "What helped you feel calm or centered today?", category: .emotionalWellbeing, isDailyPrompt: true),
+            Prompt(text: "Was there anything that made you feel peaceful today?", category: .emotionalWellbeing, isDailyPrompt: true),
             
             // Broader reflections
-            Prompt(text: "What's been bringing you joy lately?", category: .emotionalWellbeing, isDailyPrompt: false),
-            Prompt(text: "What feelings keep showing up?", category: .emotionalWellbeing, isDailyPrompt: false),
-            Prompt(text: "What's been on your mind a lot?", category: .emotionalWellbeing, isDailyPrompt: false),
-            Prompt(text: "How have your emotions surprised you lately?", category: .emotionalWellbeing, isDailyPrompt: false),
-            Prompt(text: "What's giving you hope right now?", category: .emotionalWellbeing, isDailyPrompt: false),
-            Prompt(text: "What part of life feels most alive?", category: .emotionalWellbeing, isDailyPrompt: false),
+            Prompt(text: "What’s been bringing you joy lately?", category: .emotionalWellbeing, isDailyPrompt: false),
+            Prompt(text: "What feelings have been showing up often?", category: .emotionalWellbeing, isDailyPrompt: false),
+            Prompt(text: "What’s been on your mind a lot lately?", category: .emotionalWellbeing, isDailyPrompt: false),
+            Prompt(text: "How have your emotions surprised you recently?", category: .emotionalWellbeing, isDailyPrompt: false),
+            Prompt(text: "What’s giving you hope right now?", category: .emotionalWellbeing, isDailyPrompt: false),
+            Prompt(text: "What part of your life feels most alive?", category: .emotionalWellbeing, isDailyPrompt: false),
             Prompt(text: "What feels different about you lately?", category: .emotionalWellbeing, isDailyPrompt: false),
-            Prompt(text: "What's helping you feel balanced?", category: .emotionalWellbeing, isDailyPrompt: false),
-            Prompt(text: "What's becoming clearer emotionally?", category: .emotionalWellbeing, isDailyPrompt: false),
+            Prompt(text: "What’s helping you feel balanced?", category: .emotionalWellbeing, isDailyPrompt: false),
+            Prompt(text: "What emotions have been becoming clearer to you?", category: .emotionalWellbeing, isDailyPrompt: false),
             Prompt(text: "Where do you feel most at peace?", category: .emotionalWellbeing, isDailyPrompt: false)
         ],
         
         .challenges: [
             // Daily prompts
-            Prompt(text: "What challenged you today?", category: .challenges, isDailyPrompt: true),
-            Prompt(text: "What do you wish went differently today?", category: .challenges, isDailyPrompt: true),
-            Prompt(text: "What took unexpected effort today?", category: .challenges, isDailyPrompt: true),
-            Prompt(text: "What tested your patience today?", category: .challenges, isDailyPrompt: true),
+            Prompt(text: "What was hard about today?", category: .challenges, isDailyPrompt: true),
+            Prompt(text: "If you could redo something from today, what would it be?", category: .challenges, isDailyPrompt: true),
+            Prompt(text: "What required more effort than you thought it would today?", category: .challenges, isDailyPrompt: true),
+            Prompt(text: "What made you feel impatient today?", category: .challenges, isDailyPrompt: true),
             Prompt(text: "What felt uncertain today?", category: .challenges, isDailyPrompt: true),
-            Prompt(text: "What decision was difficult today?", category: .challenges, isDailyPrompt: true),
-            Prompt(text: "What boundary felt important today?", category: .challenges, isDailyPrompt: true),
-            Prompt(text: "What made you pause today?", category: .challenges, isDailyPrompt: true),
+            Prompt(text: "What decision was tough for you today?", category: .challenges, isDailyPrompt: true),
+            Prompt(text: "What boundary felt important to hold today?", category: .challenges, isDailyPrompt: true),
+            Prompt(text: "What made you stop and think today?", category: .challenges, isDailyPrompt: true),
             
             // Broader reflections
-            Prompt(text: "What's been testing you lately?", category: .challenges, isDailyPrompt: false),
-            Prompt(text: "What's something you're working through?", category: .challenges, isDailyPrompt: false),
-            Prompt(text: "What's been harder than expected?", category: .challenges, isDailyPrompt: false),
+            Prompt(text: "What’s been testing you lately?", category: .challenges, isDailyPrompt: false),
+            Prompt(text: "What’s something you’re trying to figure out?", category: .challenges, isDailyPrompt: false),
+            Prompt(text: "What’s been harder than you expected?", category: .challenges, isDailyPrompt: false),
             Prompt(text: "What are you trying to accept or change?", category: .challenges, isDailyPrompt: false),
-            Prompt(text: "What's been draining your energy?", category: .challenges, isDailyPrompt: false),
+            Prompt(text: "What’s been draining your energy lately?", category: .challenges, isDailyPrompt: false),
             Prompt(text: "What pattern do you want to break free from?", category: .challenges, isDailyPrompt: false),
-            Prompt(text: "What feels like it's in transition?", category: .challenges, isDailyPrompt: false),
+            Prompt(text: "What feels like it’s changing in your life?", category: .challenges, isDailyPrompt: false),
             Prompt(text: "What are you learning to let go of?", category: .challenges, isDailyPrompt: false),
-            Prompt(text: "What assumption is being challenged?", category: .challenges, isDailyPrompt: false),
-            Prompt(text: "What boundary needs attention?", category: .challenges, isDailyPrompt: false)
+            Prompt(text: "What assumption have you been questioning?", category: .challenges, isDailyPrompt: false),
+            Prompt(text: "What boundary needs more attention?", category: .challenges, isDailyPrompt: false)
         ],
         
         .growth: [
             // Daily prompts
-            Prompt(text: "What did you learn today?", category: .growth, isDailyPrompt: true),
-            Prompt(text: "What would you do differently next time?", category: .growth, isDailyPrompt: true),
+            Prompt(text: "What’s one thing you learned today?", category: .growth, isDailyPrompt: true),
+            Prompt(text: "If you had to do something over today, what would it be?", category: .growth, isDailyPrompt: true),
             Prompt(text: "What choice are you proud of today?", category: .growth, isDailyPrompt: true),
             Prompt(text: "What strength did you use today?", category: .growth, isDailyPrompt: true),
-            Prompt(text: "What did you try new today?", category: .growth, isDailyPrompt: true),
-            Prompt(text: "What feedback helped you today?", category: .growth, isDailyPrompt: true),
+            Prompt(text: "What did you try for the first time today?", category: .growth, isDailyPrompt: true),
+            Prompt(text: "What feedback helped you improve today?", category: .growth, isDailyPrompt: true),
             Prompt(text: "What did you do for yourself today?", category: .growth, isDailyPrompt: true),
-            Prompt(text: "What responsibility did you handle well?", category: .growth, isDailyPrompt: true),
+            Prompt(text: "What responsibility did you handle well today?", category: .growth, isDailyPrompt: true),
             
             // Broader reflections
-            Prompt(text: "How are you growing lately?", category: .growth, isDailyPrompt: false),
-            Prompt(text: "What's becoming clearer to you?", category: .growth, isDailyPrompt: false),
+            Prompt(text: "How do you feel like you’re growing lately?", category: .growth, isDailyPrompt: false),
+            Prompt(text: "What’s becoming clearer to you about yourself?", category: .growth, isDailyPrompt: false),
             Prompt(text: "What are you getting better at?", category: .growth, isDailyPrompt: false),
-            Prompt(text: "What new side of yourself are you discovering?", category: .growth, isDailyPrompt: false),
-            Prompt(text: "What habit is serving you well?", category: .growth, isDailyPrompt: false),
-            Prompt(text: "What's your gut telling you lately?", category: .growth, isDailyPrompt: false),
-            Prompt(text: "What wisdom are you gaining?", category: .growth, isDailyPrompt: false),
-            Prompt(text: "What strength is developing?", category: .growth, isDailyPrompt: false),
-            Prompt(text: "What perspective is shifting?", category: .growth, isDailyPrompt: false),
-            Prompt(text: "What potential are you stepping into?", category: .growth, isDailyPrompt: false)
+            Prompt(text: "What new side of yourself have you discovered recently?", category: .growth, isDailyPrompt: false),
+            Prompt(text: "What habit has been helping you lately?", category: .growth, isDailyPrompt: false),
+            Prompt(text: "What’s your gut telling you to do?", category: .growth, isDailyPrompt: false),
+            Prompt(text: "What wisdom have you gained recently?", category: .growth, isDailyPrompt: false),
+            Prompt(text: "What strength feels like it’s growing?", category: .growth, isDailyPrompt: false),
+            Prompt(text: "What’s shifting your perspective lately?", category: .growth, isDailyPrompt: false),
+            Prompt(text: "What potential are you starting to step into?", category: .growth, isDailyPrompt: false)
         ],
         
         .connections: [
             // Daily prompts
-            Prompt(text: "Who made an impact on you today?", category: .connections, isDailyPrompt: true),
-            Prompt(text: "What conversation mattered today?", category: .connections, isDailyPrompt: true),
+            Prompt(text: "Who made the biggest impact on you today?", category: .connections, isDailyPrompt: true),
+            Prompt(text: "What conversation stood out to you today?", category: .connections, isDailyPrompt: true),
             Prompt(text: "How did you connect with someone today?", category: .connections, isDailyPrompt: true),
-            Prompt(text: "Who did you appreciate today?", category: .connections, isDailyPrompt: true),
-            Prompt(text: "What did you share today?", category: .connections, isDailyPrompt: true),
+            Prompt(text: "Who did you feel especially grateful for today?", category: .connections, isDailyPrompt: true),
+            Prompt(text: "What did you share with someone today?", category: .connections, isDailyPrompt: true),
             Prompt(text: "Who supported you today?", category: .connections, isDailyPrompt: true),
             Prompt(text: "Who did you help today?", category: .connections, isDailyPrompt: true),
             
             // Broader reflections
-            Prompt(text: "Who's been on your mind lately?", category: .connections, isDailyPrompt: false),
-            Prompt(text: "What relationship is teaching you something?", category: .connections, isDailyPrompt: false),
-            Prompt(text: "How are your connections evolving?", category: .connections, isDailyPrompt: false),
-            Prompt(text: "What conversation changed something for you?", category: .connections, isDailyPrompt: false),
-            Prompt(text: "Who are you grateful for right now?", category: .connections, isDailyPrompt: false),
+            Prompt(text: "Who’s been on your mind lately?", category: .connections, isDailyPrompt: false),
+            Prompt(text: "What relationship has been teaching you something new?", category: .connections, isDailyPrompt: false),
+            Prompt(text: "How are your relationships changing?", category: .connections, isDailyPrompt: false),
+            Prompt(text: "What conversation made a difference to you recently?", category: .connections, isDailyPrompt: false),
+            Prompt(text: "Who are you feeling most grateful for right now?", category: .connections, isDailyPrompt: false),
             Prompt(text: "What boundary is shifting in a relationship?", category: .connections, isDailyPrompt: false),
-            Prompt(text: "What kind of friend are you becoming?", category: .connections, isDailyPrompt: false),
-            Prompt(text: "Which relationship needs attention?", category: .connections, isDailyPrompt: false),
-            Prompt(text: "What do you want to express to someone?", category: .connections, isDailyPrompt: false),
-            Prompt(text: "Who's influencing your growth?", category: .connections, isDailyPrompt: false)
+            Prompt(text: "What kind of friend do you want to be?", category: .connections, isDailyPrompt: false),
+            Prompt(text: "What relationship could use more attention?", category: .connections, isDailyPrompt: false),
+            Prompt(text: "What’s something you wish you could say to someone?", category: .connections, isDailyPrompt: false),
+            Prompt(text: "Who’s been inspiring your growth recently?", category: .connections, isDailyPrompt: false)
         ]
     ]
+
     
     private let recentPromptsKey = "RecentPromptsKey"
     private let recentCategoriesKey = "RecentCategoriesKey"
@@ -169,7 +172,7 @@ class LoopManager: ObservableObject {
     
     
 
-    private func getCategoryForPrompt(_ promptText: String) -> PromptCategory? {
+    func getCategoryForPrompt(_ promptText: String) -> PromptCategory? {
         for (category, prompts) in promptGroups {
             if prompts.contains(where: { $0.text == promptText }) {
                 return category
@@ -245,7 +248,12 @@ class LoopManager: ObservableObject {
         let thirdPrompt = selectGeneralPrompt(excluding: firstPrompt.category)
         saveRecentPrompt(thirdPrompt.text)
         
-        prompts = [firstPrompt.text, secondPrompt.text, thirdPrompt.text]
+        dailyPrompts = [firstPrompt.text, secondPrompt.text, thirdPrompt.text]
+    }
+    
+    func generateAdditionalPrompts() {
+       
+        
     }
     
     func fetchWeekSchedule() {
@@ -463,7 +471,7 @@ class LoopManager: ObservableObject {
     }
     
     func moveToNextPrompt() {
-        guard currentPromptIndex < prompts.count - 1 else {
+        guard currentPromptIndex < dailyPrompts.count - 1 else {
             completeAllPrompts()
             return
         }
@@ -479,11 +487,11 @@ class LoopManager: ObservableObject {
     }
     
     func getCurrentPrompt() -> String {
-        return prompts[currentPromptIndex]
+        return dailyPrompts[currentPromptIndex]
     }
     
     func isLastPrompt() -> Bool {
-        return currentPromptIndex == prompts.count - 1
+        return currentPromptIndex == dailyPrompts.count - 1
     }
     
     func retryRecording() {
@@ -744,7 +752,7 @@ class LoopManager: ObservableObject {
         }
         
         private func saveCachedState() {
-           UserDefaults.standard.set(prompts, forKey: promptCacheKey)
+           UserDefaults.standard.set(dailyPrompts, forKey: promptCacheKey)
            UserDefaults.standard.set(currentPromptIndex, forKey: promptIndexKey)
            UserDefaults.standard.set(retryAttemptsLeft, forKey: retryAttemptsKey)
            UserDefaults.standard.set(hasCompletedToday, forKey: "hasCompletedToday")
@@ -752,7 +760,7 @@ class LoopManager: ObservableObject {
        }
        
        private func loadCachedState() {
-           prompts = UserDefaults.standard.stringArray(forKey: promptCacheKey) ?? []
+           dailyPrompts = UserDefaults.standard.stringArray(forKey: promptCacheKey) ?? []
            currentPromptIndex = UserDefaults.standard.integer(forKey: promptIndexKey)
            retryAttemptsLeft = UserDefaults.standard.integer(forKey: retryAttemptsKey)
            hasCompletedToday = UserDefaults.standard.bool(forKey: "hasCompletedToday")

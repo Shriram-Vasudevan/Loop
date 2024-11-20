@@ -96,8 +96,8 @@ struct LoopsView: View {
                 Spacer()
 
                 TodayProgressRing(
-                    progress: Double(loopManager.currentPromptIndex) / Double(loopManager.prompts.count),
-                    total: loopManager.prompts.count,
+                    progress: Double(loopManager.currentPromptIndex) / Double(loopManager.dailyPrompts.count),
+                    total: loopManager.dailyPrompts.count,
                     completed: loopManager.currentPromptIndex
                 )
             }
@@ -344,10 +344,12 @@ struct TodayProgressRing: View {
                     .font(.system(size: 10, weight: .regular))
                     .foregroundColor(textColor.opacity(0.6))
             }
+            
         }
         .frame(width: 50, height: 50)
     }
 }
+
 
 struct DailyInsightCard<Content: View>: View {
     let title: String
