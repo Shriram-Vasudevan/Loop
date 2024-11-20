@@ -416,7 +416,7 @@ class LoopManager: ObservableObject {
         }
         
         // Fallback to daily prompts if we have enough history
-        if userDays >= 14 && !dailyPrompts.isEmpty {
+        if userDays >= 7 && !dailyPrompts.isEmpty {
             print("\n📝 Falling back to daily prompts (user has \(userDays) days of history)")
             let dailyTimeWindows = [
                 (min: 14, max: 45),  // 2-6 weeks

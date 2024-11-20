@@ -218,7 +218,6 @@ struct RecordLoopsView: View {
         
         private var memoryPlaybackView: some View {
             VStack(spacing: 32) {
-                // Header
                 VStack(spacing: 16) {
                     Text("from your past")
                         .font(.system(size: 24, weight: .ultraLight))
@@ -240,7 +239,6 @@ struct RecordLoopsView: View {
                 
                 Spacer()
                 
-                // Continue Button
                 Button(action: {
                     withAnimation {
                         isShowingMemory = false
@@ -442,6 +440,10 @@ struct RecordLoopsView: View {
                        }
                     }
                 }
+            }
+            else {
+                loopManager.moveToNextPrompt()
+                isPostRecording = false
             }
         }
     }
@@ -783,7 +785,6 @@ struct PastReflectionView: View {
             
             Spacer()
             
-            // Continue button
             Button(action: onComplete) {
                 Text("continue")
                     .font(.system(size: 18, weight: .light))
