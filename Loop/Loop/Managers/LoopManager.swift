@@ -232,7 +232,6 @@ class LoopManager: ObservableObject {
         let currentPrompt = getCurrentPrompt()
         let currentCategory = getCategoryForPrompt(currentPrompt)
         
-        // For the second prompt (index 1), get alternative daily prompts
         if currentPromptIndex == 1 {
             return Array(promptGroups
                 .filter { $0.key != .freeform }
@@ -242,7 +241,7 @@ class LoopManager: ObservableObject {
                 .shuffled()
                 .prefix(3))
         }
-        // For the third prompt (index 2), get alternative general prompts
+        
         else {
             return Array(promptGroups
                 .filter { $0.key != .freeform && $0.key != currentCategory }

@@ -7,6 +7,10 @@
 
 import Foundation
 import SwiftUI
+import AVFoundation
+import Speech
+import NaturalLanguage
+
 // Helper extension for hex color support (unchanged)
 extension Color {
     init(hex: String) {
@@ -41,8 +45,26 @@ extension Array {
     }
 }
 
+
+extension NLTokenizer {
+    func tokenizeWords(_ text: String) -> [String] {
+        self.string = text
+        return self.tokens(for: text.startIndex..<text.endIndex).map { String(text[$0]) }
+    }
+}
+
 extension String {
     var nilIfEmpty: String? {
         self.isEmpty ? nil : self
+    }
+}
+
+extension SFSpeechRecognizer {
+    static func hasAuthorizationToRecognize() async -> Bool {
+        await withCheckedContinuation { continuation in
+            requestAuthorization { status in
+                continuation.resume(returning: status == .authorized)
+            }
+        }
     }
 }

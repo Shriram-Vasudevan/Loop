@@ -47,14 +47,19 @@ struct RecordLoopsView: View {
             VStack(spacing: 0) {
                 if isShowingMemory {
                     memoryPlaybackView
+                        .transition(.opacity)
                 } else if loopManager.hasCompletedToday {
                     thankYouScreen
+                        .transition(.opacity)
                 } else if isPostRecording {
                     postRecordingView
+                        .transition(.opacity)
                 } else if showingFirstLaunchScreen {
                     firstLaunchOrQuietSpaceScreen
+                        .transition(.opacity)
                 } else {
                     recordingScreen
+                        .transition(.opacity)
                 }
             }
             .padding(.horizontal, 32)
@@ -197,7 +202,7 @@ struct RecordLoopsView: View {
                                 
                                 Text(prompt.text)
                                     .font(.system(size: 18, weight: .light))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(secondaryColor)
                                     .multilineTextAlignment(.leading)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -211,7 +216,7 @@ struct RecordLoopsView: View {
             .padding(32)
             .background(
                 RoundedRectangle(cornerRadius: 24)
-                    .fill(Color(hex: "2C3E50").opacity(0.95))
+                    .fill(Color(hex: "FFFFFF").opacity(0.95))
             )
             .padding(24)
         }
