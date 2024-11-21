@@ -185,7 +185,7 @@ struct RecordLoopsView: View {
             VStack(spacing: 24) {
                 Text("Choose another prompt")
                     .font(.system(size: 24, weight: .light))
-                    .foregroundColor(.white)
+                    .foregroundColor(.black)
                 
                 VStack(spacing: 16) {
                     ForEach(loopManager.getAlternativePrompts(), id: \.text) { prompt in

@@ -533,6 +533,7 @@
 				INFOPLIST_KEY_NSCameraUsageDescription = "Required to record video loops";
 				INFOPLIST_KEY_NSContactsUsageDescription = "To See Users using loop";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "So that you can Loop!";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "For Journal Analytics!";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -568,6 +569,7 @@
 				INFOPLIST_KEY_NSCameraUsageDescription = "Required to record video loops";
 				INFOPLIST_KEY_NSContactsUsageDescription = "To See Users using loop";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "So that you can Loop!";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "For Journal Analytics!";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

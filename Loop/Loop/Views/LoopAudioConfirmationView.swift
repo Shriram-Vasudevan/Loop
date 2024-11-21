@@ -35,7 +35,11 @@ struct LoopAudioConfirmationView: View {
             .padding(.vertical, 20)
             
             VStack(spacing: 16) {
-                Button(action: onComplete) {
+                Button(action: {
+                    withAnimation {
+                        onComplete()
+                    }
+                }) {
                     Text("sounds good")
                         .font(.system(size: 18, weight: .light))
                         .foregroundColor(.white)
