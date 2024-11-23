@@ -80,6 +80,7 @@ class LoopCloudKitUtility {
         loopRecord["Prompt"] = loop.promptText as CKRecordValue
         loopRecord["Mood"] = loop.mood as CKRecordValue?
         loopRecord["FreeResponse"] = loop.freeResponse as CKRecordValue
+        loopRecord["IsDailyLoop"] = loop.isDailyLoop as CKRecordValue
         
         privateUserDB.save(loopRecord) { record, error in
             if let error = error {
@@ -447,6 +448,98 @@ class LoopCloudKitUtility {
                 print("Error saving analysis: \(error)")
             }
         }
+    }
+    
+    static func fetchActiveMonths(year: Int? = nil) async throws -> [MonthIdentifier] {
+        let privateDB = container.privateCloudDatabase
+        
+        var predicate: NSPredicate
+        if let year = year {
+            let calendar = Calendar.current
+            var startComponents = DateComponents()
+            startComponents.year = year
+            startComponents.month = 1
+            startComponents.day = 1
+            
+            var endComponents = DateComponents()
+            endComponents.year = year + 1
+            endComponents.month = 1
+            endComponents.day = 1
+            
+            guard let startDate = calendar.date(from: startComponents),
+                  let endDate = calendar.date(from: endComponents) else {
+                throw NSError(domain: "DateError", code: -1)
+            }
+            
+            predicate = NSPredicate(format: "Timestamp >= %@ AND Timestamp < %@",
+                                  startDate as NSDate,
+                                  endDate as NSDate)
+        } else {
+            predicate = NSPredicate(value: true)
+        }
+        
+        let query = CKQuery(recordType: "LoopRecord", predicate: predicate)
+        let records = try await privateDB.records(matching: query, inZoneWith: nil)
+        
+        let calendar = Calendar.current
+        let monthIdentifiers = records.compactMap { record -> MonthIdentifier? in
+            guard let timestamp = record["Timestamp"] as? Date else { return nil }
+            let components = calendar.dateComponents([.year, .month], from: timestamp)
+            guard let year = components.year, let month = components.month else { return nil }
+            return MonthIdentifier(year: year, month: month)
+        }
+        
+        return Array(Set(monthIdentifiers)).sorted { first, second in
+            if first.year != second.year {
+                return first.year > second.year
+            }
+            return first.month > second.month
+        }
+    }
+    
+    static func fetchMonthData(monthId: MonthIdentifier) async throws -> MonthSummary {
+        let privateDB = container.privateCloudDatabase
+        
+        let calendar = Calendar.current
+        var dateComponents = DateComponents()
+        dateComponents.year = monthId.year
+        dateComponents.month = monthId.month
+        
+        guard let startDate = calendar.date(from: dateComponents),
+              let endDate = calendar.date(byAdding: DateComponents(month: 1), to: startDate) else {
+            throw NSError(domain: "DateError", code: -1)
+        }
+        
+        let predicate = NSPredicate(format: "Timestamp >= %@ AND Timestamp < %@",
+                                  startDate as NSDate,
+                                  endDate as NSDate)
+        
+        let query = CKQuery(recordType: "LoopRecord", predicate: predicate)
+        query.sortDescriptors = [NSSortDescriptor(key: "Timestamp", ascending: true)]
+        
+        let records = try await privateDB.records(matching: query, inZoneWith: nil)
+        let loops = records.compactMap { Loop.from(record: $0) }
+        
+        return MonthSummary(
+            year: monthId.year,
+            month: monthId.month,
+            totalEntries: loops.count,
+            completionRate: calculateCompletionRate(loops: loops),
+            loops: loops
+        )
+    }
+    
+    private static func calculateCompletionRate(loops: [Loop]) -> Double {
+        let calendar = Calendar.current
+        let groupedByDay = Dictionary(grouping: loops) { loop in
+            calendar.startOfDay(for: loop.timestamp)
+        }
+        
+        if let firstLoop = loops.first,
+           let daysInMonth = calendar.range(of: .day, in: .month, for: firstLoop.timestamp)?.count {
+            return Double(groupedByDay.count) / Double(daysInMonth)
+        }
+        return 0.0
     }
     
 }

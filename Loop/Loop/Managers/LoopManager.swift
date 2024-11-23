@@ -37,6 +37,12 @@ class LoopManager: ObservableObject {
     @Published var weekSchedule: [Date: Bool] = [:]
     @Published var isLoadingSchedule = false
     
+    @Published var activeMonths: [MonthIdentifier] = []
+    @Published var selectedMonthSummary: MonthSummary?
+    @Published var yearSummaries: [Int: [MonthSummary]] = [:]
+    @Published var isLoadingMonthData = false
+    @Published var isLoadingYearData = false
+    
     let moodColors: [String: Color] = [
         "happy": Color(hex: "6FCF97"),
         "sad": Color(hex: "56CCF2"),
@@ -524,7 +530,7 @@ class LoopManager: ObservableObject {
 //        })
 //    }
     
-    func addLoop(mediaURL: URL, isVideo: Bool, prompt: String, mood: String? = nil, freeResponse: Bool = false) -> Loop {
+    func addLoop(mediaURL: URL, isVideo: Bool, prompt: String, mood: String? = nil, freeResponse: Bool = false, isDailyLoop: Bool) -> Loop {
         let loopID = UUID().uuidString
         let timestamp = Date()
         let ckAsset = CKAsset(fileURL: mediaURL)
@@ -537,7 +543,8 @@ class LoopManager: ObservableObject {
             promptText: prompt,
             mood: mood,
             freeResponse: freeResponse,
-            isVideo: isVideo
+            isVideo: isVideo,
+            isDailyLoop: isDailyLoop
         )
         
         LoopCloudKitUtility.addLoop(loop: loop)
@@ -665,112 +672,164 @@ class LoopManager: ObservableObject {
         }
     }
         
-        private func loadCachedLoops() {
-            if let queuedData = UserDefaults.standard.array(forKey: queuedLoopsKey) as? [[String: Any]] {
-                let today = Calendar.current.startOfDay(for: Date())
-                
-                queuedLoops = queuedData.compactMap { data -> Loop? in
-                    let cacheDate = Date(timeIntervalSince1970: data["cacheDate"] as? Double ?? 0)
-                    guard Calendar.current.isDate(cacheDate, inSameDayAs: today),
-                          let id = data["id"] as? String,
-                          let timestampDouble = data["timestamp"] as? Double,
-                          let promptText = data["promptText"] as? String,
-                          let freeResponse = data["freeResponse"] as? Bool,
-                          let isVideo = data["isVideo"] as? Bool else {
-                        return nil
-                    }
-                    
-                    let timestamp = Date(timeIntervalSince1970: timestampDouble)
-                    let mood = (data["mood"] as? String)?.nilIfEmpty
-                    let assetURLString = data["assetURLString"] as? String
-                    
-                    let asset: CKAsset
-                    if let urlString = assetURLString,
-                       let url = URL(string: urlString) {
-                        asset = CKAsset(fileURL: url)
-                    } else {
-                        let tempURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
-                        try? Data().write(to: tempURL)
-                        asset = CKAsset(fileURL: tempURL)
-                    }
-                    
-                    return Loop(
-                        id: id,
-                        data: asset,
-                        timestamp: timestamp,
-                        lastRetrieved: nil,
-                        promptText: promptText,
-                        mood: mood,
-                        freeResponse: freeResponse,
-                        isVideo: isVideo
-                    )
-                }
-            }
+    private func loadCachedLoops() {
+        if let queuedData = UserDefaults.standard.array(forKey: queuedLoopsKey) as? [[String: Any]] {
+            let today = Calendar.current.startOfDay(for: Date())
             
-            if let pastData = UserDefaults.standard.array(forKey: pastLoopsKey) as? [[String: Any]] {
-                let today = Calendar.current.startOfDay(for: Date())
-                
-                pastLoops = pastData.compactMap { data -> Loop? in
-                    let cacheDate = Date(timeIntervalSince1970: data["cacheDate"] as? Double ?? 0)
-                    guard Calendar.current.isDate(cacheDate, inSameDayAs: today),
-                          let id = data["id"] as? String,
-                          let timestampDouble = data["timestamp"] as? Double,
-                          let promptText = data["promptText"] as? String,
-                          let freeResponse = data["freeResponse"] as? Bool,
-                          let isVideo = data["isVideo"] as? Bool else {
-                        return nil
-                    }
-                    
-                    let timestamp = Date(timeIntervalSince1970: timestampDouble)
-                    let mood = (data["mood"] as? String)?.nilIfEmpty
-                    let assetURLString = data["assetURLString"] as? String
-                    
-                    let asset: CKAsset
-                    if let urlString = assetURLString,
-                       let url = URL(string: urlString) {
-                        asset = CKAsset(fileURL: url)
-                    } else {
-                        let tempURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
-                        try? Data().write(to: tempURL)
-                        asset = CKAsset(fileURL: tempURL)
-                    }
-                    
-                    return Loop(
-                        id: id,
-                        data: asset,
-                        timestamp: timestamp,
-                        lastRetrieved: nil,
-                        promptText: promptText,
-                        mood: mood,
-                        freeResponse: freeResponse,
-                        isVideo: isVideo
-                    )
+            queuedLoops = queuedData.compactMap { data -> Loop? in
+                let cacheDate = Date(timeIntervalSince1970: data["cacheDate"] as? Double ?? 0)
+                guard Calendar.current.isDate(cacheDate, inSameDayAs: today),
+                      let id = data["id"] as? String,
+                      let timestampDouble = data["timestamp"] as? Double,
+                      let promptText = data["promptText"] as? String,
+                      let freeResponse = data["freeResponse"] as? Bool,
+                      let isVideo = data["isVideo"] as? Bool else {
+                    return nil
                 }
+                
+                let timestamp = Date(timeIntervalSince1970: timestampDouble)
+                let mood = (data["mood"] as? String)?.nilIfEmpty
+                let assetURLString = data["assetURLString"] as? String
+                
+                let asset: CKAsset
+                if let urlString = assetURLString,
+                   let url = URL(string: urlString) {
+                    asset = CKAsset(fileURL: url)
+                } else {
+                    let tempURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+                    try? Data().write(to: tempURL)
+                    asset = CKAsset(fileURL: tempURL)
+                }
+                
+                return Loop(
+                    id: id,
+                    data: asset,
+                    timestamp: timestamp,
+                    lastRetrieved: nil,
+                    promptText: promptText,
+                    mood: mood,
+                    freeResponse: freeResponse,
+                    isVideo: isVideo, 
+                    isDailyLoop: true
+                )
             }
         }
         
-        private func saveCachedState() {
-           UserDefaults.standard.set(dailyPrompts, forKey: promptCacheKey)
-           UserDefaults.standard.set(currentPromptIndex, forKey: promptIndexKey)
-           UserDefaults.standard.set(retryAttemptsLeft, forKey: retryAttemptsKey)
-           UserDefaults.standard.set(hasCompletedToday, forKey: "hasCompletedToday")
-           UserDefaults.standard.set(Date(), forKey: lastPromptDateKey)
-       }
-       
-       private func loadCachedState() {
-           dailyPrompts = UserDefaults.standard.stringArray(forKey: promptCacheKey) ?? []
-           currentPromptIndex = UserDefaults.standard.integer(forKey: promptIndexKey)
-           retryAttemptsLeft = UserDefaults.standard.integer(forKey: retryAttemptsKey)
-           hasCompletedToday = UserDefaults.standard.bool(forKey: "hasCompletedToday")
-       }
-        
-        private func isCacheValidForToday() -> Bool {
-            if let lastPromptDate = UserDefaults.standard.object(forKey: lastPromptDateKey) as? Date {
-                return Calendar.current.isDateInToday(lastPromptDate)
+        if let pastData = UserDefaults.standard.array(forKey: pastLoopsKey) as? [[String: Any]] {
+            let today = Calendar.current.startOfDay(for: Date())
+            
+            pastLoops = pastData.compactMap { data -> Loop? in
+                let cacheDate = Date(timeIntervalSince1970: data["cacheDate"] as? Double ?? 0)
+                guard Calendar.current.isDate(cacheDate, inSameDayAs: today),
+                      let id = data["id"] as? String,
+                      let timestampDouble = data["timestamp"] as? Double,
+                      let promptText = data["promptText"] as? String,
+                      let freeResponse = data["freeResponse"] as? Bool,
+                      let isVideo = data["isVideo"] as? Bool else {
+                    return nil
+                }
+                
+                let timestamp = Date(timeIntervalSince1970: timestampDouble)
+                let mood = (data["mood"] as? String)?.nilIfEmpty
+                let assetURLString = data["assetURLString"] as? String
+                
+                let asset: CKAsset
+                if let urlString = assetURLString,
+                   let url = URL(string: urlString) {
+                    asset = CKAsset(fileURL: url)
+                } else {
+                    let tempURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
+                    try? Data().write(to: tempURL)
+                    asset = CKAsset(fileURL: tempURL)
+                }
+                
+                return Loop(
+                    id: id,
+                    data: asset,
+                    timestamp: timestamp,
+                    lastRetrieved: nil,
+                    promptText: promptText,
+                    mood: mood,
+                    freeResponse: freeResponse,
+                    isVideo: isVideo,
+                    isDailyLoop: true
+                )
             }
-            return false
         }
     }
+    
+    private func saveCachedState() {
+       UserDefaults.standard.set(dailyPrompts, forKey: promptCacheKey)
+       UserDefaults.standard.set(currentPromptIndex, forKey: promptIndexKey)
+       UserDefaults.standard.set(retryAttemptsLeft, forKey: retryAttemptsKey)
+       UserDefaults.standard.set(hasCompletedToday, forKey: "hasCompletedToday")
+       UserDefaults.standard.set(Date(), forKey: lastPromptDateKey)
+   }
+   
+   private func loadCachedState() {
+       dailyPrompts = UserDefaults.standard.stringArray(forKey: promptCacheKey) ?? []
+       currentPromptIndex = UserDefaults.standard.integer(forKey: promptIndexKey)
+       retryAttemptsLeft = UserDefaults.standard.integer(forKey: retryAttemptsKey)
+       hasCompletedToday = UserDefaults.standard.bool(forKey: "hasCompletedToday")
+   }
+    
+    private func isCacheValidForToday() -> Bool {
+        if let lastPromptDate = UserDefaults.standard.object(forKey: lastPromptDateKey) as? Date {
+            return Calendar.current.isDateInToday(lastPromptDate)
+        }
+        return false
+    }
+    
+    func loadActiveMonths() async {
+        do {
+            let months = try await LoopCloudKitUtility.fetchActiveMonths()
+            DispatchQueue.main.async {
+                self.activeMonths = months
+            }
+        } catch {
+            print("Error loading active months: \(error)")
+        }
+    }
+
+    
+    func loadMonthData(monthId: MonthIdentifier) async {
+        DispatchQueue.main.async {
+            self.isLoadingMonthData = true
+            do { self.isLoadingMonthData = false }
+        }
+        
+        do {
+            let selectedMonthSummary = try await LoopCloudKitUtility.fetchMonthData(monthId: monthId)
+            DispatchQueue.main.async {
+                self.selectedMonthSummary = selectedMonthSummary
+            }
+        } catch {
+            print("Error loading month data: \(error)")
+        }
+    }
+    
+    func loadYearData(year: Int) async {
+        DispatchQueue.main.async {
+            self.isLoadingYearData = true
+            do { self.isLoadingYearData = false }
+        }
+        
+        do {
+            let activeMonths = try await LoopCloudKitUtility.fetchActiveMonths(year: year)
+            var summaries: [MonthSummary] = []
+            
+            for monthId in activeMonths {
+                let summary = try await LoopCloudKitUtility.fetchMonthData(monthId: monthId)
+                summaries.append(summary)
+            }
+            
+            yearSummaries[year] = summaries.sorted { $0.month > $1.month }
+        } catch {
+            print("Error loading year data: \(error)")
+        }
+    }
+
+}
 
 enum MemoryBankStatus {
         case checking
@@ -794,3 +853,4 @@ struct Prompt {
     let category: PromptCategory
     let isDailyPrompt: Bool
 }
+

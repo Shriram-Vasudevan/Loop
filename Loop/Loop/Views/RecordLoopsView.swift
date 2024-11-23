@@ -482,7 +482,7 @@ struct RecordLoopsView: View {
             let loop = loopManager.addLoop(
                 mediaURL: audioFileURL,
                 isVideo: false,
-                prompt: loopManager.getCurrentPrompt()
+                prompt: loopManager.getCurrentPrompt(), isDailyLoop: true
             )
             
             Task {
