@@ -16,6 +16,7 @@ struct RecordLoopsView: View {
     @State private var isRecording = false
     @State private var isPostRecording = false
     @State private var isShowingMemory = false
+    @State private var isLoadingMemory = false
     @State private var recordingTimer: Timer?
     @State private var timeRemaining: Int = 30
     @State private var showingFirstLaunchScreen = true
@@ -43,23 +44,19 @@ struct RecordLoopsView: View {
                         backgroundOpacity = 1
                     }
                 }
+                .edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 0) {
                 if isShowingMemory {
                     memoryPlaybackView
-                        .transition(.opacity)
                 } else if loopManager.hasCompletedToday {
                     thankYouScreen
-                        .transition(.opacity)
                 } else if isPostRecording {
                     postRecordingView
-                        .transition(.opacity)
                 } else if showingFirstLaunchScreen {
                     firstLaunchOrQuietSpaceScreen
-                        .transition(.opacity)
                 } else {
                     recordingScreen
-                        .transition(.opacity)
                 }
             }
             .padding(.horizontal, 32)
@@ -74,20 +71,18 @@ struct RecordLoopsView: View {
     }
     
     private var recordingScreen: some View {
-        GeometryReader { geometry in
-            VStack(spacing: 0) {
-                topBar
-                    .padding(.bottom, 40)
-                
-                Spacer()
-                
-                promptArea
-                
-                Spacer()
-                
-                recordingButton
-                    .padding(.bottom, 60)
-            }
+        VStack(spacing: 0) {
+            topBar
+                .padding(.bottom, 40)
+            
+            Spacer()
+            
+            promptArea
+            
+            Spacer()
+            
+            recordingButton
+                .padding(.bottom, 60)
         }
     }
     
@@ -224,15 +219,17 @@ struct RecordLoopsView: View {
     }
     
     private var recordingButton: some View {
-        Button(action: toggleRecording) {
+        Button(action: {
+            withAnimation {
+                toggleRecording()
+            }
+        }) {
             ZStack {
-                // Outer shadow
                 Circle()
                     .fill(Color.white)
                     .frame(width: 96)
                     .shadow(color: accentColor.opacity(0.2), radius: 20, x: 0, y: 8)
-                
-                // Main circle
+
                 Circle()
                     .fill(
                         LinearGradient(
@@ -248,12 +245,10 @@ struct RecordLoopsView: View {
                     .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                 
                 if isRecording {
-                    // Stop icon
                     RoundedRectangle(cornerRadius: 6)
                         .fill(Color.white)
                         .frame(width: 26, height: 26)
                 } else {
-                    // Record icon
                     Circle()
                         .fill(
                             LinearGradient(
@@ -278,60 +273,60 @@ struct RecordLoopsView: View {
     }
     
     private var postRecordingView: some View {
-            VStack {
-                LoopAudioConfirmationView(
-                    audioURL: audioManager.getRecordedAudioFile() ?? URL(fileURLWithPath: ""),
-                    waveformData: generateRandomWaveform(count: 40),
-                    onComplete: { completeRecording() },
-                    onRetry: { retryRecording() }
-                )
-            }
+        VStack {
+            LoopAudioConfirmationView(
+                audioURL: audioManager.getRecordedAudioFile() ?? URL(fileURLWithPath: ""),
+                waveformData: generateRandomWaveform(count: 40),
+                onComplete: { completeRecording() },
+                onRetry: { retryRecording() }
+            )
         }
+    }
         
-        private var memoryPlaybackView: some View {
-            VStack(spacing: 32) {
-                VStack(spacing: 16) {
-                    Text("from your past")
-                        .font(.system(size: 24, weight: .ultraLight))
-                        .foregroundColor(textColor)
-                    
-                    if let pastLoop = loopManager.currentPastLoop {
-                        Text(formatDate(pastLoop.timestamp))
-                            .font(.system(size: 18, weight: .ultraLight))
-                            .foregroundColor(accentColor)
-                    }
-                }
+    private var memoryPlaybackView: some View {
+        VStack(spacing: 32) {
+            VStack(spacing: 16) {
+                Text("from your past")
+                    .font(.system(size: 24, weight: .ultraLight))
+                    .foregroundColor(textColor)
                 
-                Spacer()
-                
-                if let pastLoop = loopManager.currentPastLoop {
-                    PastLoopPlayer(loop: pastLoop)
-                }
-                
-                Spacer()
-                
-                Button(action: {
-                    withAnimation {
-                        isShowingMemory = false
-                        loopManager.moveToNextPrompt()
-                    }
-                }) {
-                    HStack(spacing: 8) {
-                        Text("continue")
-                            .font(.system(size: 18, weight: .light))
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 16, weight: .light))
-                    }
-                    .frame(height: 56)
-                    .frame(maxWidth: .infinity)
-                    .background(accentColor)
-                    .foregroundColor(.white)
-                    .cornerRadius(28)
-                    .shadow(color: accentColor.opacity(0.2), radius: 10, y: 5)
+                if let pastLoop = pastLoop {
+                    Text(formatDate(pastLoop.timestamp))
+                        .font(.system(size: 18, weight: .ultraLight))
+                        .foregroundColor(accentColor)
                 }
             }
-            .padding(.bottom, 40)
+            
+            if isLoadingMemory {
+                LoadingWaveform(accentColor: accentColor)
+                    .transition(.opacity)
+            } else if let pastLoop = pastLoop {
+                ViewPastLoopView(loop: pastLoop)
+                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+            }
+            
+            Button(action: {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                    isShowingMemory = false
+                    loopManager.moveToNextPrompt()
+                }
+            }) {
+                HStack(spacing: 8) {
+                    Text("continue")
+                        .font(.system(size: 18, weight: .light))
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 16, weight: .light))
+                }
+                .frame(height: 56)
+                .frame(maxWidth: .infinity)
+                .background(accentColor)
+                .foregroundColor(.white)
+                .cornerRadius(28)
+                .shadow(color: accentColor.opacity(0.2), radius: 10, y: 5)
+            }
         }
+        .padding(.bottom, 40)
+    }
         
     private var memoryMessageView: some View {
         VStack(spacing: 24) {
@@ -501,26 +496,38 @@ struct RecordLoopsView: View {
             if loopManager.isLastPrompt() {
                 allPrompts = loopManager.dailyPrompts
                 
+                withAnimation {
+                    isShowingMemory = true
+                    isLoadingMemory = true
+                }
+                
                 Task {
                     if let pastLoop = try? await loopManager.getPastLoopForComparison(
                         recordedPrompts: allPrompts
                     ) {
                         await MainActor.run {
-                            self.pastLoop = pastLoop
-                            isPostRecording = false
-                            isShowingMemory = true
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                self.pastLoop = pastLoop
+                                isPostRecording = false
+                                isLoadingMemory = false
+                            }
                             audioManager.resetRecording()
                         }
                     } else {
                         await MainActor.run {
-                            loopManager.hasCompletedToday = true
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                loopManager.hasCompletedToday = true
+                                isShowingMemory = false
+                            }
                             audioManager.resetRecording()
                         }
                     }
                 }
             } else {
-                loopManager.moveToNextPrompt()
-                isPostRecording = false
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                    loopManager.moveToNextPrompt()
+                    isPostRecording = false
+                }
             }
         }
     }
@@ -554,87 +561,118 @@ struct RecordLoopsView: View {
     }
 }
 
-struct PastLoopPlayer: View {
-    let loop: Loop
-    @State private var isPlaying = false
-    @State private var progress: Double = 0
-    @State private var audioPlayer: AVAudioPlayer?
-    @State private var timer: Timer?
-    
-    var body: some View {
-        VStack(spacing: 32) {
-            HStack(spacing: 3) {
-                ForEach(0..<50) { index in
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(Color(hex: "A28497").opacity(progress > Double(index) / 50 ? 0.8 : 0.3))
-                        .frame(width: 3, height: CGFloat.random(in: 10...50))
-                }
-            }
-            .frame(height: 50)
-            
-            HStack(spacing: 40) {
-                Button(action: {
-                    if isPlaying {
-                        stopPlayback()
-                    } else {
-                        startPlayback()
-                    }
-                }) {
-                    Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 44))
-                        .foregroundColor(Color(hex: "A28497"))
-                }
-            }
-        }
-        .onAppear(perform: setupAudioPlayer)
-        .onDisappear(perform: cleanup)
-    }
-    
-    private func setupAudioPlayer() {
-        guard let url = loop.data.fileURL else { return }
-
-        do {
-            audioPlayer = try AVAudioPlayer(contentsOf: url)
-            audioPlayer?.prepareToPlay()
-        } catch {
-            print("Error setting up audio player: \(error)")
-        }
-    }
-    
-    private func startPlayback() {
-        audioPlayer?.play()
-        isPlaying = true
-        startProgressTimer()
-    }
-    
-    private func stopPlayback() {
-        audioPlayer?.stop()
-        audioPlayer?.currentTime = 0
-        isPlaying = false
-        progress = 0
-        timer?.invalidate()
-        timer = nil
-    }
-    
-    private func startProgressTimer() {
-        timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
-            guard let player = audioPlayer else { return }
-            progress = player.currentTime / player.duration
-            
-            if player.currentTime >= player.duration {
-                stopPlayback()
-            }
-        }
-    }
-    
-    private func cleanup() {
-        timer?.invalidate()
-        timer = nil
-        audioPlayer?.stop()
-        audioPlayer = nil
-    }
-}
+//struct PastLoopPlayer: View {
+//    let loop: Loop
+//    @State private var isPlaying = false
+//    @State private var progress: Double = 0
+//    @State private var audioPlayer: AVAudioPlayer?
+//    @State private var timer: Timer?
+//    @State private var waveformData: [CGFloat] = []
+//    
+//    let accentColor = Color(hex: "A28497")
+//    
+//    var body: some View {
+//        VStack(spacing: 32) {
+//            WaveformView(
+//                waveformData: waveformData,
+//                color: accentColor
+//            )
+//            
+//            // Enhanced playback controls
+//            HStack(spacing: 40) {
+//                Button(action: togglePlayback) {
+//                    Circle()
+//                        .fill(Color.white)
+//                        .frame(width: 56, height: 56)
+//                        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+//                        .overlay(
+//                            Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+//                                .font(.system(size: 22))
+//                                .foregroundColor(accentColor)
+//                                .offset(x: isPlaying ? 0 : 2)
+//                        )
+//                }
+//            }
+//            
+//            // Progress bar
+//            GeometryReader { geometry in
+//                ZStack(alignment: .leading) {
+//                    RoundedRectangle(cornerRadius: 2)
+//                        .fill(Color.gray.opacity(0.2))
+//                        .frame(height: 4)
+//                    
+//                    RoundedRectangle(cornerRadius: 2)
+//                        .fill(accentColor)
+//                        .frame(width: geometry.size.width * progress, height: 4)
+//                }
+//            }
+//            .frame(height: 4)
+//            .padding(.horizontal)
+//        }
+//        .onAppear {
+//            setupAudioPlayer()
+//            generateWaveform()
+//        }
+//        .onDisappear(perform: cleanup)
+//    }
+//    
+//    private func generateWaveform() {
+//        // Generate random waveform data for visualization
+//        waveformData = (0..<50).map { _ in
+//            CGFloat.random(in: 10...50)
+//        }
+//    }
+//    
+//    private func togglePlayback() {
+//        if isPlaying {
+//            stopPlayback()
+//        } else {
+//            startPlayback()
+//        }
+//    }
+//    
+//    private func setupAudioPlayer() {
+//        guard let url = loop.data.fileURL else { return }
+//        
+//        do {
+//            audioPlayer = try AVAudioPlayer(contentsOf: url)
+//            audioPlayer?.prepareToPlay()
+//            audioPlayer?.delegate = AudioPlayerDelegate(onComplete: {
+//                isPlaying = false
+//                progress = 0
+//            })
+//        } catch {
+//            print("Error setting up audio player: \(error)")
+//        }
+//    }
+//    
+//    private func startPlayback() {
+//        audioPlayer?.play()
+//        isPlaying = true
+//        startProgressTimer()
+//    }
+//    
+//    private func stopPlayback() {
+//        audioPlayer?.pause()
+//        isPlaying = false
+//        timer?.invalidate()
+//    }
+//    
+//    private func startProgressTimer() {
+//        timer?.invalidate()
+//        timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
+//            guard let player = audioPlayer else { return }
+//            progress = player.currentTime / player.duration
+//        }
+//    }
+//    
+//    private func cleanup() {
+//        timer?.invalidate()
+//        timer = nil
+//        audioPlayer?.stop()
+//        audioPlayer = nil
+//    }
+//}
 
 
 struct ProgressIndicator: View {

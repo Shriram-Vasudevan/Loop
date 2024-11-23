@@ -20,6 +20,33 @@ struct HomeView: View {
     let surfaceColor = Color(hex: "F8F5F7")
     let textColor = Color(hex: "2C3E50")
     
+    private let thematicLoops = [
+        ThematicLoop(
+            title: "self reflection",
+            description: "explore your inner world",
+            icon: "person.fill.viewfinder",
+            prompts: ["What are your core values?", "How have you grown this year?"]
+        ),
+        ThematicLoop(
+            title: "future vision",
+            description: "imagine what's ahead",
+            icon: "sparkles",
+            prompts: ["Where do you see yourself in 5 years?", "What excites you about tomorrow?"]
+        ),
+        ThematicLoop(
+            title: "gratitude",
+            description: "appreciate the present",
+            icon: "heart.fill",
+            prompts: ["What made you smile today?", "Who are you thankful for?"]
+        ),
+        ThematicLoop(
+            title: "growth mindset",
+            description: "embrace challenges",
+            icon: "leaf.fill",
+            prompts: ["What did you learn from a recent setback?", "How do you handle change?"]
+        )
+    ]
+    
     var body: some View {
         ZStack {
             HomeBackground()
@@ -35,6 +62,8 @@ struct HomeView: View {
                     topBar
                         .padding(.top, 16)
                     
+                    
+                    
 //                    ScheduleBar(
 //                        weekSchedule: loopManager.weekSchedule,
 //                        accentColor: accentColor
@@ -43,6 +72,9 @@ struct HomeView: View {
                     todayPromptCard
                         .transition(.opacity)
                     
+                    thematicLoopsSection  // Add this here
+                            .transition(.opacity)
+
                     
                     if loopManager.pastLoops.count > 0 {
                         memoryLaneSection
@@ -159,6 +191,28 @@ struct HomeView: View {
                 )
         )
     }
+    
+    private var thematicLoopsSection: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack {
+                Text("explore themes")
+                    .font(.system(size: 24, weight: .ultraLight))
+                    .foregroundColor(textColor)
+                
+                Spacer()
+            }
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 20) {
+                    ForEach(thematicLoops) { theme in
+                        ThematicLoopCard(theme: theme, accentColor: accentColor)
+                    }
+                }
+                .padding(.bottom, 12)
+            }
+        }
+    }
+
     
     private var memoryLaneSection: some View {
         VStack(alignment: .leading, spacing: 20) {

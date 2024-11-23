@@ -38,8 +38,10 @@ class AnalysisManager: ObservableObject {
             throw AnalysisError.invalidFileURL
         }
         
-        isAnalyzing = true
-        defer { isAnalyzing = false }
+        DispatchQueue.main.async { [self] in
+            self.isAnalyzing = true
+            do { isAnalyzing = false }
+        }
         
         let transcript = try await transcribeAudio(url: fileURL)
         let duration = getAudioDuration(url: fileURL)

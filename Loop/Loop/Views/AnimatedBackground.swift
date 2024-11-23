@@ -36,6 +36,7 @@ struct AnimatedBackground: View {
                 animate = true
             }
         }
+        .edgesIgnoringSafeArea(.all)
     }
 }
 
