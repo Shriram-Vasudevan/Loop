@@ -35,6 +35,7 @@
 		9953BDF22CF3A02400348AC3 /* PromptSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDF12CF3A02400348AC3 /* PromptSet.swift */; };
 		9953BDF62CF40E4A00348AC3 /* ProgressIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDF52CF40E4A00348AC3 /* ProgressIndicator.swift */; };
 		9953BDF82CF4101E00348AC3 /* RecordThematicLoopPromptsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDF72CF4101E00348AC3 /* RecordThematicLoopPromptsView.swift */; };
+		9953BDFA2CF4253000348AC3 /* PurposeCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDF92CF4253000348AC3 /* PurposeCard.swift */; };
 		9988DB852CD9BFAC005628DE /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB842CD9BFAC005628DE /* FriendsView.swift */; };
 		9988DB8B2CD9CAEE005628DE /* SharedLoop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */; };
 		9988DB8D2CDA77C8005628DE /* PrivateUserRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8C2CDA77C8005628DE /* PrivateUserRecord.swift */; };
@@ -112,6 +113,7 @@
 		9953BDF12CF3A02400348AC3 /* PromptSet.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PromptSet.swift; sourceTree = "<group>"; };
 		9953BDF52CF40E4A00348AC3 /* ProgressIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressIndicator.swift; sourceTree = "<group>"; };
 		9953BDF72CF4101E00348AC3 /* RecordThematicLoopPromptsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordThematicLoopPromptsView.swift; sourceTree = "<group>"; };
+		9953BDF92CF4253000348AC3 /* PurposeCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurposeCard.swift; sourceTree = "<group>"; };
 		9988DB842CD9BFAC005628DE /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedLoop.swift; sourceTree = "<group>"; };
 		9988DB8C2CDA77C8005628DE /* PrivateUserRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateUserRecord.swift; sourceTree = "<group>"; };
@@ -235,6 +237,7 @@
 				9953BDE32CF17A5F00348AC3 /* LoadingWaveform.swift */,
 				9953BDE52CF1832100348AC3 /* ThematicLoopCard.swift */,
 				9953BDF52CF40E4A00348AC3 /* ProgressIndicator.swift */,
+				9953BDF92CF4253000348AC3 /* PurposeCard.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -401,6 +404,7 @@
 				9988DB852CD9BFAC005628DE /* FriendsView.swift in Sources */,
 				99F7F6E52CAC77E7009858AC /* IntroView.swift in Sources */,
 				9988DB912CDA792F005628DE /* FriendsManager.swift in Sources */,
+				9953BDFA2CF4253000348AC3 /* PurposeCard.swift in Sources */,
 				990E4A862CB30EB8009F88A0 /* LoopAudioConfirmationView.swift in Sources */,
 				9988DB8F2CDA77FB005628DE /* PublicUserRecord.swift in Sources */,
 				990E4A922CB48CEF009F88A0 /* InsightsView.swift in Sources */,
