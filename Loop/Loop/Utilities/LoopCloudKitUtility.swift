@@ -18,6 +18,64 @@ class LoopCloudKitUtility {
     static private var lastCacheUpdate: Date?
     static private let cacheValidityDuration: TimeInterval = 3600 // 1 hour
     
+    static func fetchPromptSetIfNeeded() async throws -> PromptSet? {
+        let publicDB = container.publicCloudDatabase
+        
+        let query = CKQuery(recordType: "PromptSet", predicate: NSPredicate(value: true))
+        query.sortDescriptors = [NSSortDescriptor(key: "modificationDate", ascending: false)]
+        
+        let (matchResults, _) = try await publicDB.records(matching: query, desiredKeys: ["modificationDate"], resultsLimit: 1)
+        
+        guard let recordID = matchResults.first?.0,
+              let record = try? matchResults.first?.1.get() else {
+            throw PromptSetError.noDataFound
+        }
+        
+        if let cachedModificationDate = UserDefaults.standard.object(forKey: PromptCacheKeys.lastModifiedKey) as? Date,
+           let recordModificationDate = record.modificationDate,
+           cachedModificationDate >= recordModificationDate {
+            print("📝 Prompts cache is up to date")
+            return nil
+        }
+        
+        print("📝 Fetching new prompts from CloudKit")
+        let ckRecord = try await publicDB.record(for: recordID)
+        
+        guard let promptSet = PromptSet.from(record: ckRecord) else {
+            throw PromptSetError.invalidData
+        }
+        
+        UserDefaults.standard.set(ckRecord.modificationDate, forKey: PromptCacheKeys.lastModifiedKey)
+        
+        print(promptSet)
+        return promptSet
+    }
+    
+    static func fetchThematicPrompts() async throws -> [ThematicPrompt] {
+        let publicDB = container.publicCloudDatabase
+        let query = CKQuery(
+            recordType: "ThematicPrompt",
+            predicate: NSPredicate(value: true)
+        )
+        query.sortDescriptors = [
+            NSSortDescriptor(key: "isPriority", ascending: false),
+            NSSortDescriptor(key: "createdAt", ascending: false)
+        ]
+        
+        let (matchResults, _) = try await publicDB.records(matching: query, desiredKeys: nil, resultsLimit: 50)
+        
+        return matchResults.compactMap { record -> ThematicPrompt? in
+            guard let record = try? record.1.get() else { return nil }
+            return ThematicPrompt.from(record: record)
+        }
+    }
+    
+    static func addThematicPrompt(_ prompt: ThematicPrompt) async throws {
+        let record = prompt.toRecord()
+        let publicDb = container.publicCloudDatabase
+        try await publicDb.save(record)
+    }
+    
     static func checkDailyCompletion(for dates: [Date]) async throws -> [Date: Bool] {
         let privateDB = container.privateCloudDatabase
         var completionStatus: [Date: Bool] = [:]

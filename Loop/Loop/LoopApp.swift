@@ -38,7 +38,7 @@ struct OpeningViewsContainer: View {
                     }
                     .preferredColorScheme(.light)
             } else if showIntroView && !showingSplashScreen{
-                IntroView(onIntroCompletion: {
+                OnboardingView(onIntroCompletion: {
                     withAnimation {
                         FirstLaunchManager.shared.markAsLaunched()
                         showIntroView = false

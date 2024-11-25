@@ -72,70 +72,80 @@ class LoopManager: ObservableObject {
     }
 
         
-    let promptGroups: [PromptCategory: [Prompt]] = [
-            .freeform: [
-                Prompt(text: "What's on your mind?", category: .freeform, isDailyPrompt: true),
-                Prompt(text: "Share anything about today", category: .freeform, isDailyPrompt: true),
-                Prompt(text: "What do you want to express right now?", category: .freeform, isDailyPrompt: true),
-                Prompt(text: "What's been on your mind lately?", category: .freeform, isDailyPrompt: true),
-                Prompt(text: "How are you really doing?", category: .freeform, isDailyPrompt: true)
-            ],
-            
-            .emotionalWellbeing: [
-                Prompt(text: "When did you feel most like yourself today?", category: .emotionalWellbeing, isDailyPrompt: true),
-                Prompt(text: "What gave you energy today?", category: .emotionalWellbeing, isDailyPrompt: true),
-                Prompt(text: "What helped you feel grounded today?", category: .emotionalWellbeing, isDailyPrompt: true),
-                Prompt(text: "What moment would you like to remember?", category: .emotionalWellbeing, isDailyPrompt: true),
-                
-                Prompt(text: "What's giving you hope lately?", category: .emotionalWellbeing, isDailyPrompt: false),
-                Prompt(text: "What feels different about you recently?", category: .emotionalWellbeing, isDailyPrompt: false),
-                Prompt(text: "Where do you feel most at peace?", category: .emotionalWellbeing, isDailyPrompt: false)
-            ],
-            
-            .challenges: [
-                // Daily prompts
-                Prompt(text: "What required courage today?", category: .challenges, isDailyPrompt: true),
-                Prompt(text: "What are you learning to accept?", category: .challenges, isDailyPrompt: true),
-                Prompt(text: "What boundary felt important today?", category: .challenges, isDailyPrompt: true),
-                
-                // Broader reflections
-                Prompt(text: "What's been hard to express lately?", category: .challenges, isDailyPrompt: false),
-                Prompt(text: "What are you trying to figure out?", category: .challenges, isDailyPrompt: false),
-                Prompt(text: "What feels uncertain right now?", category: .challenges, isDailyPrompt: false)
-            ],
-            
-            .growth: [
-                // Daily prompts
-                Prompt(text: "What small win are you proud of?", category: .growth, isDailyPrompt: true),
-                Prompt(text: "What did you do for yourself today?", category: .growth, isDailyPrompt: true),
-                Prompt(text: "What are you getting better at?", category: .growth, isDailyPrompt: true),
-                
-                // Broader reflections
-                Prompt(text: "What's becoming clearer to you?", category: .growth, isDailyPrompt: false),
-                Prompt(text: "What wisdom have you gained lately?", category: .growth, isDailyPrompt: false),
-                Prompt(text: "What new side of yourself are you discovering?", category: .growth, isDailyPrompt: false)
-            ],
-            
-            .connections: [
-                // Daily prompts
-                Prompt(text: "Who impacted you today?", category: .connections, isDailyPrompt: true),
-                Prompt(text: "What conversation meant something to you?", category: .connections, isDailyPrompt: true),
-                Prompt(text: "Who are you grateful for today?", category: .connections, isDailyPrompt: true),
-                
-                // Broader reflections
-                Prompt(text: "Who's been on your mind lately?", category: .connections, isDailyPrompt: false),
-                Prompt(text: "What relationship is teaching you something?", category: .connections, isDailyPrompt: false),
-                Prompt(text: "Who do you want to connect with more?", category: .connections, isDailyPrompt: false)
-            ]
-        ]
-
+    @Published private(set) var promptGroups: [PromptCategory: [Prompt]] = [:]
+    @Published private(set) var isLoadingPrompts = false
+    
+    private let promptCacheKeys = PromptCacheKeys.self
     
     private let recentPromptsKey = "RecentPromptsKey"
     private let recentCategoriesKey = "RecentCategoriesKey"
     private let maxPromptHistory = 3
     
+    @Published private(set) var thematicPrompts: [ThematicPrompt] = []
+    @Published var selectedThematicPromptId: String? = nil {
+        didSet {
+            if oldValue != selectedThematicPromptId {
+                handleThematicPromptSelection()
+            }
+        }
+    }
     
+    
+    init() {
+        Task {
+            await loadPrompts()
+            checkAndResetIfNeeded()
+            await loadThematicPrompts()
+            await checkSevenDayStatus()
+        }
+    }
+    
+    private func loadPrompts() async {
+        await MainActor.run {
+            isLoadingPrompts = true
+            do { isLoadingPrompts = false }
+        }
+        
+        do {
+            if let newPromptSet = try await LoopCloudKitUtility.fetchPromptSetIfNeeded() {
+                if let encodedData = try? JSONEncoder().encode(newPromptSet) {
+                    UserDefaults.standard.set(encodedData, forKey: promptCacheKeys.promptSetKey)
+                }
+                
+                let newPromptSet = newPromptSet.getPromptGroups()
+                await MainActor.run {
+                    self.promptGroups = newPromptSet
+                }
+            } else {
+                loadCachedPrompts()
+            }
+        } catch {
+            print("Error loading prompts: \(error)")
+            loadCachedPrompts()
+        }
+    }
+    
+    private func loadCachedPrompts() {
+        guard let cachedData = UserDefaults.standard.data(forKey: promptCacheKeys.promptSetKey),
+              let promptSet = try? JSONDecoder().decode(PromptSet.self, from: cachedData) else {
+            print("⚠️ No cached prompts found, using fallback")
+   
+            if let url = Bundle.main.url(forResource: "fallback_prompts", withExtension: "json"),
+               let data = try? Data(contentsOf: url),
+               let promptSet = try? JSONDecoder().decode(PromptSet.self, from: data) {
+                promptGroups = promptSet.getPromptGroups()
+            }
+            return
+        }
+        
+        let promptGroups = promptSet.getPromptGroups()
+        DispatchQueue.main.sync {
+            self.promptGroups = promptGroups
+            print(promptGroups)
+        }
+    }
 
+    
     func getCategoryForPrompt(_ promptText: String) -> PromptCategory? {
         for (category, prompts) in promptGroups {
             if prompts.contains(where: { $0.text == promptText }) {
@@ -145,12 +155,6 @@ class LoopManager: ObservableObject {
         return nil
     }
     
-    init() {
-        checkAndResetIfNeeded()
-        Task {
-            await checkSevenDayStatus()
-        }
-    }
     
     private func getRecentPrompts() -> [String] {
         return UserDefaults.standard.stringArray(forKey: recentPromptsKey) ?? []
@@ -202,26 +206,30 @@ class LoopManager: ObservableObject {
     }
     
     private func selectRandomPrompts() {
-        let firstPrompt = promptGroups[.freeform]?.randomElement() ?? promptGroups[.freeform]!.first!
+        let freeformPrompts = promptGroups[.freeform] ?? []
+        let firstPrompt = freeformPrompts.randomElement() ??
+            Prompt(text: "What's on your mind?", category: .freeform, isDailyPrompt: true)
         
         let dailyPrompts = promptGroups
             .filter { $0.key != .freeform }
-            .values
-            .flatMap { $0 }
+            .flatMap { $1 }
             .filter { $0.isDailyPrompt }
-        let secondPrompt = dailyPrompts.randomElement() ?? dailyPrompts.first!
+        let secondPrompt = dailyPrompts.randomElement() ??
+            Prompt(text: "How are you feeling today?", category: .emotionalWellbeing, isDailyPrompt: true)
         
         let generalPrompts = promptGroups
             .filter { $0.key != .freeform && $0.key != secondPrompt.category }
-            .values
-            .flatMap { $0 }
+            .flatMap { $1 }
             .filter { !$0.isDailyPrompt }
-        let thirdPrompt = generalPrompts.randomElement() ?? generalPrompts.first!
+        let thirdPrompt = generalPrompts.randomElement() ??
+            Prompt(text: "What's giving you hope lately?", category: .growth, isDailyPrompt: false)
         
         self.dailyPrompts = [firstPrompt.text, secondPrompt.text, thirdPrompt.text]
         saveRecentPrompt(firstPrompt.text)
         saveRecentPrompt(secondPrompt.text)
         saveRecentPrompt(thirdPrompt.text)
+        
+        print("the daily prompts \(dailyPrompts)")
     }
     
     func switchToPrompt(_ newPrompt: Prompt) {
@@ -259,6 +267,48 @@ class LoopManager: ObservableObject {
         }
     }
     
+    func loadThematicPrompts() async {
+        do {
+            let prompts = try await LoopCloudKitUtility.fetchThematicPrompts()
+            await MainActor.run {
+                self.thematicPrompts = prompts
+            }
+        } catch {
+            print("Error loading thematic prompts: \(error)")
+        }
+    }
+    
+    private func handleThematicPromptSelection() {
+        guard let selectedId = selectedThematicPromptId,
+              let selectedTheme = thematicPrompts.first(where: { $0.id == selectedId }),
+              selectedTheme.prompts.count >= 3 else {
+            // If no theme selected or not enough prompts, revert to normal prompts
+            selectRandomPrompts()
+            return
+        }
+        
+        // Randomly select 3 unique prompts
+        var availablePrompts = selectedTheme.prompts
+        var selectedPrompts: [String] = []
+        
+        for _ in 0..<3 {
+            guard let randomPrompt = availablePrompts.randomElement(),
+                  let index = availablePrompts.firstIndex(of: randomPrompt) else { break }
+            selectedPrompts.append(randomPrompt)
+            availablePrompts.remove(at: index)
+        }
+        
+        guard selectedPrompts.count == 3 else {
+            print("Couldn't select enough prompts")
+            selectRandomPrompts()
+            return
+        }
+        
+        self.dailyPrompts = selectedPrompts
+        resetPromptProgress()
+        saveCachedState()
+    }
+
     func fetchWeekSchedule() {
         isLoadingSchedule = true
         let calendar = Calendar.current
@@ -465,6 +515,8 @@ class LoopManager: ObservableObject {
         } else {
             loadCachedState()
         }
+        
+        print(self.dailyPrompts)
     }
     
     func resetPromptProgress() {
@@ -766,12 +818,14 @@ class LoopManager: ObservableObject {
        UserDefaults.standard.set(Date(), forKey: lastPromptDateKey)
    }
    
-   private func loadCachedState() {
-       dailyPrompts = UserDefaults.standard.stringArray(forKey: promptCacheKey) ?? []
-       currentPromptIndex = UserDefaults.standard.integer(forKey: promptIndexKey)
-       retryAttemptsLeft = UserDefaults.standard.integer(forKey: retryAttemptsKey)
-       hasCompletedToday = UserDefaults.standard.bool(forKey: "hasCompletedToday")
-   }
+    private func loadCachedState() {
+        DispatchQueue.main.async {
+            self.dailyPrompts = UserDefaults.standard.stringArray(forKey: self.promptCacheKey) ?? []
+            self.currentPromptIndex = UserDefaults.standard.integer(forKey: self.promptIndexKey)
+            self.retryAttemptsLeft = UserDefaults.standard.integer(forKey: self.retryAttemptsKey)
+            self.hasCompletedToday = UserDefaults.standard.bool(forKey: "hasCompletedToday")
+        }
+    }
     
     private func isCacheValidForToday() -> Bool {
         if let lastPromptDate = UserDefaults.standard.object(forKey: lastPromptDateKey) as? Date {
@@ -783,7 +837,7 @@ class LoopManager: ObservableObject {
     func loadActiveMonths() async {
         do {
             let months = try await LoopCloudKitUtility.fetchActiveMonths()
-            DispatchQueue.main.async {
+            await MainActor.run {
                 self.activeMonths = months
             }
         } catch {
@@ -793,14 +847,14 @@ class LoopManager: ObservableObject {
 
     
     func loadMonthData(monthId: MonthIdentifier) async {
-        DispatchQueue.main.async {
+        await MainActor.run {
             self.isLoadingMonthData = true
             do { self.isLoadingMonthData = false }
         }
         
         do {
             let selectedMonthSummary = try await LoopCloudKitUtility.fetchMonthData(monthId: monthId)
-            DispatchQueue.main.async {
+            await MainActor.run {
                 self.selectedMonthSummary = selectedMonthSummary
             }
         } catch {
@@ -809,7 +863,7 @@ class LoopManager: ObservableObject {
     }
     
     func loadYearData(year: Int) async {
-        DispatchQueue.main.async {
+        await MainActor.run {
             self.isLoadingYearData = true
             do { self.isLoadingYearData = false }
         }
