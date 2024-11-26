@@ -68,3 +68,25 @@ extension SFSpeechRecognizer {
         }
     }
 }
+
+extension CMSampleBuffer {
+    var audioBufferList: AudioBufferList? {
+        var audioBufferList = AudioBufferList()
+        var blockBuffer: CMBlockBuffer?
+        
+        guard CMSampleBufferGetAudioBufferListWithRetainedBlockBuffer(
+            self,
+            bufferListSizeNeededOut: nil,
+            bufferListOut: &audioBufferList,
+            bufferListSize: MemoryLayout<AudioBufferList>.size,
+            blockBufferAllocator: nil,
+            blockBufferMemoryAllocator: nil,
+            flags: kCMSampleBufferFlag_AudioBufferList_Assure16ByteAlignment,
+            blockBufferOut: &blockBuffer
+        ) == noErr else {
+            return nil
+        }
+        
+        return audioBufferList
+    }
+}

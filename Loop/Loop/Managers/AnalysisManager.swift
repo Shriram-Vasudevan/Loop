@@ -12,246 +12,153 @@ import CoreML
 import NaturalLanguage
 
 
-class AnalysisManager: ObservableObject {
-    static let shared = AnalysisManager()
+struct EmotionAnalysis: Codable {
+    let emotionalWords: [String: Double]
+    let overallSentiment: Double
+    let primaryEmotions: [String]
+    let emotionalIntensity: Double
+    let emotionalComplexity: Int
+}
+
+struct SpeechPatternAnalysis: Codable {
+    let wordsPerMinute: Double
+    let pauseCount: Int
+    let averagePauseDuration: Double
+    let longestPause: Double
+    let speechFlowScore: Double
+    let articulationRate: Double
+}
+
+struct CognitiveAnalysis: Codable {
+    let analyticalScore: Double
+    let insightWords: [String]
+    let complexityScore: Double
+    let qualifierFrequency: Double
+    let causalityScore: Double
+    let discrepancyWords: [String]
+}
+
+struct SelfReferenceAnalysis: Codable {
+    let selfReferences: Int
+    let selfReferencePercentage: Double
+    let otherReferences: Int
+    let pastTensePercentage: Double
+    let presentTensePercentage: Double
+    let futureTensePercentage: Double
+    let activeVoicePercentage: Double
+}
+
+struct ThematicAnalysis: Codable {
+    let keyTopics: [String: Double]
+    let significantPhrases: [String]
+    let namedEntities: [String]
+    let contextualKeywords: [String: Double]
+    let topicCoherence: Double
+}
+
+struct LoopAnalysis: Codable {
+    let loopId: String
+    let timestamp: Date
+    let emotion: EmotionAnalysis
+    let speechPattern: SpeechPatternAnalysis
+    let cognitive: CognitiveAnalysis
+    let selfReference: SelfReferenceAnalysis
+    let thematic: ThematicAnalysis
+}
+
+struct SessionStatistics: Codable {
+    var averageWordsPerMinute: Double
+    var averageEmotionalIntensity: Double
+    var averageComplexityScore: Double
+    var averageSelfReferencePercentage: Double
+    var dominantEmotions: [String]
+    var commonTopics: [String]
+    var analysisCount: Int
+}
+
+class EmotionAnalyzer {
+    private let emotionLexicon: [String: Double] = [
+        "happy": 0.8, "sad": -0.7, "angry": -0.8, "excited": 0.9,
+        "worried": -0.6, "proud": 0.7, "anxious": -0.6, "frustrated": -0.7,
+        "grateful": 0.8, "passionate": 0.8, "confused": -0.4, "confident": 0.7,
+        "overwhelmed": -0.5, "inspired": 0.9, "disappointed": -0.6,
+        "joyful": 0.9, "depressed": -0.8, "furious": -0.9, "thrilled": 0.9,
+        "nervous": -0.5, "accomplished": 0.8, "fearful": -0.7, "irritated": -0.6,
+        "thankful": 0.8, "enthusiastic": 0.8, "uncertain": -0.4, "assured": 0.6,
+        "stressed": -0.7, "motivated": 0.8, "discouraged": -0.6
+    ]
     
-    @Published private(set) var currentDailyAnalysis: DailyAnalysis?
-    @Published private(set) var isAnalyzing = false
+    private let intensifiers: Set<String> = [
+        "very", "extremely", "incredibly", "absolutely", "completely",
+        "totally", "utterly", "really", "quite", "particularly",
+        "especially", "remarkably", "notably", "decidedly", "truly"
+    ]
     
-    private let cacheManager = AnalysisCacheManager()
-    private let tagger = NLTagger(tagSchemes: [.lexicalClass, .nameType])
-    private let tokenizer = NLTokenizer(unit: .word)
-    
-    init() {
-        loadTodaysCachedAnalysis()
-    }
-    
-    func loadTodaysCachedAnalysis() {
-        let today = Calendar.current.startOfDay(for: Date())
-        if let cached = cacheManager.loadAnalysis(for: today) {
-            self.currentDailyAnalysis = cached
-        }
-    }
-    
-    func beginAnalysis(for loop: Loop) async throws -> PromptAnalysis {
-        guard let fileURL = loop.data.fileURL else {
-            throw AnalysisError.invalidFileURL
-        }
+    func analyze(_ text: String) -> EmotionAnalysis {
+        let words = text.lowercased().components(separatedBy: .whitespacesAndNewlines)
+        var emotionalWords: [String: Double] = [:]
+        var intensity = 0.0
+        var complexity = 0
+        var overallSentiment = 0.0
         
-        DispatchQueue.main.async { [self] in
-            self.isAnalyzing = true
-            do { isAnalyzing = false }
-        }
-        
-        let transcript = try await transcribeAudio(url: fileURL)
-        let duration = getAudioDuration(url: fileURL)
-        let analysis = try await analyzePrompt(
-            transcript: transcript,
-            duration: duration,
-            promptText: loop.promptText
-        )
-        
-        await updateDailyAnalysis(with: analysis)
-        
-        return analysis
-    }
-    
-    private func analyzePrompt(transcript: String, duration: TimeInterval, promptText: String) async throws -> PromptAnalysis {
-        let words = tokenizer.tokenizeWords(transcript)
-        let speakingPace = Double(words.count) / (duration / 60)
-        
-        let patterns = analyzeLanguagePatterns(transcript)
-        let totalVerbs = Double(patterns.pastTense + patterns.futureTense)
-        let pastTensePercentage = totalVerbs > 0 ? (Double(patterns.pastTense) / totalVerbs) * 100 : 0
-        let futureTensePercentage = totalVerbs > 0 ? (Double(patterns.futureTense) / totalVerbs) * 100 : 0
-        let selfReferencePercentage = (Double(patterns.selfReferences) / Double(words.count)) * 100
-        
-        let keywords = await extractMeaningfulKeywords(from: transcript)
-        let names = extractNames(from: transcript)
-        
-        return PromptAnalysis(
-            promptText: promptText,
-            wordCount: words.count,
-            duration: duration,
-            speakingPace: speakingPace,
-            pastTensePercentage: pastTensePercentage,
-            futureTensePercentage: futureTensePercentage,
-            selfReferencePercentage: selfReferencePercentage,
-            keywords: keywords,
-            names: names,
-            timestamp: Date()
-        )
-    }
-    
-    @MainActor
-    private func updateDailyAnalysis(with promptAnalysis: PromptAnalysis) {
-        let today = Calendar.current.startOfDay(for: Date())
-        
-        if var existing = currentDailyAnalysis {
-            existing.promptAnalyses.append(promptAnalysis)
-            existing.isComplete = existing.promptAnalyses.count >= 3
-            currentDailyAnalysis = existing
-        } else {
-            currentDailyAnalysis = DailyAnalysis(
-                date: today,
-                promptAnalyses: [promptAnalysis],
-                isComplete: false
-            )
-        }
-        
-        if let analysis = currentDailyAnalysis {
-            cacheManager.cacheAnalysis(analysis)
-        }
-    }
-    
-    private func analyzeLanguagePatterns(_ text: String) -> (pastTense: Int, futureTense: Int, selfReferences: Int) {
-        var pastCount = 0
-        var futureCount = 0
-        var selfCount = 0
-        
-        let selfWords = Set(["i", "me", "my", "mine", "myself"])
-        
-        tagger.string = text.lowercased()
-        let range = text.startIndex..<text.endIndex
-        
-        tagger.enumerateTags(in: range, unit: .word, scheme: .lexicalClass) { tag, tokenRange in
-            let word = text[tokenRange].lowercased()
-            
-            if let tag = tag {
-                if tag == .verb {
-                    if word.hasSuffix("ed") || word.hasSuffix("was") || word.hasSuffix("were") {
-                        pastCount += 1
-                    } else if word.hasPrefix("will") || word.contains("going to") || word.contains("gonna") {
-                        futureCount += 1
-                    }
-                }
+        for (index, word) in words.enumerated() {
+            if let emotionScore = emotionLexicon[word] {
+                let contextScore = calculateContextScore(words: words, currentIndex: index)
+                emotionalWords[word] = emotionScore * contextScore
+                overallSentiment += emotionScore * contextScore
+                complexity += 1
             }
             
-            if selfWords.contains(word) {
-                selfCount += 1
+            if intensifiers.contains(word) {
+                intensity += 0.5
             }
-            
-            return true
         }
         
-        return (pastCount, futureCount, selfCount)
+        let primaryEmotions = emotionalWords
+            .sorted { $0.value > $1.value }
+            .prefix(5)
+            .map { $0.key }
+        
+        return EmotionAnalysis(
+            emotionalWords: emotionalWords,
+            overallSentiment: overallSentiment / Double(max(1, emotionalWords.count)),
+            primaryEmotions: primaryEmotions,
+            emotionalIntensity: intensity,
+            emotionalComplexity: complexity
+        )
     }
     
-    private func extractMeaningfulKeywords(from text: String) async -> [String] {
-        var keywords: [(String, Double)] = []
-        let meaningfulTags: Set<NLTag> = [.noun, .verb, .adjective]
-        let stopWords = Set([
-            "am", "is", "are", "was", "were", "be", "have", "has", "had",
-            "do", "does", "did", "will", "would", "should", "could", "might",
-            "must", "and", "or", "but", "so", "because", "if", "when", "where",
-            "what", "which", "who", "whom", "whose", "why", "how", "the", "a", "an",
-            "this", "that", "these", "those", "like", "just", "get", "got", "getting",
-            "think", "thought", "feel", "felt", "really", "actually", "basically",
-            "literally", "very", "quite", "pretty", "kind", "sort"
-        ])
-        
-        tagger.string = text.lowercased()
-        let range = text.startIndex..<text.endIndex
-        
-        tagger.enumerateTags(in: range, unit: .word, scheme: .lexicalClass, options: [.omitWhitespace, .omitPunctuation]) { tag, tokenRange in
-            guard let tag = tag,
-                  meaningfulTags.contains(tag) else { return true }
-            
-            let word = text[tokenRange].lowercased()
-            guard word.count > 2,
-                  !stopWords.contains(word),
-                  !word.hasPrefix("http"),
-                  !word.contains("@"),
-                  !word.contains("#") else { return true }
-            
-            let score = calculateKeywordScore(word, tag: tag)
-            keywords.append((word, score))
-            
-            return true
-        }
-        
-        let sortedKeywords = keywords
-            .sorted { $0.1 > $1.1 }
-            .prefix(15)
-            .map { $0.0 }
-        
-        return Array(Set(sortedKeywords))
-    }
-    
-    private func calculateKeywordScore(_ word: String, tag: NLTag) -> Double {
+    private func calculateContextScore(words: [String], currentIndex: Int) -> Double {
         var score = 1.0
+        let window = 2
+        let start = max(0, currentIndex - window)
+        let end = min(words.count - 1, currentIndex + window)
         
-        let emotionalWords = Set([
-            "happy", "sad", "angry", "excited", "worried", "proud",
-            "anxious", "frustrated", "grateful", "passionate", "confused",
-            "confident", "overwhelmed", "inspired", "disappointed"
-        ])
-        
-        let reflectionWords = Set([
-            "realize", "understand", "learn", "grow", "change",
-            "reflect", "consider", "recognize", "acknowledge", "decide",
-            "discover", "explore", "question", "wonder", "contemplate"
-        ])
-        
-        let significantWords = Set([
-            "important", "significant", "crucial", "essential", "critical",
-            "major", "key", "fundamental", "vital", "primary",
-            "central", "core", "main", "principal", "decisive"
-        ])
-        
-        if emotionalWords.contains(word) {
-            score += 1.5
+        for i in start...end {
+            if i != currentIndex && intensifiers.contains(words[i]) {
+                score += 0.3
+            }
         }
-        
-        if reflectionWords.contains(word) {
-            score += 2.0
-        }
-        
-        if significantWords.contains(word) {
-            score += 1.0
-        }
-        
-        switch tag {
-        case .adjective:
-            score *= 1.2
-        case .verb:
-            score *= 1.1
-        case .noun:
-            score *= 1.0
-        default:
-            score *= 0.8
-        }
-        
-        score += Double(word.count) * 0.1
         
         return score
     }
-    
-    private func extractNames(from text: String) -> [String] {
-        var names: [String] = []
-        tagger.string = text
+}
+
+class SpeechPatternAnalyzer {
+    func analyze(audioURL: URL, transcript: String) async -> SpeechPatternAnalysis {
+        let words = transcript.components(separatedBy: .whitespacesAndNewlines)
+        let duration = getAudioDuration(url: audioURL)
+        let wordsPerMinute = calculateWordsPerMinute(wordCount: words.count, duration: duration)
+        let pauseAnalysis = await analyzePauses(audioURL: audioURL)
         
-        tagger.enumerateTags(in: text.startIndex..<text.endIndex, unit: .word, scheme: .nameType, options: [.omitWhitespace, .omitPunctuation, .joinNames]) { tag, range in
-            if tag == .personalName {
-                let name = String(text[range])
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                    .components(separatedBy: .whitespacesAndNewlines)
-                    .filter { !$0.isEmpty }
-                    .joined(separator: " ")
-                
-                if !name.isEmpty {
-                    names.append(name)
-                }
-            }
-            return true
-        }
-        
-        return Array(Set(names))
-    }
-    
-    private func tokenizeWords(_ text: String) -> [String] {
-        tokenizer.string = text
-        return tokenizer.tokens(for: text.startIndex..<text.endIndex).map { String(text[$0]) }
+        return SpeechPatternAnalysis(
+            wordsPerMinute: wordsPerMinute,
+            pauseCount: pauseAnalysis.count,
+            averagePauseDuration: pauseAnalysis.average,
+            longestPause: pauseAnalysis.longest,
+            speechFlowScore: calculateFlowScore(wpm: wordsPerMinute, pauseAnalysis: pauseAnalysis),
+            articulationRate: calculateArticulationRate(wordCount: words.count, duration: duration, totalPauseDuration: pauseAnalysis.total)
+        )
     }
     
     private func getAudioDuration(url: URL) -> TimeInterval {
@@ -259,14 +166,486 @@ class AnalysisManager: ObservableObject {
         return CMTimeGetSeconds(audioAsset.duration)
     }
     
+    private func calculateWordsPerMinute(wordCount: Int, duration: TimeInterval) -> Double {
+        return Double(wordCount) / (duration / 60.0)
+    }
+    
+    private func analyzePauses(audioURL: URL) async -> (count: Int, average: Double, longest: Double, total: Double) {
+        let threshold = -50.0
+        let asset = AVAsset(url: audioURL)
+        var pauseCount = 0
+        var totalPauseDuration = 0.0
+        var longestPause = 0.0
+        
+        guard let audioTrack = try? await asset.loadTracks(withMediaType: .audio).first else {
+            return (0, 0, 0, 0)
+        }
+        
+        let audioFormat = [
+            AVFormatIDKey: kAudioFormatLinearPCM,
+            AVLinearPCMBitDepthKey: 16,
+            AVLinearPCMIsFloatKey: false,
+            AVSampleRateKey: 44100,
+            AVNumberOfChannelsKey: 1
+        ] as [String: Any]
+        
+        guard let reader = try? AVAssetReader(asset: asset),
+              let output = try? AVAssetReaderTrackOutput(track: audioTrack, outputSettings: audioFormat) else {
+            return (0, 0, 0, 0)
+        }
+        
+        reader.add(output)
+        reader.startReading()
+        
+        while let sampleBuffer = output.copyNextSampleBuffer() {
+            let cmTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+            let time = CMTimeGetSeconds(cmTime)
+            
+            guard let channelData = readAudioBuffer(from: sampleBuffer) else { continue }
+            
+            if channelData < Float(threshold) {
+                pauseCount += 1
+                let pauseDuration = time
+                totalPauseDuration += pauseDuration
+                longestPause = max(longestPause, pauseDuration)
+            }
+        }
+        
+        return (pauseCount, totalPauseDuration / Double(max(1, pauseCount)), longestPause, totalPauseDuration)
+    }
+    
+    private func readAudioBuffer(from sampleBuffer: CMSampleBuffer) -> Float? {
+        guard let audioBufferList = sampleBuffer.audioBufferList,
+              let data = audioBufferList.mBuffers.mData else {
+            return nil
+        }
+        
+        let buffer = data.assumingMemoryBound(to: Float.self)
+        let size = Int(audioBufferList.mBuffers.mDataByteSize) / MemoryLayout<Float>.size
+        let samples = Array(UnsafeBufferPointer(start: buffer, count: size))
+        
+        // Calculate RMS (Root Mean Square) of the samples
+        let rms = sqrt(samples.map { $0 * $0 }.reduce(0, +) / Float(samples.count))
+        return 20 * log10(rms) // Convert to dB
+    }
+    
+    private func calculateFlowScore(wpm: Double, pauseAnalysis: (count: Int, average: Double, longest: Double, total: Double)) -> Double {
+        let optimalWPM = 130.0
+        let wpmScore = 1.0 - abs(wpm - optimalWPM) / optimalWPM
+        let pauseScore = 1.0 - (Double(pauseAnalysis.count) * pauseAnalysis.average / 30.0)
+        return (wpmScore + pauseScore) / 2.0
+    }
+    
+    private func calculateArticulationRate(wordCount: Int, duration: TimeInterval, totalPauseDuration: Double) -> Double {
+        let speechDuration = duration - totalPauseDuration
+        return Double(wordCount) / speechDuration
+    }
+}
+
+class CognitiveAnalyzer {
+    private let insightWords: Set<String> = [
+        "realize", "understand", "learn", "discover", "recognize",
+        "comprehend", "conclude", "determine", "notice", "grasp",
+        "appreciate", "acknowledge", "perceive", "deduce", "infer"
+    ]
+    
+    private let causalWords: Set<String> = [
+        "because", "therefore", "consequently", "thus", "hence",
+        "since", "due", "result", "cause", "effect",
+        "leads", "impacts", "influences", "affects", "determines"
+    ]
+    
+    private let qualifiers: Set<String> = [
+        "maybe", "perhaps", "possibly", "probably", "likely",
+        "seemingly", "apparently", "presumably", "generally", "typically",
+        "usually", "often", "sometimes", "occasionally", "rarely"
+    ]
+    
+    private let discrepancyWords: Set<String> = [
+        "should", "would", "could", "might", "must",
+        "ought", "need", "want", "desire", "wish",
+        "hope", "expect", "anticipate", "plan", "intend"
+    ]
+    
+    func analyze(_ text: String) -> CognitiveAnalysis {
+        let words = text.lowercased().components(separatedBy: .whitespacesAndNewlines)
+        let wordCount = Double(words.count)
+        
+        var insightCount = 0
+        var causalCount = 0
+        var qualifierCount = 0
+        var discrepancyCount = 0
+        var foundInsightWords: [String] = []
+        var foundDiscrepancyWords: [String] = []
+        
+        for word in words {
+            if insightWords.contains(word) {
+                insightCount += 1
+                foundInsightWords.append(word)
+            }
+            if causalWords.contains(word) {
+                causalCount += 1
+            }
+            if qualifiers.contains(word) {
+                qualifierCount += 1
+            }
+            if discrepancyWords.contains(word) {
+                discrepancyCount += 1
+                foundDiscrepancyWords.append(word)
+            }
+        }
+        
+        let analyticalScore = calculateAnalyticalScore(
+            causalCount: causalCount,
+            insightCount: insightCount,
+            wordCount: wordCount
+        )
+        
+        let complexityScore = calculateComplexityScore(
+            text: text,
+            qualifierCount: qualifierCount,
+            wordCount: wordCount
+        )
+        
+        return CognitiveAnalysis(
+            analyticalScore: analyticalScore,
+            insightWords: Array(Set(foundInsightWords)),
+            complexityScore: complexityScore,
+            qualifierFrequency: Double(qualifierCount) / wordCount,
+            causalityScore: Double(causalCount) / wordCount,
+            discrepancyWords: Array(Set(foundDiscrepancyWords))
+        )
+    }
+    
+    private func calculateAnalyticalScore(causalCount: Int, insightCount: Int, wordCount: Double) -> Double {
+        let causalWeight = 0.4
+        let insightWeight = 0.6
+        
+        let causalScore = Double(causalCount) / wordCount
+        let insightScore = Double(insightCount) / wordCount
+        
+        return (causalScore * causalWeight + insightScore * insightWeight) * 100
+    }
+    
+    private func calculateComplexityScore(text: String, qualifierCount: Int, wordCount: Double) -> Double {
+        let sentences = text.components(separatedBy: ".").filter { !$0.isEmpty }
+        let avgWordsPerSentence = wordCount / Double(sentences.count)
+        let qualifierDensity = Double(qualifierCount) / wordCount
+        
+        let baseScore = (avgWordsPerSentence / 20.0) * 50.0
+        let qualifierScore = qualifierDensity * 50.0
+        
+        return min(100, baseScore + qualifierScore)
+    }
+}
+
+class SelfReferenceAnalyzer {
+    private let tagger = NLTagger(tagSchemes: [.lexicalClass])
+    
+    private let selfReferenceWords: Set<String> = [
+        "i", "me", "my", "mine", "myself",
+        "we", "us", "our", "ours", "ourselves"
+    ]
+    
+    private let otherReferenceWords: Set<String> = [
+        "he", "him", "his", "himself",
+        "she", "her", "hers", "herself",
+        "they", "them", "their", "theirs", "themselves",
+        "you", "your", "yours", "yourself", "yourselves"
+    ]
+    
+    func analyze(_ text: String) -> SelfReferenceAnalysis {
+        let words = text.lowercased().components(separatedBy: .whitespacesAndNewlines)
+        let wordCount = Double(words.count)
+        
+        var selfRefs = 0
+        var otherRefs = 0
+        var pastTense = 0
+        var presentTense = 0
+        var futureTense = 0
+        var activeVoice = 0
+        var totalVerbs = 0
+        
+        tagger.string = text
+        let range = text.startIndex..<text.endIndex
+        
+        tagger.enumerateTags(in: range, unit: .word, scheme: .lexicalClass) { tag, tokenRange in
+            let word = String(text[tokenRange]).lowercased()
+                        
+    if selfReferenceWords.contains(word) {
+        selfRefs += 1
+    } else if otherReferenceWords.contains(word) {
+        otherRefs += 1
+    }
+    
+    if tag == .verb {
+        totalVerbs += 1
+        if word.hasSuffix("ed") {
+            pastTense += 1
+        } else if word.hasPrefix("will") || word.contains("going to") {
+            futureTense += 1
+        } else {
+            presentTense += 1
+        }
+        
+        if !word.hasSuffix("was") && !word.hasSuffix("were") {
+            activeVoice += 1
+        }
+            }
+            
+            return true
+        }
+        
+        return SelfReferenceAnalysis(
+            selfReferences: selfRefs,
+            selfReferencePercentage: Double(selfRefs) / wordCount * 100,
+            otherReferences: otherRefs,
+            pastTensePercentage: Double(pastTense) / Double(max(1, totalVerbs)) * 100,
+            presentTensePercentage: Double(presentTense) / Double(max(1, totalVerbs)) * 100,
+            futureTensePercentage: Double(futureTense) / Double(max(1, totalVerbs)) * 100,
+            activeVoicePercentage: Double(activeVoice) / Double(max(1, totalVerbs)) * 100
+        )
+    }
+}
+
+class ThematicAnalyzer {
+    private let tagger = NLTagger(tagSchemes: [.nameType, .lexicalClass])
+    private let tokenizer = NLTokenizer(unit: .word)
+    
+    private let significantTags: Set<NLTag> = [.noun, .verb, .adjective]
+    private let stopWords: Set<String> = [
+        "the", "be", "to", "of", "and", "a", "in", "that", "have",
+        "i", "it", "for", "not", "on", "with", "he", "as", "you",
+        "do", "at", "this", "but", "his", "by", "from", "they",
+        "we", "say", "her", "she", "or", "an", "will", "my",
+        "one", "all", "would", "there", "their", "what", "so",
+        "up", "out", "if", "about", "who", "get", "which", "go",
+        "me", "when", "make", "can", "like", "time", "no", "just",
+        "him", "know", "take", "people", "into", "year", "your",
+        "good", "some", "could", "them", "see", "other", "than",
+        "then", "now", "look", "only", "come", "its", "over",
+        "think", "also", "back", "after", "use", "two", "how",
+        "our", "work", "first", "well", "way", "even", "new",
+        "want", "because", "any", "these", "give", "day", "most"
+    ]
+    
+    func analyze(_ text: String) -> ThematicAnalysis {
+        var keyTopics: [String: Double] = [:]
+        var significantPhrases: [String] = []
+        var namedEntities: [String] = []
+        var contextualKeywords: [String: Double] = [:]
+        
+        // Named Entity Recognition
+        tagger.string = text
+        let range = text.startIndex..<text.endIndex
+        
+        tagger.enumerateTags(in: range, unit: .word, scheme: .nameType) { tag, tokenRange in
+            if let tag = tag {
+                let entity = String(text[tokenRange])
+                if tag == .personalName || tag == .placeName || tag == .organizationName {
+                    namedEntities.append(entity)
+                }
+            }
+            return true
+        }
+        
+        // Key Topics and Contextual Keywords
+        let words = tokenizeAndFilter(text)
+        let wordFrequencies = calculateWordFrequencies(words)
+        let tfIdfScores = calculateTfIdf(wordFrequencies, totalWords: Double(words.count))
+        
+        for (word, score) in tfIdfScores {
+            if score > 0.1 {
+                keyTopics[word] = score
+            }
+            
+            let contextScore = calculateContextualScore(word: word, words: words)
+            if contextScore > 0.05 {
+                contextualKeywords[word] = contextScore
+            }
+        }
+        
+        // Significant Phrases
+        significantPhrases = extractSignificantPhrases(text, keyTopics: keyTopics)
+        
+        return ThematicAnalysis(
+            keyTopics: keyTopics,
+            significantPhrases: significantPhrases,
+            namedEntities: Array(Set(namedEntities)),
+            contextualKeywords: contextualKeywords,
+            topicCoherence: calculateTopicCoherence(keyTopics: keyTopics, words: words)
+        )
+    }
+    
+    private func tokenizeAndFilter(_ text: String) -> [String] {
+        tokenizer.string = text
+        return tokenizer.tokens(for: text.startIndex..<text.endIndex)
+            .map { String(text[$0]).lowercased() }
+            .filter { !stopWords.contains($0) && $0.count > 2 }
+    }
+    
+    private func calculateWordFrequencies(_ words: [String]) -> [String: Int] {
+        var frequencies: [String: Int] = [:]
+        words.forEach { frequencies[$0, default: 0] += 1 }
+        return frequencies
+    }
+    
+    private func calculateTfIdf(_ frequencies: [String: Int], totalWords: Double) -> [String: Double] {
+        var tfIdf: [String: Double] = [:]
+        let maxFreq = Double(frequencies.values.max() ?? 1)
+        
+        for (word, freq) in frequencies {
+            let tf = Double(freq) / maxFreq
+            let idf = log(totalWords / Double(freq))
+            tfIdf[word] = tf * idf
+        }
+        
+        return tfIdf
+    }
+    
+    private func calculateContextualScore(word: String, words: [String]) -> Double {
+        let windowSize = 3
+        var score = 0.0
+        
+        for i in 0..<words.count {
+            if words[i] == word {
+                let start = max(0, i - windowSize)
+                let end = min(words.count - 1, i + windowSize)
+                let context = Array(words[start...end])
+                score += calculateContextRelevance(word: word, context: context)
+            }
+        }
+        
+        return score
+    }
+    
+    private func calculateContextRelevance(word: String, context: [String]) -> Double {
+        var relevance = 0.0
+        let wordSet = Set(context)
+        
+        for contextWord in wordSet {
+            if contextWord != word {
+                relevance += 0.1
+            }
+        }
+        
+        return relevance
+    }
+    
+    private func extractSignificantPhrases(_ text: String, keyTopics: [String: Double]) -> [String] {
+        var phrases: [String] = []
+        let sentences = text.components(separatedBy: ".").filter { !$0.isEmpty }
+        
+        for sentence in sentences {
+            let words = sentence.lowercased().components(separatedBy: .whitespacesAndNewlines)
+            for i in 0..<words.count-2 {
+                let phrase = words[i...i+2].joined(separator: " ")
+                if keyTopics.keys.contains(where: { phrase.contains($0) }) {
+                    phrases.append(phrase.trimmingCharacters(in: .whitespacesAndNewlines))
+                }
+            }
+        }
+        
+        return Array(Set(phrases))
+    }
+    
+    private func calculateTopicCoherence(keyTopics: [String: Double], words: [String]) -> Double {
+        var coherence = 0.0
+        let topicWords = Array(keyTopics.keys)
+        
+        for i in 0..<topicWords.count {
+            for j in i+1..<topicWords.count {
+                coherence += calculateWordCoherence(word1: topicWords[i], word2: topicWords[j], words: words)
+            }
+        }
+        
+        return coherence / max(1.0, Double(topicWords.count * (topicWords.count - 1)) / 2.0)
+    }
+    
+    private func calculateWordCoherence(word1: String, word2: String, words: [String]) -> Double {
+        var cooccurrence = 0
+        let windowSize = 5
+        
+        for i in 0..<words.count {
+            let start = max(0, i - windowSize)
+            let end = min(words.count - 1, i + windowSize)
+            let window = Array(words[start...end])
+            
+            if window.contains(word1) && window.contains(word2) {
+                cooccurrence += 1
+            }
+        }
+        
+        return Double(cooccurrence) / Double(words.count)
+    }
+}
+
+class AnalysisManager: ObservableObject {
+    static let shared = AnalysisManager()
+    
+    @Published private(set) var currentLoopAnalysis: LoopAnalysis?
+    @Published private(set) var sessionStats: SessionStatistics
+    @Published private(set) var isAnalyzing = false
+    
+    private let emotionAnalyzer = EmotionAnalyzer()
+    private let speechPatternAnalyzer = SpeechPatternAnalyzer()
+    private let cognitiveAnalyzer = CognitiveAnalyzer()
+    private let selfReferenceAnalyzer = SelfReferenceAnalyzer()
+    private let thematicAnalyzer = ThematicAnalyzer()
+    
+    var analyzedLoops: [LoopAnalysis] = []
+    
+    init() {
+        self.sessionStats = SessionStatistics(
+            averageWordsPerMinute: 0,
+            averageEmotionalIntensity: 0,
+            averageComplexityScore: 0,
+            averageSelfReferencePercentage: 0,
+            dominantEmotions: [],
+            commonTopics: [],
+            analysisCount: 0
+        )
+    }
+    
+    func analyzeLoop(_ loop: Loop) async throws {
+        guard let fileURL = loop.data.fileURL else {
+            throw AnalysisError.invalidFileURL
+        }
+        
+        DispatchQueue.main.async {
+            self.isAnalyzing = true
+        }
+        
+        let transcript = try await transcribeAudio(url: fileURL)
+        
+        let emotionAnalysis = emotionAnalyzer.analyze(transcript)
+        let speechPatternAnalysis = await speechPatternAnalyzer.analyze(audioURL: fileURL, transcript: transcript)
+        let cognitiveAnalysis = cognitiveAnalyzer.analyze(transcript)
+        let selfReferenceAnalysis = selfReferenceAnalyzer.analyze(transcript)
+        let thematicAnalysis = thematicAnalyzer.analyze(transcript)
+        
+        let analysis = LoopAnalysis(
+            loopId: loop.id,
+            timestamp: loop.timestamp,
+            emotion: emotionAnalysis,
+            speechPattern: speechPatternAnalysis,
+            cognitive: cognitiveAnalysis,
+            selfReference: selfReferenceAnalysis,
+            thematic: thematicAnalysis
+        )
+        
+        await updateSessionStatistics(with: analysis)
+        
+        DispatchQueue.main.async {
+            self.currentLoopAnalysis = analysis
+            self.isAnalyzing = false
+        }
+    }
+    
     private func transcribeAudio(url: URL) async throws -> String {
         let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
         guard let recognizer = recognizer else {
             throw AnalysisError.transcriptionFailed
-        }
-        
-        guard await SFSpeechRecognizer.hasAuthorizationToRecognize() else {
-            throw AnalysisError.transcriptionNotAuthorized
         }
         
         let request = SFSpeechURLRecognitionRequest(url: url)
@@ -283,60 +662,70 @@ class AnalysisManager: ObservableObject {
             }
         }
     }
+    
+    @MainActor
+    private func updateSessionStatistics(with analysis: LoopAnalysis) {
+        analyzedLoops.append(analysis)
+        
+        let totalLoops = Double(analyzedLoops.count)
+        
+        let avgWPM = analyzedLoops.reduce(0.0) { $0 + $1.speechPattern.wordsPerMinute } / totalLoops
+        let avgEmotionalIntensity = analyzedLoops.reduce(0.0) { $0 + $1.emotion.emotionalIntensity } / totalLoops
+        let avgComplexity = analyzedLoops.reduce(0.0) { $0 + $1.cognitive.complexityScore } / totalLoops
+        let avgSelfRef = analyzedLoops.reduce(0.0) { $0 + $1.selfReference.selfReferencePercentage } / totalLoops
+        
+        var emotionCounts: [String: Int] = [:]
+        var topicCounts: [String: Int] = [:]
+        
+        for loop in analyzedLoops {
+            loop.emotion.primaryEmotions.forEach { emotionCounts[$0, default: 0] += 1 }
+            loop.thematic.keyTopics.forEach { topicCounts[$0.key, default: 0] += 1 }
+        }
+        
+        let dominantEmotions = Array(emotionCounts.sorted { $0.value > $1.value }.prefix(5).map { $0.key })
+        let commonTopics = Array(topicCounts.sorted { $0.value > $1.value }.prefix(5).map { $0.key })
+        
+        sessionStats = SessionStatistics(
+            averageWordsPerMinute: avgWPM,
+            averageEmotionalIntensity: avgEmotionalIntensity,
+            averageComplexityScore: avgComplexity,
+            averageSelfReferencePercentage: avgSelfRef,
+            dominantEmotions: dominantEmotions,
+            commonTopics: commonTopics,
+            analysisCount: analyzedLoops.count
+        )
+    }
 }
-
-
 
 enum AnalysisError: Error {
     case invalidFileURL
+    case audioProcessingFailed
     case transcriptionFailed
     case transcriptionNotAuthorized
     case analysisFailure
-}
-
-
-class AnalysisCacheManager {
-    private let fileManager = FileManager.default
-    private let cacheDirectory: URL
+    case audioFormatError
+    case noAudioTrack
+    case noSpeechRecognizer
     
-    init() {
-        let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        cacheDirectory = documentsDirectory.appendingPathComponent("AnalysisCache")
-        try? fileManager.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
-    }
-    
-    func cacheAnalysis(_ analysis: DailyAnalysis) {
-        let fileName = getFileName(for: analysis.date)
-        let fileURL = cacheDirectory.appendingPathComponent(fileName)
-        
-        do {
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(analysis)
-            try data.write(to: fileURL)
-        } catch {
-            print("Failed to cache analysis: \(error)")
+    var description: String {
+        switch self {
+        case .invalidFileURL:
+            return "Invalid file URL provided"
+        case .audioProcessingFailed:
+            return "Failed to process audio file"
+        case .transcriptionFailed:
+            return "Failed to transcribe audio"
+        case .transcriptionNotAuthorized:
+            return "Speech recognition not authorized"
+        case .analysisFailure:
+            return "Analysis failed to complete"
+        case .audioFormatError:
+            return "Invalid audio format"
+        case .noAudioTrack:
+            return "No audio track found"
+        case .noSpeechRecognizer:
+            return "Speech recognizer not available"
         }
     }
-    
-    func loadAnalysis(for date: Date) -> DailyAnalysis? {
-        let fileName = getFileName(for: date)
-        let fileURL = cacheDirectory.appendingPathComponent(fileName)
-        
-        guard fileManager.fileExists(atPath: fileURL.path) else { return nil }
-        
-        do {
-            let data = try Data(contentsOf: fileURL)
-            let decoder = JSONDecoder()
-            return try decoder.decode(DailyAnalysis.self, from: data)
-        } catch {
-            print("Failed to load cached analysis: \(error)")
-            return nil
-        }
-    }
-    
-    private func getFileName(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return "analysis-\(formatter.string(from: date)).json"
-    }
 }
+
