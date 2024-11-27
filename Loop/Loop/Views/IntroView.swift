@@ -24,7 +24,14 @@ struct OnboardingView: View {
     @State private var backgroundOpacity = 0.0
     @State private var waveformData: [CGFloat] = Array(repeating: 0, count: 60)
     @State private var showWaveform = false
-    @State private var insightTrends: [InsightTrend] = []
+    @State private var isPlaying = false
+    @State private var progress: CGFloat = 0
+    @State private var showInitialPrompt = true
+    @State private var contentOpacity: CGFloat = 0
+    @State private var titleOpacity = 0.0
+    @State private var subtitleOpacity = 0.0
+    @State private var buttonOpacity = 0.0
+    @State private var backgroundPhase = 0.0
     
     let accentColor = Color(hex: "A28497")
     let textColor = Color(hex: "2C3E50")
@@ -39,14 +46,6 @@ struct OnboardingView: View {
     
     var body: some View {
         ZStack {
-            AnimatedBackground()
-                .opacity(backgroundOpacity)
-                .onAppear {
-                    withAnimation(.easeIn(duration: 1.2)) {
-                        backgroundOpacity = 1
-                    }
-                }
-            
             TabView(selection: $currentStep) {
                 welcomeView
                     .tag(0)
@@ -70,256 +69,141 @@ struct OnboardingView: View {
                 StorageInfoOverlay(isShowing: $showStorageInfo)
             }
         }
+        .edgesIgnoringSafeArea(.all)
         .preferredColorScheme(.light)
     }
     
     private var welcomeView: some View {
-        VStack {
-            Spacer()
-            
-            VStack(spacing: 8) {
-                Text("welcome to loop")
-                    .font(.system(size: 38, weight: .ultraLight))
-                    .foregroundColor(textColor)
-                    .opacity(fadeInOpacity)
-                
-                Text("start micro-journaling")
-                    .font(.system(size: 20, weight: .light))
-                    .foregroundColor(textColor.opacity(0.6))
-                    .opacity(fadeInOpacity)
-            }
-            
-            Spacer()
-            
-            OnboardingButton(text: "begin", icon: "arrow.right") {
+            WelcomeView {
                 withAnimation {
                     currentStep = 1
                 }
             }
-            .padding(.bottom, 48)
-            .opacity(fadeInOpacity)
-        }
-        .onAppear {
-            withAnimation(.easeOut(duration: 1)) {
-                fadeInOpacity = 1
-            }
-        }
-    }
-
-        private var recordingDemoView: some View {
-            VStack(spacing: 0) {
-                topBar
-                    .padding(.top, 16)
-                
-                Spacer()
-                
-                Text("What made you smile today?")
-                    .font(.system(size: 32, weight: .light))
-                    .multilineTextAlignment(.center)
-                    .foregroundColor(textColor)
-                    .padding(.horizontal, 32)
-                    .opacity(showMockRecording ? 0.6 : 1)
-                
-                if showMockRecording {
-                    LiveWaveformView()
-                        .frame(height: 80)
-                        .padding(.top, 40)
-                        .padding(.horizontal, 32)
-                }
-                
-                Spacer()
-                
-                RecordButton(
-                    isRecording: showMockRecording,
-                    progress: recordingProgress
-                ) {
-                    withAnimation(.spring(response: 0.6)) {
-                        showMockRecording = true
-                        startRecordingDemo()
-                    }
-                }
-                .padding(.bottom, 60)
-            }
         }
         
-        private var pastLoopView: some View {
-            VStack(spacing: 0) {
-                HStack {
-                    Button {
-                        withAnimation {
-                            currentStep -= 1
-                        }
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(textColor.opacity(0.6))
-                    }
+        private var recordingDemoView: some View {
+            ZStack {
+                Color(hex: "FAFBFC").ignoresSafeArea()
+                
+                VStack(spacing: 0) {
+                    Text("record a loop")
+                        .font(.system(size: 24, weight: .light))
+                        .foregroundColor(textColor)
+                        .padding(.top, 32)
+                        .padding(.bottom, 40)
                     
                     Spacer()
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
-                
-                VStack(spacing: 8) {
-                    Text("from your past")
-                        .font(.system(size: 18, weight: .light))
-                        .foregroundColor(textColor.opacity(0.6))
                     
-                    Text("September 24")
-                        .font(.system(size: 22, weight: .medium))
-                        .foregroundColor(accentColor)
-                }
-                .padding(.top, 32)
-                
-                Spacer()
-                
-                VStack(spacing: 24) {
-                    Text("What made you smile today?")
+                    Text("what made you smile today?")
                         .font(.system(size: 32, weight: .light))
                         .multilineTextAlignment(.center)
                         .foregroundColor(textColor)
                         .padding(.horizontal, 32)
                     
-                    if showWaveform {
-                        WaveformView(waveformData: waveformData, color: accentColor)
-//                        .frame(height: 80)
-                        .padding(.horizontal, 32)
-                    }
-                }
-                
-                Spacer()
-                
-                OnboardingButton(text: "see your growth", icon: "arrow.right") {
-                    withAnimation {
-                        currentStep = 3
-                    }
-                }
-                .padding(.bottom, 48)
-            }
-            .onAppear {
-                generateWaveformData()
-            }
-        }
-        
-        struct LiveWaveformView: View {
-            @State private var phase = 0.0
-            
-            var body: some View {
-                TimelineView(.animation) { timeline in
-                    Canvas { context, size in
-                        let width = size.width
-                        let height = size.height
-                        let centerY = height / 2
-                        
-                        for x in stride(from: 0, to: width, by: 3) {
-                            let normalizedX = x / width
-                            let amplitude = 20.0 * (1 + sin(normalizedX * 8 + phase)) / 2
-                            let y = centerY + amplitude * sin(normalizedX * 15 + phase)
-                            
-                            let path = Path { p in
-                                p.move(to: CGPoint(x: x, y: centerY - amplitude))
-                                p.addLine(to: CGPoint(x: x, y: centerY + amplitude))
-                            }
-                            
-                            context.stroke(
-                                path,
-                                with: .color(Color(hex: "A28497").opacity(0.3)),
-                                lineWidth: 2
-                            )
-                        }
-                    }
-                }
-                .onAppear {
-                    withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
-                        phase = .pi * 2
-                    }
-                }
-            }
-        }
-        
-        struct RecordButton: View {
-            let isRecording: Bool
-            let progress: CGFloat
-            let action: () -> Void
-            
-            var body: some View {
-                Button(action: action) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: 88)
-                            .shadow(color: Color(hex: "A28497").opacity(0.2), radius: 20)
-                        
-                        Circle()
-                            .fill(Color(hex: "A28497"))
-                            .frame(width: 74)
-                        
-                        if isRecording {
-                            Circle()
-                                .stroke(Color(hex: "A28497").opacity(0.2), lineWidth: 4)
-                                .frame(width: 96)
-                            
-                            Circle()
-                                .trim(from: 0, to: progress)
-                                .stroke(Color(hex: "A28497"), lineWidth: 4)
-                                .frame(width: 96)
-                                .rotationEffect(.degrees(-90))
-                            
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(Color.white)
-                                .frame(width: 24, height: 24)
-                        }
-                    }
-                }
-            }
-        }
-        
-        private var topBar: some View {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("record your first loop")
-                        .font(.system(size: 18, weight: .light))
+                    Text("\(23)s")
+                        .font(.system(size: 26, weight: .ultraLight))
                         .foregroundColor(accentColor)
+                    
+                    Spacer()
+                    
+                    RecordButton(
+                        isRecording: true,
+                        progress: 0
+                    ) { }
+                    .padding(.bottom, 60)
+                    .allowsHitTesting(false)
+                    
+                    OnboardingButton(text: "continue", icon: "arrow.right") {
+                        withAnimation {
+                            currentStep = 2
+                        }
+                    }
+                    .padding(.bottom, 48)
                 }
-                
-                Spacer()
             }
-            .padding(.horizontal, 24)
         }
         
-        private func startRecordingDemo() {
-            withAnimation(.linear(duration: 3)) {
-                recordingProgress = 1
-            }
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                withAnimation {
-                    currentStep = 2
-                }
-            }
-        }
-        
-        private func generateWaveformData() {
-            waveformData = (0..<60).map { _ in
-                CGFloat.random(in: 12...64)
-            }
-            withAnimation(.easeOut(duration: 0.4)) {
-                showWaveform = true
-            }
-        }
-
-        private var insightsView: some View {
+        private var pastLoopView: some View {
             ZStack {
-                FloatingInsights()
+                Color(hex: "FAFBFC").ignoresSafeArea()
                 
                 VStack(spacing: 0) {
+                    Text("loop brings back a previous entry")
+                        .font(.system(size: 24, weight: .light))
+                        .foregroundColor(textColor)
+                        .padding(.top, 32)
+                        .padding(.bottom, 40)
+                    
+                    Text("what made you smile today?")
+                        .font(.system(size: 24, weight: .light))
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(textColor)
+                    
+                    Text("September 24, 2024")
+                        .font(.system(size: 15, weight: .regular))
+                        .foregroundColor(textColor.opacity(0.6))
+                        .padding(.bottom, 20)
+                    
+                    Spacer()
+                    
+                    WaveformSection(
+                        waveformData: waveformData,
+                        progress: 0.3,
+                        showBars: true,
+                        accentColor: accentColor
+                    )
+                    
+                    Spacer()
+                    
                     HStack {
-                        Text("trends in your growth")
-                            .font(.system(size: 24, weight: .light))
-                            .foregroundColor(textColor)
-                            .padding(.top, 32)
+                        Text("0:00")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(textColor.opacity(0.6))
+                        
+                        Spacer()
+                        
+                        Circle()
+                            .fill(accentColor)
+                            .frame(width: 64, height: 64)
+                            .shadow(color: accentColor.opacity(0.3), radius: 10, y: 5)
+                            .overlay(
+                                Image(systemName: "play.fill")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.white)
+                                    .offset(x: 2)
+                            )
+                        
+                        Spacer()
+                        
+                        Text("0:30")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(textColor.opacity(0.6))
                     }
-                    .padding(.horizontal, 24)
+                    .allowsHitTesting(false)
+                    
+                    OnboardingButton(text: "continue", icon: "arrow.right") {
+                        withAnimation {
+                            currentStep = 3
+                        }
+                    }
+                    .padding(.vertical, 48)
+                }
+                .onAppear {
+                    generateWaveform()
+                }
+                .safeAreaPadding(.horizontal, 24)
+            }
+        }
+        
+        private var insightsView: some View {
+            ZStack {
+                Color(hex: "FAFBFC").ignoresSafeArea()
+                
+                VStack(spacing: 0) {
+                    Text("Compare then and now")
+                        .font(.system(size: 24, weight: .light))
+                        .foregroundColor(textColor)
+                        .padding(.top, 32)
                     
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 32) {
@@ -340,6 +224,144 @@ struct OnboardingView: View {
                 }
             }
         }
+        
+        private var purposeView: some View {
+            VStack(spacing: 0) {
+                Text("why do you want to loop?")
+                    .font(.system(size: 24, weight: .light))
+                    .foregroundColor(textColor)
+                    .padding(.top, 32)
+                
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 20) {
+                        ForEach(purposes, id: \.self) { purpose in
+                            PurposeButton(
+                                purpose: purpose,
+                                isSelected: selectedPurposes.contains(purpose)
+                            ) {
+                                withAnimation(.spring(response: 0.3)) {
+                                    if selectedPurposes.contains(purpose) {
+                                        selectedPurposes.remove(purpose)
+                                    } else {
+                                        selectedPurposes.insert(purpose)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 40)
+                }
+                
+                OnboardingButton(text: "next", icon: "arrow.right") {
+                    withAnimation {
+                        currentStep = 5
+                    }
+                }
+                .padding(.bottom, 48)
+                .disabled(selectedPurposes.isEmpty)
+                .opacity(selectedPurposes.isEmpty ? 0.6 : 1)
+            }
+        }
+        
+        private var storageView: some View {
+            ZStack {
+                VStack(spacing: 24) {
+                    Spacer()
+                    
+                    CloudAnimation()
+                        .frame(height: 120)
+                    
+                    VStack(spacing: 8) {
+                        Text("your journal is for you")
+                            .font(.system(size: 24, weight: .light))
+                            .foregroundColor(textColor)
+                        
+                        Text("secured with iCloud backup")
+                            .font(.system(size: 18, weight: .light))
+                            .foregroundColor(textColor.opacity(0.6))
+                    }
+                    
+                    Spacer()
+                    
+                    Button {
+                        withAnimation(.spring(response: 0.4)) {
+                            showStorageInfo = true
+                        }
+                    } label: {
+                        Label("what about storage space?", systemImage: "questionmark.circle")
+                            .font(.system(size: 16, weight: .light))
+                            .foregroundColor(accentColor)
+                    }
+                    
+                    OnboardingButton(text: "continue", icon: "arrow.right") {
+                        withAnimation {
+                            currentStep = 6
+                        }
+                    }
+                    .padding(.bottom, 48)
+                }
+            }
+        }
+        
+        private var setupView: some View {
+            VStack(spacing: 0) {
+                Text("personalize your loop")
+                    .font(.system(size: 24, weight: .light))
+                    .foregroundColor(textColor)
+                    .padding(.top, 32)
+                
+                VStack(spacing: 40) {
+                    VStack(spacing: 8) {
+                        ZStack {
+                            if userName.isEmpty {
+                                Text("your name")
+                                    .font(.system(size: 32, weight: .light))
+                                    .foregroundColor(textColor.opacity(0.3))
+                            }
+                            
+                            TextField("", text: $userName)
+                                .font(.system(size: 32, weight: .light))
+                                .foregroundColor(textColor)
+                                .multilineTextAlignment(.center)
+                        }
+                        
+                        Rectangle()
+                            .fill(accentColor.opacity(0.2))
+                            .frame(height: 1)
+                            .frame(width: 200)
+                    }
+                    .padding(.top, 40)
+                    
+                    VStack(spacing: 16) {
+                        Text("when do you want to loop?")
+                            .font(.system(size: 18, weight: .light))
+                            .foregroundColor(textColor)
+                        
+                        TimeSelectionWheel(selectedTime: $reminderTime)
+                    }
+                }
+                
+                Spacer()
+                
+                OnboardingButton(text: "start looping", icon: "mic.circle.fill") {
+                    saveUserPreferences()
+                    onIntroCompletion()
+                }
+                .padding(.bottom, 48)
+                .disabled(userName.isEmpty)
+                .opacity(userName.isEmpty ? 0.6 : 1)
+            }
+        }
+        
+        private func generateWaveform() {
+            waveformData = (0..<60).map { _ in
+                CGFloat.random(in: 12...64)
+            }
+        }
+        
+
+    
         
         struct FloatingInsights: View {
             let insights = [
@@ -535,85 +557,6 @@ struct OnboardingView: View {
                 .padding(.vertical, 12)
             }
         }
-
-        private var purposeView: some View {
-            VStack(spacing: 0) {
-                Text("why do you want to loop?")
-                    .font(.system(size: 24, weight: .light))
-                    .foregroundColor(textColor)
-                    .padding(.top, 32)
-                
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 20) {
-                        ForEach(purposes, id: \.self) { purpose in
-                            PurposeButton(
-                                purpose: purpose,
-                                isSelected: selectedPurposes.contains(purpose)
-                            ) {
-                                withAnimation(.spring(response: 0.3)) {
-                                    if selectedPurposes.contains(purpose) {
-                                        selectedPurposes.remove(purpose)
-                                    } else {
-                                        selectedPurposes.insert(purpose)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 40)
-                }
-                
-                OnboardingButton(text: "next", icon: "arrow.right") {
-                    withAnimation {
-                        currentStep = 5
-                    }
-                }
-                .padding(.bottom, 48)
-                .disabled(selectedPurposes.isEmpty)
-                .opacity(selectedPurposes.isEmpty ? 0.6 : 1)
-            }
-        }
-        
-        private var storageView: some View {
-            ZStack {
-                VStack(spacing: 24) {
-                    Spacer()
-                    
-                    CloudAnimation()
-                        .frame(height: 120)
-                    
-                    VStack(spacing: 8) {
-                        Text("your journal is for you")
-                            .font(.system(size: 24, weight: .light))
-                            .foregroundColor(textColor)
-                        
-                        Text("secured with iCloud backup")
-                            .font(.system(size: 18, weight: .light))
-                            .foregroundColor(textColor.opacity(0.6))
-                    }
-                    
-                    Spacer()
-                    
-                    Button {
-                        withAnimation(.spring(response: 0.4)) {
-                            showStorageInfo = true
-                        }
-                    } label: {
-                        Label("what about storage space?", systemImage: "questionmark.circle")
-                            .font(.system(size: 16, weight: .light))
-                            .foregroundColor(accentColor)
-                    }
-                    
-                    OnboardingButton(text: "continue", icon: "arrow.right") {
-                        withAnimation {
-                            currentStep = 6
-                        }
-                    }
-                    .padding(.bottom, 48)
-                }
-            }
-        }
         
         struct PurposeButton: View {
             let purpose: String
@@ -753,55 +696,6 @@ struct OnboardingView: View {
             }
         }
 
-        private var setupView: some View {
-            VStack(spacing: 0) {
-                Text("personalize your loop")
-                    .font(.system(size: 24, weight: .light))
-                    .foregroundColor(textColor)
-                    .padding(.top, 32)
-                
-                VStack(spacing: 40) {
-                    VStack(spacing: 8) {
-                        ZStack {
-                            if userName.isEmpty {
-                                Text("your name")
-                                    .font(.system(size: 32, weight: .light))
-                                    .foregroundColor(textColor.opacity(0.3))
-                            }
-                            
-                            TextField("", text: $userName)
-                                .font(.system(size: 32, weight: .light))
-                                .foregroundColor(textColor)
-                                .multilineTextAlignment(.center)
-                        }
-                        
-                        Rectangle()
-                            .fill(accentColor.opacity(0.2))
-                            .frame(height: 1)
-                            .frame(width: 200)
-                    }
-                    .padding(.top, 40)
-                    
-                    VStack(spacing: 16) {
-                        Text("when do you want to loop?")
-                            .font(.system(size: 18, weight: .light))
-                            .foregroundColor(textColor)
-                        
-                        TimeSelectionWheel(selectedTime: $reminderTime)
-                    }
-                }
-                
-                Spacer()
-                
-                OnboardingButton(text: "start looping", icon: "mic.circle.fill") {
-                    saveUserPreferences()
-                    onIntroCompletion()
-                }
-                .padding(.bottom, 48)
-                .disabled(userName.isEmpty)
-                .opacity(userName.isEmpty ? 0.6 : 1)
-            }
-        }
         
         struct TimeSelectionWheel: View {
             @Binding var selectedTime: Date
@@ -890,8 +784,279 @@ struct OnboardingView: View {
         }
     }
 
-    #Preview {
-        OnboardingView {
-            print("Onboarding completed")
+struct LiveWaveformView: View {
+    @State private var phase = 0.0
+    
+    var body: some View {
+        TimelineView(.animation) { timeline in
+            Canvas { context, size in
+                let width = size.width
+                let height = size.height
+                let centerY = height / 2
+                
+                for x in stride(from: 0, to: width, by: 3) {
+                    let normalizedX = x / width
+                    let amplitude = 20.0 * (1 + sin(normalizedX * 8 + phase)) / 2
+                    let y = centerY + amplitude * sin(normalizedX * 15 + phase)
+                    
+                    let path = Path { p in
+                        p.move(to: CGPoint(x: x, y: centerY - amplitude))
+                        p.addLine(to: CGPoint(x: x, y: centerY + amplitude))
+                    }
+                    
+                    context.stroke(
+                        path,
+                        with: .color(Color(hex: "A28497").opacity(0.3)),
+                        lineWidth: 2
+                    )
+                }
+            }
+        }
+        .onAppear {
+            withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
+                phase = .pi * 2
+            }
         }
     }
+}
+
+struct RecordButton: View {
+    let isRecording: Bool
+    let progress: CGFloat
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 88)
+                    .shadow(color: Color(hex: "A28497").opacity(0.2), radius: 20)
+                
+                Circle()
+                    .fill(Color(hex: "A28497"))
+                    .frame(width: 74)
+                
+                if isRecording {
+                    Circle()
+                        .stroke(Color(hex: "A28497").opacity(0.2), lineWidth: 4)
+                        .frame(width: 96)
+                    
+                    Circle()
+                        .trim(from: 0, to: progress)
+                        .stroke(Color(hex: "A28497"), lineWidth: 4)
+                        .frame(width: 96)
+                        .rotationEffect(.degrees(-90))
+                    
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.white)
+                        .frame(width: 24, height: 24)
+                }
+            }
+        }
+    }
+}
+
+struct WelcomeViewBackground: View {
+    @State private var phase = 0.0
+    
+    var body: some View {
+        TimelineView(.animation) { timeline in
+            Canvas { context, size in
+                let time = timeline.date.timeIntervalSinceReferenceDate
+                let baseColor = Color(hex: "A28497")
+                
+                // Create elegant base gradient background
+                let backgroundGradient = Gradient(colors: [
+                    baseColor.adjustedHue(by: -20),
+                    baseColor,
+                    baseColor.adjustedHue(by: 20)
+                ])
+                
+                context.fill(
+                    Path(CGRect(origin: .zero, size: size)),
+                    with: .linearGradient(
+                        backgroundGradient,
+                        startPoint: CGPoint(x: 0, y: 0),
+                        endPoint: CGPoint(x: size.width, y: size.height)
+                    )
+                )
+                
+                // Flowing curves
+                let curves = 8
+                for i in 0..<curves {
+                    let animationOffset = Double(i) * .pi / 3 + time * 0.15
+                    
+                    var path = Path()
+                    let points = generateCurvePoints(
+                        size: size,
+                        offset: animationOffset,
+                        scale: Double(i + 1) / Double(curves),
+                        amplitude: 0.35
+                    )
+                    
+                    path.addLines(points)
+                    path.closeSubpath()
+                    
+                    // Subtle gradient overlays
+                    let gradient = Gradient(colors: [
+                        Color.white.opacity(0.2 - Double(i) * 0.02),
+                        baseColor.adjustedHue(by: Double(i * 20)).opacity(0.25 - Double(i) * 0.02)
+                    ])
+                    
+                    context.fill(
+                        path,
+                        with: .linearGradient(
+                            gradient,
+                            startPoint: CGPoint(x: 0, y: size.height * 0.3),
+                            endPoint: CGPoint(x: size.width, y: size.height * 0.7)
+                        )
+                    )
+                }
+                
+                // Add subtle radial glow
+                context.drawLayer { ctx in
+                    ctx.addFilter(.blur(radius: 50))
+                    
+                    let glowGradient = Gradient(colors: [
+                        baseColor.opacity(0.3),
+                        baseColor.opacity(0)
+                    ])
+                    
+                    ctx.fill(
+                        Path(ellipseIn: CGRect(
+                            x: size.width * 0.3,
+                            y: size.height * 0.3,
+                            width: size.width * 0.4,
+                            height: size.width * 0.4
+                        )),
+                        with: .radialGradient(
+                            glowGradient,
+                            center: CGPoint(x: size.width * 0.5, y: size.height * 0.5),
+                            startRadius: 0,
+                            endRadius: size.width * 0.3
+                        )
+                    )
+                }
+            }
+        }
+        .edgesIgnoringSafeArea(.all)
+    }
+    
+    private func generateCurvePoints(size: CGSize, offset: Double, scale: Double, amplitude: Double) -> [CGPoint] {
+        var points: [CGPoint] = []
+        let step = size.width / 50
+        
+        points.append(CGPoint(x: 0, y: size.height))
+        
+        for x in stride(from: 0, through: size.width, by: step) {
+            let normalizedX = x / size.width
+            
+            // Smooth, flowing wave pattern
+            let wave1 = sin(normalizedX * 5 * .pi + offset)
+            let wave2 = cos(normalizedX * 3 * .pi + offset * 1.5)
+            let wave3 = sin(normalizedX * 7 * .pi - offset * 0.5)
+            let wave4 = sin(normalizedX * 2 * .pi + offset * 0.8)
+            
+            let combinedWave = (wave1 + wave2 + wave3 + wave4) * scale * 0.25
+            let y = size.height * (0.5 + combinedWave * amplitude)
+            
+            points.append(CGPoint(x: x, y: y))
+        }
+        
+        points.append(CGPoint(x: size.width, y: size.height))
+        return points
+    }
+}
+
+struct WelcomeView: View {
+    @State private var titleScale = 0.8
+    @State private var titleOpacity = 0.0
+    @State private var subtitleOpacity = 0.0
+    @State private var buttonOpacity = 0.0
+    let action: () -> Void
+    
+    var body: some View {
+        ZStack {
+            WelcomeViewBackground()
+            
+            VStack {
+                Spacer()
+                
+                VStack(spacing: 8) {
+                    Text("welcome to loop")
+                        .font(.system(size: 42, weight: .thin))
+                        .foregroundColor(.white)
+                        .scaleEffect(titleScale)
+                        .opacity(titleOpacity)
+                    
+                    Text("a new way to journaling")
+                        .font(.system(size: 20, weight: .light))
+                        .foregroundColor(.white.opacity(0.8))
+                        .opacity(subtitleOpacity)
+                }
+                
+                Spacer()
+                
+                OnboardingButton(text: "begin", icon: "arrow.right") {
+                    action()
+                }
+                .padding(.bottom, 48)
+                .opacity(buttonOpacity)
+            }
+        }
+        .onAppear {
+            withAnimation(.spring(response: 1.8, dampingFraction: 0.8).delay(0.3)) {
+                titleScale = 1
+                titleOpacity = 1
+            }
+            
+            withAnimation(.easeOut(duration: 1.8).delay(1.2)) {
+                subtitleOpacity = 1
+            }
+            
+            withAnimation(.easeOut(duration: 1.8).delay(1.8)) {
+                buttonOpacity = 1
+            }
+        }
+    }
+}
+
+// OnboardingButton gets a more elegant design for the welcome screen
+struct OnboardingButton: View {
+    let text: String
+    let icon: String
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Text(text)
+                    .font(.system(size: 18, weight: .light))
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .light))
+            }
+            .frame(height: 56)
+            .frame(maxWidth: .infinity)
+            .background(
+                .ultraThinMaterial
+            )
+            .foregroundColor(.white)
+            .cornerRadius(28)
+            .overlay(
+                RoundedRectangle(cornerRadius: 28)
+                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.2), radius: 20, y: 10)
+            .padding(.horizontal, 32)
+        }
+        .buttonStyle(ScaleButtonStyle())
+    }
+}
+
+
+#Preview {
+    OnboardingView {
+        print("Onboarding completed")
+    }
+}

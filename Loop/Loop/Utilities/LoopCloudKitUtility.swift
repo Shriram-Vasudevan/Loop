@@ -47,7 +47,6 @@ class LoopCloudKitUtility {
         
         UserDefaults.standard.set(ckRecord.modificationDate, forKey: PromptCacheKeys.lastModifiedKey)
         
-        print(promptSet)
         return promptSet
     }
     

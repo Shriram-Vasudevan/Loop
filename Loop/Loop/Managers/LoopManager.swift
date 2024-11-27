@@ -94,7 +94,12 @@ class LoopManager: ObservableObject {
     init() {
         Task {
             await loadPrompts()
-            checkAndResetIfNeeded()
+            
+            await MainActor.run {
+                checkAndResetIfNeeded()
+            }
+            
+            // Continue with the rest
             await loadThematicPrompts()
             await checkSevenDayStatus()
         }
@@ -206,30 +211,62 @@ class LoopManager: ObservableObject {
     }
     
     private func selectRandomPrompts() {
-        let freeformPrompts = promptGroups[.freeform] ?? []
-        let firstPrompt = freeformPrompts.randomElement() ??
-            Prompt(text: "What's on your mind?", category: .freeform, isDailyPrompt: true)
+        // Get all available prompts from the JSON structure
+        let shareAnything = promptGroups.values
+            .flatMap { $0 }
+            .filter { $0.category == .freeform }
         
-        let dailyPrompts = promptGroups
-            .filter { $0.key != .freeform }
-            .flatMap { $1 }
-            .filter { $0.isDailyPrompt }
-        let secondPrompt = dailyPrompts.randomElement() ??
-            Prompt(text: "How are you feeling today?", category: .emotionalWellbeing, isDailyPrompt: true)
+        let dailyPrompts = promptGroups.values
+            .flatMap { $0 }
+            .filter { $0.isDailyPrompt && $0.category != .freeform }
         
-        let generalPrompts = promptGroups
-            .filter { $0.key != .freeform && $0.key != secondPrompt.category }
-            .flatMap { $1 }
-            .filter { !$0.isDailyPrompt }
-        let thirdPrompt = generalPrompts.randomElement() ??
-            Prompt(text: "What's giving you hope lately?", category: .growth, isDailyPrompt: false)
+        let generalPrompts = promptGroups.values
+            .flatMap { $0 }
+            .filter { !$0.isDailyPrompt && $0.category != .freeform }
         
+        // First prompt: Share Anything (always daily)
+        let firstPrompt: Prompt
+        if let randomShare = shareAnything.randomElement() {
+            firstPrompt = randomShare
+        } else {
+            // Fallback to any daily prompt if Share Anything category is empty
+            firstPrompt = dailyPrompts.randomElement() ??
+                Prompt(text: "What's on your mind?", category: .freeform, isDailyPrompt: true)
+        }
+        
+        // Second prompt: Random daily prompt (excluding first prompt's category)
+        let secondPrompt: Prompt
+        let availableDailyPrompts = dailyPrompts.filter { $0.category != firstPrompt.category }
+        if let randomDaily = availableDailyPrompts.randomElement() {
+            secondPrompt = randomDaily
+        } else {
+            // Try any daily prompt if filtered list is empty
+            secondPrompt = dailyPrompts.randomElement() ??
+                Prompt(text: "How are you feeling today?", category: .emotionalWellbeing, isDailyPrompt: true)
+        }
+        
+        // Third prompt: Random general prompt (excluding previous categories)
+        let thirdPrompt: Prompt
+        let availableGeneralPrompts = generalPrompts.filter {
+            $0.category != firstPrompt.category && $0.category != secondPrompt.category
+        }
+        if let randomGeneral = availableGeneralPrompts.randomElement() {
+            thirdPrompt = randomGeneral
+        } else {
+            // Try any general prompt if filtered list is empty
+            thirdPrompt = generalPrompts.randomElement() ??
+                Prompt(text: "What's giving you hope lately?", category: .growth, isDailyPrompt: false)
+        }
+        
+        // Update the prompts array with our selections
         self.dailyPrompts = [firstPrompt.text, secondPrompt.text, thirdPrompt.text]
+        
+        // Save our selections to recent prompts
         saveRecentPrompt(firstPrompt.text)
         saveRecentPrompt(secondPrompt.text)
         saveRecentPrompt(thirdPrompt.text)
         
-        print("the daily prompts \(dailyPrompts)")
+        print("Selected prompts: \(self.dailyPrompts)")
     }
     
     func switchToPrompt(_ newPrompt: Prompt) {

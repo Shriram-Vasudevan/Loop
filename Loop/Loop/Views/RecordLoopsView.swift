@@ -197,7 +197,7 @@ struct RecordLoopsView: View {
                                 
                                 Text(prompt.text)
                                     .font(.system(size: 18, weight: .light))
-                                    .foregroundColor(secondaryColor)
+                                    .foregroundColor(.black)
                                     .multilineTextAlignment(.leading)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)

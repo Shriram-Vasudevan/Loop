@@ -66,7 +66,6 @@ struct HomeView: View {
         }
         .onAppear {
             withAnimation {
-                loopManager.checkAndResetIfNeeded()
                 loopManager.fetchWeekSchedule()
                 Task {
                     await loopManager.loadThematicPrompts()
