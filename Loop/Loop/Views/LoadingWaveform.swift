@@ -9,22 +9,33 @@ import SwiftUI
 
 struct LoadingWaveform: View {
     let accentColor: Color
-    @State private var phase: CGFloat = 0
     
     var body: some View {
-        HStack(spacing: 4) {
-            ForEach(0..<30) { index in
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(accentColor.opacity(0.3))
-                    .frame(width: 3, height: 20 + sin(phase + Double(index) / 3) * 20)
+        TimelineView(.animation) { timeline in
+            let time = timeline.date.timeIntervalSinceReferenceDate
+            
+            HStack(spacing: 4) {
+                ForEach(0..<30) { index in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(accentColor.opacity(0.3))
+                        .frame(width: 3, height: calculateHeight(index: index, time: time))
+                }
             }
+            .frame(height: 70)
         }
-        .frame(height: 70)
-        .onAppear {
-            withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
-                phase = .pi * 2
-            }
-        }
+    }
+    
+    private func calculateHeight(index: Int, time: Double) -> CGFloat {
+        let baseHeight: CGFloat = 20
+        let maxAmplitude: CGFloat = 20
+        
+        // Create multiple wave components with different frequencies and phases
+        let wave1 = sin(time * 2 + Double(index) / 4) * maxAmplitude
+        let wave2 = sin(time * 1.5 + Double(index) / 3) * (maxAmplitude * 0.5)
+        let wave3 = sin(time * 3 + Double(index) / 2) * (maxAmplitude * 0.3)
+        
+        // Combine waves and ensure minimum height
+        return baseHeight + wave1 + wave2 + wave3
     }
 }
 

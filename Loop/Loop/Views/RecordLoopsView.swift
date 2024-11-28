@@ -305,25 +305,25 @@ struct RecordLoopsView: View {
                     .transition(.opacity.combined(with: .move(edge: .trailing)))
             }
             
-            Button(action: {
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                    isShowingMemory = false
-                    loopManager.moveToNextPrompt()
-                }
-            }) {
-                HStack(spacing: 8) {
-                    Text("continue")
-                        .font(.system(size: 18, weight: .light))
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 16, weight: .light))
-                }
-                .frame(height: 56)
-                .frame(maxWidth: .infinity)
-                .background(accentColor)
-                .foregroundColor(.white)
-                .cornerRadius(28)
-                .shadow(color: accentColor.opacity(0.2), radius: 10, y: 5)
-            }
+//            Button(action: {
+//                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+//                    isShowingMemory = false
+//                    loopManager.moveToNextPrompt()
+//                }
+//            }) {
+//                HStack(spacing: 8) {
+//                    Text("continue")
+//                        .font(.system(size: 18, weight: .light))
+//                    Image(systemName: "arrow.right")
+//                        .font(.system(size: 16, weight: .light))
+//                }
+//                .frame(height: 56)
+//                .frame(maxWidth: .infinity)
+//                .background(accentColor)
+//                .foregroundColor(.white)
+//                .cornerRadius(28)
+//                .shadow(color: accentColor.opacity(0.2), radius: 10, y: 5)
+//            }
         }
         .padding(.bottom, 40)
     }

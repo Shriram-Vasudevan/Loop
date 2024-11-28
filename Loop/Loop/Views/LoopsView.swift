@@ -6,62 +6,81 @@
 //
 
 import SwiftUI
+import Darwin
 
 struct LoopsView: View {
     @ObservedObject private var loopManager = LoopManager.shared
-    @State private var selectedDate: Date = Date()
-    @State private var selectedViewMode: ViewMode = .recent
+    @State private var selectedTab = "Recent"
+    @State private var selectedLoop: Loop?
     @State private var selectedMonthId: MonthIdentifier?
-    @State private var showingRecordView = false
+    @State private var backgroundOpacity = 0.0
     
     private let accentColor = Color(hex: "A28497")
+    private let secondaryColor = Color(hex: "B7A284")
     private let backgroundColor = Color(hex: "FAFBFC")
+    private let surfaceColor = Color(hex: "F8F5F7")
     private let textColor = Color(hex: "2C3E50")
-    
-    enum ViewMode {
-        case recent, monthly
-    }
     
     var body: some View {
         ZStack {
-            backgroundColor.ignoresSafeArea()
+            FlowingBackground(color: accentColor)
+                .opacity(backgroundOpacity)
+                .ignoresSafeArea()
             
             VStack(spacing: 0) {
                 headerSection
                 
-                Picker("View Mode", selection: $selectedViewMode) {
-                    Text("Recent").tag(ViewMode.recent)
-                    Text("Archive").tag(ViewMode.monthly)
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 16)
+                tabNavigation
                 
-                selectedView
+                if selectedTab == "Recent" {
+                    RecentLoopsView(selectedLoop: $selectedLoop)
+                } else {
+                    if let monthId = selectedMonthId {
+                        MonthDetailView(monthId: monthId) {
+                            withAnimation {
+                                selectedMonthId = nil
+                            }
+                        }
+                    } else {
+                        MonthsGridView(selectedMonthId: $selectedMonthId)
+                    }
+                }
             }
         }
-        .task {
-            await loopManager.loadActiveMonths()
+        .onAppear {
+            withAnimation(.easeIn(duration: 1.2)) {
+                backgroundOpacity = 0.3
+            }
+            Task {
+                await loopManager.loadActiveMonths()
+            }
         }
-        .fullScreenCover(isPresented: $showingRecordView) {
-            RecordLoopsView(isFirstLaunch: false)
+        .fullScreenCover(item: $selectedLoop) { loop in
+            ViewPastLoopView(loop: loop)
         }
     }
     
     private var headerSection: some View {
-        VStack(spacing: 24) {
-            HStack(alignment: .center) {
-                Text("journal")
-                    .font(.system(size: 40, weight: .ultraLight))
-                    .foregroundColor(textColor)
+        VStack(spacing: 16) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("journal")
+                        .font(.system(size: 40, weight: .ultraLight))
+                        .foregroundColor(textColor)
+                    
+                    Text("\(loopManager.pastLoops.count) reflections")
+                        .font(.system(size: 16, weight: .light))
+                        .foregroundColor(textColor.opacity(0.7))
+                }
                 
                 Spacer()
                 
                 if !loopManager.hasCompletedToday {
-                    TodayProgressRing(
-                        progress: Double(loopManager.currentPromptIndex) / Double(loopManager.dailyPrompts.count),
-                        total: loopManager.dailyPrompts.count, completed: loopManager.currentPromptIndex
+                    CircularProgress(
+                        progress: CGFloat(loopManager.currentPromptIndex) / CGFloat(loopManager.dailyPrompts.count),
+                        color: accentColor
                     )
+                    .frame(width: 50, height: 50)
                 }
             }
         }
@@ -69,137 +88,171 @@ struct LoopsView: View {
         .padding(.top, 16)
     }
     
-    @ViewBuilder
-    private var selectedView: some View {
-        ScrollView(showsIndicators: false) {
-            switch selectedViewMode {
-            case .recent:
-                RecentLoopsView()
-                    .transition(.opacity)
-            case .monthly:
-                ArchiveView(selectedMonthId: $selectedMonthId)
-                    .transition(.opacity)
+    private var tabNavigation: some View {
+        HStack(spacing: 8) {
+            ForEach(["Recent", "Past"], id: \.self) { tab in
+                TabButton(
+                    title: tab,
+                    isSelected: selectedTab == tab
+                ) {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        selectedTab = tab
+                    }
+                }
             }
-        }
-    }
-}
-
-struct TodayProgressRing: View {
-    let progress: Double
-    let total: Int
-    let completed: Int
-    
-    private let accentColor = Color(hex: "A28497")
-    private let textColor = Color(hex: "2C3E50")
-    
-    var body: some View {
-        ZStack {
-            Circle()
-                .stroke(accentColor.opacity(0.2), lineWidth: 4)
             
-            Circle()
-                .trim(from: 0, to: progress)
-                .stroke(accentColor, lineWidth: 4)
-                .rotationEffect(.degrees(-90))
-                .animation(.easeOut, value: progress)
-            
-            VStack(spacing: 2) {
-                Text("\(completed)/\(total)")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(textColor)
-                
-                Text("today")
-                    .font(.system(size: 10, weight: .regular))
-                    .foregroundColor(textColor.opacity(0.6))
-            }
+            Spacer()
         }
-        .frame(width: 50, height: 50)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
     }
 }
 
 struct RecentLoopsView: View {
     @ObservedObject private var loopManager = LoopManager.shared
-    @State private var selectedLoop: Loop?
+    @Binding var selectedLoop: Loop?
     @State private var loadingMore = false
-    @State private var hasMoreContent = true
-    
-    private let textColor = Color(hex: "2C3E50")
-    
-    var body: some View {
-        LazyVStack(spacing: 32) {
-            ForEach(loopManager.recentDates, id: \.self) { date in
-                TimelineSection(date: date, loops: loopManager.loopsByDate[date] ?? []) { loop in
-                    selectedLoop = loop
-                }
-            }
-            
-            if loadingMore {
-                ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle())
-                    .frame(height: 50)
-            } else if hasMoreContent {
-                Color.clear
-                    .frame(height: 50)
-                    .onAppear {
-                        fetchMoreLoops()
-                    }
-            }
-        }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 16)
-        .fullScreenCover(item: $selectedLoop) { loop in
-            ViewPastLoopView(loop: loop)
-        }
-        .onAppear {
-            if loopManager.recentDates.isEmpty {
-                fetchInitialLoops()
-            }
-        }
-    }
-    
-    private func fetchInitialLoops() {
-        loadingMore = true
-        loopManager.fetchRecentDates(limit: 10) {
-            loadingMore = false
-        }
-    }
-    
-    private func fetchMoreLoops() {
-        guard !loadingMore && hasMoreContent else { return }
-        loadingMore = true
-        
-        loopManager.fetchNextPageOfDates(limit: 10) {
-            loadingMore = false
-            hasMoreContent = !loopManager.recentDates.isEmpty
-        }
-    }
-}
-
-struct ArchiveView: View {
-    @ObservedObject private var loopManager = LoopManager.shared
-    @Binding var selectedMonthId: MonthIdentifier?
     
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
     
     var body: some View {
-        if let selectedMonthId = selectedMonthId {
-            MonthDetailView(monthId: selectedMonthId, onBack: { self.selectedMonthId = nil })
-        } else {
-            monthGrid
+        ScrollView(showsIndicators: false) {
+            LazyVStack(spacing: 24) {
+                ForEach(loopManager.recentDates, id: \.self) { date in
+                    DaySection(
+                        date: date,
+                        loops: loopManager.loopsByDate[date] ?? [],
+                        selectedLoop: $selectedLoop
+                    )
+                }
+                
+                if loadingMore {
+                    ProgressView()
+                        .frame(height: 50)
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+        }
+        .task {
+            if loopManager.recentDates.isEmpty {
+                await loadInitialLoops()
+            }
         }
     }
     
-    private var monthGrid: some View {
-        let columns = [
-            GridItem(.flexible(), spacing: 16),
-            GridItem(.flexible(), spacing: 16)
-        ]
-        
-        return LazyVGrid(columns: columns, spacing: 16) {
-            ForEach(loopManager.activeMonths, id: \.self) { monthId in
-                MonthCard(monthId: monthId)
-                    .onTapGesture {
+    private func loadInitialLoops() async {
+        loadingMore = true
+        loopManager.fetchRecentDates(limit: 10) {
+            loadingMore = false
+        }
+    }
+}
+
+struct DaySection: View {
+    let date: Date
+    let loops: [Loop]
+    @Binding var selectedLoop: Loop?
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 12) {
+                Text(formatDate())
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(textColor)
+                
+                Rectangle()
+                    .fill(textColor.opacity(0.1))
+                    .frame(height: 1)
+            }
+            
+            ForEach(loops) { loop in
+                LoopCard(loop: loop) {
+                    selectedLoop = loop
+                }
+            }
+        }
+    }
+    
+    private func formatDate() -> String {
+        if Calendar.current.isDateInToday(date) {
+            return "Today"
+        } else if Calendar.current.isDateInYesterday(date) {
+            return "Yesterday"
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MMMM d"
+            return formatter.string(from: date)
+        }
+    }
+}
+
+struct LoopCard: View {
+    let loop: Loop
+    let action: () -> Void
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 16) {
+                HStack {
+                    Text(formatTime())
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(accentColor)
+                    
+                    Spacer()
+                    
+                    WaveformIndicator(color: accentColor)
+                }
+                
+                Text(loop.promptText)
+                    .font(.system(size: 16, weight: .light))
+                    .foregroundColor(textColor)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                
+                HStack {
+                    AudioWaveform(color: accentColor)
+                    
+                    Spacer()
+                }
+            }
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(.white)
+                    .shadow(color: Color.black.opacity(0.05), radius: 15)
+            )
+        }
+    }
+    
+    private func formatTime() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return formatter.string(from: loop.timestamp)
+    }
+}
+
+struct MonthsGridView: View {
+    @ObservedObject private var loopManager = LoopManager.shared
+    @Binding var selectedMonthId: MonthIdentifier?
+    
+    private let columns = [
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16)
+    ]
+    
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            LazyVGrid(columns: columns, spacing: 16) {
+                ForEach(loopManager.activeMonths, id: \.self) { monthId in
+                    MonthCard(monthId: monthId) {
                         withAnimation {
                             selectedMonthId = monthId
                             Task {
@@ -207,56 +260,55 @@ struct ArchiveView: View {
                             }
                         }
                     }
+                }
             }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
         }
-        .padding(.horizontal, 24)
     }
 }
 
 struct MonthCard: View {
     let monthId: MonthIdentifier
+    let onTap: () -> Void
     @State private var summary: MonthSummary?
-    @State private var backgroundOpacity: Double = 0
+    @State private var animateNumber = false
     
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
     
     var body: some View {
-        ZStack(alignment: .leading) {
-            if let summary = summary {
-                Text("\(summary.totalEntries)")
-                    .font(.system(size: 120, weight: .bold))
-                    .foregroundColor(Color(hex: "F0F0F0"))
-                    .offset(x: 10, y: -5)
-                    .opacity(backgroundOpacity)
-            }
-            
-            VStack(alignment: .leading, spacing: 8) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(monthName)
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(textColor)
-                    
-                    Text(String(monthId.year))
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(textColor.opacity(0.6))
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 12) {
+                if let summary = summary {
+                    Text("\(summary.totalEntries)")
+                        .font(.system(size: 48, weight: .bold))
+                        .foregroundColor(textColor.opacity(0.1))
+                        .opacity(animateNumber ? 1 : 0)
                 }
                 
-                if let summary = summary {
-                    Text("\(summary.totalEntries) memories")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(accentColor)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(monthName)
+                        .font(.system(size: 24, weight: .medium))
+                        .foregroundColor(textColor)
+                    
+                    if let summary = summary {
+                        Text("\(summary.totalEntries) reflections")
+                            .font(.system(size: 16, weight: .light))
+                            .foregroundColor(accentColor)
+                    }
                 }
             }
-            .padding(16)
+            .frame(height: 160)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(.white)
+                    .shadow(color: Color.black.opacity(0.05), radius: 15)
+            )
         }
-        .frame(height: 120)
-        .background(
-            RoundedRectangle(cornerRadius: 24)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.05), radius: 12, x: 0, y: 6)
-        )
+        .buttonStyle(SpringyButton())
         .task {
             await loadSummary()
         }
@@ -277,8 +329,8 @@ struct MonthCard: View {
     private func loadSummary() async {
         do {
             summary = try await LoopCloudKitUtility.fetchMonthData(monthId: monthId)
-            withAnimation(.easeOut(duration: 0.8)) {
-                backgroundOpacity = 1
+            withAnimation(.spring()) {
+                animateNumber = true
             }
         } catch {
             print("Error loading month summary: \(error)")
@@ -290,9 +342,9 @@ struct MonthDetailView: View {
     let monthId: MonthIdentifier
     let onBack: () -> Void
     @ObservedObject private var loopManager = LoopManager.shared
+    @State private var selectedLoop: Loop?
     
     private let textColor = Color(hex: "2C3E50")
-    private let accentColor = Color(hex: "A28497")
     
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -305,13 +357,15 @@ struct MonthDetailView: View {
             }
             
             if let summary = loopManager.selectedMonthSummary {
-                Text(monthTitle)
-                    .font(.system(size: 32, weight: .light))
-                    .foregroundColor(textColor)
-                
-                ForEach(groupedLoopsByDay(summary.loops), id: \.0) { date, loops in
-                    TimelineSection(date: date, loops: loops) { loop in
-                        // Loop selection handled by TimelineSection
+                ScrollView {
+                    VStack(spacing: 24) {
+                        Text(monthTitle)
+                            .font(.system(size: 32, weight: .light))
+                            .foregroundColor(textColor)
+                        
+                        ForEach(groupedLoops(summary.loops), id: \.0) { date, loops in
+                            DaySection(date: date, loops: loops, selectedLoop: $selectedLoop)
+                        }
                     }
                 }
             } else {
@@ -320,6 +374,9 @@ struct MonthDetailView: View {
             }
         }
         .padding(.horizontal, 24)
+        .fullScreenCover(item: $selectedLoop) { loop in
+            ViewPastLoopView(loop: loop)
+        }
     }
     
     private var monthTitle: String {
@@ -334,7 +391,7 @@ struct MonthDetailView: View {
         return ""
     }
     
-    private func groupedLoopsByDay(_ loops: [Loop]) -> [(Date, [Loop])] {
+    private func groupedLoops(_ loops: [Loop]) -> [(Date, [Loop])] {
         let grouped = Dictionary(grouping: loops) { loop in
             Calendar.current.startOfDay(for: loop.timestamp)
         }
@@ -342,198 +399,151 @@ struct MonthDetailView: View {
     }
 }
 
-struct TimelineSection: View {
-    let date: Date
-    let loops: [Loop]
-    let onLoopSelected: (Loop) -> Void
-    
-    private let accentColor = Color(hex: "A28497")
-    private let textColor = Color(hex: "2C3E50")
+struct WaveformIndicator: View {
+    let color: Color
+    @State private var isAnimating = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 12) {
-                Text(formatDate(date))
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(textColor)
-                
-                Rectangle()
-                    .fill(textColor.opacity(0.1))
-                    .frame(height: 1)
+        HStack(spacing: 3) {
+            ForEach(0..<3) { index in
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(color)
+                    .frame(width: 2, height: getHeight(for: index))
+                    .animation(
+                        Animation.easeInOut(duration: 0.6)
+                            .repeatForever()
+                            .delay(Double(index) * 0.2),
+                        value: isAnimating
+                    )
             }
+        }
+        .onAppear { isAnimating = true }
+    }
+    
+    private func getHeight(for index: Int) -> CGFloat {
+        isAnimating ? [8, 16, 8][index] : 12
+    }
+}
+
+struct AudioWaveform: View {
+    let color: Color
+    @State private var waveformData: [CGFloat] = []
+    
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(0..<40, id: \.self) { index in
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(color.opacity(0.3))
+                    .frame(width: 2, height: waveformData[safe: index] ?? 12)
+            }
+        }
+        .frame(height: 32)
+        .onAppear {
+            waveformData = (0..<40).map { _ in
+                CGFloat.random(in: 4...32)
+            }
+        }
+    }
+}
+
+struct CircularProgress: View {
+    let progress: CGFloat
+    let color: Color
+    
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(color.opacity(0.2), lineWidth: 4)
             
-            LazyVStack(spacing: 16) {
-                ForEach(loops) { loop in
-                    TimelineLoopCard(loop: loop, onTap: {
-                        onLoopSelected(loop)
-                    })
-                }
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(color, lineWidth: 4)
+                .rotationEffect(.degrees(-90))
+            
+            VStack(spacing: 2) {
+                Text("\(Int(progress * 3))/3")
+                    .font(.system(size: 12, weight: .medium))
+                Text("today")
+                    .font(.system(size: 10, weight: .regular))
             }
-        }
-    }
-    
-    private func formatDate(_ date: Date) -> String {
-        if Calendar.current.isDateInToday(date) {
-            return "Today"
-        } else if Calendar.current.isDateInYesterday(date) {
-            return "Yesterday"
-        } else {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "MMMM d"
-            return formatter.string(from: date)
+            .foregroundColor(color)
         }
     }
 }
 
-struct TimelineLoopCard: View {
-    let loop: Loop
-    let onTap: () -> Void
-    
-    private let accentColor = Color(hex: "A28497")
-    private let textColor = Color(hex: "2C3E50")
-    
-    var body: some View {
-        Button(action: onTap) {
-            HStack(alignment: .top, spacing: 16) {
-                Text(formatTime(loop.timestamp))
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(textColor.opacity(0.6))
-                    .frame(width: 50)
-                
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(loop.promptText)
-                        .font(.system(size: 16, weight: .regular))
-                        .foregroundColor(textColor)
-                        .multilineTextAlignment(.leading)
-                    
-                    HStack(spacing: 4) {
-                        Image(systemName: "waveform")
-                            .font(.system(size: 12))
-                        Text("0:30")
-                            .font(.system(size: 12, weight: .medium))
-                    }
-                    .foregroundColor(accentColor)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(accentColor.opacity(0.1))
-                    .cornerRadius(12)
-                }
-                
-                Spacer()
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(textColor.opacity(0.3))
-            }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.white)
-                    .shadow(color: Color.black.opacity(0.05), radius: 12, x: 0, y: 6)
-            )
-        }
-    }
-    
-    private func formatTime(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        return formatter.string(from: date)
-    }
-}
-
-
-struct AnimatedGradientBackground: View {
+struct FlowingBackground: View {
+    let color: Color
     @State private var phase = 0.0
     
     var body: some View {
         TimelineView(.animation) { timeline in
             Canvas { context, size in
-                let colors = [
-                    Color(hex: "FAFBFC").opacity(0.8),
-                    Color(hex: "F8F5F7").opacity(0.5),
-                    Color(hex: "FAFBFC").opacity(0.8)
-                ]
+                let time = timeline.date.timeIntervalSinceReferenceDate
+                phase = time.truncatingRemainder(dividingBy: 6)
                 
-                let updatedPhase = timeline.date.timeIntervalSinceReferenceDate.remainder(dividingBy: 10)
-                let gradient = Gradient(colors: colors)
-                
-                var path = Path()
-                let width = size.width
-                let height = size.height
-                
-                path.move(to: CGPoint(x: 0, y: height * 0.5))
-                
-                for x in stride(from: 0, to: width, by: 1) {
-                    let relativeX = x / width
-                    let sine = sin(relativeX * .pi * 2 + updatedPhase)
-                    let y = height * 0.5 + sine * 20
-                    path.addLine(to: CGPoint(x: x, y: y))
-                }
-                
-                path.addLine(to: CGPoint(x: width, y: height))
-                path.addLine(to: CGPoint(x: 0, y: height))
-                path.closeSubpath()
-                
-                context.fill(path, with: .linearGradient(
-                    gradient,
-                    startPoint: CGPoint(x: 0, y: 0),
-                    endPoint: CGPoint(x: size.width, y: size.height)
-                ))
-            }
-        }
-        .ignoresSafeArea()
-    }
-}
-
-
-struct AudioPlayerView: View {
-    let loop: Loop
-    @State private var isPlaying = false
-    @State private var progress: Double = 0
-    
-    private let accentColor = Color(hex: "A28497")
-    private let textColor = Color(hex: "2C3E50")
-    
-    var body: some View {
-        VStack(spacing: 24) {
-            ProgressBar(progress: progress)
-                .frame(height: 4)
-                .padding(.horizontal)
-            
-            HStack {
-                Button(action: togglePlayback) {
-                    Circle()
-                        .fill(accentColor)
-                        .frame(width: 64, height: 64)
-                        .overlay(
-                            Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                                .font(.system(size: 24))
-                                .foregroundColor(.white)
+                for i in 0..<3 {
+                    let path = createWavePath(
+                        in: size,
+                        phase: phase + Double(i) * .pi / 3,
+                        amplitude: Double(20 + i * 5)
+                    )
+                    
+                    context.opacity = 0.1 - Double(i) * 0.02
+                    context.fill(
+                        path,
+                        with: .linearGradient(
+                            Gradient(colors: [color, color.opacity(0.5)]),
+                            startPoint: CGPoint(x: 0, y: size.height/2),
+                            endPoint: CGPoint(x: size.width, y: size.height/2)
                         )
+                    )
                 }
             }
         }
     }
     
-    private func togglePlayback() {
-        isPlaying.toggle()
+    private func createWavePath(in size: CGSize, phase: Double, amplitude: Double) -> Path {
+        var path = Path()
+        let width = size.width
+        let height = size.height
+        let midHeight = height / 2
+        
+        path.move(to: CGPoint(x: 0, y: height))
+        
+        for x in stride(from: 0, through: width, by: 5) {
+            let normalizedX = x / width
+            let wavePhase1 = normalizedX * 4 * .pi + phase
+            let wavePhase2 = normalizedX * 2 * .pi + phase * 1.5
+            
+            let sinComponent = Darwin.sin(wavePhase1) * amplitude
+            let cosComponent = Darwin.cos(wavePhase2) * (amplitude * 0.5)
+            
+            let y = midHeight + sinComponent + cosComponent
+            path.addLine(to: CGPoint(x: x, y: y))
+        }
+        
+        path.addLine(to: CGPoint(x: width, y: height))
+        path.addLine(to: CGPoint(x: 0, y: height))
+        path.closeSubpath()
+        
+        return path
     }
 }
 
-struct ProgressBar: View {
-    let progress: Double
-    
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .leading) {
-                Rectangle()
-                    .fill(Color(hex: "A28497").opacity(0.2))
-                
-                Rectangle()
-                    .fill(Color(hex: "A28497"))
-                    .frame(width: geometry.size.width * progress)
-            }
-        }
-        .cornerRadius(2)
+struct SpringyButton: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
     }
+}
+
+extension Collection {
+    subscript(safe index: Index) -> Element? {
+        indices.contains(index) ? self[index] : nil
+    }
+}
+
+#Preview {
+    LoopsView()
 }
