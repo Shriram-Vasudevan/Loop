@@ -24,7 +24,7 @@ struct SettingsView: View {
     
     init() {
         let defaultTime = Calendar.current.date(from: DateComponents(hour: 21, minute: 0)) ?? Date()
-        _reminderTime = State(initialValue: ReminderManager.shared.loadReminderTime() ?? defaultTime)
+        _reminderTime = State(initialValue: NotificationManager.shared.loadReminderTime() ?? defaultTime)
     }
     
     var body: some View {
@@ -52,7 +52,7 @@ struct SettingsView: View {
                             SettingsRowContent(
                                 icon: "clock",
                                 title: "Reminder Time",
-                                subtitle: ReminderManager.shared.formatReminderTime(reminderTime),
+                                subtitle: NotificationManager.shared.formatReminderTime(reminderTime),
                                 action: { showingTimePicker = true }
                             )
                         ]
@@ -138,15 +138,15 @@ struct SettingsView: View {
     }
     
     private func toggleNotifications() {
-        if notificationsEnabled {
-            ReminderManager.shared.requestNotificationPermissions { granted in
-                if !granted {
-                    notificationsEnabled = false
-                }
-            }
-        } else {
-            ReminderManager.shared.disableReminder()
-        }
+//        if notificationsEnabled {
+//            NotificationManager.shared.requestNotificationPermissions { granted in
+//                if !granted {
+//                    notificationsEnabled = false
+//                }
+//            }
+//        } else {
+//            NotificationManager.shared.disableReminder()
+//        }
     }
     
     private func openPrivacyPolicy() {
@@ -246,7 +246,7 @@ struct NotificationTimePicker: View {
                     .padding()
                 
                 Button("Set Time") {
-                    ReminderManager.shared.saveAndScheduleReminder(at: selectedTime)
+                    NotificationManager.shared.saveAndScheduleReminder(at: selectedTime)
                     dismiss()
                 }
                 .font(.system(size: 16, weight: .medium))

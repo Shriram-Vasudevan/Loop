@@ -9,22 +9,34 @@ import SwiftUI
 import Charts
 
 
+enum InsightSection: String, CaseIterable {
+    case voice = "Voice"
+    case language = "Language"
+    case perspective = "Perspective"
+}
+
+struct InsightMetric: Identifiable {
+    let id = UUID()
+    let title: String
+    let value: Double
+    let context: String
+    let trend: MetricTrend
+    
+    enum MetricTrend {
+        case up, down, neutral
+    }
+}
+
 struct InsightsView: View {
     @ObservedObject var analysisManager = AnalysisManager.shared
+    @State private var selectedSection: InsightSection = .voice
     @State private var scrollOffset: CGFloat = 0
-    @State private var showingComparison = false
     @State private var animateIn = false
-    @State private var selectedSection: InsightSection = .speaking
     
-    let accentColor = Color(hex: "A28497")
-    let backgroundColor = Color(hex: "FAFBFC")
-    let surfaceColor = Color(hex: "F8F5F7")
-    let textColor = Color(hex: "2C3E50")
-    
-    enum InsightSection: String, CaseIterable {
-        case speaking = "Speaking Flow"
-        case expression = "Self Expression"
-    }
+    private let accentColor = Color(hex: "A28497")
+    private let secondaryColor = Color(hex: "B7A284")
+    private let backgroundColor = Color(hex: "FAFBFC")
+    private let textColor = Color(hex: "2C3E50")
     
     var body: some View {
         ZStack {
@@ -68,21 +80,21 @@ struct InsightsView: View {
     
     private var headerSection: some View {
         VStack(spacing: 24) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Insights")
-                    .font(.system(size: 40, weight: .ultraLight))
-                    .foregroundColor(textColor)
-                Text("Your reflection patterns")
-                    .font(.system(size: 18, weight: .light))
-                    .foregroundColor(textColor.opacity(0.7))
+            HStack {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Insights")
+                        .font(.system(size: 40, weight: .ultraLight))
+                        .foregroundColor(textColor)
+                    Text("Analysis & Patterns")
+                        .font(.system(size: 18, weight: .light))
+                        .foregroundColor(textColor.opacity(0.7))
+                }
+                Spacer()
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
             .opacity(animateIn ? 1 : 0)
             .offset(y: animateIn ? 0 : 20)
             
-            if analysisManager.currentLoopAnalysis != nil {
-                sectionPicker
-            }
+            sectionPicker
         }
     }
     
@@ -118,24 +130,35 @@ struct InsightsView: View {
     private func mainContent(_ analysis: LoopAnalysis) -> some View {
         VStack(spacing: 32) {
             switch selectedSection {
-            case .speaking:
-                SpeakingFlowSection(
+            case .voice:
+                VoiceAnalysisSection(
                     speechPattern: analysis.speechPattern,
+                    voicePattern: analysis.voicePattern,
                     scrollOffset: scrollOffset
                 )
                 .transition(.asymmetric(
-                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                    removal: .move(edge: .leading).combined(with: .opacity)
+                    insertion: .move(edge: .trailing),
+                    removal: .move(edge: .leading)
                 ))
                 
-            case .expression:
-                SelfExpressionSection(
+            case .language:
+                LanguageAnalysisSection(
+                    languagePattern: analysis.languagePattern,
+                    scrollOffset: scrollOffset
+                )
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing),
+                    removal: .move(edge: .leading)
+                ))
+                
+            case .perspective:
+                PerspectiveAnalysisSection(
                     selfReference: analysis.selfReference,
                     scrollOffset: scrollOffset
                 )
                 .transition(.asymmetric(
-                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                    removal: .move(edge: .leading).combined(with: .opacity)
+                    insertion: .move(edge: .trailing),
+                    removal: .move(edge: .leading)
                 ))
             }
         }
@@ -143,14 +166,15 @@ struct InsightsView: View {
     
     private var emptyState: some View {
         VStack(spacing: 24) {
-            FloatingSparkles()
-                .frame(width: 120, height: 120)
+            Image(systemName: "waveform.path")
+                .font(.system(size: 44, weight: .light))
+                .foregroundColor(accentColor)
             
-            Text("Ready for reflection")
+            Text("Record your first loop")
                 .font(.system(size: 24, weight: .light))
                 .foregroundColor(textColor)
             
-            Text("Record your first loop to see insights")
+            Text("Complete a loop to see your patterns")
                 .font(.system(size: 16, weight: .regular))
                 .foregroundColor(textColor.opacity(0.7))
         }
@@ -160,10 +184,837 @@ struct InsightsView: View {
     }
 }
 
-struct ScrollOffsetKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
+struct VoiceAnalysisSection: View {
+    let speechPattern: SpeechPatternAnalysis
+    let voicePattern: VoiceAnalysis
+    let scrollOffset: CGFloat
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        VStack(spacing: 24) {
+            // Speaking Pace Card
+            InsightCard {
+                VStack(spacing: 20) {
+                    HStack(spacing: 24) {
+                        CircularProgress(
+                            value: min(speechPattern.wordsPerMinute / 200, 1),
+                            label: "\(Int(speechPattern.wordsPerMinute))\nWPM",
+                            scrollOffset: scrollOffset
+                        )
+                        .frame(width: 120, height: 120)
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(paceInsight)
+                                .font(.system(size: 18, weight: .light))
+                                .foregroundColor(textColor)
+                            
+                            Text("Speaking Pace")
+                                .font(.system(size: 14, weight: .light))
+                                .foregroundColor(textColor.opacity(0.6))
+                        }
+                    }
+                    
+                    Divider()
+                        .background(accentColor.opacity(0.1))
+                    
+                    FlowMetrics(speechPattern: speechPattern)
+                }
+                .padding(24)
+            }
+            
+            // Voice Patterns Card
+            InsightCard {
+                VStack(spacing: 16) {
+                    HStack {
+                        Text("Voice Patterns")
+                            .font(.system(size: 18, weight: .light))
+                            .foregroundColor(textColor)
+                        Spacer()
+                    }
+                    
+                    VoiceMetrics(
+                        voicePattern: voicePattern,
+                        scrollOffset: scrollOffset
+                    )
+                }
+                .padding(24)
+            }
+            
+            // Rhythm Analysis Card
+            InsightCard {
+                VStack(spacing: 16) {
+                    HStack {
+                        Text("Rhythm Analysis")
+                            .font(.system(size: 18, weight: .light))
+                            .foregroundColor(textColor)
+                        Spacer()
+                    }
+                    
+                    RhythmVisualizer(
+                        consistency: voicePattern.rhythmConsistency,
+                        scrollOffset: scrollOffset
+                    )
+                }
+                .padding(24)
+            }
+        }
+    }
+    
+    private var paceInsight: String {
+        switch speechPattern.wordsPerMinute {
+        case ...100:
+            return "Measured, thoughtful pace"
+        case 100...150:
+            return "Natural conversational flow"
+        default:
+            return "Energetic expression"
+        }
+    }
+}
+
+struct CircularProgress: View {
+    let value: Double
+    let label: String
+    let scrollOffset: CGFloat
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(
+                    accentColor.opacity(0.1),
+                    lineWidth: 12
+                )
+            
+            Circle()
+                .trim(from: 0, to: value)
+                .stroke(
+                    accentColor,
+                    style: StrokeStyle(
+                        lineWidth: 12,
+                        lineCap: .round
+                    )
+                )
+                .rotationEffect(.degrees(-90))
+                .rotation3DEffect(
+                    .degrees(scrollOffset * 0.1),
+                    axis: (x: 0, y: 1, z: 0)
+                )
+            
+            Text(label)
+                .font(.system(size: 16, weight: .light))
+                .foregroundColor(textColor)
+                .multilineTextAlignment(.center)
+        }
+    }
+}
+
+struct VoiceMetrics: View {
+    let voicePattern: VoiceAnalysis
+    let scrollOffset: CGFloat
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            MetricBar(
+                label: "Filler Words",
+                value: voicePattern.fillerWordPercentage,
+                maxValue: 30,
+                scrollOffset: scrollOffset
+            )
+            
+            MetricBar(
+                label: "Pitch Variation",
+                value: min(voicePattern.pitchVariation * 100, 100),
+                maxValue: 100,
+                scrollOffset: scrollOffset
+            )
+        }
+    }
+}
+
+struct MetricBar: View {
+    let label: String
+    let value: Double
+    let maxValue: Double
+    let scrollOffset: CGFloat
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(label)
+                    .font(.system(size: 14, weight: .light))
+                Text("\(Int(value))%")
+                    .font(.system(size: 14, weight: .medium))
+            }
+            .foregroundColor(textColor)
+            
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Rectangle()
+                        .fill(accentColor.opacity(0.1))
+                        .frame(height: 8)
+                        .cornerRadius(4)
+                    
+                    Rectangle()
+                        .fill(accentColor)
+                        .frame(width: geometry.size.width * CGFloat(value / maxValue), height: 8)
+                        .cornerRadius(4)
+                }
+            }
+            .frame(height: 8)
+            .offset(x: scrollOffset * 0.1)
+        }
+    }
+}
+
+struct RhythmVisualizer: View {
+    let consistency: Double
+    let scrollOffset: CGFloat
+    
+    private let accentColor = Color(hex: "A28497")
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(0..<20, id: \.self) { index in
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(accentColor.opacity(0.3))
+                    .frame(width: 4, height: height(for: index))
+                    .offset(y: offset(for: index))
+            }
+        }
+        .frame(height: 60)
+        .animation(.easeInOut(duration: 1), value: scrollOffset)
+    }
+    
+    private func height(for index: Int) -> CGFloat {
+        let base = 20 + consistency * 40
+        let variation = sin(Double(index) * 0.5 + scrollOffset * 0.05) * 10
+        return base + variation
+    }
+    
+    private func offset(for index: Int) -> CGFloat {
+        sin(Double(index) * 0.5 + scrollOffset * 0.05) * 5
+    }
+}
+
+struct InsightCard<Content: View>: View {
+    let content: Content
+    
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+    
+    var body: some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color.white)
+                    .shadow(color: Color(hex: "A28497").opacity(0.05), radius: 20)
+            )
+    }
+}
+
+struct LanguageAnalysisSection: View {
+    let languagePattern: LanguagePatternAnalysis
+    let scrollOffset: CGFloat
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        VStack(spacing: 24) {
+            // Emotional Tone Card
+            InsightCard {
+                VStack(spacing: 20) {
+                    HStack(spacing: 24) {
+                        EmotionalToneGauge(
+                            score: languagePattern.emotionalToneScore,
+                            scrollOffset: scrollOffset
+                        )
+                        .frame(width: 120, height: 120)
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(emotionalInsight)
+                                .font(.system(size: 18, weight: .light))
+                                .foregroundColor(textColor)
+                            
+                            Text("Emotional Tone")
+                                .font(.system(size: 14, weight: .light))
+                                .foregroundColor(textColor.opacity(0.6))
+                        }
+                    }
+                    
+                    WordMetrics(
+                        positiveCount: languagePattern.positiveWordCount,
+                        negativeCount: languagePattern.negativeWordCount
+                    )
+                }
+                .padding(24)
+            }
+            
+            // Language Structure Card
+            InsightCard {
+                VStack(spacing: 16) {
+                    HStack {
+                        Text("Expression Structure")
+                            .font(.system(size: 18, weight: .light))
+                            .foregroundColor(textColor)
+                        Spacer()
+                    }
+                    
+                    ConjunctionAnalysis(
+                        causalCount: languagePattern.causalConjunctionCount,
+                        adversativeCount: languagePattern.adversativeConjunctionCount,
+                        scrollOffset: scrollOffset
+                    )
+                }
+                .padding(24)
+            }
+            
+            // Social Context Card
+            InsightCard {
+                VStack(spacing: 16) {
+                    HStack {
+                        Text("Social Context")
+                            .font(.system(size: 18, weight: .light))
+                            .foregroundColor(textColor)
+                        Spacer()
+                    }
+                    
+                    SocialPronounVisualizer(
+                        pronouns: languagePattern.socialPronouns,
+                        scrollOffset: scrollOffset
+                    )
+                }
+                .padding(24)
+            }
+        }
+    }
+    
+    private var emotionalInsight: String {
+        switch languagePattern.emotionalToneScore {
+        case 0.3...1.0:
+            return "Predominantly positive tone"
+        case -0.3...0.3:
+            return "Balanced expression"
+        default:
+            return "Processing challenges"
+        }
+    }
+}
+
+struct EmotionalToneGauge: View {
+    let score: Double
+    let scrollOffset: CGFloat
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(accentColor.opacity(0.1), lineWidth: 12)
+            
+            Circle()
+                .trim(from: 0, to: 0.5)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color(hex: "FF6B6B"),
+                            accentColor,
+                            Color(hex: "4ECB71")
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    ),
+                    style: StrokeStyle(lineWidth: 12, lineCap: .round)
+                )
+                .rotationEffect(.degrees(180))
+                .rotation3DEffect(
+                    .degrees(scrollOffset * 0.1),
+                    axis: (x: 0, y: 1, z: 0)
+                )
+            
+            Rectangle()
+                .fill(accentColor)
+                .frame(width: 3, height: 20)
+                .offset(y: -40)
+                .rotationEffect(.degrees(180 * (score + 1)))
+            
+            Text(String(format: "%.1f", score))
+                .font(.system(size: 24, weight: .light))
+                .foregroundColor(textColor)
+        }
+    }
+}
+
+struct WordMetrics: View {
+    let positiveCount: Int
+    let negativeCount: Int
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        HStack(spacing: 20) {
+            MetricBox(
+                title: "Positive",
+                value: String(positiveCount),
+                icon: "plus.circle"
+            )
+            
+            MetricBox(
+                title: "Negative",
+                value: String(negativeCount),
+                icon: "minus.circle"
+            )
+        }
+    }
+}
+
+struct ConjunctionAnalysis: View {
+    let causalCount: Int
+    let adversativeCount: Int
+    let scrollOffset: CGFloat
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Text("Reasoning Pattern")
+                    .font(.system(size: 14, weight: .light))
+                Spacer()
+                Text("\(causalCount + adversativeCount) connections")
+                    .font(.system(size: 14, weight: .medium))
+            }
+            .foregroundColor(textColor)
+            
+            ZStack(alignment: .leading) {
+                Rectangle()
+                    .fill(accentColor.opacity(0.1))
+                    .frame(height: 8)
+                    .cornerRadius(4)
+                
+                HStack(spacing: 0) {
+                    Rectangle()
+                        .fill(accentColor)
+                        .frame(width: causalWidth, height: 8)
+                    
+                    Rectangle()
+                        .fill(Color(hex: "B7A284"))
+                        .frame(width: adversativeWidth, height: 8)
+                }
+                .cornerRadius(4)
+            }
+            .frame(height: 8)
+        }
+    }
+    
+    private var totalCount: Int {
+        max(causalCount + adversativeCount, 1)
+    }
+    
+    private var causalWidth: CGFloat {
+        CGFloat(causalCount) / CGFloat(totalCount) * UIScreen.main.bounds.width * 0.7
+    }
+    
+    private var adversativeWidth: CGFloat {
+        CGFloat(adversativeCount) / CGFloat(totalCount) * UIScreen.main.bounds.width * 0.7
+    }
+}
+
+struct SocialPronounVisualizer: View {
+    let pronouns: SocialPronounAnalysis
+    let scrollOffset: CGFloat
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            HStack(spacing: 40) {
+                PronounCount(
+                    label: "Collective",
+                    count: pronouns.weCount,
+                    icon: "person.2"
+                )
+                
+                PronounCount(
+                    label: "Others",
+                    count: pronouns.theyCount,
+                    icon: "person.3"
+                )
+            }
+            
+            Text("Ratio: \(String(format: "%.1f", pronouns.weTheyRatio))")
+                .font(.system(size: 14, weight: .light))
+                .foregroundColor(textColor)
+        }
+    }
+}
+
+struct PronounCount: View {
+    let label: String
+    let count: Int
+    let icon: String
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 24, weight: .light))
+                .foregroundColor(accentColor)
+            
+            Text("\(count)")
+                .font(.system(size: 20, weight: .medium))
+                .foregroundColor(textColor)
+            
+            Text(label)
+                .font(.system(size: 14, weight: .light))
+                .foregroundColor(textColor.opacity(0.7))
+        }
+    }
+}
+
+struct PerspectiveAnalysisSection: View {
+    let selfReference: SelfReferenceAnalysis
+    let scrollOffset: CGFloat
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        VStack(spacing: 24) {
+            // Self Reference Card
+            InsightCard {
+                VStack(spacing: 20) {
+                    HStack(spacing: 24) {
+                        CircularProgress(
+                            value: selfReference.selfReferencePercentage / 100,
+                            label: "\(Int(selfReference.selfReferencePercentage))%\nSelf Focus",
+                            scrollOffset: scrollOffset
+                        )
+                        .frame(width: 120, height: 120)
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(selfReferenceInsight)
+                                .font(.system(size: 18, weight: .light))
+                                .foregroundColor(textColor)
+                            
+                            Text("Personal Perspective")
+                                .font(.system(size: 14, weight: .light))
+                                .foregroundColor(textColor.opacity(0.6))
+                        }
+                    }
+                    
+                    Divider()
+                        .background(accentColor.opacity(0.1))
+                    
+                    TimeOrientationChart(
+                        past: selfReference.pastTensePercentage,
+                        present: selfReference.presentTensePercentage,
+                        future: selfReference.futureTensePercentage,
+                        scrollOffset: scrollOffset
+                    )
+                }
+                .padding(24)
+            }
+            
+            // Reflection Patterns Card
+            InsightCard {
+                VStack(spacing: 16) {
+                    HStack {
+                        Text("Reflection Patterns")
+                            .font(.system(size: 18, weight: .light))
+                            .foregroundColor(textColor)
+                        Spacer()
+                    }
+                    
+                    ReflectionMetrics(
+                        uncertaintyCount: selfReference.uncertaintyCount,
+                        reflectionCount: selfReference.reflectionCount,
+                        scrollOffset: scrollOffset
+                    )
+                }
+                .padding(24)
+            }
+            
+            // Time Perspective Card
+            InsightCard {
+                VStack(spacing: 16) {
+                    HStack {
+                        Text("Time Perspective")
+                            .font(.system(size: 18, weight: .light))
+                            .foregroundColor(textColor)
+                        Spacer()
+                    }
+                    
+                    TimeDistributionView(
+                        past: selfReference.pastTensePercentage,
+                        present: selfReference.presentTensePercentage,
+                        future: selfReference.futureTensePercentage
+                    )
+                }
+                .padding(24)
+            }
+        }
+    }
+    
+    private var selfReferenceInsight: String {
+        switch selfReference.selfReferencePercentage {
+        case 0...20:
+            return "External observation focused"
+        case 20...50:
+            return "Balanced perspective"
+        default:
+            return "Deep personal reflection"
+        }
+    }
+}
+
+struct TimeOrientationChart: View {
+    let past: Double
+    let present: Double
+    let future: Double
+    let scrollOffset: CGFloat
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Time Orientation")
+                .font(.system(size: 16, weight: .light))
+                .foregroundColor(textColor)
+            
+            GeometryReader { geometry in
+                HStack(spacing: 4) {
+                    TimeBar(
+                        value: past,
+                        total: total,
+                        label: "Past",
+                        width: geometry.size.width / 3 - 4,
+                        scrollOffset: scrollOffset
+                    )
+                    
+                    TimeBar(
+                        value: present,
+                        total: total,
+                        label: "Present",
+                        width: geometry.size.width / 3 - 4,
+                        scrollOffset: scrollOffset
+                    )
+                    
+                    TimeBar(
+                        value: future,
+                        total: total,
+                        label: "Future",
+                        width: geometry.size.width / 3 - 4,
+                        scrollOffset: scrollOffset
+                    )
+                }
+            }
+            .frame(height: 120)
+        }
+    }
+    
+    private var total: Double {
+        past + present + future
+    }
+}
+
+struct TimeBar: View {
+    let value: Double
+    let total: Double
+    let label: String
+    let width: CGFloat
+    let scrollOffset: CGFloat
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        VStack {
+            ZStack(alignment: .bottom) {
+                Rectangle()
+                    .fill(accentColor.opacity(0.1))
+                    .frame(width: width)
+                
+                Rectangle()
+                    .fill(accentColor)
+                    .frame(width: width, height: height)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.8), value: height)
+            }
+            .frame(height: 80)
+            .cornerRadius(8)
+            
+            Text(label)
+                .font(.system(size: 14, weight: .light))
+                .foregroundColor(textColor)
+            
+            Text("\(Int(percentage))%")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(textColor.opacity(0.7))
+        }
+    }
+    
+    private var height: CGFloat {
+        CGFloat(value / total * 80) + scrollOffset * 0.1
+    }
+    
+    private var percentage: Double {
+        (value / total) * 100
+    }
+}
+
+struct ReflectionMetrics: View {
+    let uncertaintyCount: Int
+    let reflectionCount: Int
+    let scrollOffset: CGFloat
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            MetricRow(
+                icon: "questionmark.circle",
+                label: "Uncertainty Markers",
+                count: uncertaintyCount,
+                scrollOffset: scrollOffset
+            )
+            
+            MetricRow(
+                icon: "sparkles",
+                label: "Reflection Markers",
+                count: reflectionCount,
+                scrollOffset: scrollOffset
+            )
+        }
+    }
+}
+
+struct MetricRow: View {
+    let icon: String
+    let label: String
+    let count: Int
+    let scrollOffset: CGFloat
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            Image(systemName: icon)
+                .font(.system(size: 24, weight: .light))
+                .foregroundColor(accentColor)
+                .frame(width: 40)
+            
+            Text(label)
+                .font(.system(size: 16, weight: .light))
+                .foregroundColor(textColor)
+            
+            Spacer()
+            
+            Text("\(count)")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundColor(textColor)
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(accentColor.opacity(0.05))
+        )
+        .offset(x: scrollOffset * 0.1)
+    }
+}
+
+struct TimeDistributionView: View {
+    let past: Double
+    let present: Double
+    let future: Double
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            ZStack(alignment: .leading) {
+                GeometryReader { geometry in
+                    HStack(spacing: 0) {
+                        Rectangle()
+                            .fill(Color(hex: "4ECB71"))
+                            .frame(width: geometry.size.width * CGFloat(pastRatio))
+                        
+                        Rectangle()
+                            .fill(accentColor)
+                            .frame(width: geometry.size.width * CGFloat(presentRatio))
+                        
+                        Rectangle()
+                            .fill(Color(hex: "B7A284"))
+                            .frame(width: geometry.size.width * CGFloat(futureRatio))
+                    }
+                    .cornerRadius(8)
+                }
+            }
+            .frame(height: 16)
+            
+            HStack(spacing: 20) {
+                TimeLabel(color: Color(hex: "4ECB71"), label: "Past", value: Int(past))
+                TimeLabel(color: accentColor, label: "Present", value: Int(present))
+                TimeLabel(color: Color(hex: "B7A284"), label: "Future", value: Int(future))
+            }
+        }
+    }
+    
+    private var total: Double {
+        past + present + future
+    }
+    
+    private var pastRatio: Double {
+        past / total
+    }
+    
+    private var presentRatio: Double {
+        present / total
+    }
+    
+    private var futureRatio: Double {
+        future / total
+    }
+}
+
+struct TimeLabel: View {
+    let color: Color
+    let label: String
+    let value: Int
+    
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(color)
+                .frame(width: 8, height: 8)
+            
+            Text("\(label): \(value)%")
+                .font(.system(size: 12, weight: .light))
+                .foregroundColor(textColor)
+        }
     }
 }
 
@@ -210,162 +1061,10 @@ struct FlowingBackground: View {
     }
 }
 
-struct FloatingSparkles: View {
-    let particleCount = 15
-    @State private var particles: [(CGPoint, Double)] = []
-    
-    var body: some View {
-        TimelineView(.animation) { _ in
-            Canvas { context, size in
-                for (position, opacity) in particles {
-                    context.opacity = opacity
-                    context.draw(
-                        Text("✧").font(.system(size: 12)),
-                        at: position
-                    )
-                }
-            }
-            .onAppear {
-                particles = (0..<particleCount).map { _ in
-                    (
-                        CGPoint(
-                            x: .random(in: 0...100),
-                            y: .random(in: 0...100)
-                        ),
-                        Double.random(in: 0.3...0.7)
-                    )
-                }
-            }
-        }
-    }
-}
-
-struct SpeakingFlowSection: View {
-    let speechPattern: SpeechPatternAnalysis
-    let scrollOffset: CGFloat
-    
-    private let accentColor = Color(hex: "A28497")
-    private let textColor = Color(hex: "2C3E50")
-    
-    var body: some View {
-        VStack(spacing: 24) {
-            FlowingCard {
-                VStack(spacing: 20) {
-                    HStack(spacing: 24) {
-                        SpeakingPaceRing(
-                            wpm: speechPattern.wordsPerMinute,
-                            scrollOffset: scrollOffset
-                        )
-                        .frame(width: 140, height: 140)
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            PaceInsight(wpm: speechPattern.wordsPerMinute)
-                            
-                            Text("Words per minute")
-                                .font(.system(size: 14, weight: .light))
-                                .foregroundColor(textColor.opacity(0.6))
-                        }
-                    }
-                    
-                    Divider()
-                        .background(accentColor.opacity(0.1))
-                    
-                    FlowMetrics(speechPattern: speechPattern)
-                }
-                .padding(24)
-            }
-            .offset(y: -scrollOffset * 0.1)
-            
-            FlowingCard {
-                VStack(spacing: 16) {
-                    HStack {
-                        Text("Pause Patterns")
-                            .font(.system(size: 18, weight: .light))
-                            .foregroundColor(textColor)
-                        Spacer()
-                        Text("\(speechPattern.pauseCount) pauses")
-                            .font(.system(size: 14, weight: .light))
-                            .foregroundColor(textColor.opacity(0.7))
-                    }
-                    
-                    PauseVisualizer(
-                        pauseCount: speechPattern.pauseCount,
-                        averageDuration: speechPattern.averagePauseDuration,
-                        longestPause: speechPattern.longestPause,
-                        scrollOffset: scrollOffset
-                    )
-                }
-                .padding(24)
-            }
-            .offset(y: -scrollOffset * 0.15)
-        }
-    }
-}
-
-struct SpeakingPaceRing: View {
-    let wpm: Double
-    let scrollOffset: CGFloat
-    
-    private var normalizedWPM: Double {
-        min(max((wpm - 80) / 100, 0), 1)
-    }
-    
-    private var rotation: Double {
-        360 * normalizedWPM - scrollOffset * 0.2
-    }
-    
-    var body: some View {
-        ZStack {
-            Circle()
-                .stroke(Color(hex: "A28497").opacity(0.1), lineWidth: 12)
-            
-            Circle()
-                .trim(from: 0, to: normalizedWPM)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color(hex: "A28497"),
-                            Color(hex: "A28497").opacity(0.6)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    ),
-                    style: StrokeStyle(lineWidth: 12, lineCap: .round)
-                )
-                .rotationEffect(.degrees(-90))
-                .rotationEffect(.degrees(rotation))
-                .animation(.spring(dampingFraction: 0.8), value: rotation)
-            
-            VStack(spacing: 4) {
-                Text("\(Int(wpm))")
-                    .font(.system(size: 32, weight: .light))
-                Text("WPM")
-                    .font(.system(size: 14, weight: .light))
-            }
-            .foregroundColor(Color(hex: "2C3E50"))
-        }
-    }
-}
-
-struct PaceInsight: View {
-    let wpm: Double
-    
-    var message: String {
-        switch wpm {
-        case ...100:
-            return "Thoughtful and measured pace"
-        case 100...140:
-            return "Natural conversational rhythm"
-        default:
-            return "Energetic and swift expression"
-        }
-    }
-    
-    var body: some View {
-        Text(message)
-            .font(.system(size: 16, weight: .light))
-            .foregroundColor(Color(hex: "2C3E50"))
-            .fixedSize(horizontal: false, vertical: true)
+struct ScrollOffsetKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
 
@@ -374,13 +1073,13 @@ struct FlowMetrics: View {
     
     var body: some View {
         HStack(spacing: 20) {
-            FlowMetricBox(
+            MetricBox(
                 title: "Average Pause",
                 value: String(format: "%.1fs", speechPattern.averagePauseDuration),
                 icon: "stopwatch"
             )
             
-            FlowMetricBox(
+            MetricBox(
                 title: "Longest Pause",
                 value: String(format: "%.1fs", speechPattern.longestPause),
                 icon: "timer"
@@ -389,25 +1088,28 @@ struct FlowMetrics: View {
     }
 }
 
-struct FlowMetricBox: View {
+struct MetricBox: View {
     let title: String
     let value: String
     let icon: String
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
     
     var body: some View {
         VStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.system(size: 20, weight: .light))
-                .foregroundColor(Color(hex: "A28497"))
+                .foregroundColor(accentColor)
             
             VStack(spacing: 4) {
                 Text(value)
                     .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(Color(hex: "2C3E50"))
+                    .foregroundColor(textColor)
                 
                 Text(title)
                     .font(.system(size: 14, weight: .light))
-                    .foregroundColor(Color(hex: "2C3E50").opacity(0.7))
+                    .foregroundColor(textColor.opacity(0.7))
             }
         }
         .frame(maxWidth: .infinity)
@@ -418,283 +1120,3 @@ struct FlowMetricBox: View {
         )
     }
 }
-
-struct PauseVisualizer: View {
-    let pauseCount: Int
-    let averageDuration: Double
-    let longestPause: Double
-    let scrollOffset: CGFloat
-    
-    private var normalizedPauses: [CGFloat] {
-        (0..<pauseCount).map { i in
-            let base = CGFloat(averageDuration / longestPause)
-            let variation = CGFloat.random(in: -0.1...0.1)
-            return max(0.2, min(1.0, base + variation))
-        }
-    }
-    
-    var body: some View {
-        HStack(spacing: 4) {
-            ForEach(normalizedPauses.indices, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(Color(hex: "A28497").opacity(0.3))
-                    .frame(width: 4, height: 60 * normalizedPauses[index])
-                    .offset(y: sin(Double(index) + scrollOffset * 0.05) * 5)
-            }
-        }
-        .frame(height: 60)
-        .animation(.easeInOut(duration: 1), value: scrollOffset)
-    }
-}
-
-struct FlowingCard<Content: View>: View {
-    let content: Content
-    
-    init(@ViewBuilder content: () -> Content) {
-        self.content = content()
-    }
-    
-    var body: some View {
-        content
-            .background(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(Color.white)
-                    .shadow(color: Color(hex: "A28497").opacity(0.05), radius: 20)
-            )
-    }
-}
-
-struct SelfExpressionSection: View {
-    let selfReference: SelfReferenceAnalysis
-    let scrollOffset: CGFloat
-    
-    private let accentColor = Color(hex: "A28497")
-    private let textColor = Color(hex: "2C3E50")
-    
-    var body: some View {
-        VStack(spacing: 24) {
-            FlowingCard {
-                VStack(spacing: 20) {
-                    HStack(spacing: 24) {
-                        PercentageRing(
-                            percentage: selfReference.selfReferencePercentage,
-                            scrollOffset: scrollOffset
-                        )
-                        .frame(width: 140, height: 140)
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            PerspectiveInsight(percentage: selfReference.selfReferencePercentage)
-                            
-                            Text("Self references")
-                                .font(.system(size: 14, weight: .light))
-                                .foregroundColor(textColor.opacity(0.6))
-                        }
-                    }
-                    
-                    Divider()
-                        .background(accentColor.opacity(0.1))
-                    
-                    TimePerspectiveChart(
-                        past: selfReference.pastTensePercentage,
-                        present: selfReference.presentTensePercentage,
-                        future: selfReference.futureTensePercentage
-                    )
-                }
-                .padding(24)
-            }
-            .offset(y: -scrollOffset * 0.1)
-            
-            FlowingCard {
-                VStack(spacing: 16) {
-                    HStack {
-                        Text("Expression Patterns")
-                            .font(.system(size: 18, weight: .light))
-                            .foregroundColor(textColor)
-                        Spacer()
-                    }
-                    
-                    ExpressionPatterns(
-                        uncertaintyCount: selfReference.uncertaintyCount,
-                        reflectionCount: selfReference.reflectionCount,
-                        scrollOffset: scrollOffset
-                    )
-                }
-                .padding(24)
-            }
-            .offset(y: -scrollOffset * 0.15)
-        }
-    }
-}
-
-struct PercentageRing: View {
-    let percentage: Double
-    let scrollOffset: CGFloat
-    
-    private var normalizedPercentage: Double {
-        percentage / 100
-    }
-    
-    private var rotation: Double {
-        360 * normalizedPercentage - scrollOffset * 0.2
-    }
-    
-    var body: some View {
-        ZStack {
-            Circle()
-                .stroke(Color(hex: "A28497").opacity(0.1), lineWidth: 12)
-            
-            Circle()
-                .trim(from: 0, to: normalizedPercentage)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color(hex: "A28497"),
-                            Color(hex: "A28497").opacity(0.6)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    ),
-                    style: StrokeStyle(lineWidth: 12, lineCap: .round)
-                )
-                .rotationEffect(.degrees(-90))
-                .rotationEffect(.degrees(rotation))
-                .animation(.spring(dampingFraction: 0.8), value: rotation)
-            
-            VStack(spacing: 4) {
-                Text("\(Int(percentage))%")
-                    .font(.system(size: 32, weight: .light))
-                Text("Self focus")
-                    .font(.system(size: 14, weight: .light))
-            }
-            .foregroundColor(Color(hex: "2C3E50"))
-        }
-    }
-}
-
-struct PerspectiveInsight: View {
-    let percentage: Double
-    
-    var message: String {
-        switch percentage {
-        case ...30:
-            return "Focused on external observations"
-        case 30...70:
-            return "Balanced perspective"
-        default:
-            return "Deeply personal reflection"
-        }
-    }
-    
-    var body: some View {
-        Text(message)
-            .font(.system(size: 16, weight: .light))
-            .foregroundColor(Color(hex: "2C3E50"))
-            .fixedSize(horizontal: false, vertical: true)
-    }
-}
-
-struct TimePerspectiveChart: View {
-    let past: Double
-    let present: Double
-    let future: Double
-    
-    var body: some View {
-        VStack(spacing: 16) {
-            Text("Time Perspective")
-                .font(.system(size: 16, weight: .light))
-                .foregroundColor(Color(hex: "2C3E50"))
-            
-            HStack(spacing: 0) {
-                TimeSegment(label: "Past", percentage: past, color: .blue)
-                TimeSegment(label: "Present", percentage: present, color: .green)
-                TimeSegment(label: "Future", percentage: future, color: .purple)
-            }
-            .frame(height: 40)
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-        }
-    }
-}
-
-struct TimeSegment: View {
-    let label: String
-    let percentage: Double
-    let color: Color
-    
-    var body: some View {
-        GeometryReader { geometry in
-            VStack(spacing: 4) {
-                Rectangle()
-                    .fill(color.opacity(0.3))
-                    .overlay(
-                        Text("\(Int(percentage))%")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(color)
-                    )
-                
-                Text(label)
-                    .font(.system(size: 12, weight: .light))
-                    .foregroundColor(Color(hex: "2C3E50"))
-            }
-        }
-        .frame(maxWidth: .infinity)
-    }
-}
-
-struct ExpressionPatterns: View {
-    let uncertaintyCount: Int
-    let reflectionCount: Int
-    let scrollOffset: CGFloat
-    
-    var body: some View {
-        VStack(spacing: 20) {
-            FloatingMetricBubble(
-                count: uncertaintyCount,
-                label: "Uncertainty markers",
-                color: Color(hex: "A28497"),
-                offset: scrollOffset
-            )
-            
-            FloatingMetricBubble(
-                count: reflectionCount,
-                label: "Reflection markers",
-                color: Color(hex: "B7A284"),
-                offset: scrollOffset
-            )
-        }
-    }
-}
-
-struct FloatingMetricBubble: View {
-    let count: Int
-    let label: String
-    let color: Color
-    let offset: CGFloat
-    
-    var body: some View {
-        HStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(color.opacity(0.1))
-                    .frame(width: 60, height: 60)
-                
-                Text("\(count)")
-                    .font(.system(size: 24, weight: .medium))
-                    .foregroundColor(color)
-            }
-            .offset(y: sin(offset * 0.05) * 5)
-            
-            Text(label)
-                .font(.system(size: 16, weight: .light))
-                .foregroundColor(Color(hex: "2C3E50"))
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .shadow(color: color.opacity(0.1), radius: 10)
-        )
-    }
-}
-
-

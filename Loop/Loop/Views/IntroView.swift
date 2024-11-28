@@ -792,11 +792,11 @@ struct OnboardingView: View {
         private func saveUserPreferences() {
             UserDefaults.standard.set(userName, forKey: "userName")
             UserDefaults.standard.set(reminderTime, forKey: "reminderTime")
-            ReminderManager.shared.requestNotificationPermissions { success in
-                if success {
-                    ReminderManager.shared.scheduleDailyReminder(at: reminderTime)
-                }
-            }
+//            ReminderManager.shared.requestNotificationPermissions { success in
+//                if success {
+//                    ReminderManager.shared.scheduleDailyReminder(at: reminderTime)
+//                }
+//            }
         }
     
         private func toggleRecording() {
