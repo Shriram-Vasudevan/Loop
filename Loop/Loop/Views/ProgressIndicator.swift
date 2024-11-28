@@ -15,10 +15,12 @@ struct ProgressIndicator: View {
     var body: some View {
         HStack(spacing: 8) {
             ForEach(0..<totalSteps, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(index < currentStep ? accentColor : accentColor.opacity(0.2))
-                    .frame(height: 4)
+                Capsule()
+                    .fill(index == currentStep ? accentColor : Color(hex: "E8ECF1"))
+                    .frame(width: 24, height: 2)
+                    .animation(.easeInOut, value: currentStep)
             }
         }
     }
 }
+

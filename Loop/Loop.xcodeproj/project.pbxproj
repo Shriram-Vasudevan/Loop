@@ -36,6 +36,8 @@
 		9953BDF62CF40E4A00348AC3 /* ProgressIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDF52CF40E4A00348AC3 /* ProgressIndicator.swift */; };
 		9953BDF82CF4101E00348AC3 /* RecordThematicLoopPromptsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDF72CF4101E00348AC3 /* RecordThematicLoopPromptsView.swift */; };
 		9953BDFA2CF4253000348AC3 /* PurposeCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDF92CF4253000348AC3 /* PurposeCard.swift */; };
+		9953BDFC2CF8105200348AC3 /* SettingsModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDFB2CF8105200348AC3 /* SettingsModels.swift */; };
+		9953BDFE2CF810AB00348AC3 /* WebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDFD2CF810AB00348AC3 /* WebView.swift */; };
 		9988DB852CD9BFAC005628DE /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB842CD9BFAC005628DE /* FriendsView.swift */; };
 		9988DB8B2CD9CAEE005628DE /* SharedLoop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */; };
 		9988DB8D2CDA77C8005628DE /* PrivateUserRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8C2CDA77C8005628DE /* PrivateUserRecord.swift */; };
@@ -114,6 +116,8 @@
 		9953BDF52CF40E4A00348AC3 /* ProgressIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressIndicator.swift; sourceTree = "<group>"; };
 		9953BDF72CF4101E00348AC3 /* RecordThematicLoopPromptsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordThematicLoopPromptsView.swift; sourceTree = "<group>"; };
 		9953BDF92CF4253000348AC3 /* PurposeCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurposeCard.swift; sourceTree = "<group>"; };
+		9953BDFB2CF8105200348AC3 /* SettingsModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsModels.swift; sourceTree = "<group>"; };
+		9953BDFD2CF810AB00348AC3 /* WebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebView.swift; sourceTree = "<group>"; };
 		9988DB842CD9BFAC005628DE /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedLoop.swift; sourceTree = "<group>"; };
 		9988DB8C2CDA77C8005628DE /* PrivateUserRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateUserRecord.swift; sourceTree = "<group>"; };
@@ -238,6 +242,7 @@
 				9953BDE52CF1832100348AC3 /* ThematicLoopCard.swift */,
 				9953BDF52CF40E4A00348AC3 /* ProgressIndicator.swift */,
 				9953BDF92CF4253000348AC3 /* PurposeCard.swift */,
+				9953BDFD2CF810AB00348AC3 /* WebView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -275,6 +280,7 @@
 				9953BDE12CEE8D4C00348AC3 /* DailyAnalysis.swift */,
 				9953BDE72CF1834500348AC3 /* ThematicLoop.swift */,
 				9953BDE92CF25A7C00348AC3 /* MonthSummary.swift */,
+				9953BDFB2CF8105200348AC3 /* SettingsModels.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -367,6 +373,7 @@
 				99AC6DE62CE0F99800B0D0D6 /* CachedLoop.swift in Sources */,
 				99AC6DDE2CE03CC600B0D0D6 /* AudioBulletJournal.swift in Sources */,
 				9915BAB92CEC332500D3C44B /* AnalysisManager.swift in Sources */,
+				9953BDFE2CF810AB00348AC3 /* WebView.swift in Sources */,
 				99AC6DDA2CE01A3E00B0D0D6 /* SendLoopOverlay.swift in Sources */,
 				99AC6DE82CE1235400B0D0D6 /* LoopLogoView.swift in Sources */,
 				990E4AA42CC0A7CD009F88A0 /* InsightModels.swift in Sources */,
@@ -394,6 +401,7 @@
 				99A0C8F32CA9EF2400F9281A /* ContentView.swift in Sources */,
 				990E4A882CB30EC0009F88A0 /* WavyBackground.swift in Sources */,
 				9953BDF82CF4101E00348AC3 /* RecordThematicLoopPromptsView.swift in Sources */,
+				9953BDFC2CF8105200348AC3 /* SettingsModels.swift in Sources */,
 				99F7F6F12CAC7B5B009858AC /* LoopCloudKitUtility.swift in Sources */,
 				9953BDE42CF17A5F00348AC3 /* LoadingWaveform.swift in Sources */,
 				99F7F6ED2CAC796E009858AC /* RecordLoopView.swift in Sources */,

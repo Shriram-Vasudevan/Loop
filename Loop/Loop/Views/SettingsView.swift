@@ -7,94 +7,163 @@
 
 import SwiftUI
 
+
+
 struct SettingsView: View {
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @State private var showingLogoutAlert = false
+    @State private var showingTimePicker = false
+    @State private var showingContactView = false
+    @State private var selectedWebView: WebViewData?
+    @State private var reminderTime: Date
     
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
     private let version = "1.0.0"
     private let build = "42"
     
+    init() {
+        let defaultTime = Calendar.current.date(from: DateComponents(hour: 21, minute: 0)) ?? Date()
+        _reminderTime = State(initialValue: ReminderManager.shared.loadReminderTime() ?? defaultTime)
+    }
+    
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                HStack {
-                    Text("settings")
-                        .font(.system(size: 40, weight: .ultraLight))
-                        .foregroundColor(textColor)
-                    Spacer()
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 24) {
+                    SettingsSection(
+                        title: "account",
+                        rows: [
+                            SettingsRowContent(icon: "person.circle", title: "John Appleseed", subtitle: "Premium Member"),
+                            SettingsRowContent(icon: "envelope", title: "john@email.com")
+                        ]
+                    )
+                    
+                    SettingsSection(
+                        title: "notifications",
+                        rows: [
+                            SettingsRowContent(
+                                icon: "bell",
+                                title: "Enable Notifications",
+                                isToggle: true,
+                                toggleValue: notificationsEnabled,
+                                action: { toggleNotifications() }
+                            ),
+                            SettingsRowContent(
+                                icon: "clock",
+                                title: "Reminder Time",
+                                subtitle: ReminderManager.shared.formatReminderTime(reminderTime),
+                                action: { showingTimePicker = true }
+                            )
+                        ]
+                    )
+                    
+                    SettingsSection(
+                        title: "support",
+                        rows: [
+                            SettingsRowContent(
+                                icon: "envelope.badge",
+                                title: "Contact Us",
+                                action: { showingContactView = true }
+                            ),
+                            SettingsRowContent(
+                                icon: "doc.text",
+                                title: "Privacy Policy",
+                                action: { openPrivacyPolicy() }
+                            ),
+                            SettingsRowContent(
+                                icon: "doc",
+                                title: "Terms of Service",
+                                action: { openTermsOfService() }
+                            )
+                        ]
+                    )
+                    
+                    SettingsSection(
+                        title: "app info",
+                        rows: [
+                            SettingsRowContent(
+                                icon: "info.circle",
+                                title: "Version",
+                                subtitle: "\(version) (\(build))"
+                            )
+                        ]
+                    )
+                    
+                    Button(action: { showingLogoutAlert = true }) {
+                        Text("Log Out")
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(.red.opacity(0.8))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.white)
+                                    .shadow(color: Color.black.opacity(0.04), radius: 10)
+                            )
+                    }
                 }
-                .padding(.top, 16)
-                
-                SettingsSection(
-                    title: "account",
-                    rows: [
-                        SettingsRowContent(icon: "person.circle", title: "John Appleseed", subtitle: "Premium Member"),
-                        SettingsRowContent(icon: "envelope", title: "john@email.com")
-                    ]
-                )
-                
-                SettingsSection(
-                    title: "preferences",
-                    rows: [
-                        SettingsRowContent(icon: "bell", title: "notifications", isToggle: true, toggleValue: notificationsEnabled),
-                        SettingsRowContent(icon: "clock", title: "reminder time", subtitle: "9:00 PM"),
-                        SettingsRowContent(icon: "square.stack", title: "data storage", subtitle: "42.8 MB")
-                    ]
-                )
-                
-                SettingsSection(
-                    title: "support",
-                    rows: [
-                        SettingsRowContent(icon: "questionmark.circle", title: "help center"),
-                        SettingsRowContent(icon: "envelope.badge", title: "contact us"),
-                        SettingsRowContent(icon: "doc.text", title: "privacy policy"),
-                        SettingsRowContent(icon: "doc", title: "terms of service")
-                    ]
-                )
-                
-                SettingsSection(
-                    title: "app info",
-                    rows: [
-                        SettingsRowContent(icon: "info.circle", title: "version", subtitle: "\(version) (\(build))")
-                    ]
-                )
-                
-                Button(action: { showingLogoutAlert = true }) {
-                    Text("log out")
-                        .font(.system(size: 16, weight: .regular))
-                        .foregroundColor(.red.opacity(0.8))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.white)
-                                .shadow(color: Color.black.opacity(0.04), radius: 10)
-                        )
-                }
-                .padding(.top, 8)
-                .alert("Log Out", isPresented: $showingLogoutAlert) {
-                    Button("Cancel", role: .cancel) { }
-                    Button("Log Out", role: .destructive) { }
-                } message: {
-                    Text("Are you sure you want to log out?")
+                .padding(.horizontal, 24)
+                .padding(.vertical, 32)
+            }
+            .background(Color(hex: "FAFBFC"))
+            .navigationTitle("Settings")
+            .sheet(isPresented: $showingTimePicker) {
+                NotificationTimePicker(selectedTime: $reminderTime)
+            }
+            .sheet(isPresented: $showingContactView) {
+                ContactView()
+            }
+            .sheet(item: $selectedWebView) { webViewData in
+                NavigationView {
+                    WebView(url: webViewData.url)
+                        .navigationTitle(webViewData.title)
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Done") {
+                                    selectedWebView = nil
+                                }
+                            }
+                        }
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 32)
+            .alert("Log Out", isPresented: $showingLogoutAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Log Out", role: .destructive) { }
+            } message: {
+                Text("Are you sure you want to log out?")
+            }
         }
-        .background(Color(hex: "FAFBFC"))
+    }
+    
+    private func toggleNotifications() {
+        if notificationsEnabled {
+            ReminderManager.shared.requestNotificationPermissions { granted in
+                if !granted {
+                    notificationsEnabled = false
+                }
+            }
+        } else {
+            ReminderManager.shared.disableReminder()
+        }
+    }
+    
+    private func openPrivacyPolicy() {
+        selectedWebView = WebViewData(
+            title: "Privacy Policy",
+            url: URL(string: "https://loopapp.com/privacy")!
+        )
+    }
+    
+    private func openTermsOfService() {
+        selectedWebView = WebViewData(
+            title: "Terms of Service",
+            url: URL(string: "https://loopapp.com/terms")!
+        )
     }
 }
 
-struct SettingsRowContent {
-    let icon: String
-    let title: String
-    var subtitle: String? = nil
-    var isToggle: Bool = false
-    var toggleValue: Bool = false
-}
 
 struct SettingsSection: View {
     let title: String
@@ -108,8 +177,8 @@ struct SettingsSection: View {
                 .textCase(.lowercase)
             
             VStack(spacing: 1) {
-                ForEach(rows.indices, id: \.self) { index in
-                    SettingsRow(content: rows[index])
+                ForEach(rows) { row in
+                    SettingsRow(content: row)
                 }
             }
             .background(
@@ -123,49 +192,122 @@ struct SettingsSection: View {
 
 struct SettingsRow: View {
     let content: SettingsRowContent
-    @State private var toggleState: Bool
-    
-    init(content: SettingsRowContent) {
-        self.content = content
-        _toggleState = State(initialValue: content.toggleValue)
-    }
+    @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     
     var body: some View {
-        HStack(spacing: 16) {
-            Image(systemName: content.icon)
-                .font(.system(size: 18, weight: .light))
-                .foregroundColor(Color(hex: "A28497"))
-                .frame(width: 24)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(content.title)
-                    .font(.system(size: 16, weight: .regular))
-                    .foregroundColor(Color(hex: "2C3E50"))
+        Button(action: { content.action?() }) {
+            HStack(spacing: 16) {
+                Image(systemName: content.icon)
+                    .font(.system(size: 18, weight: .light))
+                    .foregroundColor(Color(hex: "A28497"))
+                    .frame(width: 24)
                 
-                if let subtitle = content.subtitle {
-                    Text(subtitle)
-                        .font(.system(size: 14, weight: .light))
-                        .foregroundColor(Color(hex: "2C3E50").opacity(0.6))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(content.title)
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundColor(Color(hex: "2C3E50"))
+                    
+                    if let subtitle = content.subtitle {
+                        Text(subtitle)
+                            .font(.system(size: 14, weight: .light))
+                            .foregroundColor(Color(hex: "2C3E50").opacity(0.6))
+                    }
+                }
+                
+                Spacer()
+                
+                if content.isToggle {
+                    Toggle("", isOn: $notificationsEnabled)
+                        .tint(Color(hex: "A28497"))
+                } else if content.action != nil {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Color(hex: "2C3E50").opacity(0.3))
                 }
             }
-            
-            Spacer()
-            
-            if content.isToggle {
-                Toggle("", isOn: $toggleState)
-                    .tint(Color(hex: "A28497"))
-            } else if content.subtitle == nil {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Color(hex: "2C3E50").opacity(0.3))
-            }
         }
+        .buttonStyle(PlainButtonStyle())
         .padding(.vertical, 16)
         .padding(.horizontal, 20)
         .background(Color.white)
     }
 }
 
-#Preview {
-    SettingsView()
+struct NotificationTimePicker: View {
+    @Binding var selectedTime: Date
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationView {
+            VStack {
+                DatePicker("Select Time", selection: $selectedTime, displayedComponents: .hourAndMinute)
+                    .datePickerStyle(.wheel)
+                    .labelsHidden()
+                    .padding()
+                
+                Button("Set Time") {
+                    ReminderManager.shared.saveAndScheduleReminder(at: selectedTime)
+                    dismiss()
+                }
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color(hex: "A28497"))
+                .cornerRadius(12)
+                .padding()
+            }
+            .navigationTitle("Reminder Time")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+struct ContactView: View {
+    let contacts: [ContactMethod] = [
+        .email("support@loopapp.com"),
+        .phone("+1 (555) 123-4567")
+    ]
+    
+    var body: some View {
+        VStack(spacing: 24) {
+            Text("Contact Us")
+                .font(.system(size: 28, weight: .light))
+                .padding(.top)
+            
+            VStack(spacing: 16) {
+                ForEach(contacts) { contact in
+                    HStack(spacing: 16) {
+                        Image(systemName: contact.icon)
+                            .font(.system(size: 20))
+                            .foregroundColor(Color(hex: "A28497"))
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(contact.title)
+                                .font(.system(size: 14, weight: .medium))
+                            Text(contact.value)
+                                .font(.system(size: 16))
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.white)
+                            .shadow(color: Color.black.opacity(0.04), radius: 8)
+                    )
+                }
+            }
+            .padding(.horizontal)
+            
+            Spacer()
+        }
+        .background(Color(hex: "FAFBFC"))
+    }
 }
