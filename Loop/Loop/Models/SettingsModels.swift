@@ -48,7 +48,7 @@ struct SettingsRowContent: Identifiable {
     let title: String
     var subtitle: String? = nil
     var isToggle: Bool = false
-    var toggleValue: Bool = false
+    var toggleValue: Bool? = nil
     var action: (() -> Void)? = nil
 }
 

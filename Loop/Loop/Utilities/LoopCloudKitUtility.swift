@@ -148,12 +148,12 @@ class LoopCloudKitUtility {
         }
     }
 
-    static func checkSevenDayRequirement() async throws -> Bool {
+    static func checkThreeDayRequirement() async throws -> Bool {
         // Check cache first
         if let cached = distinctDaysCache,
            let lastUpdate = lastCacheUpdate,
            Date().timeIntervalSince(lastUpdate) < cacheValidityDuration {
-            return cached >= 7
+            return cached >= 3
         }
         
         let distinctDays = try await fetchDistinctLoopingDays()

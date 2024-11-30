@@ -47,10 +47,17 @@ struct OnboardingView: View {
         
         var body: some View {
             ZStack {
+                AnimatedBackground()
+                    .ignoresSafeArea(.all)
                 TabView(selection: $currentStep) {
                     welcomeView
                         .tag(0)
-                    recordingDemoView
+                    PromptsView {
+                           withAnimation {
+                               currentStep = 2
+                           }
+                       }
+                       .tag(1)
                         .tag(1)
                     pastLoopView
                         .tag(2)
@@ -74,34 +81,36 @@ struct OnboardingView: View {
         }
         
         private var welcomeView: some View {
-            VStack {
-                Spacer()
-                
-                VStack(spacing: 8) {
-                    Text("welcome to loop")
-                        .font(.system(size: 38, weight: .ultraLight))
-                        .foregroundColor(textColor)
-                        .opacity(fadeInOpacity)
+            ZStack {
+                VStack {
+                    Spacer()
                     
-                    Text("start micro-journaling")
-                        .font(.system(size: 20, weight: .light))
-                        .foregroundColor(textColor.opacity(0.6))
-                        .opacity(fadeInOpacity)
-                }
-                
-                Spacer()
-                
-                OnboardingButton(text: "begin", icon: "arrow.right") {
-                    withAnimation {
-                        currentStep = 1
+                    VStack(spacing: 5) {
+                        Text("welcome to loop")
+                            .font(.system(size: 38, weight: .ultraLight))
+                            .foregroundColor(textColor)
+                            .opacity(fadeInOpacity)
+                        
+                        Text("start microjournaling today")
+                            .font(.system(size: 20, weight: .light))
+                            .foregroundColor(textColor.opacity(0.6))
+                            .opacity(fadeInOpacity)
                     }
+                    
+                    Spacer()
+                    
+                    OnboardingButton(text: "begin", icon: "arrow.right") {
+                        withAnimation {
+                            currentStep = 1
+                        }
+                    }
+                    .padding(.bottom, 48)
+                    .opacity(fadeInOpacity)
                 }
-                .padding(.bottom, 48)
-                .opacity(fadeInOpacity)
-            }
-            .onAppear {
-                withAnimation(.easeOut(duration: 1)) {
-                    fadeInOpacity = 1
+                .onAppear {
+                    withAnimation(.easeOut(duration: 3)) {
+                        fadeInOpacity = 1
+                    }
                 }
             }
         }
@@ -109,21 +118,6 @@ struct OnboardingView: View {
         private var recordingDemoView: some View {
             ZStack {
                 VStack(spacing: 0) {
-                    Text("record your first loop")
-                        .font(.system(size: 24, weight: .light))
-                        .foregroundColor(textColor)
-                        .padding(.top, 32)
-                        .padding(.bottom, 8)
-                    
-                    Text("skip →")
-                        .font(.system(size: 14, weight: .light))
-                        .foregroundColor(accentColor)
-                        .onTapGesture {
-                            withAnimation {
-                                currentStep = 2
-                            }
-                        }
-                    
                     
                     Spacer()
                     
@@ -939,6 +933,130 @@ struct RecordButton: View {
     }
 }
 
+struct PromptsView: View {
+    let onContinue: () -> Void
+    
+    @State private var currentPromptIndex = 0
+    let accentColor = Color(hex: "A28497")
+    let textColor = Color(hex: "2C3E50")
+    
+    let prompts = [
+        (category: "Growth", prompt: "What small win are you proud of today?"),
+        (category: "Connections", prompt: "Who did you connect with today?"),
+        (category: "Emotional Wellbeing", prompt: "What brought you comfort today?")
+    ]
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Category badge
+            ZStack {
+                Text(prompts[currentPromptIndex].category)
+                    .font(.system(size: 16, weight: .light))
+                    .foregroundColor(accentColor.opacity(0.8))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule()
+                            .fill(accentColor.opacity(0.1))
+                    )
+            }
+            .padding(.top, 16)
+            
+            // Progress dots
+            ProgressIndicator(
+                totalSteps: prompts.count,
+                currentStep: currentPromptIndex,
+                accentColor: accentColor
+            )
+            .padding(.top, 24)
+            
+            Spacer()
+            
+            // Prompt
+            VStack(spacing: 32) {
+                Text("capture three moments")
+                    .font(.system(size: 20, weight: .light))
+                    .foregroundColor(textColor.opacity(0.6))
+                
+                Text(prompts[currentPromptIndex].prompt)
+                    .font(.system(size: 44, weight: .ultraLight))
+                    .foregroundColor(textColor)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .transition(.opacity)
+                
+                HStack(spacing: 12) {
+                    Circle()
+                        .fill(accentColor.opacity(0.8))
+                        .frame(width: 6, height: 6)
+                    Text("30 seconds")
+                        .font(.system(size: 16, weight: .ultraLight))
+                        .foregroundColor(textColor.opacity(0.6))
+                }
+            }
+            .padding(.horizontal, 32)
+            
+            Spacer()
+            
+            // Continue Button
+            Button(action: onContinue) {
+                HStack(spacing: 12) {
+                    Text("continue")
+                        .font(.system(size: 18, weight: .light))
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 16, weight: .light))
+                }
+                .frame(height: 56)
+                .frame(maxWidth: .infinity)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            accentColor,
+                            accentColor.opacity(0.9)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .foregroundColor(.white)
+                .cornerRadius(28)
+                .shadow(color: accentColor.opacity(0.15), radius: 12, y: 6)
+            }
+            .padding(.horizontal, 32)
+            .padding(.bottom, 48)
+        }
+        .onAppear {
+            startPromptTransition()
+        }
+    }
+    
+    private func startPromptTransition() {
+        guard currentPromptIndex < prompts.count - 1 else { return }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                currentPromptIndex = (currentPromptIndex + 1) % prompts.count
+            }
+            startPromptTransition()
+        }
+    }
+}
+
+struct OnboardingProgressIndicator: View {
+    let totalSteps: Int
+    let currentStep: Int
+    let accentColor: Color
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            ForEach(0..<totalSteps, id: \.self) { index in
+                Circle()
+                    .fill(currentStep >= index ? accentColor : accentColor.opacity(0.2))
+                    .frame(width: 8, height: 8)
+            }
+        }
+    }
+}
 
     #Preview {
         OnboardingView {

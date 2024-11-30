@@ -1,0 +1,282 @@
+//
+//  LocalLoopStorageUtility.swift
+//  Loop
+//
+//  Created by Shriram Vasudevan on 11/29/24.
+//
+
+import Foundation
+import CoreData
+import CloudKit
+
+class LoopLocalStorageUtility {
+    static let shared = LoopLocalStorageUtility()
+    
+    // MARK: - Core Data
+    private lazy var persistentContainer: NSPersistentContainer = {
+        let container = NSPersistentContainer(name: "LoopData")
+        container.loadPersistentStores { description, error in
+            if let error = error {
+                fatalError("Unable to load persistent stores: \(error)")
+            }
+        }
+        return container
+    }()
+    
+    private var context: NSManagedObjectContext {
+        persistentContainer.viewContext
+    }
+    
+    // MARK: - File Management
+    private let fileManager = FileManager.default
+    
+    private var mediaDirectory: URL {
+        let paths = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
+        let mediaDir = paths[0].appendingPathComponent("LoopMedia")
+        
+        if !fileManager.fileExists(atPath: mediaDir.path) {
+            try? fileManager.createDirectory(at: mediaDir, withIntermediateDirectories: true)
+        }
+        
+        return mediaDir
+    }
+    
+    // MARK: - Basic Operations
+    func addLoop(loop: Loop) {
+        let entity = NSEntityDescription.entity(forEntityName: "LoopEntity", in: context)!
+        let loopEntity = NSManagedObject(entity: entity, insertInto: context)
+        
+        // Save media file to local storage
+        if let assetURL = loop.data.fileURL {
+            let fileExtension = loop.isVideo ? "mp4" : "m4a"
+            let destinationURL = mediaDirectory.appendingPathComponent("\(loop.id).\(fileExtension)")
+            try? fileManager.copyItem(at: assetURL, to: destinationURL)
+            
+            // Create CKAsset from local URL for consistency with original model
+            let asset = CKAsset(fileURL: destinationURL)
+            loopEntity.setValue(destinationURL.path, forKey: "filePath")
+        }
+        
+        loopEntity.setValue(loop.id, forKey: "id")
+        loopEntity.setValue(loop.timestamp, forKey: "timestamp")
+        loopEntity.setValue(loop.lastRetrieved, forKey: "lastRetrieved")
+        loopEntity.setValue(loop.promptText, forKey: "promptText")
+        loopEntity.setValue(loop.mood, forKey: "mood")
+        loopEntity.setValue(loop.freeResponse, forKey: "freeResponse")
+        loopEntity.setValue(loop.isVideo, forKey: "isVideo")
+        loopEntity.setValue(loop.isDailyLoop, forKey: "isDailyLoop")
+        
+        do {
+            try context.save()
+        } catch {
+            print("Error saving loop: \(error)")
+        }
+    }
+    
+    func fetchLoops(for date: Date) async throws -> [Loop] {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date)
+        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+        
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "LoopEntity")
+        fetchRequest.predicate = NSPredicate(
+            format: "timestamp >= %@ AND timestamp < %@",
+            startOfDay as NSDate,
+            endOfDay as NSDate
+        )
+        
+        let results = try context.fetch(fetchRequest)
+        return results.compactMap { entity -> Loop? in
+            guard let id = entity.value(forKey: "id") as? String,
+                  let filePath = entity.value(forKey: "filePath") as? String,
+                  let timestamp = entity.value(forKey: "timestamp") as? Date,
+                  let promptText = entity.value(forKey: "promptText") as? String else {
+                return nil
+            }
+            
+            let fileURL = URL(fileURLWithPath: filePath)
+            let asset = CKAsset(fileURL: fileURL)
+            
+            return Loop(
+                id: id,
+                data: asset,
+                timestamp: timestamp,
+                lastRetrieved: entity.value(forKey: "lastRetrieved") as? Date,
+                promptText: promptText,
+                mood: entity.value(forKey: "mood") as? String,
+                freeResponse: entity.value(forKey: "freeResponse") as? Bool ?? false,
+                isVideo: entity.value(forKey: "isVideo") as? Bool ?? false,
+                isDailyLoop: entity.value(forKey: "isDailyLoop") as? Bool ?? false
+            )
+        }
+    }
+
+    // MARK: - Advanced Queries
+        func checkThreeDayRequirement() async throws -> Bool {
+            // Check for 3 consecutive days of loops
+            let distinctDays = try await fetchDistinctLoopingDays()
+            return distinctDays >= 3
+        }
+        
+        func fetchDistinctLoopingDays() async throws -> Int {
+            let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "LoopEntity")
+            fetchRequest.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
+            
+            let calendar = Calendar.current
+            var distinctDates = Set<Date>()
+            
+            // Fetch all results and process
+            let results = try context.fetch(fetchRequest)
+            for result in results {
+                if let timestamp = result.value(forKey: "timestamp") as? Date {
+                    let startOfDay = calendar.startOfDay(for: timestamp)
+                    distinctDates.insert(startOfDay)
+                }
+            }
+            
+            return distinctDates.count
+        }
+        
+        func fetchPastLoop(
+            forPrompts prompts: [String],
+            minDaysAgo: Int,
+            maxDaysAgo: Int,
+            preferGeneralPrompts: Bool,
+            category: PromptCategory? = nil
+        ) async throws -> Loop? {
+            let calendar = Calendar.current
+            let now = Date()
+            
+            guard let minDate = calendar.date(byAdding: .day, value: -maxDaysAgo, to: now),
+                  let maxDate = calendar.date(byAdding: .day, value: -minDaysAgo, to: now) else {
+                throw NSError(domain: "DateCalculationError", code: -1)
+            }
+            
+            let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "LoopEntity")
+            fetchRequest.predicate = NSPredicate(
+                format: "timestamp >= %@ AND timestamp <= %@",
+                minDate as NSDate,
+                maxDate as NSDate
+            )
+            
+            let results = try context.fetch(fetchRequest)
+            var scoredLoops: [(Loop, Double)] = []
+            
+            for result in results {
+                guard let id = result.value(forKey: "id") as? String,
+                      let filePath = result.value(forKey: "filePath") as? String,
+                      let timestamp = result.value(forKey: "timestamp") as? Date,
+                      let promptText = result.value(forKey: "promptText") as? String else {
+                    continue
+                }
+                
+                let fileURL = URL(fileURLWithPath: filePath)
+                let asset = CKAsset(fileURL: fileURL)
+                
+                let loop = Loop(
+                    id: id,
+                    data: asset,
+                    timestamp: timestamp,
+                    lastRetrieved: result.value(forKey: "lastRetrieved") as? Date,
+                    promptText: promptText,
+                    mood: result.value(forKey: "mood") as? String,
+                    freeResponse: result.value(forKey: "freeResponse") as? Bool ?? false,
+                    isVideo: result.value(forKey: "isVideo") as? Bool ?? false,
+                    isDailyLoop: result.value(forKey: "isDailyLoop") as? Bool ?? false
+                )
+                
+                let score = calculateLoopScore(
+                    loop: loop,
+                    basedOn: prompts,
+                    category: category,
+                    preferGeneralPrompts: preferGeneralPrompts
+                )
+                
+                scoredLoops.append((loop, score))
+            }
+            
+            // Sort by score and return best match if it meets minimum score threshold
+            return scoredLoops
+                .sorted { $0.1 > $1.1 }
+                .first { $0.1 >= 0.3 }?
+                .0
+        }
+        
+        func calculateStreak() async throws -> LoopingStreak {
+            let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "LoopEntity")
+            fetchRequest.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
+            
+            let results = try context.fetch(fetchRequest)
+            let calendar = Calendar.current
+            
+            var dates = Set<Date>()
+            var consecutiveDays = 0
+            var longestStreak = 0
+            var lastDate: Date?
+            
+            for result in results {
+                guard let timestamp = result.value(forKey: "timestamp") as? Date else { continue }
+                let startOfDay = calendar.startOfDay(for: timestamp)
+                dates.insert(startOfDay)
+                
+                if let last = lastDate {
+                    let daysDifference = calendar.dateComponents([.day], from: startOfDay, to: last).day ?? 0
+                    if daysDifference == 1 {
+                        consecutiveDays += 1
+                        longestStreak = max(longestStreak, consecutiveDays)
+                    } else {
+                        consecutiveDays = 0
+                    }
+                }
+                lastDate = startOfDay
+            }
+            
+            return LoopingStreak(
+                currentStreak: consecutiveDays,
+                longestStreak: longestStreak,
+                distinctDays: dates.count
+            )
+        }
+        
+        // Helper function for scoring loops
+        private func calculateLoopScore(
+            loop: Loop,
+            basedOn prompts: [String],
+            category: PromptCategory?,
+            preferGeneralPrompts: Bool
+        ) -> Double {
+            var score: Double = 0
+            
+            // Age score
+            let ageInDays = Double(Calendar.current.dateComponents([.day], from: loop.timestamp, to: Date()).day ?? 0)
+            score += min(ageInDays / 365, 1.0) * 0.2
+            
+            // Category score
+            if let category = category,
+               let loopPrompt = LoopManager.shared.promptGroups.values
+                .flatMap({ $0 })
+                .first(where: { $0.text == loop.promptText }) {
+                if loopPrompt.category == category {
+                    score += 0.3
+                }
+            }
+            
+            // Prompt type score
+            if let loopPrompt = LoopManager.shared.promptGroups.values
+                .flatMap({ $0 })
+                .first(where: { $0.text == loop.promptText }) {
+                if preferGeneralPrompts && !loopPrompt.isDailyPrompt {
+                    score += 0.3
+                }
+            }
+            
+            // Retrieval score
+            if let lastRetrieved = loop.lastRetrieved {
+                let daysSinceRetrieved = Double(Calendar.current.dateComponents([.day], from: lastRetrieved, to: Date()).day ?? 0)
+                score += min(daysSinceRetrieved / 30, 1.0) * 0.2
+            } else {
+                score += 0.2
+            }
+            
+            return score
+        }

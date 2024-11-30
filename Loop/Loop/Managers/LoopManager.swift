@@ -429,8 +429,8 @@ class LoopManager: ObservableObject {
         let userDays = try await LoopCloudKitUtility.fetchDistinctLoopingDays()
         print("📅 User has been looping for \(userDays) days")
         
-        // Need at least 4 days of history
-        guard userDays >= 4 else {
+        // Need at least 3 days of history
+        guard userDays >= 3 else {
             print("❌ Not enough history (need 4 days, have \(userDays))")
             return nil
         }
@@ -462,7 +462,7 @@ class LoopManager: ObservableObject {
                 (min: 30, max: 90),  // 1-3 months
                 (min: 14, max: 30),  // 2-4 weeks
                 (min: 7, max: 14),   // 1-2 weeks
-                (min: 4, max: 7)     // 4-7 days
+                (min: 1, max: 7)     // 4-7 days
             ]
             
             for window in timeWindows {

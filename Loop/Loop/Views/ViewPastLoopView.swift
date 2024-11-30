@@ -436,27 +436,27 @@ struct ArtisticBackground: View {
                     )
                 }
                 
-                // Add circular patterns
-                for i in 0..<5 {
-                    let circleSize = 100.0 + Double(i) * 20
-                    let xOffset = sin(time * 0.5 + Double(i)) * 30
-                    let yOffset = cos(time * 0.7 + Double(i)) * 20
-                    
-                    var circlePath = Path()
-                    circlePath.addEllipse(in: CGRect(
-                        x: size.width/2 - circleSize/2 + xOffset,
-                        y: size.height/2 - circleSize/2 + yOffset,
-                        width: circleSize,
-                        height: circleSize
-                    ))
-                    
-                    context.stroke(
-                        circlePath,
-                        with: .color(baseColor.opacity(0.1)),
-                        lineWidth: 1
-                    )
-                }
-                
+//                // Add circular patterns
+//                for i in 0..<5 {
+//                    let circleSize = 100.0 + Double(i) * 20
+//                    let xOffset = sin(time * 0.5 + Double(i)) * 30
+//                    let yOffset = cos(time * 0.7 + Double(i)) * 20
+//                    
+//                    var circlePath = Path()
+//                    circlePath.addEllipse(in: CGRect(
+//                        x: size.width/2 - circleSize/2 + xOffset,
+//                        y: size.height/2 - circleSize/2 + yOffset,
+//                        width: circleSize,
+//                        height: circleSize
+//                    ))
+//                    
+//                    context.stroke(
+//                        circlePath,
+//                        with: .color(baseColor.opacity(0.1)),
+//                        lineWidth: 1
+//                    )
+//                }
+//                
                 // Add subtle noise texture
                 context.addFilter(.blur(radius: 30))
             }

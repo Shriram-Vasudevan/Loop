@@ -39,6 +39,7 @@
 		9953BDFC2CF8105200348AC3 /* SettingsModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDFB2CF8105200348AC3 /* SettingsModels.swift */; };
 		9953BDFE2CF810AB00348AC3 /* WebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDFD2CF810AB00348AC3 /* WebView.swift */; };
 		9953BE002CF8EE9B00348AC3 /* MoodCloudKitUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDFF2CF8EE9B00348AC3 /* MoodCloudKitUtility.swift */; };
+		9953BE022CFABA4400348AC3 /* LocalLoopStorageUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BE012CFABA4400348AC3 /* LocalLoopStorageUtility.swift */; };
 		9988DB852CD9BFAC005628DE /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB842CD9BFAC005628DE /* FriendsView.swift */; };
 		9988DB8B2CD9CAEE005628DE /* SharedLoop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */; };
 		9988DB8D2CDA77C8005628DE /* PrivateUserRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8C2CDA77C8005628DE /* PrivateUserRecord.swift */; };
@@ -120,6 +121,7 @@
 		9953BDFB2CF8105200348AC3 /* SettingsModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsModels.swift; sourceTree = "<group>"; };
 		9953BDFD2CF810AB00348AC3 /* WebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebView.swift; sourceTree = "<group>"; };
 		9953BDFF2CF8EE9B00348AC3 /* MoodCloudKitUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodCloudKitUtility.swift; sourceTree = "<group>"; };
+		9953BE012CFABA4400348AC3 /* LocalLoopStorageUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalLoopStorageUtility.swift; sourceTree = "<group>"; };
 		9988DB842CD9BFAC005628DE /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedLoop.swift; sourceTree = "<group>"; };
 		9988DB8C2CDA77C8005628DE /* PrivateUserRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateUserRecord.swift; sourceTree = "<group>"; };
@@ -293,6 +295,7 @@
 				99A0C9032CA9F70500F9281A /* UserCloudKitUtility.swift */,
 				99F7F6F02CAC7B5B009858AC /* LoopCloudKitUtility.swift */,
 				9953BDFF2CF8EE9B00348AC3 /* MoodCloudKitUtility.swift */,
+				9953BE012CFABA4400348AC3 /* LocalLoopStorageUtility.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -379,6 +382,7 @@
 				9953BDFE2CF810AB00348AC3 /* WebView.swift in Sources */,
 				99AC6DDA2CE01A3E00B0D0D6 /* SendLoopOverlay.swift in Sources */,
 				99AC6DE82CE1235400B0D0D6 /* LoopLogoView.swift in Sources */,
+				9953BE022CFABA4400348AC3 /* LocalLoopStorageUtility.swift in Sources */,
 				990E4AA42CC0A7CD009F88A0 /* InsightModels.swift in Sources */,
 				990E4A9E2CBDE063009F88A0 /* ViewPastLoopView.swift in Sources */,
 				99AC6DD62CDFFAFA00B0D0D6 /* LoopChatView.swift in Sources */,

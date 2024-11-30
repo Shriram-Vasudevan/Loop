@@ -17,6 +17,8 @@ struct RecordLoopsView: View {
     @State private var isPostRecording = false
     @State private var isShowingMemory = false
     @State private var isLoadingMemory = false
+    @State private var userDaysThresholdNotMet = false
+    @State private var noMemoryFound = false
     @State private var recordingTimer: Timer?
     @State private var timeRemaining: Int = 30
     @State private var showingFirstLaunchScreen = true
@@ -300,30 +302,39 @@ struct RecordLoopsView: View {
             if isLoadingMemory {
                 LoadingWaveform(accentColor: accentColor)
                     .transition(.opacity)
+            }  else if userDaysThresholdNotMet {
+                Text("loop for three days to get memories")
+                    .font(.system(size: 44, weight: .ultraLight))
+                    .foregroundColor(textColor)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .transition(.opacity)
+                    .animation(.easeInOut, value: userDaysThresholdNotMet)
             } else if let pastLoop = pastLoop {
                 ViewPastLoopView(loop: pastLoop)
                     .transition(.opacity.combined(with: .move(edge: .trailing)))
+                
+                Button(action: {
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                        isShowingMemory = false
+                        loopManager.moveToNextPrompt()
+                    }
+                }) {
+                    HStack(spacing: 8) {
+                        Text("continue")
+                            .font(.system(size: 18, weight: .light))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 16, weight: .light))
+                    }
+                    .frame(height: 56)
+                    .frame(maxWidth: .infinity)
+                    .background(accentColor)
+                    .foregroundColor(.white)
+                    .cornerRadius(28)
+                    .shadow(color: accentColor.opacity(0.2), radius: 10, y: 5)
+                }
             }
-            
-//            Button(action: {
-//                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-//                    isShowingMemory = false
-//                    loopManager.moveToNextPrompt()
-//                }
-//            }) {
-//                HStack(spacing: 8) {
-//                    Text("continue")
-//                        .font(.system(size: 18, weight: .light))
-//                    Image(systemName: "arrow.right")
-//                        .font(.system(size: 16, weight: .light))
-//                }
-//                .frame(height: 56)
-//                .frame(maxWidth: .infinity)
-//                .background(accentColor)
-//                .foregroundColor(.white)
-//                .cornerRadius(28)
-//                .shadow(color: accentColor.opacity(0.2), radius: 10, y: 5)
-//            }
+        
         }
         .padding(.bottom, 40)
     }
@@ -502,6 +513,19 @@ struct RecordLoopsView: View {
                 }
                 
                 Task {
+                    guard let userDays = try? await LoopCloudKitUtility.fetchDistinctLoopingDays() else {
+                        userDaysThresholdNotMet = true
+                        return
+                    }
+                    
+                    if userDays < 3 {
+                        userDaysThresholdNotMet = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            isShowingMemory = false
+                            isLoadingMemory = false
+                        }
+                    }
+                    
                     if let pastLoop = try? await loopManager.getPastLoopForComparison(
                         recordedPrompts: allPrompts
                     ) {

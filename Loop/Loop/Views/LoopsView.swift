@@ -198,6 +198,10 @@ struct LoopCard: View {
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
     
+    @State private var cardOffset: CGFloat = 50
+    @State private var cardOpacity: Double = 0
+    @State private var isPressed = false
+    
     var body: some View {
         Button(action: action) {
             VStack(spacing: 16) {
@@ -229,6 +233,29 @@ struct LoopCard: View {
                     .fill(.white)
                     .shadow(color: Color.black.opacity(0.05), radius: 15)
             )
+            .scaleEffect(isPressed ? 0.97 : 1)
+            .offset(y: cardOffset)
+            .opacity(cardOpacity)
+        }
+        .buttonStyle(.plain)
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        isPressed = true
+                    }
+                }
+                .onEnded { _ in
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        isPressed = false
+                    }
+                }
+        )
+        .onAppear {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                cardOffset = 0
+                cardOpacity = 1
+            }
         }
     }
     
@@ -292,11 +319,11 @@ struct MonthCard: View {
                         .font(.system(size: 24, weight: .medium))
                         .foregroundColor(textColor)
                     
-                    if let summary = summary {
-                        Text("\(summary.totalEntries) reflections")
-                            .font(.system(size: 16, weight: .light))
-                            .foregroundColor(accentColor)
-                    }
+//                    if let summary = summary {
+//                        Text("\(summary.totalEntries) reflections")
+//                            .font(.system(size: 16, weight: .light))
+//                            .foregroundColor(accentColor)
+//                    }
                 }
             }
             .frame(height: 160)

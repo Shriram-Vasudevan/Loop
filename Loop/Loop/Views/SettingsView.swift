@@ -10,7 +10,7 @@ import SwiftUI
 
 
 struct SettingsView: View {
-    @AppStorage("notificationsEnabled") private var notificationsEnabled = true
+    @StateObject private var notificationManager = NotificationManager.shared
     @State private var showingLogoutAlert = false
     @State private var showingTimePicker = false
     @State private var showingContactView = false
@@ -46,14 +46,18 @@ struct SettingsView: View {
                                 icon: "bell",
                                 title: "Enable Notifications",
                                 isToggle: true,
-                                toggleValue: notificationsEnabled,
+                                toggleValue: notificationManager.isNotificationsEnabled,
                                 action: { toggleNotifications() }
                             ),
                             SettingsRowContent(
                                 icon: "clock",
                                 title: "Reminder Time",
                                 subtitle: NotificationManager.shared.formatReminderTime(reminderTime),
-                                action: { showingTimePicker = true }
+                                action: {
+                                    if notificationManager.isNotificationsEnabled {
+                                        showingTimePicker = true
+                                    }
+                                }
                             )
                         ]
                     )
@@ -137,16 +141,9 @@ struct SettingsView: View {
         }
     }
     
+    
     private func toggleNotifications() {
-//        if notificationsEnabled {
-//            NotificationManager.shared.requestNotificationPermissions { granted in
-//                if !granted {
-//                    notificationsEnabled = false
-//                }
-//            }
-//        } else {
-//            NotificationManager.shared.disableReminder()
-//        }
+        notificationManager.toggleNotifications(enabled: !notificationManager.isNotificationsEnabled)
     }
     
     private func openPrivacyPolicy() {
@@ -192,7 +189,7 @@ struct SettingsSection: View {
 
 struct SettingsRow: View {
     let content: SettingsRowContent
-    @AppStorage("notificationsEnabled") private var notificationsEnabled = true
+    @StateObject private var notificationManager = NotificationManager.shared
     
     var body: some View {
         Button(action: { content.action?() }) {
@@ -217,8 +214,11 @@ struct SettingsRow: View {
                 Spacer()
                 
                 if content.isToggle {
-                    Toggle("", isOn: $notificationsEnabled)
-                        .tint(Color(hex: "A28497"))
+                    Toggle("", isOn: Binding(
+                        get: { content.toggleValue ?? false },
+                        set: { _ in content.action?() }
+                    ))
+                    .tint(Color(hex: "A28497"))
                 } else if content.action != nil {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 14, weight: .medium))
@@ -232,6 +232,7 @@ struct SettingsRow: View {
         .background(Color.white)
     }
 }
+
 
 struct NotificationTimePicker: View {
     @Binding var selectedTime: Date
