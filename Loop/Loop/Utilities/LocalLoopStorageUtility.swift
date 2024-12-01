@@ -12,21 +12,6 @@ import CloudKit
 class LoopLocalStorageUtility {
     static let shared = LoopLocalStorageUtility()
     
-    // MARK: - Core Data
-    private lazy var persistentContainer: NSPersistentContainer = {
-        let container = NSPersistentContainer(name: "LoopData")
-        container.loadPersistentStores { description, error in
-            if let error = error {
-                fatalError("Unable to load persistent stores: \(error)")
-            }
-        }
-        return container
-    }()
-    
-    private var context: NSManagedObjectContext {
-        persistentContainer.viewContext
-    }
-    
     // MARK: - File Management
     private let fileManager = FileManager.default
     
@@ -41,20 +26,48 @@ class LoopLocalStorageUtility {
         return mediaDir
     }
     
-    // MARK: - Basic Operations
-    func addLoop(loop: Loop) {
-        let entity = NSEntityDescription.entity(forEntityName: "LoopEntity", in: context)!
+    private lazy var persistentContainer: NSPersistentContainer = {
+        guard let modelURL = Bundle.main.url(forResource: "LoopData", withExtension: "momd"),
+              let model = NSManagedObjectModel(contentsOf: modelURL) else {
+            fatalError("Core Data model not found") // This is okay as it's an app configuration error
+        }
+        
+        let container = NSPersistentContainer(name: "LoopData")
+        container.loadPersistentStores { description, error in
+            if let error = error {
+                print("Core Data store failed to load: \(error.localizedDescription)")
+            }
+        }
+        return container
+    }()
+
+    private var context: NSManagedObjectContext {
+        persistentContainer.viewContext
+    }
+
+    // Modify addLoop function:
+    func addLoop(loop: Loop) async {
+        guard let entity = NSEntityDescription.entity(forEntityName: "LoopEntity", in: context) else {
+            print("Failed to get LoopEntity")
+            return
+        }
+        
         let loopEntity = NSManagedObject(entity: entity, insertInto: context)
         
         // Save media file to local storage
         if let assetURL = loop.data.fileURL {
             let fileExtension = loop.isVideo ? "mp4" : "m4a"
             let destinationURL = mediaDirectory.appendingPathComponent("\(loop.id).\(fileExtension)")
-            try? fileManager.copyItem(at: assetURL, to: destinationURL)
-            
-            // Create CKAsset from local URL for consistency with original model
-            let asset = CKAsset(fileURL: destinationURL)
-            loopEntity.setValue(destinationURL.path, forKey: "filePath")
+            do {
+                if FileManager.default.fileExists(atPath: destinationURL.path) {
+                    try FileManager.default.removeItem(at: destinationURL)
+                }
+                try FileManager.default.copyItem(at: assetURL, to: destinationURL)
+                loopEntity.setValue(destinationURL.path, forKey: "filePath")
+            } catch {
+                print("Failed to save media file: \(error.localizedDescription)")
+                return
+            }
         }
         
         loopEntity.setValue(loop.id, forKey: "id")
@@ -68,9 +81,39 @@ class LoopLocalStorageUtility {
         
         do {
             try context.save()
+            print("Loop saved successfully to local storage")
         } catch {
-            print("Error saving loop: \(error)")
+            print("Failed to save loop: \(error.localizedDescription)")
         }
+    }
+
+    // Add this helper function for converting managed objects to Loops:
+    private func convertToLoop(from entity: NSManagedObject) -> Loop? {
+        guard let id = entity.value(forKey: "id") as? String,
+              let filePath = entity.value(forKey: "filePath") as? String,
+              let timestamp = entity.value(forKey: "timestamp") as? Date,
+              let promptText = entity.value(forKey: "promptText") as? String else {
+            return nil
+        }
+        
+        let fileURL = URL(fileURLWithPath: filePath)
+        guard FileManager.default.fileExists(atPath: filePath) else {
+            return nil
+        }
+        
+        let asset = CKAsset(fileURL: fileURL)
+        
+        return Loop(
+            id: id,
+            data: asset,
+            timestamp: timestamp,
+            lastRetrieved: entity.value(forKey: "lastRetrieved") as? Date,
+            promptText: promptText,
+            mood: entity.value(forKey: "mood") as? String,
+            freeResponse: entity.value(forKey: "freeResponse") as? Bool ?? false,
+            isVideo: entity.value(forKey: "isVideo") as? Bool ?? false,
+            isDailyLoop: entity.value(forKey: "isDailyLoop") as? Bool ?? false
+        )
     }
     
     func fetchLoops(for date: Date) async throws -> [Loop] {
@@ -86,30 +129,9 @@ class LoopLocalStorageUtility {
         )
         
         let results = try context.fetch(fetchRequest)
-        return results.compactMap { entity -> Loop? in
-            guard let id = entity.value(forKey: "id") as? String,
-                  let filePath = entity.value(forKey: "filePath") as? String,
-                  let timestamp = entity.value(forKey: "timestamp") as? Date,
-                  let promptText = entity.value(forKey: "promptText") as? String else {
-                return nil
-            }
-            
-            let fileURL = URL(fileURLWithPath: filePath)
-            let asset = CKAsset(fileURL: fileURL)
-            
-            return Loop(
-                id: id,
-                data: asset,
-                timestamp: timestamp,
-                lastRetrieved: entity.value(forKey: "lastRetrieved") as? Date,
-                promptText: promptText,
-                mood: entity.value(forKey: "mood") as? String,
-                freeResponse: entity.value(forKey: "freeResponse") as? Bool ?? false,
-                isVideo: entity.value(forKey: "isVideo") as? Bool ?? false,
-                isDailyLoop: entity.value(forKey: "isDailyLoop") as? Bool ?? false
-            )
-        }
+        return results.compactMap { convertToLoop(from: $0) }
     }
+
     
     // MARK: - Advanced Queries
     func checkThreeDayRequirement() async throws -> Bool {
@@ -163,39 +185,16 @@ class LoopLocalStorageUtility {
         var scoredLoops: [(Loop, Double)] = []
         
         for result in results {
-            guard let id = result.value(forKey: "id") as? String,
-                  let filePath = result.value(forKey: "filePath") as? String,
-                  let timestamp = result.value(forKey: "timestamp") as? Date,
-                  let promptText = result.value(forKey: "promptText") as? String else {
-                continue
-            }
-            
-            let fileURL = URL(fileURLWithPath: filePath)
-            let asset = CKAsset(fileURL: fileURL)
-            
-            let loop = Loop(
-                id: id,
-                data: asset,
-                timestamp: timestamp,
-                lastRetrieved: result.value(forKey: "lastRetrieved") as? Date,
-                promptText: promptText,
-                mood: result.value(forKey: "mood") as? String,
-                freeResponse: result.value(forKey: "freeResponse") as? Bool ?? false,
-                isVideo: result.value(forKey: "isVideo") as? Bool ?? false,
-                isDailyLoop: result.value(forKey: "isDailyLoop") as? Bool ?? false
-            )
-            
+            guard let loop = convertToLoop(from: result) else { continue }
             let score = calculateLoopScore(
                 loop: loop,
                 basedOn: prompts,
                 category: category,
                 preferGeneralPrompts: preferGeneralPrompts
             )
-            
             scoredLoops.append((loop, score))
         }
         
-        // Sort by score and return best match if it meets minimum score threshold
         return scoredLoops
             .sorted { $0.1 > $1.1 }
             .first { $0.1 >= 0.3 }?
@@ -400,29 +399,7 @@ class LoopLocalStorageUtility {
         fetchRequest.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: true)]
         
         let results = try context.fetch(fetchRequest)
-        let loops = results.compactMap { result -> Loop? in
-            guard let id = result.value(forKey: "id") as? String,
-                  let filePath = result.value(forKey: "filePath") as? String,
-                  let timestamp = result.value(forKey: "timestamp") as? Date,
-                  let promptText = result.value(forKey: "promptText") as? String else {
-                return nil
-            }
-            
-            let fileURL = URL(fileURLWithPath: filePath)
-            let asset = CKAsset(fileURL: fileURL)
-            
-            return Loop(
-                id: id,
-                data: asset,
-                timestamp: timestamp,
-                lastRetrieved: result.value(forKey: "lastRetrieved") as? Date,
-                promptText: promptText,
-                mood: result.value(forKey: "mood") as? String,
-                freeResponse: result.value(forKey: "freeResponse") as? Bool ?? false,
-                isVideo: result.value(forKey: "isVideo") as? Bool ?? false,
-                isDailyLoop: result.value(forKey: "isDailyLoop") as? Bool ?? false
-            )
-        }
+        let loops = results.compactMap { convertToLoop(from: $0) }
         
         return MonthSummary(
             year: monthId.year,

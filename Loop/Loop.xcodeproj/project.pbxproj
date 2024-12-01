@@ -42,6 +42,8 @@
 		9953BE022CFABA4400348AC3 /* LocalLoopStorageUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BE012CFABA4400348AC3 /* LocalLoopStorageUtility.swift */; };
 		9953BE042CFB940500348AC3 /* TabButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BE032CFB940500348AC3 /* TabButton.swift */; };
 		9953BE062CFBB30900348AC3 /* ArtisticBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BE052CFBB30800348AC3 /* ArtisticBackground.swift */; };
+		9953BE082CFCB92600348AC3 /* StoragePreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BE072CFCB92600348AC3 /* StoragePreference.swift */; };
+		9953BE0C2CFCC0FC00348AC3 /* LoopData.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 9953BE0A2CFCC0FC00348AC3 /* LoopData.xcdatamodeld */; };
 		9988DB852CD9BFAC005628DE /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB842CD9BFAC005628DE /* FriendsView.swift */; };
 		9988DB8B2CD9CAEE005628DE /* SharedLoop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */; };
 		9988DB8D2CDA77C8005628DE /* PrivateUserRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8C2CDA77C8005628DE /* PrivateUserRecord.swift */; };
@@ -126,6 +128,8 @@
 		9953BE012CFABA4400348AC3 /* LocalLoopStorageUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalLoopStorageUtility.swift; sourceTree = "<group>"; };
 		9953BE032CFB940500348AC3 /* TabButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabButton.swift; sourceTree = "<group>"; };
 		9953BE052CFBB30800348AC3 /* ArtisticBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtisticBackground.swift; sourceTree = "<group>"; };
+		9953BE072CFCB92600348AC3 /* StoragePreference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoragePreference.swift; sourceTree = "<group>"; };
+		9953BE0B2CFCC0FC00348AC3 /* LoopData.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = LoopData.xcdatamodel; sourceTree = "<group>"; };
 		9988DB842CD9BFAC005628DE /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedLoop.swift; sourceTree = "<group>"; };
 		9988DB8C2CDA77C8005628DE /* PrivateUserRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateUserRecord.swift; sourceTree = "<group>"; };
@@ -174,6 +178,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		9953BE092CFCC0A900348AC3 /* CoreData */ = {
+			isa = PBXGroup;
+			children = (
+				9953BE0A2CFCC0FC00348AC3 /* LoopData.xcdatamodeld */,
+			);
+			path = CoreData;
+			sourceTree = "<group>";
+		};
 		99A0C8E42CA9EF2400F9281A = {
 			isa = PBXGroup;
 			children = (
@@ -193,6 +205,7 @@
 		99A0C8EF2CA9EF2400F9281A /* Loop */ = {
 			isa = PBXGroup;
 			children = (
+				9953BE092CFCC0A900348AC3 /* CoreData */,
 				99A0C9022CA9F5F700F9281A /* Utilities */,
 				99A0C9012CA9F5CA00F9281A /* Loop.entitlements */,
 				99F7F6FE2CAF8580009858AC /* Extensions.swift */,
@@ -291,6 +304,7 @@
 				9953BDE72CF1834500348AC3 /* ThematicLoop.swift */,
 				9953BDE92CF25A7C00348AC3 /* MonthSummary.swift */,
 				9953BDFB2CF8105200348AC3 /* SettingsModels.swift */,
+				9953BE072CFCB92600348AC3 /* StoragePreference.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -399,6 +413,7 @@
 				99AC6DEA2CE18E9900B0D0D6 /* LoopStreak.swift in Sources */,
 				9953BDE02CEE623B00348AC3 /* PulsingView.swift in Sources */,
 				9953BDE82CF1834500348AC3 /* ThematicLoop.swift in Sources */,
+				9953BE0C2CFCC0FC00348AC3 /* LoopData.xcdatamodeld in Sources */,
 				9953BDDD2CEE620E00348AC3 /* AnimatedBackground.swift in Sources */,
 				9953BE002CF8EE9B00348AC3 /* MoodCloudKitUtility.swift in Sources */,
 				99F7F6E92CAC792C009858AC /* NotificationManager.swift in Sources */,
@@ -406,6 +421,7 @@
 				990E4A962CBDCA51009F88A0 /* VideoRecordingView.swift in Sources */,
 				990E4A902CB48BDD009F88A0 /* PageType.swift in Sources */,
 				99F7F6EB2CAC7935009858AC /* AudioManager.swift in Sources */,
+				9953BE082CFCB92600348AC3 /* StoragePreference.swift in Sources */,
 				990E4A8C2CB48BAF009F88A0 /* PagesHolderView.swift in Sources */,
 				9988DBAE2CDD25C8005628DE /* PastLoopCard.swift in Sources */,
 				99AC6DDC2CE0226500B0D0D6 /* SettingsView.swift in Sources */,
@@ -678,6 +694,19 @@
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCVersionGroup section */
+		9953BE0A2CFCC0FC00348AC3 /* LoopData.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				9953BE0B2CFCC0FC00348AC3 /* LoopData.xcdatamodel */,
+			);
+			currentVersion = 9953BE0B2CFCC0FC00348AC3 /* LoopData.xcdatamodel */;
+			path = LoopData.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
 	};
 	rootObject = 99A0C8E52CA9EF2400F9281A /* Project object */;
 }

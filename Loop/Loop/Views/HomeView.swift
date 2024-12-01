@@ -104,7 +104,7 @@ struct HomeView: View {
     //                    .foregroundColor(accentColor)
     //            }
                 
-                Text("23 days on loop")
+                Text("day eighteen on loop")
                     .font(.system(size: 16, weight: .light))
                     .foregroundColor(accentColor)
             }

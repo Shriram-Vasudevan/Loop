@@ -10,8 +10,7 @@ import CloudKit
 import SwiftUI
 class LoopManager: ObservableObject {
     static let shared = LoopManager()
-    
-    // MARK: - Published Properties
+
     @Published var dailyPrompts: [String] = []
     @Published var currentPromptIndex: Int = 0
     @Published var retryAttemptsLeft: Int = 1
@@ -22,8 +21,11 @@ class LoopManager: ObservableObject {
     @Published var queuedLoops: [Loop] = []
     @Published var memoryBankStatus: MemoryBankStatus = .checking
     @Published var currentPastLoop: Loop?
-    
+    @Published var currentStreak: LoopingStreak?
+
     @Published var additionalPrompts: [String] = []
+    
+    
     
     @Published var moodData: [Date: String] = [
         Date(timeIntervalSinceNow: -6 * 24 * 60 * 60): "happy",
@@ -51,8 +53,9 @@ class LoopManager: ObservableObject {
         "anxious": Color(hex: "EB5757")
     ]
     
-    // MARK: - Private Properties
     private let container = CKContainer(identifier: "iCloud.LoopContainer")
+    private let localStorage = LoopLocalStorageUtility.shared
+    
     private let queuedLoopsKey = "QueuedLoopsKey"
     private let pastLoopsKey = "PastLoopsKey"
     private let promptCacheKey = "PromptsForTheDay"
@@ -90,21 +93,47 @@ class LoopManager: ObservableObject {
         }
     }
     
+    private let userDefaults = UserDefaults.standard
+        
+    private var isCloudBackupEnabled: Bool {
+        return userDefaults.bool(forKey: "iCloudBackupEnabled")
+    }
+    
     
     init() {
         Task {
             await loadPrompts()
-            
             await MainActor.run {
                 checkAndResetIfNeeded()
             }
-            
-            // Continue with the rest
             await loadThematicPrompts()
             await checkSevenDayStatus()
+            // Add streak calculation on init
+            await calculateStreak()
         }
     }
     
+    func calculateStreak() async {
+        do {
+            // Get streaks from both sources
+            let cloudStreak = try await LoopCloudKitUtility.calculateStreak()
+            let localStreak = try await localStorage.calculateStreak()
+            
+            // Take the higher values
+            let combinedStreak = LoopingStreak(
+                currentStreak: max(cloudStreak.currentStreak, localStreak.currentStreak),
+                longestStreak: max(cloudStreak.longestStreak, localStreak.longestStreak),
+                distinctDays: max(cloudStreak.distinctDays, localStreak.distinctDays)
+            )
+            
+            await MainActor.run {
+                self.currentStreak = combinedStreak
+            }
+        } catch {
+            print("Error calculating streak: \(error)")
+        }
+    }
+        
     private func loadPrompts() async {
         await MainActor.run {
             isLoadingPrompts = true
@@ -358,8 +387,7 @@ class LoopManager: ObservableObject {
         
         Task {
             do {
-                // Use the constant dates here
-                let completionStatus = try await LoopCloudKitUtility.checkDailyCompletion(for: dates)
+                let completionStatus = try await checkDailyCompletion(for: dates)
                 await MainActor.run {
                     self.weekSchedule = completionStatus
                     self.isLoadingSchedule = false
@@ -373,6 +401,20 @@ class LoopManager: ObservableObject {
         }
     }
 
+    func checkDailyCompletion(for dates: [Date]) async throws -> [Date: Bool] {
+       var completionStatus: [Date: Bool] = [:]
+       
+       // Get completion status from both sources
+       let cloudStatus = try await LoopCloudKitUtility.checkDailyCompletion(for: dates)
+       let localStatus = try await localStorage.checkDailyCompletion(for: dates)
+       
+       // Combine results - if either source shows completion, mark as completed
+       for date in dates {
+           completionStatus[date] = cloudStatus[date] == true || localStatus[date] == true
+       }
+       
+       return completionStatus
+   }
     
     private func checkSevenDayStatus() async {
         if let lastCheck = UserDefaults.standard.object(forKey: sevenDayCheckDateKey) as? Date,
@@ -404,36 +446,42 @@ class LoopManager: ObservableObject {
     }
     
     private func fetchDistinctLoopingDays() async throws -> Int {
-        let privateDB = container.privateCloudDatabase
-        let query = CKQuery(recordType: "LoopRecord", predicate: NSPredicate(value: true))
-        query.sortDescriptors = [NSSortDescriptor(key: "Timestamp", ascending: false)]
+        let cloudCount = try await LoopCloudKitUtility.fetchDistinctLoopingDays()
+        let localCount = try await localStorage.fetchDistinctLoopingDays()
         
-        let calendar = Calendar.current
-        var distinctDates = Set<Date>()
+        return max(cloudCount, localCount)
+    }
+    
+    private func determinePreferredStorage() async throws -> StorageSystem {
+        let cloudCount = try await LoopCloudKitUtility.fetchDistinctLoopingDays()
+        let localCount = try await localStorage.fetchDistinctLoopingDays()
         
-        let records = try await privateDB.records(matching: query, inZoneWith: nil)
-        for record in records {
-            if let timestamp = record["Timestamp"] as? Date {
-                let startOfDay = calendar.startOfDay(for: timestamp)
-                distinctDates.insert(startOfDay)
-            }
+        if cloudCount > localCount {
+            return .cloud
+        } else if localCount > cloudCount {
+            return .local
+        } else {
+            // If equal, randomly choose
+            return Bool.random() ? .cloud : .local
         }
-        
-        return distinctDates.count
     }
     
     func getPastLoopForComparison(recordedPrompts: [String]) async throws -> Loop? {
         print("\n🔄 Starting getPastLoopForComparison")
         print("📝 Recorded prompts: \(recordedPrompts)")
         
-        let userDays = try await LoopCloudKitUtility.fetchDistinctLoopingDays()
+        let userDays = try await fetchDistinctLoopingDays()
         print("📅 User has been looping for \(userDays) days")
         
         // Need at least 3 days of history
         guard userDays >= 3 else {
-            print("❌ Not enough history (need 4 days, have \(userDays))")
+            print("❌ Not enough history (need 3 days, have \(userDays))")
             return nil
         }
+        
+        // Determine which storage to try first
+        let preferredStorage = try await determinePreferredStorage()
+        print("🗄️ Using \(preferredStorage) storage first")
         
         // Get Prompt objects for the recorded prompts
         let promptObjects = recordedPrompts.compactMap { promptText in
@@ -473,29 +521,94 @@ class LoopManager: ObservableObject {
                     print("\n🔎 Searching for category match with prompt: \"\(prompt.text)\"")
                     print("   Category: \(prompt.category)")
                     
-                    if let loop = try await LoopCloudKitUtility.fetchPastLoop(
-                        forPrompts: recordedPrompts,
-                        minDaysAgo: window.min,
-                        maxDaysAgo: window.max,
-                        preferGeneralPrompts: true,
-                        category: prompt.category
-                    ) {
-                        print("✅ Found matching loop!")
+                    // Try preferred storage first
+                    let firstTryLoop = try await (preferredStorage == .cloud ?
+                        LoopCloudKitUtility.fetchPastLoop(
+                            forPrompts: recordedPrompts,
+                            minDaysAgo: window.min,
+                            maxDaysAgo: window.max,
+                            preferGeneralPrompts: true,
+                            category: prompt.category
+                        ) :
+                        localStorage.fetchPastLoop(
+                            forPrompts: recordedPrompts,
+                            minDaysAgo: window.min,
+                            maxDaysAgo: window.max,
+                            preferGeneralPrompts: true,
+                            category: prompt.category
+                        ))
+                    
+                    if let loop = firstTryLoop {
+                        print("✅ Found matching loop in preferred storage!")
                         print("   Date: \(loop.timestamp)")
                         print("   Prompt: \"\(loop.promptText)\"")
                         return loop
                     }
-                    print("   ⚠️ No category match found")
+                    
+                    // If no match, try other storage
+                    let secondTryLoop = try await (preferredStorage == .cloud ?
+                        localStorage.fetchPastLoop(
+                            forPrompts: recordedPrompts,
+                            minDaysAgo: window.min,
+                            maxDaysAgo: window.max,
+                            preferGeneralPrompts: true,
+                            category: prompt.category
+                        ) :
+                        LoopCloudKitUtility.fetchPastLoop(
+                            forPrompts: recordedPrompts,
+                            minDaysAgo: window.min,
+                            maxDaysAgo: window.max,
+                            preferGeneralPrompts: true,
+                            category: prompt.category
+                        ))
+                    
+                    if let loop = secondTryLoop {
+                        print("✅ Found matching loop in secondary storage!")
+                        print("   Date: \(loop.timestamp)")
+                        print("   Prompt: \"\(loop.promptText)\"")
+                        return loop
+                    }
+                    print("   ⚠️ No category match found in either storage")
                 }
                 
                 print("\n🔄 Trying without category preference for this time window")
-                if let loop = try await LoopCloudKitUtility.fetchPastLoop(
-                    forPrompts: recordedPrompts,
-                    minDaysAgo: window.min,
-                    maxDaysAgo: window.max,
-                    preferGeneralPrompts: true
-                ) {
-                    print("✅ Found matching loop (no category restriction)!")
+                let firstTryLoop = try await (preferredStorage == .cloud ?
+                    LoopCloudKitUtility.fetchPastLoop(
+                        forPrompts: recordedPrompts,
+                        minDaysAgo: window.min,
+                        maxDaysAgo: window.max,
+                        preferGeneralPrompts: true
+                    ) :
+                    localStorage.fetchPastLoop(
+                        forPrompts: recordedPrompts,
+                        minDaysAgo: window.min,
+                        maxDaysAgo: window.max,
+                        preferGeneralPrompts: true
+                    ))
+                
+                if let loop = firstTryLoop {
+                    print("✅ Found matching loop in preferred storage (no category restriction)!")
+                    print("   Date: \(loop.timestamp)")
+                    print("   Prompt: \"\(loop.promptText)\"")
+                    return loop
+                }
+
+                let secondTryLoop = try await (preferredStorage == .cloud ?
+                    localStorage.fetchPastLoop(
+                        forPrompts: recordedPrompts,
+                        minDaysAgo: window.min,
+                        maxDaysAgo: window.max,
+                        preferGeneralPrompts: true
+                    ) :
+                    LoopCloudKitUtility.fetchPastLoop(
+                        forPrompts: recordedPrompts,
+                        minDaysAgo: window.min,
+                        maxDaysAgo: window.max,
+                        preferGeneralPrompts: true
+                    ))
+                
+                if let loop = secondTryLoop {
+                    print("✅ Found matching loop in secondary storage (no category restriction)!")
                     print("   Date: \(loop.timestamp)")
                     print("   Prompt: \"\(loop.promptText)\"")
                     return loop
@@ -504,13 +617,12 @@ class LoopManager: ObservableObject {
             }
             print("\n❌ No matches found for general prompts in any time window")
         }
-        
-        // Fallback to daily prompts if we have enough history
-        if userDays >= 7 && !dailyPrompts.isEmpty {
-            print("\n📝 Falling back to daily prompts (user has \(userDays) days of history)")
+
+        if !dailyPrompts.isEmpty {
+            print("\n📝 Falling back to daily prompts")
             let dailyTimeWindows = [
-                (min: 14, max: 45),  // 2-6 weeks
-                (min: 7, max: 14)    // 1-2 weeks
+                (min: 14, max: 45),
+                (min: 3, max: 14)
             ]
             
             for window in dailyTimeWindows {
@@ -520,14 +632,49 @@ class LoopManager: ObservableObject {
                     print("\n🔎 Searching for daily prompt match: \"\(prompt.text)\"")
                     print("   Category: \(prompt.category)")
                     
-                    if let loop = try await LoopCloudKitUtility.fetchPastLoop(
-                        forPrompts: recordedPrompts,
-                        minDaysAgo: window.min,
-                        maxDaysAgo: window.max,
-                        preferGeneralPrompts: false,
-                        category: prompt.category
-                    ) {
-                        print("✅ Found matching daily loop!")
+                    // Try preferred storage first
+                    let firstTryLoop = try await (preferredStorage == .cloud ?
+                        LoopCloudKitUtility.fetchPastLoop(
+                            forPrompts: recordedPrompts,
+                            minDaysAgo: window.min,
+                            maxDaysAgo: window.max,
+                            preferGeneralPrompts: false,
+                            category: prompt.category
+                        ) :
+                        localStorage.fetchPastLoop(
+                            forPrompts: recordedPrompts,
+                            minDaysAgo: window.min,
+                            maxDaysAgo: window.max,
+                            preferGeneralPrompts: false,
+                            category: prompt.category
+                        ))
+                    
+                    if let loop = firstTryLoop {
+                        print("✅ Found matching daily loop in preferred storage!")
+                        print("   Date: \(loop.timestamp)")
+                        print("   Prompt: \"\(loop.promptText)\"")
+                        return loop
+                    }
+                    
+                    // Try other storage
+                    let secondTryLoop = try await (preferredStorage == .cloud ?
+                        localStorage.fetchPastLoop(
+                            forPrompts: recordedPrompts,
+                            minDaysAgo: window.min,
+                            maxDaysAgo: window.max,
+                            preferGeneralPrompts: false,
+                            category: prompt.category
+                        ) :
+                        LoopCloudKitUtility.fetchPastLoop(
+                            forPrompts: recordedPrompts,
+                            minDaysAgo: window.min,
+                            maxDaysAgo: window.max,
+                            preferGeneralPrompts: false,
+                            category: prompt.category
+                        ))
+                    
+                    if let loop = secondTryLoop {
+                        print("✅ Found matching daily loop in secondary storage!")
                         print("   Date: \(loop.timestamp)")
                         print("   Prompt: \"\(loop.promptText)\"")
                         return loop
@@ -537,7 +684,7 @@ class LoopManager: ObservableObject {
             }
             print("\n❌ No matches found for daily prompts")
         } else {
-            print("\n📝 Skipping daily prompts search (insufficient history or no daily prompts)")
+            print("\n📝 Skipping daily prompts search (no daily prompts)")
         }
         
         print("\n❌ No matching loops found after trying all strategies")
@@ -636,23 +783,52 @@ class LoopManager: ObservableObject {
             isDailyLoop: isDailyLoop
         )
         
-        LoopCloudKitUtility.addLoop(loop: loop)
+        // Check backup setting and store accordingly
+        if UserDefaults.standard.bool(forKey: "iCloudBackupEnabled") {
+            LoopCloudKitUtility.addLoop(loop: loop)
+        } else {
+            Task {
+                await localStorage.addLoop(loop: loop)
+            }
+        }
+        
         return loop
     }
     
     func fetchRecentDates(limit: Int = 6, completion: @escaping () -> Void) {
-        LoopCloudKitUtility.fetchRecentLoopDates(limit: limit) { [weak self] result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let dates):
-                    self?.recentDates = dates
-                    self?.lastFetchedDate = dates.last
-                    self?.fetchLoopsForAllRecentDates(dates: dates, completion: completion)
-                case .failure(let error):
-                    print("Error fetching recent dates: \(error.localizedDescription)")
-                    completion()
+        let group = DispatchGroup()
+        let dateQueue = DispatchQueue(label: "com.loop.dateCollection")
+        var allDates = Set<Date>()
+        
+        group.enter()
+        LoopCloudKitUtility.fetchRecentLoopDates(limit: limit) { result in
+            switch result {
+            case .success(let cloudDates):
+                dateQueue.sync {
+                    allDates.formUnion(cloudDates)
                 }
+            case .failure(let error):
+                print("CloudKit fetch error: \(error)")
             }
+            group.leave()
+        }
+        
+        group.enter()
+        Task {
+            do {
+                let localDates = try await localStorage.fetchRecentLoopDates(limit: limit)
+                dateQueue.sync {
+                    allDates.formUnion(localDates)
+                }
+            } catch {
+                print("Local storage fetch error: \(error)")
+            }
+            group.leave()
+        }
+        
+        group.notify(queue: .main) { [weak self] in
+            self?.recentDates = Array(allDates).sorted(by: >)
+            self?.fetchLoopsForAllRecentDates(dates: Array(allDates), completion: completion)
         }
     }
     
@@ -662,18 +838,43 @@ class LoopManager: ObservableObject {
             return
         }
         
+        let group = DispatchGroup()
+        let dateQueue = DispatchQueue(label: "com.loop.dateCollection")
+        var allNewDates = Set<Date>()
+        
+        // Fetch from CloudKit
+        group.enter()
         LoopCloudKitUtility.fetchRecentLoopDates(startingFrom: lastFetchedDate, limit: limit) { [weak self] result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let newDates):
-                    self?.recentDates.append(contentsOf: newDates)
-                    self?.recentDates = Array(Set(self!.recentDates)).sorted(by: >)
-                    self?.fetchLoopsForAllRecentDates(dates: newDates, completion: completion)
-                case .failure(let error):
-                    print("Error fetching more dates: \(error.localizedDescription)")
-                    completion()
+            switch result {
+            case .success(let cloudDates):
+                dateQueue.sync {
+                    allNewDates.formUnion(cloudDates)
                 }
+            case .failure(let error):
+                print("CloudKit fetch error: \(error.localizedDescription)")
             }
+            group.leave()
+        }
+        
+        // Fetch from local storage
+        group.enter()
+        Task { [weak self] in
+            do {
+                let localDates = try await localStorage.fetchRecentLoopDates(startingFrom: lastFetchedDate, limit: limit)
+                dateQueue.sync {
+                    allNewDates.formUnion(localDates)
+                }
+            } catch {
+                print("Local storage fetch error: \(error.localizedDescription)")
+            }
+            group.leave()
+        }
+        
+        group.notify(queue: .main) { [weak self] in
+            let newDates = Array(allNewDates).sorted(by: >)
+            self?.recentDates.append(contentsOf: newDates)
+            self?.recentDates = Array(Set(self?.recentDates ?? [])).sorted(by: >)
+            self?.fetchLoopsForAllRecentDates(dates: newDates, completion: completion)
         }
     }
     
@@ -682,16 +883,36 @@ class LoopManager: ObservableObject {
         
         for date in dates {
             group.enter()
+            
+            // Fetch from CloudKit
             LoopCloudKitUtility.fetchLoops(for: date) { [weak self] result in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success(let loops):
-                        self?.loopsByDate[date, default: []].append(contentsOf: loops)
-                    case .failure(let error):
-                        print("Error fetching loops for \(date): \(error.localizedDescription)")
+                switch result {
+                case .success(let cloudLoops):
+                    DispatchQueue.main.async {
+                        self?.loopsByDate[date, default: []].append(contentsOf: cloudLoops)
                     }
-                    group.leave()
+                case .failure(let error):
+                    print("CloudKit fetch error for \(date): \(error)")
                 }
+                group.leave()
+            }
+            
+            group.enter()
+            // Fetch from local storage
+            Task {
+                do {
+                    let localLoops = try await localStorage.fetchLoops(for: date)
+                    await MainActor.run { [weak self] in
+                        // Combine results, avoiding duplicates using Loop.id
+                        let existingLoops = self?.loopsByDate[date] ?? []
+                        let existingIds = Set(existingLoops.map { $0.id })
+                        let uniqueLocalLoops = localLoops.filter { !existingIds.contains($0.id) }
+                        self?.loopsByDate[date, default: []].append(contentsOf: uniqueLocalLoops)
+                    }
+                } catch {
+                    print("Local storage fetch error for \(date): \(error)")
+                }
+                group.leave()
             }
         }
         
@@ -699,6 +920,7 @@ class LoopManager: ObservableObject {
             completion()
         }
     }
+    
     
     // MARK: - Queue Management
     func showQueuedLoops(completion: @escaping () -> Void) {

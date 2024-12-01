@@ -13,7 +13,7 @@ struct LoopsView: View {
     @State private var selectedTab = "Recent"
     @State private var selectedLoop: Loop?
     @State private var selectedMonthId: MonthIdentifier?
-    @State private var backgroundOpacity = 0.0
+    @State private var backgroundOpacity = 1.0
     
     private let accentColor = Color(hex: "A28497")
     private let secondaryColor = Color(hex: "B7A284")
@@ -528,7 +528,7 @@ struct FlowingBackground: View {
                     context.fill(
                         path,
                         with: .linearGradient(
-                            Gradient(colors: [color, color.opacity(0.5)]),
+                            Gradient(colors: [color, color.opacity(0.8)]),
                             startPoint: CGPoint(x: 0, y: size.height/2),
                             endPoint: CGPoint(x: size.width, y: size.height/2)
                         )
