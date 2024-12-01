@@ -11,16 +11,36 @@ import Speech
 import CoreML
 import NaturalLanguage
 
-
 struct LoopAnalysis: Codable {
     let loopId: String
     let timestamp: Date
+    let promptText: String
     let speechPattern: SpeechPatternAnalysis
     let selfReference: SelfReferenceAnalysis
     let voicePattern: VoiceAnalysis
     let languagePattern: LanguagePatternAnalysis
 }
 
+struct SessionStatistics: Codable {
+    var averageWordsPerMinute: Double
+    var averagePauseCount: Double
+    var averagePauseDuration: Double
+    var averageSelfReferencePercentage: Double
+    var averagePastTensePercentage: Double
+    var averageFutureTensePercentage: Double
+    var totalUncertaintyMarkers: Int
+    var totalReflectionMarkers: Int
+    var analysisCount: Int
+    var averageFillerWordPercentage: Double
+    var averagePitchVariation: Double
+    var averageRhythmConsistency: Double
+    var averageEmotionalToneScore: Double
+    var averageWeTheyRatio: Double
+    var totalPositiveWords: Int
+    var totalNegativeWords: Int
+    var totalCausalConjunctions: Int
+    var totalAdversativeConjunctions: Int
+}
 
 struct SpeechPatternAnalysis: Codable {
     let wordsPerMinute: Double
@@ -44,11 +64,11 @@ struct VoiceAnalysis: Codable {
     let fillerWordPercentage: Double
     let pitchVariation: Double
     let averagePitch: Double
-    let rhythmConsistency: Double // 0-1, higher means more consistent
+    let rhythmConsistency: Double
 }
 
 struct LanguagePatternAnalysis: Codable {
-    let emotionalToneScore: Double // -1 to 1, negative to positive
+    let emotionalToneScore: Double
     let positiveWordCount: Int
     let negativeWordCount: Int
     let causalConjunctionCount: Int
@@ -63,7 +83,6 @@ struct SocialPronounAnalysis: Codable {
 }
 
 // MARK: - Analysis Message Types
-
 enum AnalysisMessageCategory {
     case speechRate
     case pausePattern
@@ -688,49 +707,24 @@ class MessageGenerator {
 
 class AnalysisManager: ObservableObject {
     static let shared = AnalysisManager()
-       
-   @Published private(set) var currentLoopAnalysis: LoopAnalysis?
-   @Published private(set) var sessionStats: SessionStatistics
-   @Published private(set) var isAnalyzing = false
-   
+        
+    @Published private(set) var currentLoopAnalysis: LoopAnalysis?
+    @Published private(set) var sessionStats: SessionStatistics
+    @Published private(set) var isAnalyzing = false
+    
     @Published private(set) var voiceAnalysis: VoiceAnalysis?
     @Published private(set) var languageAnalysis: LanguagePatternAnalysis?
     @Published private(set) var analysisMessages: [AnalysisMessage] = []
     @Published private(set) var trendingPatterns: [String: Double] = [:]
     
-   private let speechPatternAnalyzer = SpeechPatternAnalyzer()
-   private let selfReferenceAnalyzer = SelfReferenceAnalyzer()
+    private let speechPatternAnalyzer = SpeechPatternAnalyzer()
+    private let selfReferenceAnalyzer = SelfReferenceAnalyzer()
     private let voicePatternAnalyzer = VoicePatternAnalyzer()
     private let messageGenerator = MessageGenerator()
     private let languagePatternAnalyzer = LanguagePatternAnalyzer()
     
-   var analyzedLoops: [LoopAnalysis] = []
-   
-    struct SessionStatistics: Codable {
-        var averageWordsPerMinute: Double
-        var averagePauseCount: Double
-        var averagePauseDuration: Double
-        var averageSelfReferencePercentage: Double
-        var averagePastTensePercentage: Double
-        var averageFutureTensePercentage: Double
-        var totalUncertaintyMarkers: Int
-        var totalReflectionMarkers: Int
-        var analysisCount: Int
-        
-        // New voice analysis averages
-        var averageFillerWordPercentage: Double
-        var averagePitchVariation: Double
-        var averageRhythmConsistency: Double
-        
-        // New language analysis averages
-        var averageEmotionalToneScore: Double
-        var averageWeTheyRatio: Double
-        var totalPositiveWords: Int
-        var totalNegativeWords: Int
-        var totalCausalConjunctions: Int
-        var totalAdversativeConjunctions: Int
-    }
-   
+    var analyzedLoops: [LoopAnalysis] = []
+    
     init() {
         self.sessionStats = SessionStatistics(
             averageWordsPerMinute: 0,
@@ -778,6 +772,7 @@ class AnalysisManager: ObservableObject {
         let analysis = LoopAnalysis(
             loopId: loop.id,
             timestamp: loop.timestamp,
+            promptText: loop.promptText,
             speechPattern: speechPattern,
             selfReference: selfReferenceAnalysis,
             voicePattern: voice,
@@ -885,6 +880,7 @@ enum AnalysisError: Error {
     case audioFormatError
     case noAudioTrack
     case noSpeechRecognizer
+    case apiError
     
     var description: String {
         switch self {
@@ -904,6 +900,8 @@ enum AnalysisError: Error {
             return "No audio track found"
         case .noSpeechRecognizer:
             return "Speech recognizer not available"
+        case .apiError:
+            return "AI not available"
         }
     }
 }

@@ -287,19 +287,11 @@ struct RecordLoopsView: View {
         
     private var memoryPlaybackView: some View {
         VStack(spacing: 32) {
-            VStack(spacing: 16) {
-                Text("from your past")
+            if isLoadingMemory {
+                Text("loading from your past")
                     .font(.system(size: 24, weight: .ultraLight))
                     .foregroundColor(textColor)
                 
-                if let pastLoop = pastLoop {
-                    Text(formatDate(pastLoop.timestamp))
-                        .font(.system(size: 18, weight: .ultraLight))
-                        .foregroundColor(accentColor)
-                }
-            }
-            
-            if isLoadingMemory {
                 LoadingWaveform(accentColor: accentColor)
                     .transition(.opacity)
             }  else if userDaysThresholdNotMet {
@@ -311,7 +303,7 @@ struct RecordLoopsView: View {
                     .transition(.opacity)
                     .animation(.easeInOut, value: userDaysThresholdNotMet)
             } else if let pastLoop = pastLoop {
-                ViewPastLoopView(loop: pastLoop)
+                ViewPastLoopView(loop: pastLoop, isThroughRecordLoopsView: true)
                     .transition(.opacity.combined(with: .move(edge: .trailing)))
                 
                 Button(action: {
@@ -332,6 +324,7 @@ struct RecordLoopsView: View {
                     .foregroundColor(.white)
                     .cornerRadius(28)
                     .shadow(color: accentColor.opacity(0.2), radius: 10, y: 5)
+                    .padding(.horizontal, 32)
                 }
             }
         

@@ -8,7 +8,7 @@
 import Foundation
 import CloudKit
 
-struct ThematicPrompt: Codable, Identifiable {
+struct ThematicPrompt: Codable, Identifiable, Hashable {
     let id: String
     let name: String
     let description: String

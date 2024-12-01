@@ -91,7 +91,7 @@ struct OnboardingView: View {
                             .foregroundColor(textColor)
                             .opacity(fadeInOpacity)
                         
-                        Text("start microjournaling today")
+                        Text("start micro-journaling today")
                             .font(.system(size: 20, weight: .light))
                             .foregroundColor(textColor.opacity(0.6))
                             .opacity(fadeInOpacity)
@@ -941,9 +941,9 @@ struct PromptsView: View {
     let textColor = Color(hex: "2C3E50")
     
     let prompts = [
-        (category: "Growth", prompt: "What small win are you proud of today?"),
-        (category: "Connections", prompt: "Who did you connect with today?"),
-        (category: "Emotional Wellbeing", prompt: "What brought you comfort today?")
+        (category: "growth", prompt: "what small win are you proud of today?"),
+        (category: "connections", prompt: "who did you connect with today?"),
+        (category: "emotional wellbeing", prompt: "what brought you comfort today?")
     ]
     
     var body: some View {
@@ -974,7 +974,7 @@ struct PromptsView: View {
             
             // Prompt
             VStack(spacing: 32) {
-                Text("capture three moments")
+                Text("record three entries a day")
                     .font(.system(size: 20, weight: .light))
                     .foregroundColor(textColor.opacity(0.6))
                 

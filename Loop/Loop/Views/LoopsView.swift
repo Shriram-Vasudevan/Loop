@@ -56,7 +56,7 @@ struct LoopsView: View {
             }
         }
         .fullScreenCover(item: $selectedLoop) { loop in
-            ViewPastLoopView(loop: loop)
+            ViewPastLoopView(loop: loop, isThroughRecordLoopsView: false)
         }
     }
     
@@ -68,7 +68,7 @@ struct LoopsView: View {
                         .font(.system(size: 40, weight: .ultraLight))
                         .foregroundColor(textColor)
                     
-                    Text("\(loopManager.pastLoops.count) reflections")
+                    Text("see your reflections")
                         .font(.system(size: 16, weight: .light))
                         .foregroundColor(textColor.opacity(0.7))
                 }
@@ -297,47 +297,55 @@ struct MonthsGridView: View {
 
 struct MonthCard: View {
     let monthId: MonthIdentifier
-    let onTap: () -> Void
     @State private var summary: MonthSummary?
-    @State private var animateNumber = false
+    @State private var backgroundOpacity: Double = 0
     
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
     
+    let onTap: () -> Void
+    
     var body: some View {
-        Button(action: onTap) {
-            VStack(alignment: .leading, spacing: 12) {
-                if let summary = summary {
-                    Text("\(summary.totalEntries)")
-                        .font(.system(size: 48, weight: .bold))
-                        .foregroundColor(textColor.opacity(0.1))
-                        .opacity(animateNumber ? 1 : 0)
-                }
-                
-                VStack(alignment: .leading, spacing: 4) {
+        ZStack(alignment: .leading) {
+            if let summary = summary {
+                Text("\(summary.totalEntries)")
+                    .font(.system(size: 120, weight: .bold))
+                    .foregroundColor(Color(hex: "F0F0F0"))
+                    .offset(x: 10, y: -5)
+                    .opacity(backgroundOpacity)
+            }
+            
+            VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(monthName)
-                        .font(.system(size: 24, weight: .medium))
+                        .font(.system(size: 24, weight: .bold))
                         .foregroundColor(textColor)
                     
-//                    if let summary = summary {
-//                        Text("\(summary.totalEntries) reflections")
-//                            .font(.system(size: 16, weight: .light))
-//                            .foregroundColor(accentColor)
-//                    }
+                    Text(String(monthId.year))
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(textColor.opacity(0.6))
+                }
+                
+                if let summary = summary {
+                    Text("\(summary.totalEntries) memories")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(accentColor)
                 }
             }
-            .frame(height: 160)
+            .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(20)
-            .background(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(.white)
-                    .shadow(color: Color.black.opacity(0.05), radius: 15)
-            )
         }
-        .buttonStyle(SpringyButton())
+        .frame(height: 120)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color.white)
+                .shadow(color: Color.black.opacity(0.05), radius: 12, x: 0, y: 6)
+        )
         .task {
             await loadSummary()
+        }
+        .onTapGesture {
+            onTap()
         }
     }
     
@@ -356,14 +364,15 @@ struct MonthCard: View {
     private func loadSummary() async {
         do {
             summary = try await LoopCloudKitUtility.fetchMonthData(monthId: monthId)
-            withAnimation(.spring()) {
-                animateNumber = true
+            withAnimation(.easeOut(duration: 0.8)) {
+                backgroundOpacity = 1
             }
         } catch {
             print("Error loading month summary: \(error)")
         }
     }
 }
+
 
 struct MonthDetailView: View {
     let monthId: MonthIdentifier
@@ -372,7 +381,7 @@ struct MonthDetailView: View {
     @State private var selectedLoop: Loop?
     
     private let textColor = Color(hex: "2C3E50")
-    
+    private let accentColor = Color(hex: "A28497")
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             Button(action: onBack) {
@@ -380,7 +389,7 @@ struct MonthDetailView: View {
                     Image(systemName: "chevron.left")
                     Text("Back")
                 }
-                .foregroundColor(textColor)
+                .foregroundColor(accentColor)
             }
             
             if let summary = loopManager.selectedMonthSummary {
@@ -402,7 +411,7 @@ struct MonthDetailView: View {
         }
         .padding(.horizontal, 24)
         .fullScreenCover(item: $selectedLoop) { loop in
-            ViewPastLoopView(loop: loop)
+            ViewPastLoopView(loop: loop, isThroughRecordLoopsView: false)
         }
     }
     
