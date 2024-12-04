@@ -110,6 +110,25 @@ struct HomeView: View {
             }
             
             Spacer()
+            
+            if let currentStreak = loopManager.currentStreak?.currentStreak {
+                VStack(spacing: 6) {
+                    Text("\(currentStreak)")
+                        .font(.system(size: 16, weight: .light))
+                        .foregroundColor(accentColor)
+                    
+                    Image(systemName: "flame.fill")
+                        .foregroundColor(accentColor)
+                        .font(.system(size: 14))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule()
+                        .fill(accentColor.opacity(0.1))
+                )
+            }
+            
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 16)
@@ -245,7 +264,7 @@ struct HomeView: View {
                             .frame(width: 200, height: 250)
                             .background(Color.white)
                             .clipShape(RoundedRectangle(cornerRadius: 24))
-                            .shadow(color: Color.black.opacity(0.05), radius: 20, x: 0, y: 10)
+//                            .shadow(color: Color.black.opacity(0.05), radius: 20, x: 0, y: 10)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 24)
                                     .stroke(accentColor.opacity(0.05), lineWidth: 1)
@@ -269,7 +288,7 @@ struct HomeView: View {
                         .frame(width: 200, height: 250)
                         .background(Color(hex: "F5F5F5"))
                         .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .shadow(color: Color.black.opacity(0.03), radius: 15, x: 0, y: 8)
+//                        .shadow(color: Color.black.opacity(0.03), radius: 15, x: 0, y: 8)
                     }
                 }
                 .padding(.bottom, 12)

@@ -30,6 +30,10 @@ class FirstLaunchManager {
             return false
         }
         
+        if let userName = UserDefaults.standard.string(forKey: "userName"), !userName.isEmpty {
+            return false
+        }
+        
         return isFirstLaunch
     }
     
