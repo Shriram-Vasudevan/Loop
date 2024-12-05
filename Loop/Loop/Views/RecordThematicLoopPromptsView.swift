@@ -14,6 +14,7 @@ struct RecordThematicLoopPromptsView: View {
     @ObservedObject var audioManager = AudioManager.shared
     
     @State private var showingFindAQuietSpace = true
+    @State private var showingThemeName = false
     @State private var isRecording = false
     @State private var isPostRecording = false
     @State private var recordingTimer: Timer?
@@ -45,6 +46,9 @@ struct RecordThematicLoopPromptsView: View {
             VStack(spacing: 0) {
                 if showingFindAQuietSpace {
                     quietSpaceView
+                }
+                else if showingThemeName {
+                    
                 }
                 else if currentPromptIndex == prompt.prompts.count {
                     thankYouScreen
@@ -240,6 +244,27 @@ struct RecordThematicLoopPromptsView: View {
                 .multilineTextAlignment(.center)
             
             Image(systemName: "ear")
+                .font(.system(size: 32, weight: .thin))
+                .foregroundColor(accentColor.opacity(0.8))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                withAnimation {
+                    showingFindAQuietSpace = false
+                }
+            }
+        }
+    }
+    
+    private var themeNameView: some View {
+        VStack(spacing: 24) {
+            Text(prompt.name)
+                .font(.system(size: 36, weight: .thin))
+                .foregroundColor(textColor)
+                .multilineTextAlignment(.center)
+            
+            Image(systemName: "waveform")
                 .font(.system(size: 32, weight: .thin))
                 .foregroundColor(accentColor.opacity(0.8))
         }

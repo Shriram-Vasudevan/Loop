@@ -26,11 +26,11 @@ class FirstLaunchManager {
     }
     
     func useIntroView() async -> Bool {
-        if let _ = try? await UserCloudKitUtility.getCurrentUserData() {
+        if let userName = UserDefaults.standard.string(forKey: "userName"), !userName.isEmpty {
             return false
         }
         
-        if let userName = UserDefaults.standard.string(forKey: "userName"), !userName.isEmpty {
+        if let _ = try? await UserCloudKitUtility.getCurrentUserData() {
             return false
         }
         

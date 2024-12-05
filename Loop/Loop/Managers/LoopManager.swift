@@ -253,23 +253,18 @@ class LoopManager: ObservableObject {
             .flatMap { $0 }
             .filter { !$0.isDailyPrompt && $0.category != .freeform }
         
-        // First prompt: Share Anything (always daily)
         let firstPrompt: Prompt
         if let randomShare = shareAnything.randomElement() {
             firstPrompt = randomShare
         } else {
-            // Fallback to any daily prompt if Share Anything category is empty
             firstPrompt = dailyPrompts.randomElement() ??
                 Prompt(text: "What's on your mind?", category: .freeform, isDailyPrompt: true)
         }
-        
-        // Second prompt: Random daily prompt (excluding first prompt's category)
         let secondPrompt: Prompt
         let availableDailyPrompts = dailyPrompts.filter { $0.category != firstPrompt.category }
         if let randomDaily = availableDailyPrompts.randomElement() {
             secondPrompt = randomDaily
         } else {
-            // Try any daily prompt if filtered list is empty
             secondPrompt = dailyPrompts.randomElement() ??
                 Prompt(text: "How are you feeling today?", category: .emotionalWellbeing, isDailyPrompt: true)
         }

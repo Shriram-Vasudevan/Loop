@@ -42,33 +42,39 @@ struct SessionStatistics: Codable {
     var totalAdversativeConjunctions: Int
 }
 
+struct MetricInsight: Codable {
+    let value: Double
+    let interpretation: String
+}
+
 struct SpeechPatternAnalysis: Codable {
-    let wordsPerMinute: Double
+    let wordsPerMinute: MetricInsight
     let pauseCount: Int
-    let averagePauseDuration: Double
+    let averagePauseDuration: MetricInsight
     let longestPause: Double
 }
 
-struct SelfReferenceAnalysis: Codable {
-    let selfReferences: Int
-    let selfReferencePercentage: Double
-    let pastTensePercentage: Double
-    let presentTensePercentage: Double
-    let futureTensePercentage: Double
-    let uncertaintyCount: Int
-    let reflectionCount: Int
+struct VoiceAnalysis: Codable {
+    let fillerWords: MetricInsight
+    let pitchVariation: MetricInsight
+    let rhythmConsistency: MetricInsight
+    let averagePitch: Double  // raw data, might not need interpretation
 }
 
-struct VoiceAnalysis: Codable {
-    let fillerWordCount: Int
-    let fillerWordPercentage: Double
-    let pitchVariation: Double
-    let averagePitch: Double
-    let rhythmConsistency: Double
+struct SelfReferenceAnalysis: Codable {
+    let selfReference: MetricInsight
+    let tenseDistribution: MetricInsight  // insight about past/present/future balance
+    let uncertaintyCount: Int
+    let reflectionCount: MetricInsight
 }
 
 struct LanguagePatternAnalysis: Codable {
-    let emotionalToneScore: Double
+    let emotionalTone: MetricInsight
+    let wordSentiment: MetricInsight  // combines positive/negative word insights
+    let expressionStyle: MetricInsight  // insight about causal/adversative usage
+    let socialContext: MetricInsight  // insight about we/they usage
+    
+    // Raw data that might not need interpretation
     let positiveWordCount: Int
     let negativeWordCount: Int
     let causalConjunctionCount: Int
@@ -93,19 +99,6 @@ enum AnalysisMessageCategory {
     case sentenceStructure
     case pitchPattern
     case rhythmPattern
-}
-
-struct AnalysisMessage: Identifiable {
-    let id = UUID()
-    let category: AnalysisMessageCategory
-    let severity: MessageSeverity
-    let message: String
-}
-
-enum MessageSeverity: Int, Codable {
-    case neutral
-    case notable
-    case significant
 }
 
 class SelfReferenceAnalyzer {
@@ -208,34 +201,96 @@ class SelfReferenceAnalyzer {
         }
         
         let totalVerbs = max(1, Double(pastTense + presentTense + futureTense))
+        let selfRefPercentage = Double(selfRefs) / wordCount * 100
+        let pastTensePercentage = Double(pastTense) / totalVerbs * 100
+        let presentTensePercentage = Double(presentTense) / totalVerbs * 100
+        let futureTensePercentage = Double(futureTense) / totalVerbs * 100
         
         return SelfReferenceAnalysis(
-            selfReferences: selfRefs,
-            selfReferencePercentage: Double(selfRefs) / wordCount * 100,
-            pastTensePercentage: Double(pastTense) / totalVerbs * 100,
-            presentTensePercentage: Double(presentTense) / totalVerbs * 100,
-            futureTensePercentage: Double(futureTense) / totalVerbs * 100,
+            selfReference: interpretSelfReference(percentage: selfRefPercentage),
+            tenseDistribution: interpretTenseDistribution(
+                past: pastTensePercentage,
+                present: presentTensePercentage,
+                future: futureTensePercentage
+            ),
             uncertaintyCount: uncertaintyCount,
-            reflectionCount: reflectionCount
+            reflectionCount: interpretReflectionMarkers(count: reflectionCount)
         )
+    }
+    
+    private func interpretSelfReference(percentage: Double) -> MetricInsight {
+        let interpretation = switch percentage {
+            case 0...10:
+                "Minimal self-reference might suggest a focus on external observations or events"
+            case 10...25:
+                "Balanced self-reference could indicate a mix of personal and external perspectives"
+            case 25...40:
+                "Moderate self-reference might reflect personal engagement with the topic"
+            default:
+                "Frequent self-reference could suggest deep personal connection to the subject"
+        }
+        
+        return MetricInsight(value: percentage, interpretation: interpretation)
+    }
+    
+    private func interpretTenseDistribution(past: Double, present: Double, future: Double) -> MetricInsight {
+        let primaryTense: String
+        let interpretation: String
+        
+        if past > present && past > future {
+            primaryTense = "past"
+            interpretation = "Emphasis on past experiences might suggest reflection on previous events"
+        } else if future > present && future > past {
+            primaryTense = "future"
+            interpretation = "Future-oriented language could indicate forward-thinking or planning"
+        } else {
+            primaryTense = "present"
+            interpretation = "Present-focused language might suggest immediate engagement with current experiences"
+        }
+        
+        // Use the dominant tense's percentage as the value
+        let value = max(past, max(present, future))
+        
+        return MetricInsight(
+            value: value,
+            interpretation: interpretation
+        )
+    }
+    
+    private func interpretReflectionMarkers(count: Int) -> MetricInsight {
+        let interpretation = switch count {
+            case 0...2:
+                "Few reflection markers might indicate direct or factual expression"
+            case 3...5:
+                "Some reflection markers could suggest thoughtful consideration"
+            case 6...8:
+                "Regular use of reflection markers might indicate analytical thinking"
+            default:
+                "Frequent reflection markers could suggest deep introspection"
+        }
+        
+        return MetricInsight(value: Double(count), interpretation: interpretation)
     }
 }
 
 class SpeechPatternAnalyzer {
-   func analyze(audioURL: URL, transcript: String) async -> SpeechPatternAnalysis {
-       let words = transcript.components(separatedBy: .whitespacesAndNewlines)
-       let duration = getAudioDuration(url: audioURL)
-       let wordsPerMinute = calculateWordsPerMinute(wordCount: words.count, duration: duration)
-       let pauseAnalysis = await analyzePauses(audioURL: audioURL)
-       
-       return SpeechPatternAnalysis(
-           wordsPerMinute: wordsPerMinute,
-           pauseCount: pauseAnalysis.count,
-           averagePauseDuration: pauseAnalysis.average,
-           longestPause: pauseAnalysis.longest
-       )
-   }
-   
+    func analyze(audioURL: URL, transcript: String) async -> SpeechPatternAnalysis {
+        let words = transcript.components(separatedBy: .whitespacesAndNewlines)
+        let duration = getAudioDuration(url: audioURL)
+        let wpm = calculateWordsPerMinute(wordCount: words.count, duration: duration)
+        let pauseAnalysis = await analyzePauses(audioURL: audioURL)
+        
+        let wpmInsight = interpretWPM(wpm)
+        let pauseInsight = interpretPauseDuration(pauseAnalysis.average)
+        
+        return SpeechPatternAnalysis(
+            wordsPerMinute: wpmInsight,
+            pauseCount: pauseAnalysis.count,
+            averagePauseDuration: pauseInsight,
+            longestPause: pauseAnalysis.longest
+        )
+    }
+
    private func getAudioDuration(url: URL) -> TimeInterval {
        let audioAsset = AVURLAsset(url: url)
        return CMTimeGetSeconds(audioAsset.duration)
@@ -330,30 +385,109 @@ class SpeechPatternAnalyzer {
        let rms = sqrt(samples.map { $0 * $0 }.reduce(0, +) / Float(samples.count))
        return 20 * log10(rms) // Convert to dB
    }
+    
+    private func interpretWPM(_ wpm: Double) -> MetricInsight {
+        let interpretation = switch wpm {
+            case 0...100:
+                "Speaking at a measured pace, which might suggest thoughtful consideration"
+            case 100...150:
+                "Maintaining a natural conversational rhythm"
+            case 150...200:
+                "Speaking at an energetic pace, possibly indicating engagement or enthusiasm"
+            default:
+                "Speaking at a swift pace, which could reflect heightened emotional involvement"
+        }
+        
+        return MetricInsight(value: wpm, interpretation: interpretation)
+    }
+    
+    private func interpretPauseDuration(_ duration: Double) -> MetricInsight {
+        let interpretation = switch duration {
+            case 0...0.5:
+                "Brief pauses might indicate a flowing train of thought"
+            case 0.5...1.5:
+                "Natural pauses could suggest comfortable reflection"
+            default:
+                "Longer pauses might indicate deeper contemplation between thoughts"
+        }
+        
+        return MetricInsight(value: duration, interpretation: interpretation)
+    }
 }
 
-// Add this class alongside SpeechPatternAnalyzer and SelfReferenceAnalyzer
 
 class VoicePatternAnalyzer {
     private let minimumPitchChange: Double = 10.0 // Hz
     
     func analyze(audioURL: URL, transcript: String) async throws -> VoiceAnalysis {
         let words = transcript.lowercased().split(separator: " ").map(String.init)
-        let fillerWordCount = countFillerWords(in: words)
         let wordCount = Double(words.count)
         
+        // Calculate filler words
+        let fillerWordCount = countFillerWords(in: words)
+        let fillerPercentage = (Double(fillerWordCount) / wordCount) * 100
+        let fillerInsight = interpretFillerWords(percentage: fillerPercentage)
+        
+        // Analyze pitch and rhythm
         let (pitchVariation, avgPitch) = try await analyzePitch(audioURL: audioURL)
+        let pitchInsight = interpretPitchVariation(variation: pitchVariation)
+        
         let rhythmConsistency = try await analyzeRhythm(audioURL: audioURL)
+        let rhythmInsight = interpretRhythmConsistency(rhythmConsistency)
         
         return VoiceAnalysis(
-            fillerWordCount: fillerWordCount,
-            fillerWordPercentage: (Double(fillerWordCount) / wordCount) * 100,
-            pitchVariation: pitchVariation,
-            averagePitch: avgPitch,
-            rhythmConsistency: rhythmConsistency
+            fillerWords: fillerInsight,
+            pitchVariation: pitchInsight,
+            rhythmConsistency: rhythmInsight,
+            averagePitch: avgPitch
         )
     }
     
+    private func interpretFillerWords(percentage: Double) -> MetricInsight {
+        let interpretation = switch percentage {
+            case 0...3:
+                "Very few filler words, suggesting clear and direct expression"
+            case 3...7:
+                "Occasional use of filler words, maintaining natural conversational flow"
+            case 7...12:
+                "Moderate use of filler words, which might offer moments for thought gathering"
+            default:
+                "Frequent use of filler words, possibly indicating active processing of thoughts"
+        }
+        
+        return MetricInsight(value: percentage, interpretation: interpretation)
+    }
+    
+    private func interpretPitchVariation(variation: Double) -> MetricInsight {
+        let interpretation = switch variation {
+            case 0...20:
+                "Steady vocal tone, which might suggest a calm or measured approach"
+            case 20...40:
+                "Natural pitch variation, potentially indicating comfortable engagement"
+            case 40...60:
+                "Dynamic voice modulation, which could reflect emotional engagement"
+            default:
+                "Expressive pitch range, possibly showing heightened emotional involvement"
+        }
+        
+        return MetricInsight(value: variation, interpretation: interpretation)
+    }
+    
+    private func interpretRhythmConsistency(_ consistency: Double) -> MetricInsight {
+        let interpretation = switch consistency {
+            case 0...0.3:
+                "Variable rhythm, which might indicate spontaneous expression"
+            case 0.3...0.6:
+                "Balanced rhythm, suggesting natural conversational flow"
+            case 0.6...0.8:
+                "Consistent rhythm, which could reflect focused articulation"
+            default:
+                "Highly consistent rhythm, possibly indicating structured thought process"
+        }
+        
+        return MetricInsight(value: consistency * 100, interpretation: interpretation)
+    }
+
     private func countFillerWords(in words: [String]) -> Int {
         let fillerWords: Set<String> = [
             "um", "uh", "like", "you know", "sort of", "kind of", "basically",
@@ -513,13 +647,11 @@ class LanguagePatternAnalyzer {
         let words = text.lowercased().split(separator: " ").map(String.init)
         let wordCount = Double(words.count)
         
-        // Count word occurrences
+        // Count occurrences
         let positiveCount = countWords(in: words, matching: positiveWords)
         let negativeCount = countWords(in: words, matching: negativeWords)
         let causalCount = countWords(in: words, matching: causalConjunctions)
         let adversativeCount = countWords(in: words, matching: adversativeConjunctions)
-        
-        // Analyze social pronouns
         let weCount = countWords(in: words, matching: socialPronouns.collective)
         let theyCount = countWords(in: words, matching: socialPronouns.others)
         
@@ -531,7 +663,12 @@ class LanguagePatternAnalyzer {
         }
         
         return LanguagePatternAnalysis(
-            emotionalToneScore: emotionalScore,
+            emotionalTone: interpretEmotionalTone(score: emotionalScore),
+            wordSentiment: interpretWordSentiment(positive: positiveCount, negative: negativeCount, total: Int(wordCount)),
+            expressionStyle: interpretExpressionStyle(causal: causalCount, adversative: adversativeCount),
+            socialContext: interpretSocialContext(weCount: weCount, theyCount: theyCount),
+            
+            // Raw counts for reference
             positiveWordCount: positiveCount,
             negativeWordCount: negativeCount,
             causalConjunctionCount: causalCount,
@@ -569,161 +706,127 @@ class LanguagePatternAnalyzer {
         let hasOthers = words.contains { socialPronouns.others.contains($0) }
         return (hasCollective, hasOthers)
     }
-}
+    
+    private func interpretEmotionalTone(score: Double) -> MetricInsight {
+        let interpretation = switch score {
+            case 0.5...1.0:
+                "Language choices tend toward optimistic or constructive expression"
+            case 0.2...0.5:
+                "Word choices suggest a generally positive perspective"
+            case -0.2...0.2:
+                "Balanced use of positive and negative expressions might indicate neutral or measured reflection"
+            case -0.5...(-0.2):
+                "Word choices might reflect processing of challenging experiences"
+            default:
+                "Language suggests engagement with more complex or difficult themes"
+        }
+        
+        return MetricInsight(value: score, interpretation: interpretation)
+    }
+    
+    private func interpretWordSentiment(positive: Int, negative: Int, total: Int) -> MetricInsight {
+        let ratio = Double(positive + negative) / Double(total)
+        let dominantType = positive >= negative ? "positive" : "negative"
+        
+        let interpretation = switch ratio {
+            case 0...0.1:
+                "Primarily neutral language with minimal emotional descriptors"
+            case 0.1...0.2:
+                "Moderate use of \(dominantType) descriptors might suggest measured expression"
+            case 0.2...0.3:
+                "Regular use of \(dominantType) language could indicate emotional engagement"
+            default:
+                "Frequent emotional descriptors might reflect heightened expressive emphasis"
+        }
+        
+        return MetricInsight(value: ratio * 100, interpretation: interpretation)
+    }
+    
+    private func interpretExpressionStyle(causal: Int, adversative: Int) -> MetricInsight {
+        let total = Double(causal + adversative)
+        let ratio = causal > adversative ? Double(causal) / total : Double(adversative) / total
+        
+        let interpretation = if causal > adversative {
+            switch causal {
+                case 0...2:
+                    "Simple connective expression with occasional cause-effect relationships"
+                case 3...5:
+                    "Regular use of causal connections might suggest analytical thinking"
+                default:
+                    "Frequent causal links could indicate systematic reasoning patterns"
+            }
+        } else {
+            switch adversative {
+                case 0...2:
+                    "Direct expression with some contrasting elements"
+                case 3...5:
+                    "Regular contrast markers might suggest nuanced perspective"
+                default:
+                    "Frequent use of contrasts could indicate comparative thinking"
+            }
+        }
+        
+        return MetricInsight(value: ratio * 100, interpretation: interpretation)
+    }
+    
+    private func interpretSocialContext(weCount: Int, theyCount: Int) -> MetricInsight {
+        let total = Double(weCount + theyCount)
+        let ratio = total > 0 ? Double(weCount) / total : 0
+        
+        let interpretation = switch ratio {
+            case 0...0.2:
+                "Focus tends toward external or third-person perspectives"
+            case 0.2...0.4:
+                "Mixed use of collective and external references might suggest balanced viewpoint"
+            case 0.4...0.6:
+                "Balance between collective and individual perspectives"
+            case 0.6...0.8:
+                "Emphasis on collective experience or shared perspectives"
+            default:
+                "Strong focus on collective or community-oriented expression"
+        }
+        
+        return MetricInsight(value: ratio * 100, interpretation: interpretation)
+    }
 
-class MessageGenerator {
-    func generateMessages(
-        speechPattern: SpeechPatternAnalysis,
-        voiceAnalysis: VoiceAnalysis,
-        selfReference: SelfReferenceAnalysis,
-        languagePattern: LanguagePatternAnalysis
-    ) -> [AnalysisMessage] {
-        var messages: [AnalysisMessage] = []
-        
-        // Speech rate message
-        messages.append(generateSpeechRateMessage(wpm: speechPattern.wordsPerMinute))
-        
-        // Pause pattern message
-        messages.append(generatePauseMessage(
-            pauseCount: speechPattern.pauseCount,
-            avgDuration: speechPattern.averagePauseDuration
-        ))
-        
-        // Filler words message
-        messages.append(generateFillerWordMessage(
-            percentage: voiceAnalysis.fillerWordPercentage
-        ))
-        
-        // Self-reference message
-        messages.append(generateSelfReferenceMessage(
-            percentage: selfReference.selfReferencePercentage,
-            pastTense: selfReference.pastTensePercentage,
-            futureTense: selfReference.futureTensePercentage
-        ))
-        
-        // Emotional tone message
-        messages.append(generateEmotionalToneMessage(
-            score: languagePattern.emotionalToneScore
-        ))
-        
-        return messages
-    }
-    
-    private func generateSpeechRateMessage(wpm: Double) -> AnalysisMessage {
-        let (message, severity): (String, MessageSeverity) = switch wpm {
-        case 0...100:
-            ("Your measured pace suggests thoughtful reflection.", .neutral)
-        case 100...150:
-            ("Your speaking pace indicates comfortable engagement.", .neutral)
-        case 150...200:
-            ("Your quick pace might reflect heightened engagement.", .notable)
-        default:
-            ("Consider taking measured breaths between thoughts.", .significant)
-        }
-        
-        return AnalysisMessage(
-            category: .speechRate,
-            severity: severity,
-            message: message
-        )
-    }
-    
-    private func generatePauseMessage(pauseCount: Int, avgDuration: Double) -> AnalysisMessage {
-        let (message, severity): (String, MessageSeverity) = switch (pauseCount, avgDuration) {
-        case (0...2, _):
-            ("Your speech flows continuously.", .neutral)
-        case (3...5, 0...1):
-            ("You use brief pauses to structure your thoughts.", .neutral)
-        case (3...5, _):
-            ("Your thoughtful pauses may indicate deeper reflection.", .notable)
-        default:
-            ("Your speech pattern includes regular moments of reflection.", .neutral)
-        }
-        
-        return AnalysisMessage(
-            category: .pausePattern,
-            severity: severity,
-            message: message
-        )
-    }
-    
-    private func generateFillerWordMessage(percentage: Double) -> AnalysisMessage {
-        let (message, severity): (String, MessageSeverity) = switch percentage {
-        case 0...5:
-            ("Your speech shows strong clarity and directness.", .neutral)
-        case 5...10:
-            ("Consider how pauses might enhance your expression.", .neutral)
-        case 10...15:
-            ("Taking brief pauses might help organize thoughts.", .notable)
-        default:
-            ("Practice using pauses to gather thoughts.", .significant)
-        }
-        
-        return AnalysisMessage(
-            category: .fillerWords,
-            severity: severity,
-            message: message
-        )
-    }
-    
-    private func generateSelfReferenceMessage(percentage: Double, pastTense: Double, futureTense: Double) -> AnalysisMessage {
-        let (message, severity): (String, MessageSeverity) = switch (percentage, pastTense, futureTense) {
-        case (0...20, _, _):
-            ("Your response focuses on external observations.", .neutral)
-        case (20...40, _, 40...100):
-            ("You're balancing personal experience with future possibilities.", .notable)
-        case (20...40, 40...100, _):
-            ("You're drawing from personal experiences.", .neutral)
-        default:
-            ("Your response shows personal engagement with the topic.", .neutral)
-        }
-        
-        return AnalysisMessage(
-            category: .selfReference,
-            severity: severity,
-            message: message
-        )
-    }
-    
-    private func generateEmotionalToneMessage(score: Double) -> AnalysisMessage {
-        let (message, severity): (String, MessageSeverity) = switch score {
-        case 0.5...1.0:
-            ("Your tone reflects optimistic engagement.", .notable)
-        case 0.0...0.5:
-            ("You're expressing balanced perspectives.", .neutral)
-        case -0.5...0.0:
-            ("You're acknowledging various aspects of the situation.", .neutral)
-        default:
-            ("You're processing complex experiences.", .notable)
-        }
-        
-        return AnalysisMessage(
-            category: .emotionalTone,
-            severity: severity,
-            message: message
-        )
-    }
 }
 
 class AnalysisManager: ObservableObject {
     static let shared = AnalysisManager()
-        
-    @Published private(set) var currentLoopAnalysis: LoopAnalysis?
-    @Published private(set) var sessionStats: SessionStatistics
-    @Published private(set) var isAnalyzing = false
+    private let debugPrefix = "📊 AnalysisManager"
     
-    @Published private(set) var voiceAnalysis: VoiceAnalysis?
-    @Published private(set) var languageAnalysis: LanguagePatternAnalysis?
-    @Published private(set) var analysisMessages: [AnalysisMessage] = []
-    @Published private(set) var trendingPatterns: [String: Double] = [:]
+    // MARK: - Published Properties
+    @Published private(set) var currentLoopAnalysis: LoopAnalysis? {
+        didSet {
+            print("\(debugPrefix) currentLoopAnalysis updated: \(String(describing: currentLoopAnalysis?.loopId))")
+        }
+    }
     
+    @Published private(set) var sessionStats: SessionStatistics {
+        didSet {
+            print("\(debugPrefix) sessionStats updated - analysis count: \(sessionStats.analysisCount)")
+        }
+    }
+    
+    @Published private(set) var isAnalyzing = false {
+        didSet {
+            print("\(debugPrefix) isAnalyzing updated to: \(isAnalyzing)")
+        }
+    }
+    
+    @Published private(set) var analyzedLoops: [LoopAnalysis] = [] {
+        didSet {
+            print("\(debugPrefix) analyzedLoops updated - count: \(analyzedLoops.count)")
+            print("\(debugPrefix) Loop IDs: \(analyzedLoops.map { $0.loopId })")
+        }
+    }
+    
+    // MARK: - Private Properties
     private let speechPatternAnalyzer = SpeechPatternAnalyzer()
     private let selfReferenceAnalyzer = SelfReferenceAnalyzer()
     private let voicePatternAnalyzer = VoicePatternAnalyzer()
-    private let messageGenerator = MessageGenerator()
     private let languagePatternAnalyzer = LanguagePatternAnalyzer()
     
-    var analyzedLoops: [LoopAnalysis] = []
     
     init() {
         self.sessionStats = SessionStatistics(
@@ -778,23 +881,16 @@ class AnalysisManager: ObservableObject {
             voicePattern: voice,
             languagePattern: languageAnalysis
         )
-        
-        let messages = messageGenerator.generateMessages(
-            speechPattern: speechPattern,
-            voiceAnalysis: voice,
-            selfReference: selfReferenceAnalysis,
-            languagePattern: languageAnalysis
-        )
-        
-        await updateSessionStatistics(with: analysis)
-        
+    
         DispatchQueue.main.async {
             self.currentLoopAnalysis = analysis
-            self.voiceAnalysis = voice
-            self.languageAnalysis = languageAnalysis
-            self.analysisMessages = messages
+            self.analyzedLoops.append(analysis)
             self.isAnalyzing = false
         }
+        
+        await updateSessionStatistics()
+        
+        print("completed analysis")
     }
     
     
@@ -820,29 +916,31 @@ class AnalysisManager: ObservableObject {
     }
     
     @MainActor
-    private func updateSessionStatistics(with analysis: LoopAnalysis) {
-        analyzedLoops.append(analysis)
+    private func updateSessionStatistics() {
+        guard !analyzedLoops.isEmpty else { return }
         
         let totalLoops = Double(analyzedLoops.count)
         
-        // Original stats
-        let avgWPM = analyzedLoops.reduce(0.0) { $0 + $1.speechPattern.wordsPerMinute } / totalLoops
+        // Speech Pattern Stats
+        let avgWPM = analyzedLoops.reduce(0.0) { $0 + $1.speechPattern.wordsPerMinute.value } / totalLoops
         let avgPauseCount = analyzedLoops.reduce(0.0) { $0 + Double($1.speechPattern.pauseCount) } / totalLoops
-        let avgPauseDuration = analyzedLoops.reduce(0.0) { $0 + $1.speechPattern.averagePauseDuration } / totalLoops
-        let avgSelfRef = analyzedLoops.reduce(0.0) { $0 + $1.selfReference.selfReferencePercentage } / totalLoops
-        let avgPastTense = analyzedLoops.reduce(0.0) { $0 + $1.selfReference.pastTensePercentage } / totalLoops
-        let avgFutureTense = analyzedLoops.reduce(0.0) { $0 + $1.selfReference.futureTensePercentage } / totalLoops
+        let avgPauseDuration = analyzedLoops.reduce(0.0) { $0 + $1.speechPattern.averagePauseDuration.value } / totalLoops
+        
+        // Self Reference Stats
+        let avgSelfRef = analyzedLoops.reduce(0.0) { $0 + $1.selfReference.selfReference.value } / totalLoops
+        let tenseDistribution = analyzedLoops.map { $0.selfReference.tenseDistribution.value }
+        let avgPastTense = tenseDistribution.reduce(0.0, +) / totalLoops
         let totalUncertainty = analyzedLoops.reduce(0) { $0 + $1.selfReference.uncertaintyCount }
-        let totalReflection = analyzedLoops.reduce(0) { $0 + $1.selfReference.reflectionCount }
+        let totalReflection = analyzedLoops.reduce(0) { $0 + Int($1.selfReference.reflectionCount.value) }
         
-        // Voice analysis stats
-        let avgFillerWord = analyzedLoops.reduce(0.0) { $0 + $1.voicePattern.fillerWordPercentage } / totalLoops
-        let avgPitchVar = analyzedLoops.reduce(0.0) { $0 + $1.voicePattern.pitchVariation } / totalLoops
-        let avgRhythm = analyzedLoops.reduce(0.0) { $0 + $1.voicePattern.rhythmConsistency } / totalLoops
+        // Voice Analysis Stats
+        let avgFillerWord = analyzedLoops.reduce(0.0) { $0 + $1.voicePattern.fillerWords.value } / totalLoops
+        let avgPitchVar = analyzedLoops.reduce(0.0) { $0 + $1.voicePattern.pitchVariation.value } / totalLoops
+        let avgRhythm = analyzedLoops.reduce(0.0) { $0 + $1.voicePattern.rhythmConsistency.value } / totalLoops
         
-        // Language pattern stats
-        let avgEmotionalTone = analyzedLoops.reduce(0.0) { $0 + $1.languagePattern.emotionalToneScore } / totalLoops
-        let avgWeTheyRatio = analyzedLoops.reduce(0.0) { $0 + $1.languagePattern.socialPronouns.weTheyRatio } / totalLoops
+        // Language Pattern Stats
+        let avgEmotionalTone = analyzedLoops.reduce(0.0) { $0 + $1.languagePattern.emotionalTone.value } / totalLoops
+        let avgWeTheyRatio = analyzedLoops.reduce(0.0) { $0 + $1.languagePattern.socialContext.value } / totalLoops
         let totalPositive = analyzedLoops.reduce(0) { $0 + $1.languagePattern.positiveWordCount }
         let totalNegative = analyzedLoops.reduce(0) { $0 + $1.languagePattern.negativeWordCount }
         let totalCausal = analyzedLoops.reduce(0) { $0 + $1.languagePattern.causalConjunctionCount }
@@ -854,7 +952,7 @@ class AnalysisManager: ObservableObject {
             averagePauseDuration: avgPauseDuration,
             averageSelfReferencePercentage: avgSelfRef,
             averagePastTensePercentage: avgPastTense,
-            averageFutureTensePercentage: avgFutureTense,
+            averageFutureTensePercentage: 0, // This is now part of tenseDistribution insight
             totalUncertaintyMarkers: totalUncertainty,
             totalReflectionMarkers: totalReflection,
             analysisCount: analyzedLoops.count,
