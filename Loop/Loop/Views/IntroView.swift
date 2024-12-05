@@ -26,7 +26,7 @@ struct OnboardingView: View {
     @State private var waveformData: [CGFloat] = Array(repeating: 0, count: 60)
     @State private var showWaveform = false
     @State private var isPlaying = false
-    @State private var progress: CGFloat = 0
+    @State private var progress: CGFloat = 0.3
     @State private var showInitialPrompt = true
     @State private var contentOpacity: CGFloat = 0
     
@@ -154,8 +154,8 @@ struct OnboardingView: View {
             ZStack {
                 VStack(spacing: 0) {
                     Text("loop brings back a previous entry")
-                        .font(.system(size: 24, weight: .light))
-                        .foregroundColor(textColor)
+                        .font(.system(size: 20, weight: .light))
+                        .foregroundColor(textColor.opacity(0.6))
                         .padding(.top, 32)
                         .padding(.bottom, 40)
                     
@@ -178,6 +178,7 @@ struct OnboardingView: View {
                         showBars: true,
                         accentColor: accentColor
                     )
+                    .safeAreaPadding(.horizontal, 24)
                     
                     Spacer()
                     
@@ -189,6 +190,7 @@ struct OnboardingView: View {
                             //
                         }
                     })
+                    .safeAreaPadding(.horizontal, 24)
                     
                     HStack {
                         Text("0:00")
@@ -215,6 +217,7 @@ struct OnboardingView: View {
                             .foregroundColor(textColor.opacity(0.6))
                     }
                     .allowsHitTesting(false)
+                    .safeAreaPadding(.horizontal, 24)
                     
                     OnboardingButton(text: "continue", icon: "arrow.right") {
                         withAnimation {
@@ -226,16 +229,16 @@ struct OnboardingView: View {
                 .onAppear {
                     generateWaveform()
                 }
-                .safeAreaPadding(.horizontal, 24)
+                
             }
         }
         
         private var insightsView: some View {
             ZStack {
                 VStack(spacing: 0) {
-                    Text("Compare then and now")
-                        .font(.system(size: 24, weight: .light))
-                        .foregroundColor(textColor)
+                    Text("compare then and now")
+                        .font(.system(size: 20, weight: .light))
+                        .foregroundColor(textColor.opacity(0.6))
                         .padding(.top, 32)
                     
                     ScrollView(showsIndicators: false) {
@@ -261,8 +264,9 @@ struct OnboardingView: View {
         private var purposeView: some View {
             VStack(spacing: 0) {
                 Text("why do you want to loop?")
-                    .font(.system(size: 24, weight: .light))
-                    .foregroundColor(textColor)
+                    .font(.system(size: 20, weight: .light))
+                    .foregroundColor(textColor.opacity(0.6))
+                    .padding(.bottom, 3)
                     .padding(.top, 32)
                 
                 ScrollView(showsIndicators: false) {
@@ -299,7 +303,7 @@ struct OnboardingView: View {
         
         private var storageView: some View {
             ZStack {
-                VStack(spacing: 24) {
+                VStack(spacing: 16) {
                     Spacer()
                     
                     CloudAnimation()
@@ -310,7 +314,7 @@ struct OnboardingView: View {
                             .font(.system(size: 24, weight: .light))
                             .foregroundColor(textColor)
                         
-                        Text("secured with iCloud backup")
+                        Text("only you can access your loops")
                             .font(.system(size: 18, weight: .light))
                             .foregroundColor(textColor.opacity(0.6))
                     }
@@ -322,7 +326,7 @@ struct OnboardingView: View {
                             showStorageInfo = true
                         }
                     } label: {
-                        Label("what about storage space?", systemImage: "questionmark.circle")
+                        Label("where are my entries stored?", systemImage: "questionmark.circle")
                             .font(.system(size: 16, weight: .light))
                             .foregroundColor(accentColor)
                     }
@@ -640,7 +644,7 @@ struct OnboardingView: View {
             
             var body: some View {
                 ZStack {
-                    Image(systemName: "icloud")
+                    Image(systemName: "lock.fill")
                         .font(.system(size: 64, weight: .light))
                         .foregroundColor(Color(hex: "A28497"))
                     
@@ -688,7 +692,7 @@ struct OnboardingView: View {
                                 .font(.system(size: 20, weight: .medium))
                                 .foregroundColor(Color(hex: "2C3E50"))
                             
-                            Text("Each 30-second loop is perfectly optimized, letting you record hundreds of moments without storage concerns.")
+                            Text("Your loops are stored on your phone by default, but iCloud backup is available if you'd like to use loop across devices.")
                                 .font(.system(size: 16, weight: .light))
                                 .foregroundColor(Color(hex: "2C3E50").opacity(0.8))
                                 .multilineTextAlignment(.center)
@@ -948,7 +952,6 @@ struct PromptsView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Category badge
             ZStack {
                 Text(prompts[currentPromptIndex].category)
                     .font(.system(size: 16, weight: .light))
@@ -962,44 +965,47 @@ struct PromptsView: View {
             }
             .padding(.top, 16)
             
-            // Progress dots
             ProgressIndicator(
                 totalSteps: prompts.count,
                 currentStep: currentPromptIndex,
                 accentColor: accentColor
             )
-            .padding(.top, 24)
+            .padding(.vertical, 24)
+            
+            Text("record three entries a day")
+                .font(.system(size: 20, weight: .light))
+                .foregroundColor(textColor.opacity(0.6))
+                .padding(.bottom, 3)
+            
+            HStack(spacing: 12) {
+                Circle()
+                    .fill(accentColor.opacity(0.8))
+                    .frame(width: 6, height: 6)
+                Text("30 seconds")
+                    .font(.system(size: 16, weight: .ultraLight))
+                    .foregroundColor(textColor.opacity(0.6))
+            }
             
             Spacer()
             
-            // Prompt
             VStack(spacing: 32) {
-                Text("record three entries a day")
-                    .font(.system(size: 20, weight: .light))
-                    .foregroundColor(textColor.opacity(0.6))
-                
                 Text(prompts[currentPromptIndex].prompt)
                     .font(.system(size: 44, weight: .ultraLight))
                     .foregroundColor(textColor)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                     .transition(.opacity)
-                
-                HStack(spacing: 12) {
-                    Circle()
-                        .fill(accentColor.opacity(0.8))
-                        .frame(width: 6, height: 6)
-                    Text("30 seconds")
-                        .font(.system(size: 16, weight: .ultraLight))
-                        .foregroundColor(textColor.opacity(0.6))
-                }
             }
             .padding(.horizontal, 32)
+            .padding(.bottom, 40)
             
             Spacer()
             
-            // Continue Button
-            Button(action: onContinue) {
+            Button(action: {
+                withAnimation {
+                    onContinue()
+                }
+            }) {
                 HStack(spacing: 12) {
                     Text("continue")
                         .font(.system(size: 18, weight: .light))
@@ -1031,13 +1037,20 @@ struct PromptsView: View {
     }
     
     private func startPromptTransition() {
-        guard currentPromptIndex < prompts.count - 1 else { return }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                currentPromptIndex = (currentPromptIndex + 1) % prompts.count
+        if currentPromptIndex < prompts.count - 1 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                    currentPromptIndex = (currentPromptIndex + 1) % prompts.count
+                }
+                startPromptTransition()
             }
-            startPromptTransition()
+        } else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                    currentPromptIndex = 0
+                }
+                startPromptTransition()
+            }
         }
     }
 }
@@ -1058,8 +1071,8 @@ struct OnboardingProgressIndicator: View {
     }
 }
 
-    #Preview {
-        OnboardingView {
-            print("Onboarding completed")
-        }
+#Preview {
+    OnboardingView {
+        print("Onboarding completed")
     }
+}

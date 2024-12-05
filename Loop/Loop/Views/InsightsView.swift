@@ -48,12 +48,12 @@ struct InsightsView: View {
                         
                         if analysisManager.analyzedLoops.count == 3 {
                             TabView(selection: $selectedTab) {
-                                TodayAnalysisView(
-                                    sessionStats: analysisManager.sessionStats,
-                                    loops: analysisManager.analyzedLoops
-                                )
-                                .tag("today")
-                                
+//                                TodayAnalysisView(
+//                                    sessionStats: analysisManager.sessionStats,
+//                                    loops: analysisManager.analyzedLoops
+//                                )
+//                                .tag("today")
+//                                
                                 ComingSoonView(title: "compare",
                                              description: "Compare analysis between multiple loops")
                                 .tag("compare")
