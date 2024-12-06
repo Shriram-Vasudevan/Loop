@@ -30,22 +30,20 @@ struct InsightsView: View {
                     header
                     
                     if analysisManager.analyzedLoops.count == 3 {
-                        Text("It's three!")
-                            .onAppear {
-                                print(analysisManager.analyzedLoops)
-                            }
-                        TabView(selection: $selectedTab) {
+                        
+                        if selectedTab == "today" {
                             TodayAnalysisView(analysisManager: analysisManager)
                                 .tag("today")
                                 .transition(.opacity)
-                            
+                        }
+                        else if selectedTab == "compare" {
                             ComingSoonView(title: "compare")
                                 .tag("compare")
-                            
+                        }
+                        else {
                             ComingSoonView(title: "trends")
                                 .tag("trends")
                         }
-                        .tabViewStyle(.page(indexDisplayMode: .never))
                     } else {
                         IncompleteView(count: analysisManager.analyzedLoops.count)
                             .transition(.opacity)
@@ -140,8 +138,6 @@ struct TodayAnalysisView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 32) {
-                Text("hello")
-                // Aggregated Stats
                 AggregateInsights()
                     .offset(y: animateIn ? 0 : 20)
                     .opacity(animateIn ? 1 : 0)
@@ -191,7 +187,6 @@ struct TodayAnalysisView: View {
                     .opacity(animateIn ? 1 : 0)
                 }
             }
-            .padding(.horizontal, 20)
             .padding(.vertical, 32)
         }
         .onAppear {
