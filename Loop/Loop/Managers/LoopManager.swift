@@ -1153,6 +1153,7 @@ enum PromptCategory: String, CaseIterable {
     case challenges = "Challenges"
     case growth = "Growth"
     case connections = "Connections"
+    case curiosity = "Curiosity"
 }
 
 

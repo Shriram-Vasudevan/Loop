@@ -64,15 +64,18 @@ class AudioManager: NSObject, ObservableObject {
     }
     
     func stopRecording() {
+        guard audioRecorder?.isRecording == true else { return }
         audioRecorder?.stop()
+        audioRecorder = nil
         isRecording = false
-        let session = AVAudioSession.sharedInstance()
+
         do {
-            try session.setActive(false)
+            try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         } catch {
             print("Failed to deactivate audio session: \(error.localizedDescription)")
         }
     }
+
 
     func resetRecording() {
         audioRecorder?.stop()
