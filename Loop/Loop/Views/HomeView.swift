@@ -87,137 +87,143 @@ struct HomeView: View {
     }
     
     private var topBar: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 8) {
+        HStack(spacing: 20) {
+            // Left side greeting and day counter
+            VStack(alignment: .leading, spacing: 6) {
                 Text("good \(timeOfDay)")
-                    .font(.system(size: 32, weight: .ultraLight))
+                    .font(.system(size: 28, weight: .light))
                     .foregroundColor(textColor)
-    //            if loopManager.currentStreak > 0 {
-    //                Text("\(loopManager.currentStreak) day streak")
-    //                    .font(.system(size: 16, weight: .light))
-    //                    .foregroundColor(accentColor)
-    //            }
                 
-                Text("day eighteen on loop")
-                    .font(.system(size: 16, weight: .light))
-                    .foregroundColor(accentColor)
+                HStack(spacing: 4) {
+                    Text("day")
+                        .font(.system(size: 16, weight: .light))
+                        .foregroundColor(.gray)
+                    Text("eighteen")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(accentColor)
+                    Text("on loop")
+                        .font(.system(size: 16, weight: .light))
+                        .foregroundColor(.gray)
+                }
             }
             
             Spacer()
             
+            // Right side streak counter
             if let currentStreak = loopManager.currentStreak?.currentStreak {
-                VStack(spacing: 6) {
+                HStack(spacing: 8) {
                     Text("\(currentStreak)")
-                        .font(.system(size: 16, weight: .light))
+                        .font(.system(size: 20, weight: .medium))
                         .foregroundColor(accentColor)
                     
                     Image(systemName: "flame.fill")
                         .foregroundColor(accentColor)
-                        .font(.system(size: 14))
+                        .font(.system(size: 16))
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
                 .background(
-                    Capsule()
-                        .fill(accentColor.opacity(0.1))
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(accentColor.opacity(0.08))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(accentColor.opacity(0.1), lineWidth: 1)
                 )
             }
-            
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity)
         .padding(.top, 16)
+        .padding(.bottom, 12)
     }
     
     private var todaysPromptCard: some View {
+        Button(action: {
+            showingRecordLoopsView = true
+        }) {
             VStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 20) {
-                    Text("today's reflection")
-                        .font(.system(size: 24, weight: .ultraLight))
-                        .foregroundColor(textColor)
-                    
-                    ProgressIndicator(
-                        totalSteps: loopManager.dailyPrompts.count,
-                        currentStep: loopManager.currentPromptIndex,
-                        accentColor: accentColor
-                    )
+                // Top section with small title
+                Text("today's reflection")
+                    .font(.system(size: 16, weight: .light))
+                    .foregroundColor(.gray)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 28)
+                    .padding(.top, 28)
+                
+                // Waveform design
+                HStack(spacing: 4) {
+                    ForEach(0..<7) { index in
+                        RoundedRectangle(cornerRadius: 1)
+                            .fill(accentColor.opacity(0.6))
+                            .frame(width: 2, height: CGFloat(([20, 30, 40, 50, 40, 30, 20])[index]))
+                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 28)
-                .padding(.top, 28)
-                .padding(.bottom, 24)
-
-                Rectangle()
-                    .fill(LinearGradient(
-                        colors: [accentColor.opacity(0.1), accentColor.opacity(0.05)],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ))
-                    .frame(height: 1)
-                    .padding(.horizontal, 20)
-        
-                VStack(alignment: .leading, spacing: 24) {
+                .padding(.vertical, 32)
+                
+                // Main prompt section
+                VStack(spacing: 8) {
                     if !loopManager.hasCompletedToday && !loopManager.dailyPrompts.isEmpty {
                         Text(loopManager.getCurrentPrompt())
                             .font(.system(size: 28, weight: .medium))
                             .foregroundColor(textColor)
+                            .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(maxWidth: .infinity)
+                        
+                        Text(loopManager.getCategoryForPrompt(loopManager.getCurrentPrompt())?.rawValue ?? "start now")
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(.gray)
                     } else {
                         Text("thanks for looping")
                             .font(.system(size: 28, weight: .ultraLight))
                             .foregroundColor(textColor)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .multilineTextAlignment(.center)
                     }
                 }
                 .padding(.horizontal, 28)
-                .padding(.vertical, 24)
                 
-                Button(action: {
-                    showingRecordLoopsView = true
-                }) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "mic")
-                            .font(.system(size: 18, weight: .light))
-                        Text("record your loops")
-                            .font(.system(size: 18, weight: .light))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                accentColor,
-                                accentColor.opacity(0.9)
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .foregroundColor(.white)
-                    .cornerRadius(28)
-                    .shadow(color: accentColor.opacity(0.15), radius: 12, y: 6)
-                    .opacity(loopManager.hasCompletedToday ? 0.5 : 1)
-                    .disabled(loopManager.hasCompletedToday)
-                }
+                Spacer()
+                
+                // Progress indicator at bottom
+                ProgressIndicator(
+                    totalSteps: loopManager.dailyPrompts.count,
+                    currentStep: loopManager.currentPromptIndex,
+                    accentColor: accentColor
+                )
                 .padding(.horizontal, 28)
                 .padding(.bottom, 28)
             }
+            .frame(height: 340) // Fixed height for consistent card size
             .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.white)
-                    .shadow(
-                        color: Color.black.opacity(0.04),
-                        radius: 20,
-                        x: 0,
-                        y: 10
+                ZStack {
+                    // Main background
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color.white)
+                    
+                    // Gradient overlay for contrast
+                    LinearGradient(
+                        colors: [
+                            accentColor.opacity(0.05),
+                            accentColor.opacity(0.02)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     )
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                }
+            )
+            .shadow(
+                color: Color.black.opacity(0.04),
+                radius: 20,
+                x: 0,
+                y: 10
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
                     .stroke(accentColor.opacity(0.05), lineWidth: 1)
             )
         }
+    }
     
     private var thematicLoopsSection: some View {
         VStack(alignment: .leading, spacing: 20) {
