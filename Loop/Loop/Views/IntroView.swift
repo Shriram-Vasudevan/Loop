@@ -153,7 +153,7 @@ struct OnboardingView: View {
         private var pastLoopView: some View {
             ZStack {
                 VStack(spacing: 0) {
-                    Text("loop brings back a previous entry")
+                    Text("then loop brings back a previous entry")
                         .font(.system(size: 20, weight: .light))
                         .foregroundColor(textColor.opacity(0.6))
                         .padding(.top, 32)
@@ -945,7 +945,7 @@ struct PromptsView: View {
     let textColor = Color(hex: "2C3E50")
     
     let prompts = [
-        (category: "growth", prompt: "what small win are you proud of today?"),
+        (category: "growth", prompt: "what made you smile today?"),
         (category: "connections", prompt: "who did you connect with today?"),
         (category: "emotional wellbeing", prompt: "what brought you comfort today?")
     ]
@@ -972,7 +972,7 @@ struct PromptsView: View {
             )
             .padding(.vertical, 24)
             
-            Text("record three entries a day")
+            Text("respond to three questions a day")
                 .font(.system(size: 20, weight: .light))
                 .foregroundColor(textColor.opacity(0.6))
                 .padding(.bottom, 3)
@@ -981,7 +981,7 @@ struct PromptsView: View {
                 Circle()
                     .fill(accentColor.opacity(0.8))
                     .frame(width: 6, height: 6)
-                Text("30 seconds")
+                Text("in 30 seconds")
                     .font(.system(size: 16, weight: .ultraLight))
                     .foregroundColor(textColor.opacity(0.6))
             }

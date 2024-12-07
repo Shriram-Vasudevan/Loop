@@ -14,34 +14,32 @@ struct Loop: Hashable, Identifiable {
     var timestamp: Date
     var lastRetrieved: Date?
     var promptText: String
+    var category: String  // Just store as string
     var mood: String?
     var freeResponse: Bool
-    var isVideo: Bool  
+    var isVideo: Bool
     var isDailyLoop: Bool
     
     static func from(record: CKRecord) -> Loop? {
         guard let id = record["ID"] as? String,
-              let data = record["Data"] as? CKAsset,  
+              let data = record["Data"] as? CKAsset,
               let timestamp = record["Timestamp"] as? Date,
               let promptText = record["Prompt"] as? String else {
             print("Error: Missing required fields in CKRecord.")
             return nil
         }
 
-        let lastRetrieved = record["LastRetrieved"] as? Date
-        let mood = record["Mood"] as? String
-        let freeResponse = record["FreeResponse"] as? Bool ?? false
-        let isVideo = record["IsVideo"] as? Bool ?? false
-        let isDailyLoop = record["IsDailyLoop"] as? Bool ?? false
-
-        return Loop(id: id,
-                    data: data,
-                    timestamp: timestamp,
-                    lastRetrieved: lastRetrieved,
-                    promptText: promptText,
-                    mood: mood,
-                    freeResponse: freeResponse,
-                    isVideo: isVideo, isDailyLoop: isDailyLoop)
+        return Loop(
+            id: id,
+            data: data,
+            timestamp: timestamp,
+            lastRetrieved: record["LastRetrieved"] as? Date,
+            promptText: promptText,
+            category: record["Category"] as? String ?? "Share Anything", // Default to freeform
+            mood: record["Mood"] as? String,
+            freeResponse: record["FreeResponse"] as? Bool ?? false,
+            isVideo: record["IsVideo"] as? Bool ?? false,
+            isDailyLoop: record["IsDailyLoop"] as? Bool ?? false
+        )
     }
 }
-

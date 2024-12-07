@@ -185,27 +185,29 @@ struct RecordLoopsView: View {
                     .foregroundColor(.black)
                 
                 VStack(spacing: 16) {
-                    ForEach(loopManager.getAlternativePrompts(), id: \.text) { prompt in
-                        Button(action: {
-                            withAnimation {
-                                loopManager.switchToPrompt(prompt)
-                                showingPromptOptions = false
+                    ScrollView(.vertical) {
+                        ForEach(loopManager.getAlternativePrompts(), id: \.text) { prompt in
+                            Button(action: {
+                                withAnimation {
+                                    loopManager.switchToPrompt(prompt)
+                                    showingPromptOptions = false
+                                }
+                            }) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text(prompt.category.rawValue)
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(accentColor)
+                                    
+                                    Text(prompt.text)
+                                        .font(.system(size: 18, weight: .light))
+                                        .foregroundColor(.black)
+                                        .multilineTextAlignment(.leading)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding()
+                                .background(Color.white.opacity(0.1))
+                                .cornerRadius(12)
                             }
-                        }) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(prompt.category.rawValue)
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(accentColor)
-                                
-                                Text(prompt.text)
-                                    .font(.system(size: 18, weight: .light))
-                                    .foregroundColor(.black)
-                                    .multilineTextAlignment(.leading)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding()
-                            .background(Color.white.opacity(0.1))
-                            .cornerRadius(12)
                         }
                     }
                 }
@@ -287,7 +289,7 @@ struct RecordLoopsView: View {
         
     private var memoryPlaybackView: some View {
         VStack(spacing: 32) {
-            if isLoadingMemory {
+            if isLoadingMemory && !userDaysThresholdNotMet {
                 Text("loading from your past")
                     .font(.system(size: 24, weight: .ultraLight))
                     .foregroundColor(textColor)

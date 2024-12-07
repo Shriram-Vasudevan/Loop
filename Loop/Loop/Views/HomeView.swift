@@ -12,7 +12,7 @@ struct HomeView: View {
     @State private var showingRecordLoopsView = false
     @State private var showPastLoopSheet = false
     @State private var selectedLoop: Loop?
-    @State private var backgroundOpacity: Double = 0
+    @State private var backgroundOpacity: Double = 0.2
     @State private var thematicPrompt: ThematicPrompt?
     
     let accentColor = Color(hex: "A28497")
@@ -32,13 +32,9 @@ struct HomeView: View {
     
     var body: some View {
         ZStack {
-            HomeBackground()
+            FlowingBackground(color: accentColor)
                 .opacity(backgroundOpacity)
-                .onAppear {
-                    withAnimation(.easeIn(duration: 1.2)) {
-                        backgroundOpacity = 1
-                    }
-                }
+                .ignoresSafeArea()
             
             
             ScrollView {
@@ -60,13 +56,11 @@ struct HomeView: View {
                             .transition(.opacity)
 
                     
-                    if loopManager.pastLoops.count > 0 {
+                    if loopManager.pastLoop != nil {
                         memoryLaneSection
                             .transition(.opacity)
                     }
                     
-                    insightsCard
-                        .transition(.opacity)
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 32)
@@ -298,100 +292,62 @@ struct HomeView: View {
     }
     
     private var memoryLaneSection: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // Header with loop count
-            HStack {
-                Text("memory lane")
-                    .font(.system(size: 24, weight: .ultraLight))
-                    .foregroundColor(textColor)
-                
-                Spacer()
-                
-                if !loopManager.pastLoops.isEmpty {
-                    Text("\(loopManager.pastLoops.count) loops")
-                        .font(.system(size: 16, weight: .light))
-                        .foregroundColor(accentColor)
-                }
-            }
+        VStack(alignment: .leading, spacing: 24) {
+            Text("from your past")
+                .font(.system(size: 24, weight: .ultraLight))
+                .foregroundColor(textColor)
             
-            if loopManager.pastLoops.isEmpty {
-                // Empty state
-                VStack(spacing: 16) {
-                    Image(systemName: "waveform")
-                        .font(.system(size: 24, weight: .light))
-                        .foregroundColor(accentColor.opacity(0.6))
-                    
-                    Text("Your past loops will appear here")
-                        .font(.system(size: 16, weight: .light))
-                        .foregroundColor(textColor.opacity(0.6))
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 40)
-                .background(
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(surfaceColor)
-                )
-            } else {
-                // Scrolling loop cards
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 20) {
-                        ForEach(loopManager.pastLoops) { loop in
-                            Button {
-                                selectedLoop = loop
-                            } label: {
-                                VStack(alignment: .leading, spacing: 16) {
-                                    // Header with quote icon
-                                    HStack {
-                                        Image(systemName: "quote.opening")
-                                            .font(.system(size: 24, weight: .ultraLight))
-                                            .foregroundColor(accentColor)
-                                        Spacer()
-                                        
-                                        // Small play button
-                                        Circle()
-                                            .fill(accentColor.opacity(0.1))
-                                            .frame(width: 32, height: 32)
-                                            .overlay(
-                                                Image(systemName: "play.fill")
-                                                    .font(.system(size: 12))
-                                                    .foregroundColor(accentColor)
-                                            )
-                                    }
-                                    
-                                    // Prompt text
-                                    Text(loop.promptText)
-                                        .font(.system(size: 18, weight: .light))
-                                        .foregroundColor(textColor)
-                                        .multilineTextAlignment(.leading)
-                                        .lineLimit(3)
-                                    
-                                    Spacer()
-                                    
-                                    // Date with small icon
-                                    HStack {
-                                        Image(systemName: "calendar")
-                                            .font(.system(size: 14, weight: .light))
-                                        Text(formatDate(loop.timestamp))
-                                            .font(.system(size: 14, weight: .light))
-                                    }
-                                    .foregroundColor(textColor.opacity(0.6))
-                                }
-                                .frame(width: 240, height: 180)
-                                .padding(20)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 24)
-                                        .fill(Color.white)
-                                        .shadow(color: Color.black.opacity(0.04), radius: 15, x: 0, y: 8)
-                                )
+            if let pastLoop = loopManager.pastLoop {
+                Button {
+                    selectedLoop = pastLoop
+                } label: {
+                    VStack(alignment: .leading, spacing: 16) {
+                        // Header with quote icon
+                        HStack {
+                            Image(systemName: "quote.opening")
+                                .font(.system(size: 24, weight: .ultraLight))
+                                .foregroundColor(accentColor)
+                            Spacer()
+                            
+                            // Small play button
+                            Circle()
+                                .fill(accentColor.opacity(0.1))
+                                .frame(width: 32, height: 32)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 24)
-                                        .stroke(accentColor.opacity(0.05), lineWidth: 1)
+                                    Image(systemName: "play.fill")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(accentColor)
                                 )
-                            }
                         }
+                        
+                        Text(pastLoop.promptText)
+                            .font(.system(size: 18, weight: .light))
+                            .foregroundColor(textColor)
+                            .multilineTextAlignment(.leading)
+                            .lineLimit(3)
+                        
+                        AudioWaveform(color: accentColor)
+                            .padding(.vertical, 8)
+                        
+                        HStack {
+                            Image(systemName: "calendar")
+                                .font(.system(size: 14, weight: .light))
+                            Text(formatDate(pastLoop.timestamp))
+                                .font(.system(size: 14, weight: .light))
+                        }
+                        .foregroundColor(textColor.opacity(0.6))
                     }
-                    .padding(.bottom, 12) // For shadow
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(24)
+                    .background(
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(Color.white)
+                            .shadow(color: Color.black.opacity(0.04), radius: 15, x: 0, y: 8)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 28)
+                            .stroke(accentColor.opacity(0.08), lineWidth: 1)
+                    )
                 }
             }
         }
@@ -434,29 +390,7 @@ struct HomeView: View {
             )
         }
     }
-    
-    private var additionalLoops: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack {
-                Text("try these too")
-                    .font(.system(size: 24, weight: .ultraLight))
-                    .foregroundColor(textColor)
-                
-                Spacer()
-            }
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 20) {
-                    ForEach(loopManager.pastLoops, id: \.self) { loop in
-//                        PastLoopCard(loop: loop, accentColor: accentColor) {
-//                            selectedLoop = loop
-//                        }
-                    }
-                }
-                .padding(.bottom, 12)
-            }
-        }
-    }
+
     
     private var formattedDate: String {
         let dateFormatter = DateFormatter()

@@ -74,6 +74,7 @@ class LoopLocalStorageUtility {
         loopEntity.setValue(loop.timestamp, forKey: "timestamp")
         loopEntity.setValue(loop.lastRetrieved, forKey: "lastRetrieved")
         loopEntity.setValue(loop.promptText, forKey: "promptText")
+        loopEntity.setValue(loop.category, forKey: "category")
         loopEntity.setValue(loop.mood, forKey: "mood")
         loopEntity.setValue(loop.freeResponse, forKey: "freeResponse")
         loopEntity.setValue(loop.isVideo, forKey: "isVideo")
@@ -87,7 +88,6 @@ class LoopLocalStorageUtility {
         }
     }
 
-    // Add this helper function for converting managed objects to Loops:
     private func convertToLoop(from entity: NSManagedObject) -> Loop? {
         guard let id = entity.value(forKey: "id") as? String,
               let filePath = entity.value(forKey: "filePath") as? String,
@@ -103,12 +103,16 @@ class LoopLocalStorageUtility {
         
         let asset = CKAsset(fileURL: fileURL)
         
+        // Get category from LoopManager using the promptText
+        let category = LoopManager.shared.getCategoryForPrompt(promptText)?.rawValue ?? "Share Anything"
+        
         return Loop(
             id: id,
             data: asset,
             timestamp: timestamp,
             lastRetrieved: entity.value(forKey: "lastRetrieved") as? Date,
             promptText: promptText,
+            category: category,
             mood: entity.value(forKey: "mood") as? String,
             freeResponse: entity.value(forKey: "freeResponse") as? Bool ?? false,
             isVideo: entity.value(forKey: "isVideo") as? Bool ?? false,
@@ -134,10 +138,10 @@ class LoopLocalStorageUtility {
 
     
     // MARK: - Advanced Queries
-    func checkThreeDayRequirement() async throws -> Bool {
+    func checkThreeDayRequirement() async throws -> (Bool, Int) {
         // Check for 3 consecutive days of loops
         let distinctDays = try await fetchDistinctLoopingDays()
-        return distinctDays >= 3
+        return (distinctDays >= 3, distinctDays)
     }
     
     func fetchDistinctLoopingDays() async throws -> Int {
@@ -169,36 +173,202 @@ class LoopLocalStorageUtility {
         let calendar = Calendar.current
         let now = Date()
         
+        // Calculate date range
         guard let minDate = calendar.date(byAdding: .day, value: -maxDaysAgo, to: now),
               let maxDate = calendar.date(byAdding: .day, value: -minDaysAgo, to: now) else {
             throw NSError(domain: "DateCalculationError", code: -1)
         }
         
+        // First check for anniversary matches
+        if let anniversaryLoop = try await checkForLocalAnniversaryMatches(
+            prompts: prompts,
+            category: category,
+            now: now
+        ) {
+            return anniversaryLoop
+        }
+        
+        // Build fetch request
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "LoopEntity")
-        fetchRequest.predicate = NSPredicate(
+        var predicates: [NSPredicate] = []
+        
+        // Date range predicate
+        predicates.append(NSPredicate(
             format: "timestamp >= %@ AND timestamp <= %@",
             minDate as NSDate,
             maxDate as NSDate
+        ))
+        
+        // Optional category predicate
+        if let category = category {
+            predicates.append(NSPredicate(format: "category == %@", category.rawValue))
+        }
+        
+        fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+        
+        // Execute fetch
+        let results = try context.fetch(fetchRequest)
+        
+        // Process and score results
+        let scoredLoops = try await processAndScoreLoops(
+            localResults: results,
+            prompts: prompts,
+            category: category,
+            preferGeneralPrompts: preferGeneralPrompts,
+            now: now
         )
         
-        let results = try context.fetch(fetchRequest)
+        // Return best match if it meets threshold
+        return scoredLoops.first { $0.1 >= 0.3 }?.0
+    }
+
+    private func calculateLoopScore(
+        loop: Loop,
+        prompts: [String],
+        category: PromptCategory?,
+        preferGeneralPrompts: Bool,
+        now: Date
+    ) -> Double {
+        var score: Double = 0
+        let calendar = Calendar.current
+        
+        // Cache prompt lookup
+        let loopPrompt = LoopManager.shared.promptGroups.values
+            .flatMap({ $0 })
+            .first(where: { $0.text == loop.promptText })
+        
+        // 1. Exact Prompt Match (0.4)
+        if prompts.contains(loop.promptText) {
+            score += 0.4
+        }
+        
+        // 2. Category Match (0.3)
+        if let category = category,
+           let promptCategory = loopPrompt?.category,
+           promptCategory == category {
+            score += 0.3
+        }
+        
+        // 3. Prompt Type Hierarchy
+        if let prompt = loopPrompt {
+            if !prompt.isDailyPrompt {
+                score += 0.2 // General prompts
+            } else {
+                score += 0.1 // Daily prompts
+            }
+        } else {
+            score += 0.05 // Freeform
+        }
+        
+        // 4. Time Relevance
+        let monthsAgo = Double(calendar.dateComponents([.month], from: loop.timestamp, to: now).month ?? 0)
+        
+        // Time scoring
+        if monthsAgo >= 3 && monthsAgo <= 6 {
+            score += 0.2
+        } else if monthsAgo >= 1 && monthsAgo <= 3 {
+            score += 0.15
+        } else if monthsAgo >= 6 && monthsAgo <= 12 {
+            score += 0.1
+        } else {
+            score += 0.05
+        }
+        
+        // Anniversary bonus
+        let dayOfMonth = calendar.component(.day, from: loop.timestamp)
+        let currentDay = calendar.component(.day, from: now)
+        if dayOfMonth == currentDay {
+            if [3, 6, 9, 12].contains(monthsAgo) {
+                score += 0.2 // Significant anniversary bonus
+            } else {
+                score += 0.1 // Regular anniversary bonus
+            }
+        }
+        
+        return min(score, 1.0) // Cap at 1.0
+    }
+    
+    
+    private func processAndScoreLoops(
+        localResults: [NSManagedObject],
+        prompts: [String],
+        category: PromptCategory?,
+        preferGeneralPrompts: Bool,
+        now: Date
+    ) async throws -> [(Loop, Double)] {
         var scoredLoops: [(Loop, Double)] = []
         
-        for result in results {
+        for result in localResults {
             guard let loop = convertToLoop(from: result) else { continue }
             let score = calculateLoopScore(
                 loop: loop,
-                basedOn: prompts,
+                prompts: prompts,
                 category: category,
-                preferGeneralPrompts: preferGeneralPrompts
+                preferGeneralPrompts: preferGeneralPrompts,
+                now: now
             )
             scoredLoops.append((loop, score))
         }
         
-        return scoredLoops
-            .sorted { $0.1 > $1.1 }
-            .first { $0.1 >= 0.3 }?
-            .0
+        return scoredLoops.sorted { $0.1 > $1.1 }
+    }
+    
+    func updateLastRetrieved(for loop: Loop) throws {
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "LoopEntity")
+        fetchRequest.predicate = NSPredicate(format: "id == %@", loop.id)
+        
+        if let entity = try context.fetch(fetchRequest).first {
+            entity.setValue(Date(), forKey: "lastRetrieved")
+            try context.save()
+        }
+    }
+    
+    private func checkForLocalAnniversaryMatches(
+        prompts: [String],
+        category: PromptCategory?,
+        now: Date
+    ) async throws -> Loop? {
+        let calendar = Calendar.current
+        let currentDay = calendar.component(.day, from: now)
+        
+        // Check 3, 6, 9, and 12 month anniversaries
+        for monthsAgo in [3, 6, 9, 12] {
+            guard let targetDate = calendar.date(byAdding: .month, value: -monthsAgo, to: now) else { continue }
+            
+            let startOfDay = calendar.startOfDay(for: targetDate)
+            let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+            
+            let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "LoopEntity")
+            var predicates: [NSPredicate] = [
+                NSPredicate(
+                    format: "timestamp >= %@ AND timestamp < %@",
+                    startOfDay as NSDate,
+                    endOfDay as NSDate
+                )
+            ]
+            
+            if let category = category {
+                predicates.append(NSPredicate(format: "category == %@", category.rawValue))
+            }
+            
+            fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+            
+            let results = try context.fetch(fetchRequest)
+            
+            let scoredLoops = try await processAndScoreLoops(
+                localResults: results,
+                prompts: prompts,
+                category: category,
+                preferGeneralPrompts: false,
+                now: now
+            )
+            
+            if let bestMatch = scoredLoops.first, bestMatch.1 >= 0.5 {
+                return bestMatch.0
+            }
+        }
+        
+        return nil
     }
     
     func calculateStreak() async throws -> LoopingStreak {
@@ -237,48 +407,6 @@ class LoopLocalStorageUtility {
         )
     }
     
-    // Helper function for scoring loops
-    private func calculateLoopScore(
-        loop: Loop,
-        basedOn prompts: [String],
-        category: PromptCategory?,
-        preferGeneralPrompts: Bool
-    ) -> Double {
-        var score: Double = 0
-        
-        // Age score
-        let ageInDays = Double(Calendar.current.dateComponents([.day], from: loop.timestamp, to: Date()).day ?? 0)
-        score += min(ageInDays / 365, 1.0) * 0.2
-        
-        // Category score
-        if let category = category,
-           let loopPrompt = LoopManager.shared.promptGroups.values
-            .flatMap({ $0 })
-            .first(where: { $0.text == loop.promptText }) {
-            if loopPrompt.category == category {
-                score += 0.3
-            }
-        }
-        
-        // Prompt type score
-        if let loopPrompt = LoopManager.shared.promptGroups.values
-            .flatMap({ $0 })
-            .first(where: { $0.text == loop.promptText }) {
-            if preferGeneralPrompts && !loopPrompt.isDailyPrompt {
-                score += 0.3
-            }
-        }
-        
-        // Retrieval score
-        if let lastRetrieved = loop.lastRetrieved {
-            let daysSinceRetrieved = Double(Calendar.current.dateComponents([.day], from: lastRetrieved, to: Date()).day ?? 0)
-            score += min(daysSinceRetrieved / 30, 1.0) * 0.2
-        } else {
-            score += 0.2
-        }
-        
-        return score
-    }
     
     // MARK: - Date-based Operations
     func fetchRecentLoopDates(
