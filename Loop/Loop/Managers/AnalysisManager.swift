@@ -98,14 +98,14 @@ class AnalysisManager: ObservableObject {
     
     private let statsManager = StatsManager.shared
     
-    @Published private(set) var currentDailyAnalysis: DailyAnalysis?
-    @Published private(set) var todaysLoops: [LoopAnalysis] = []
-    @Published private(set) var pastLoopAnalysis: LoopAnalysis?
+    @Published var currentDailyAnalysis: DailyAnalysis?
+    @Published var todaysLoops: [LoopAnalysis] = []
+    @Published  var pastLoopAnalysis: LoopAnalysis?
     
     @Published private(set) var loopComparison: LoopComparison?
     @Published private(set) var allTimeComparison: LoopComparison?
     @Published private(set) var monthlyComparison: LoopComparison?
-    @Published private(set) var weeklyComparison: LoopComparison?
+    @Published var weeklyComparison: LoopComparison?
     
     @Published private(set) var isAnalyzing = false
     
@@ -126,13 +126,15 @@ class AnalysisManager: ObservableObject {
                 todaysLoops.append(analysis)
                 if todaysLoops.count == 3 {
                     print("reached three loops analyzed")
-                    let dailyAnalysis = createDailyAnalysis(todaysLoops)
-                    currentDailyAnalysis = dailyAnalysis
+
+                    Task {
+                        let dailyAnalysis = await createDailyAnalysis(todaysLoops)
+                        currentDailyAnalysis = dailyAnalysis
                         
-                    // Then do all comparisons
-                    allTimeComparison = statsManager.compareWithAllTimeStats(dailyAnalysis)
-                    monthlyComparison = statsManager.compareWithMonthlyStats(dailyAnalysis)
-                    weeklyComparison = statsManager.compareWithWeeklyStats(dailyAnalysis)
+                        allTimeComparison = statsManager.compareWithAllTimeStats(dailyAnalysis)
+                        monthlyComparison = statsManager.compareWithMonthlyStats(dailyAnalysis)
+                        weeklyComparison = statsManager.compareWithWeeklyStats(dailyAnalysis)
+                    }
                 }
             }
         }
@@ -173,17 +175,21 @@ class AnalysisManager: ObservableObject {
             id: loop.id,
             timestamp: loop.timestamp,
             promptText: loop.promptText,
-            category: LoopManager.shared.getCategoryForPrompt(loop.promptText)?.rawValue ?? "Share Anything",
+            category: LoopManager.shared.getCategoryForPrompt(loop.promptText)?.rawValue ?? "Share Anything", transcript: transcript,
             metrics: metrics,
             wordAnalysis: wordAnalysis
         )
     }
     
-    private func createDailyAnalysis(_ loops: [LoopAnalysis]) -> DailyAnalysis {
+    private func createDailyAnalysis(_ loops: [LoopAnalysis]) async -> DailyAnalysis {
         let aggregateMetrics = calculateAggregateMetrics(loops)
         let wordPatterns = analyzeWordPatterns(loops)
         let overlapAnalysis = analyzeOverlap(loops)
         let rangeAnalysis = calculateRanges(loops)
+        
+        let transcripts = loops.map { $0.transcript }
+        
+        let aiAnalysis = try? await AIAnalyzer.shared.analyzeResponses(transcripts)
         
         return DailyAnalysis(
             date: Date(),
@@ -191,7 +197,8 @@ class AnalysisManager: ObservableObject {
             aggregateMetrics: aggregateMetrics,
             wordPatterns: wordPatterns,
             overlapAnalysis: overlapAnalysis,
-            rangeAnalysis: rangeAnalysis
+            rangeAnalysis: rangeAnalysis,
+            aiAnalysis: aiAnalysis
         )
     }
     
@@ -745,5 +752,105 @@ class StatsManager {
             similarityScore: 0,
             commonWords: []
         )
+    }
+}
+
+class AIAnalyzer {
+    static let shared = AIAnalyzer()
+    
+    private let apiKey: String
+    private let endpoint = "https://api.openai.com/v1/chat/completions"
+    
+    init(apiKey: String = ProcessInfo.processInfo.environment["OPENAI_API_KEY"] ?? "") {
+        self.apiKey = apiKey
+    }
+    
+    func analyzeResponses(_ responses: [String]) async throws -> AIAnalysisResult {
+        print("analyzing")
+        
+        let prompt = """
+        Given these 3 verbal responses:
+        
+        Response 1:
+        \(responses[0])
+        
+        Response 2:
+        \(responses[1])
+        
+        Response 3:
+        \(responses[2])
+        
+        Analyze them as a set and provide:
+        1. A single adjective that best captures the overall feeling/tone
+        2. A brief 1-2 sentence explanation for why you chose that adjective
+        
+        Please format your response exactly as:
+        feeling: [adjective]
+        description: [explanation]
+        """
+        
+        let requestBody: [String: Any] = [
+            "model": "gpt-4o-mini",
+            "messages": [
+                ["role": "system", "content": "You are an analyzer that responds in the exact format requested, no additional text."],
+                ["role": "user", "content": prompt]
+            ],
+            "temperature": 0.3, // Lower temperature for more consistent responses
+            "max_tokens": 100,  // Reduced since our output is small
+            "top_p": 0.1,      // More focused sampling
+            "frequency_penalty": 0.0,
+            "presence_penalty": 0.0
+        ]
+        
+        var request = URLRequest(url: URL(string: endpoint)!)
+        request.httpMethod = "POST"
+        request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        
+        let (data, _) = try await URLSession.shared.data(for: request)
+        
+        print("ai response \(data)")
+        let response = try JSONDecoder().decode(OpenAIResponse.self, from: data)
+        
+        guard let content = response.choices.first?.message.content else {
+            throw AnalysisError.aiAnalysisFailed
+        }
+        
+        return try parseAIResponse(content)
+    }
+    
+    private func parseAIResponse(_ response: String) throws -> AIAnalysisResult {
+        print("parsing")
+        let lines = response.components(separatedBy: "\n")
+        var feeling: String?
+        var description: String?
+        
+        for line in lines {
+            if line.lowercased().starts(with: "feeling:") {
+                feeling = line.replacingOccurrences(of: "feeling:", with: "").trimmingCharacters(in: .whitespaces)
+            } else if line.lowercased().starts(with: "description:") {
+                description = line.replacingOccurrences(of: "description:", with: "").trimmingCharacters(in: .whitespaces)
+            }
+        }
+        
+        guard let feeling = feeling, let description = description else {
+            throw AnalysisError.invalidAIResponse
+        }
+        
+        return AIAnalysisResult(feeling: feeling, description: description)
+    }
+}
+
+// Response models
+private struct OpenAIResponse: Codable {
+    let choices: [Choice]
+    
+    struct Choice: Codable {
+        let message: Message
+    }
+    
+    struct Message: Codable {
+        let content: String
     }
 }

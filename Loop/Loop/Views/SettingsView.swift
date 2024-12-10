@@ -21,6 +21,7 @@ struct SettingsView: View {
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
     private let backgroundColor = Color(hex: "FAFBFC")
+    private let surfaceColor = Color(hex: "F8F5F7")
     private let version = "1.0.0"
     private let build = "42"
     
@@ -35,23 +36,19 @@ struct SettingsView: View {
                 backgroundColor.ignoresSafeArea()
                 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 28) {
-                        accountSection
-                        notificationSection
-                        backupSection
-                        supportSection
-                        appInfoSection
+                    VStack(spacing: 24) {
+                        profileCard
+                        preferencesCard
+                        supportCard
+                        aboutCard
                         logoutButton
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 32)
+                    .padding(20)
                 }
             }
             .navigationTitle("Settings")
             .sheet(isPresented: $showTimeSelector) {
-                TimePickerView(selectedTime: $reminderTime) {
-                    NotificationManager.shared.saveAndScheduleReminder(at: reminderTime)
-                }
+                reminderPicker
             }
             .sheet(isPresented: $showingContactView) {
                 ContactView()
@@ -69,128 +66,115 @@ struct SettingsView: View {
         }
     }
     
-    private var accountSection: some View {
-        VStack(spacing: 0) {
+    private var profileCard: some View {
+        VStack(alignment: .leading, spacing: 20) {
             HStack(spacing: 16) {
-                Image("profile_picture")
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 60, height: 60)
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(accentColor.opacity(0.2), lineWidth: 2))
+                Circle()
+                    .fill(accentColor.opacity(0.1))
+                    .frame(width: 64, height: 64)
+                    .overlay(
+                        Image(systemName: "person.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(accentColor)
+                    )
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("John Appleseed")
-                        .font(.title3)
-                        .fontWeight(.medium)
-                    Text("Premium Member")
-                        .font(.subheadline)
-                        .foregroundColor(accentColor)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(textColor)
+                    
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(accentColor)
+                            .frame(width: 6, height: 6)
+                        
+                        Text("Premium")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(accentColor)
+                    }
                 }
+                
                 Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(textColor.opacity(0.3))
             }
-            .padding(20)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: Color.black.opacity(0.05), radius: 15, x: 0, y: 5)
         }
+        .padding(20)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
     }
     
-    private var notificationSection: some View {
-        VStack(spacing: 2) {
-            settingsToggle(
-                title: "Notifications",
-                icon: "bell.fill",
-                isOn: notificationManager.isNotificationsEnabled,
-                action: { toggleNotifications() }
-            )
+    private var preferencesCard: some View {
+        VStack(spacing: 1) {
+            settingRow(title: "Notifications", icon: "bell.fill", hasToggle: true, isOn: notificationManager.isNotificationsEnabled) {
+                notificationManager.toggleNotifications(enabled: !notificationManager.isNotificationsEnabled)
+            }
             
             if notificationManager.isNotificationsEnabled {
-                Button(action: { showTimeSelector = true }) {
-                    HStack {
-                        Image(systemName: "clock.fill")
-                            .foregroundColor(accentColor)
-                            .frame(width: 24)
-                        
-                        Text("Daily Reminder")
-                            .foregroundColor(textColor)
-                        
-                        Spacer()
-                        
-                        Text(NotificationManager.shared.formatReminderTime(reminderTime))
-                            .foregroundColor(textColor.opacity(0.6))
-                    }
-                    .padding(.vertical, 16)
-                    .padding(.horizontal, 20)
-                    .background(Color.white)
+                settingRow(title: "Reminder Time", icon: "clock.fill", subtitle: NotificationManager.shared.formatReminderTime(reminderTime)) {
+                    showTimeSelector = true
                 }
             }
+            
+            settingRow(title: "iCloud Backup", icon: "icloud.fill", hasToggle: true, isOn: isCloudBackupEnabled) {
+                isCloudBackupEnabled.toggle()
+            }
         }
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.05), radius: 15, x: 0, y: 5)
+        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
     }
     
-    private var backupSection: some View {
-        settingsToggle(
-            title: "iCloud Backup",
-            icon: "icloud.fill",
-            isOn: isCloudBackupEnabled,
-            action: { isCloudBackupEnabled.toggle() }
-        )
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.05), radius: 15, x: 0, y: 5)
-    }
-    
-    private var supportSection: some View {
-        VStack(spacing: 2) {
-            settingsButton(title: "Contact Us", icon: "envelope.fill") {
+    private var supportCard: some View {
+        VStack(spacing: 1) {
+            settingRow(title: "Contact Support", icon: "envelope.fill") {
                 showingContactView = true
             }
-            settingsButton(title: "Privacy Policy", icon: "lock.fill") {
-                openPrivacyPolicy()
+            
+            settingRow(title: "Privacy Policy", icon: "lock.fill") {
+                selectedWebView = WebViewData(
+                    title: "Privacy Policy",
+                    url: URL(string: "https://loopapp.com/privacy")!
+                )
             }
-            settingsButton(title: "Terms of Service", icon: "doc.fill") {
-                openTermsOfService()
+            
+            settingRow(title: "Terms of Service", icon: "doc.text.fill") {
+                selectedWebView = WebViewData(
+                    title: "Terms of Service",
+                    url: URL(string: "https://loopapp.com/terms")!
+                )
             }
         }
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.05), radius: 15, x: 0, y: 5)
+        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
     }
     
-    private var appInfoSection: some View {
-        HStack {
-            Image(systemName: "info.circle.fill")
-                .foregroundColor(accentColor)
-                .frame(width: 24)
-            
-            Text("Version")
-                .foregroundColor(textColor)
-            
-            Spacer()
-            
-            Text("\(version) (\(build))")
-                .foregroundColor(textColor.opacity(0.6))
+    private var aboutCard: some View {
+        VStack(spacing: 1) {
+            settingRow(title: "Version", icon: "info.circle.fill", subtitle: "\(version) (\(build))")
         }
-        .padding(.vertical, 16)
-        .padding(.horizontal, 20)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.05), radius: 15, x: 0, y: 5)
+        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
     }
     
     private var logoutButton: some View {
         Button(action: { showingLogoutAlert = true }) {
-            Text("Log Out")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.red.opacity(0.8))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .shadow(color: Color.black.opacity(0.05), radius: 15, x: 0, y: 5)
+            HStack {
+                Spacer()
+                Text("Log Out")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.red.opacity(0.8))
+                Spacer()
+            }
+            .padding(.vertical, 16)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
         }
         .alert("Log Out", isPresented: $showingLogoutAlert) {
             Button("Cancel", role: .cancel) { }
@@ -200,199 +184,91 @@ struct SettingsView: View {
         }
     }
     
-    private func settingsToggle(title: String, icon: String, isOn: Bool, action: @escaping () -> Void) -> some View {
-        HStack {
-            Image(systemName: icon)
-                .foregroundColor(accentColor)
-                .frame(width: 24)
-            
-            Text(title)
-                .foregroundColor(textColor)
-            
-            Spacer()
-            
-            Toggle("", isOn: Binding(
-                get: { isOn },
-                set: { _ in action() }
-            ))
-            .tint(accentColor)
+    private var reminderPicker: some View {
+        NavigationView {
+            VStack {
+                DatePicker("Select Time", selection: $reminderTime, displayedComponents: .hourAndMinute)
+                    .datePickerStyle(.wheel)
+                    .labelsHidden()
+                    .padding()
+                
+                Button(action: {
+                    NotificationManager.shared.saveAndScheduleReminder(at: reminderTime)
+                    showTimeSelector = false
+                }) {
+                    Text("Set Reminder")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(accentColor)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .padding()
+            }
+            .navigationTitle("Set Daily Reminder")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        showTimeSelector = false
+                    }
+                }
+            }
         }
-        .padding(.vertical, 16)
-        .padding(.horizontal, 20)
     }
     
-    private func settingsButton(title: String, icon: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack {
+    private func settingRow(
+        title: String,
+        icon: String,
+        subtitle: String? = nil,
+        hasToggle: Bool = false,
+        isOn: Bool = false,
+        action: (() -> Void)? = nil
+    ) -> some View {
+        Button(action: { action?() }) {
+            HStack(spacing: 16) {
                 Image(systemName: icon)
+                    .font(.system(size: 16))
                     .foregroundColor(accentColor)
                     .frame(width: 24)
                 
                 Text(title)
+                    .font(.system(size: 16))
                     .foregroundColor(textColor)
                 
                 Spacer()
                 
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(textColor.opacity(0.3))
+                if hasToggle {
+                    Toggle("", isOn: Binding(
+                        get: { isOn },
+                        set: { _ in action?() }
+                    ))
+                    .tint(accentColor)
+                } else if let subtitle = subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 16))
+                        .foregroundColor(textColor.opacity(0.6))
+                } else {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(textColor.opacity(0.3))
+                }
             }
             .padding(.vertical, 16)
             .padding(.horizontal, 20)
+            .background(Color.white)
         }
-    }
-    
-    private func toggleNotifications() {
-        notificationManager.toggleNotifications(enabled: !notificationManager.isNotificationsEnabled)
-    }
-    
-    private func openPrivacyPolicy() {
-        selectedWebView = WebViewData(
-            title: "Privacy Policy",
-            url: URL(string: "https://loopapp.com/privacy")!
-        )
-    }
-    
-    private func openTermsOfService() {
-        selectedWebView = WebViewData(
-            title: "Terms of Service",
-            url: URL(string: "https://loopapp.com/terms")!
-        )
-    }
-}
-
-struct TimePickerView: View {
-    @Binding var selectedTime: Date
-    let onSave: () -> Void
-    @Environment(\.dismiss) private var dismiss
-    
-    var body: some View {
-        NavigationView {
-            ZStack {
-                Color(hex: "FAFBFC").ignoresSafeArea()
-                
-                VStack(spacing: 24) {
-                    CircularTimePicker(selectedTime: $selectedTime)
-                        .padding(.top, 32)
-                    
-                    Button(action: {
-                        onSave()
-                        dismiss()
-                    }) {
-                        Text("Set Reminder")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(Color(hex: "A28497"))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    .padding(.horizontal, 20)
-                }
-            }
-            .navigationTitle("Daily Reminder")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-            }
-        }
-    }
-}
-
-struct CircularTimePicker: View {
-    @Binding var selectedTime: Date
-    private let calendar = Calendar.current
-    
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1)) { _ in
-            Canvas { context, size in
-                let center = CGPoint(x: size.width / 2, y: size.height / 2)
-                let radius = min(size.width, size.height) / 2 - 40
-                
-                let components = calendar.dateComponents([.hour, .minute], from: selectedTime)
-                let hour = Double(components.hour ?? 0)
-                let minute = Double(components.minute ?? 0)
-                
-                let hourAngle = (hour + minute / 60) * .pi / 6 - .pi / 2
-                let minuteAngle = minute * .pi / 30 - .pi / 2
-                
-                for i in 0..<12 {
-                    let angle = Double(i) * .pi / 6
-                    let point = CGPoint(
-                        x: center.x + Darwin.cos(angle) * radius,
-                        y: center.y + Darwin.sin(angle) * radius
-                    )
-                    
-                    context.draw(Text("\(i == 0 ? 12 : i)"), at: point)
-                }
-                
-                context.stroke(
-                    Path { path in
-                        path.addArc(
-                            center: center,
-                            radius: radius,
-                            startAngle: .degrees(0),
-                            endAngle: .degrees(360),
-                            clockwise: false
-                        )
-                    },
-                    with: .color(Color(hex: "A28497").opacity(0.2)),
-                    lineWidth: 2
-                )
-                
-                context.stroke(
-                    Path { path in
-                        path.move(to: center)
-                        path.addLine(to: CGPoint(
-                            x: center.x + cos(hourAngle) * radius * 0.6,
-                            y: center.y + sin(hourAngle) * radius * 0.6
-                        ))
-                    },
-                    with: .color(Color(hex: "A28497")),
-                    lineWidth: 3
-                )
-                
-                context.stroke(
-                    Path { path in
-                        path.move(to: center)
-                        path.addLine(to: CGPoint(
-                            x: center.x + cos(minuteAngle) * radius * 0.8,
-                            y: center.y + sin(minuteAngle) * radius * 0.8
-                        ))
-                    },
-                    with: .color(Color(hex: "A28497")),
-                    lineWidth: 2
-                )
-            }
-            .frame(width: 300, height: 300)
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { value in
-                        let center = CGPoint(x: 150, y: 150)
-                        let angle = atan2(value.location.y - center.y, value.location.x - center.x)
-                        let minutes = Int((angle + .pi / 2) * 30 / .pi)
-                        let normalizedMinutes = (minutes + 60) % 60
-                        
-                        var components = calendar.dateComponents([.hour, .minute], from: selectedTime)
-                        components.minute = normalizedMinutes
-                        
-                        if let newTime = calendar.date(from: components) {
-                            selectedTime = newTime
-                        }
-                    }
-            )
-        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
 struct ContactView: View {
     @Environment(\.dismiss) private var dismiss
     
-    let contacts: [ContactMethod] = [
-        .email("support@loopapp.com"),
-        .phone("+1 (555) 123-4567")
+    let contactMethods = [
+        (title: "Email", value: "support@loopapp.com", icon: "envelope.fill", url: "mailto:support@loopapp.com"),
+        (title: "Phone", value: "+1 (555) 123-4567", icon: "phone.fill", url: "tel:+15551234567")
     ]
     
     var body: some View {
@@ -400,45 +276,44 @@ struct ContactView: View {
             ZStack {
                 Color(hex: "FAFBFC").ignoresSafeArea()
                 
-                VStack(spacing: 24) {
-                    VStack(spacing: 16) {
-                        ForEach(contacts) { contact in
-                            Button(action: {
-                                handleContact(contact)
-                            }) {
-                                HStack(spacing: 16) {
-                                    Image(systemName: contact.icon)
-                                        .font(.system(size: 20))
-                                        .foregroundColor(Color(hex: "A28497"))
-                                        .frame(width: 24)
-                                    
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(contact.title)
-                                            .font(.system(size: 14, weight: .medium))
-                                            .foregroundColor(Color(hex: "2C3E50"))
-                                        Text(contact.value)
-                                            .font(.system(size: 16))
-                                            .foregroundColor(Color(hex: "2C3E50"))
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    Image(systemName: "arrow.up.forward")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(Color(hex: "A28497"))
-                                }
-                                .padding()
-                                .background(Color.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
-                                .shadow(color: Color.black.opacity(0.05), radius: 15, x: 0, y: 5)
+                VStack(spacing: 16) {
+                    ForEach(contactMethods, id: \.title) { method in
+                        Button(action: {
+                            if let url = URL(string: method.url) {
+                                UIApplication.shared.open(url)
                             }
+                        }) {
+                            HStack(spacing: 16) {
+                                Image(systemName: method.icon)
+                                    .font(.system(size: 20))
+                                    .foregroundColor(Color(hex: "A28497"))
+                                    .frame(width: 24)
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(method.title)
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(Color(hex: "2C3E50"))
+                                    Text(method.value)
+                                        .font(.system(size: 16))
+                                        .foregroundColor(Color(hex: "2C3E50"))
+                                }
+                                
+                                Spacer()
+                                
+                                Image(systemName: "arrow.up.forward")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(Color(hex: "A28497"))
+                            }
+                            .padding()
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
                         }
                     }
-                    .padding(.horizontal, 20)
                     
                     Spacer()
                 }
-                .padding(.top, 20)
+                .padding(20)
             }
             .navigationTitle("Contact Us")
             .navigationBarTitleDisplayMode(.inline)
@@ -449,17 +324,8 @@ struct ContactView: View {
             }
         }
     }
-    
-    private func handleContact(_ contact: ContactMethod) {
-        switch contact {
-        case .email(let email):
-            if let url = URL(string: "mailto:\(email)") {
-                UIApplication.shared.open(url)
-            }
-        case .phone(let phone):
-            if let url = URL(string: "tel:\(phone.replacingOccurrences(of: " ", with: ""))") {
-                UIApplication.shared.open(url)
-            }
-        }
-    }
+}
+
+#Preview {
+    SettingsView()
 }

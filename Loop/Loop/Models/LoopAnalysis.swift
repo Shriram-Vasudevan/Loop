@@ -27,6 +27,7 @@ struct LoopAnalysis: Codable, Identifiable {
     let timestamp: Date
     let promptText: String
     let category: String
+    let transcript: String
     let metrics: LoopMetrics
     let wordAnalysis: WordAnalysis
 }
@@ -55,6 +56,12 @@ struct DailyAnalysis: Codable {
     let wordPatterns: WordPatterns
     let overlapAnalysis: OverlapAnalysis
     let rangeAnalysis: RangeAnalysis
+    var aiAnalysis: AIAnalysisResult?
+}
+
+struct AIAnalysisResult: Codable {
+    let feeling: String
+    let description: String
 }
 
 struct AggregateMetrics: Codable {
@@ -90,6 +97,8 @@ enum AnalysisError: Error {
     case invalidData
     case analysisFailure
     case insufficientData
+    case aiAnalysisFailed
+    case invalidAIResponse
 }
 
 struct MetricComparison: Codable {
