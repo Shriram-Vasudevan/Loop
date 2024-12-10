@@ -493,7 +493,7 @@ struct RecordLoopsView: View {
             
             Task {
                 do {
-                    try await try await analysisManager.analyzeLoop(loop)
+                     try await analysisManager.startAnalysis(loop, isPastLoop: false)
                 } catch {
                     print("Analysis error: \(error)")
                 }

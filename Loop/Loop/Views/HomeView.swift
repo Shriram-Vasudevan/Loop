@@ -77,6 +77,7 @@ struct HomeView: View {
         }
         .fullScreenCover(item: $selectedLoop) { loop in
             ViewPastLoopView(loop: loop, isThroughRecordLoopsView: false)
+            
         }
         .fullScreenCover(isPresented: $showingRecordLoopsView) {
             RecordLoopsView(isFirstLaunch: false)
