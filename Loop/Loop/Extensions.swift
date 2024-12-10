@@ -99,3 +99,46 @@ extension Array {
     }
 }
 
+// MARK: - Helper Extensions
+extension Color {
+    static func random(opacity: Double = 1.0) -> Color {
+        Color(
+            red: .random(in: 0...1),
+            green: .random(in: 0...1),
+            blue: .random(in: 0...1)
+        ).opacity(opacity)
+    }
+}
+
+extension View {
+    func cardStyle() -> some View {
+        self.padding(24)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.white)
+                    .shadow(color: Color(hex: "2C3E50").opacity(0.04), radius: 20, x: 0, y: 10)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color(hex: "A28497").opacity(0.05), lineWidth: 1)
+            )
+    }
+}
+
+extension TrendDirection {
+    var systemImage: String {
+        switch rawValue {
+        case 1: return "arrow.up.right"
+        case -1: return "arrow.down.right"
+        default: return "minus"
+        }
+    }
+    
+    var color: Color {
+        switch rawValue {
+        case 1: return .green
+        case -1: return .red
+        default: return .gray
+        }
+    }
+}
