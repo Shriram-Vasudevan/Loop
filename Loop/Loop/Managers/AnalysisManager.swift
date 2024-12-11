@@ -782,7 +782,7 @@ class AIAnalyzer {
         
         Analyze them as a set and provide:
         1. A single adjective that best captures the overall feeling/tone
-        2. A brief 1-2 sentence explanation for why you chose that adjective
+        2. A brief 1-2 sentence relatively informal explanation for why you chose that adjective
         
         Please format your response exactly as:
         feeling: [adjective]

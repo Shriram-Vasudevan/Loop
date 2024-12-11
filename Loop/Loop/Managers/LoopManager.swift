@@ -611,6 +611,7 @@ class LoopManager: ObservableObject {
     }
     
     private func completeAllPrompts() {
+        print("all prompts completed")
         hasCompletedToday = true
         saveCachedState()
     }
@@ -966,7 +967,7 @@ class LoopManager: ObservableObject {
 //        }
 //    }
 //    
-    private func saveCachedState() {
+    func saveCachedState() {
        UserDefaults.standard.set(dailyPrompts, forKey: promptCacheKey)
        UserDefaults.standard.set(currentPromptIndex, forKey: promptIndexKey)
        UserDefaults.standard.set(retryAttemptsLeft, forKey: retryAttemptsKey)
@@ -976,10 +977,10 @@ class LoopManager: ObservableObject {
    
     private func loadCachedState() {
         DispatchQueue.main.async {
+            self.hasCompletedToday = UserDefaults.standard.bool(forKey: "hasCompletedToday")
             self.dailyPrompts = UserDefaults.standard.stringArray(forKey: self.promptCacheKey) ?? []
             self.currentPromptIndex = UserDefaults.standard.integer(forKey: self.promptIndexKey)
             self.retryAttemptsLeft = UserDefaults.standard.integer(forKey: self.retryAttemptsKey)
-            self.hasCompletedToday = UserDefaults.standard.bool(forKey: "hasCompletedToday")
         }
     }
     

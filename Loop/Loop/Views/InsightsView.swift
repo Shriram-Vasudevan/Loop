@@ -60,7 +60,13 @@ struct InsightsView: View {
                         .offset(y: animateCards ? 0 : 20)
                     
                     if selectedTab == "today" {
-                        TodayAnalysisView(analysisManager: analysisManager)
+                        if analysisManager.todaysLoops.count == 3
+                        {
+                            TodayAnalysisView(analysisManager: analysisManager)
+                        }
+                        else {
+                            Text("Complete Today's Loops for Analysis!")
+                        }
                     }
                     else {
                         Text("Working on it.")
@@ -196,14 +202,23 @@ struct TodayAnalysisView: View {
                     .foregroundColor(textColor.opacity(0.6))
                     .padding(.top, 15)
                 
-                VStack(spacing: 0) {
+                VStack(spacing: 3) {
                     wpmCard
                     durationCard
                     selfReferenceCard
                 }
             }
             
-            loopRelationshipsCard
+            VStack(spacing: 8) {
+                Text("patterns")
+                    .font(.system(size: 15, weight: .light))
+                    .foregroundColor(textColor.opacity(0.6))
+                    .padding(.top, 15)
+                
+                VStack(spacing: 3) {
+                    loopRelationshipsCard
+                }
+            }
         }
     }
     

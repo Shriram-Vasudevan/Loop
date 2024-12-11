@@ -536,6 +536,7 @@ struct RecordLoopsView: View {
                         await MainActor.run {
                             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                                 loopManager.hasCompletedToday = true
+                                loopManager.saveCachedState()
                                 isShowingMemory = false
                             }
                             audioManager.resetRecording()

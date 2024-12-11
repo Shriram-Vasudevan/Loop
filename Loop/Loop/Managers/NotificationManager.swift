@@ -96,7 +96,7 @@ class NotificationManager: ObservableObject {
         return defaults.object(forKey: reminderTimeKey) as? Date
     }
     
-    private func scheduleDailyReminder(at time: Date) {
+    func scheduleDailyReminder(at time: Date) {
         let center = UNUserNotificationCenter.current()
         
         let content = UNMutableNotificationContent()

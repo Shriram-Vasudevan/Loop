@@ -65,7 +65,7 @@ struct LoopsView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("journal")
-                        .font(.system(size: 40, weight: .light))
+                        .font(.system(size: 40, weight: .ultraLight))
                         .foregroundColor(textColor)
                     
                     Text("see your reflections")
