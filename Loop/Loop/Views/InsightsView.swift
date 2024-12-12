@@ -49,12 +49,9 @@ struct InsightsView: View {
     // MARK: - Body
     var body: some View {
         ZStack {
-            FlowingBackground(color: accentColor)
-                .opacity(0.2)
-                .ignoresSafeArea()
-            
+
             ScrollView {
-                VStack(spacing: 32) {
+                VStack(spacing: 10) {
                     header
                         .opacity(animateCards ? 1 : 0)
                         .offset(y: animateCards ? 0 : 20)
@@ -84,47 +81,59 @@ struct InsightsView: View {
     }
     
     private var header: some View {
-        VStack {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("insights")
-                        .font(.system(size: 40, weight: .light))
-                        .foregroundColor(textColor)
-                    
-                    Text("dive deeper into your reflections")
-                        .font(.system(size: 16, weight: .light))
-                        .foregroundColor(textColor.opacity(0.7))
-                }
-                Spacer()
-            }
-            .padding(.top, 16)
-            
-            HStack(spacing: 0) {
-                ForEach(["today", "trends"], id: \.self) { tab in
-                    Button(action: {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            selectedTab = tab
-                        }
-                    }) {
-                        VStack(spacing: 8) {
-                            Text(tab)
-                                .font(.system(size: 16, weight: selectedTab == tab ? .semibold : .regular))
-                                .foregroundColor(selectedTab == tab ? accentColor : textColor.opacity(0.5))
-                            
-                            // Active Indicator
-                            Rectangle()
-                                .fill(selectedTab == tab ? accentColor : Color.clear)
-                                .frame(height: 2)
-                        }
+        VStack(spacing: 24) {
+            Menu {
+                Button("today") {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        selectedTab = "today"
                     }
+                }
+                Button("trends") {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        selectedTab = "trends"
+                    }
+                }
+            } label: {
+                ZStack {
+
+                    HStack(spacing: 8) {
+                        Text(selectedTab)
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(.black)
+                    }
+                    .frame(height: 56)
                     .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        backgroundColor,
+                                        Color(hex: "F5F5F5")
+                                    ]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                    )
+                    .cornerRadius(28)
+                    .shadow(color: accentColor.opacity(0.15), radius: 12, y: 6)
+                    .padding(.horizontal)
+                    
+                    HStack {
+                        Spacer()
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.black)
+                            .padding(.trailing)
+                    }
+                    .padding(.horizontal)
                 }
             }
-            .padding(.top, 24)
+            .buttonStyle(ScaleButtonStyle())
         }
+        .padding(.top, 16)
     }
-    
-  
     private var noDataView: some View {
         VStack(spacing: 20) {
             Image(systemName: "chart.bar.xaxis")
@@ -147,6 +156,28 @@ struct InsightsView: View {
    
 }
 
+struct InsightWave: Shape {
+   func path(in rect: CGRect) -> Path {
+       var path = Path()
+       let width = rect.width
+       let height = rect.height
+       
+       path.move(to: CGPoint(x: 0, y: 0))
+       path.addLine(to: CGPoint(x: width, y: 0))
+       path.addLine(to: CGPoint(x: width, y: height))
+       
+       // Create wave
+       path.addCurve(
+           to: CGPoint(x: 0, y: height),
+           control1: CGPoint(x: width * 0.75, y: height * 0.8),
+           control2: CGPoint(x: width * 0.25, y: height * 1.2)
+       )
+       
+       path.closeSubpath()
+       return path
+   }
+}
+
 struct TodayAnalysisView: View {
     @ObservedObject var analysisManager: AnalysisManager
     @State private var selectedComparison = "week"
@@ -160,7 +191,7 @@ struct TodayAnalysisView: View {
         VStack(spacing: 20) {
             aiAnalysis
             
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {
                 Text("loop recap")
                     .font(.system(size: 15, weight: .light))
                     .foregroundColor(textColor.opacity(0.6))
@@ -196,7 +227,7 @@ struct TodayAnalysisView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {
                 Text("speaking patterns")
                     .font(.system(size: 15, weight: .light))
                     .foregroundColor(textColor.opacity(0.6))
@@ -209,7 +240,7 @@ struct TodayAnalysisView: View {
                 }
             }
             
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {
                 Text("patterns")
                     .font(.system(size: 15, weight: .light))
                     .foregroundColor(textColor.opacity(0.6))
@@ -223,22 +254,9 @@ struct TodayAnalysisView: View {
     }
     
     private var aiAnalysis: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            ZStack {
-                HStack {
-                    Spacer()
-                    
-                    Circle()
-                        .stroke(accentColor.opacity(0.1), lineWidth: 1)
-                        .frame(width: 60, height: 60)
-                        .overlay(
-                            Circle()
-                                .stroke(accentColor.opacity(0.1), lineWidth: 1)
-                                .frame(width: 40, height: 40)
-                        )
-                        .position(x: UIScreen.main.bounds.width - 40, y: 30)
-                }
-                
+        ZStack {
+            
+            VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 8) {
                     Circle()
                         .fill(accentColor.opacity(0.2))
@@ -254,10 +272,7 @@ struct TodayAnalysisView: View {
                         .foregroundColor(accentColor)
                         .tracking(1.2)
                 }
-            }
-            
-            // Main content
-            VStack(alignment: .leading, spacing: 12) {
+                
                 if let analysis = analysisManager.currentDailyAnalysis?.aiAnalysis {
                     Text(analysis.feeling.capitalized)
                         .font(.system(size: 32, weight: .bold))
@@ -267,31 +282,60 @@ struct TodayAnalysisView: View {
                         .font(.system(size: 16))
                         .foregroundColor(textColor.opacity(0.7))
                         .lineSpacing(4)
-                } else {
-                    Text("Analyzing...")
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundColor(textColor)
                 }
+                else {
+                    VStack(spacing: 6) {
+                        HStack {
+                            Text("analyzing...")
+                                .font(.system(size: 32, weight: .bold))
+                                .foregroundColor(textColor)
+                            
+                            Spacer()
+        
+                        }
+                        
+                        HStack {
+                            Text("we're working on it")
+                                .font(.system(size: 16))
+                                .foregroundColor(textColor.opacity(0.7))
+                                .lineSpacing(4)
+                            Spacer()
+                        }
+                    }
+                }
+
             }
+            .padding(.top, 24)
+            .overlay (
+                HStack {
+                    Spacer()
+                    
+                    Circle()
+                        .stroke(accentColor.opacity(0.1), lineWidth: 1)
+                        .frame(width: 45, height: 45)
+                        .overlay(
+                            Circle()
+                                .stroke(accentColor.opacity(0.1), lineWidth: 1)
+                                .frame(width: 30, height: 30)
+                        )
+                }
+                    .padding([.top, .trailing]),
+                alignment: .topTrailing
+            )
+//            .background(
+//                ZStack {
+//                    Color.white
+//                    
+//                    WavyBackground()
+//                        .background(surfaceColor)
+//                }
+//            )
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
         }
-        .padding(24)
-        .background(
-            ZStack {
-                // Wavy background
-                InsightWavyBackground()
-                    .fill(surfaceColor)
-                
-                // Subtle gradient overlay
-                LinearGradient(
-                    colors: [
-                        accentColor.opacity(0.05),
-                        accentColor.opacity(0.02)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            }
-        )
+        
+        
+
     }
     
     private var loopCard: some View {
@@ -1257,7 +1301,8 @@ extension AnalysisManager {
                 durationRange: MinMaxRange(min: 160.0, max: 200.0),
                 wordCountRange: IntRange(min: 110, max: 130),
                 selfReferenceRange: IntRange(min: 8, max: 12)
-            )
+            ),
+            aiAnalysis: AIAnalysisResult(feeling: "Contemplative", description: "Your reflections today show deep introspection and thoughtful consideration of personal experiences, with a focus on emotional awareness.")
         )
         
         manager.currentDailyAnalysis = mockDailyAnalysis

@@ -54,16 +54,17 @@ class LoopLocalStorageUtility {
         
         let loopEntity = NSManagedObject(entity: entity, insertInto: context)
         
-        // Save media file to local storage
         if let assetURL = loop.data.fileURL {
             let fileExtension = loop.isVideo ? "mp4" : "m4a"
-            let destinationURL = mediaDirectory.appendingPathComponent("\(loop.id).\(fileExtension)")
+            let fileName = "\(loop.id).\(fileExtension)"
+            let destinationURL = mediaDirectory.appendingPathComponent(fileName)
             do {
                 if FileManager.default.fileExists(atPath: destinationURL.path) {
                     try FileManager.default.removeItem(at: destinationURL)
                 }
                 try FileManager.default.copyItem(at: assetURL, to: destinationURL)
-                loopEntity.setValue(destinationURL.path, forKey: "filePath")
+                // Store just the filename instead of full path
+                loopEntity.setValue(fileName, forKey: "filePath")
             } catch {
                 print("Failed to save media file: \(error.localizedDescription)")
                 return
@@ -90,14 +91,14 @@ class LoopLocalStorageUtility {
 
     private func convertToLoop(from entity: NSManagedObject) -> Loop? {
         guard let id = entity.value(forKey: "id") as? String,
-              let filePath = entity.value(forKey: "filePath") as? String,
-              let timestamp = entity.value(forKey: "timestamp") as? Date,
-              let promptText = entity.value(forKey: "promptText") as? String else {
-            return nil
-        }
-        
-        let fileURL = URL(fileURLWithPath: filePath)
-        guard FileManager.default.fileExists(atPath: filePath) else {
+                  let fileName = entity.value(forKey: "filePath") as? String,  // Now just getting filename
+                  let timestamp = entity.value(forKey: "timestamp") as? Date,
+                  let promptText = entity.value(forKey: "promptText") as? String else {
+                return nil
+            }
+            
+        let fileURL = mediaDirectory.appendingPathComponent(fileName)  // Construct full path here
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
             return nil
         }
         

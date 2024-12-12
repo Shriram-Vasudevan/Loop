@@ -10,7 +10,6 @@ import SpriteKit
 
 struct OnboardingView: View {
     let onIntroCompletion: () -> Void
-    @ObservedObject var audioManager = AudioManager.shared
 
     @State private var currentStep = 0
     @State private var fadeInOpacity = 0.0
@@ -115,45 +114,10 @@ struct OnboardingView: View {
             }
         }
         
-        private var recordingDemoView: some View {
-            ZStack {
-                VStack(spacing: 0) {
-                    
-                    Spacer()
-                    
-                    Text("what made you smile today?")
-                        .font(.system(size: 32, weight: .light))
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(textColor)
-                        .padding(.horizontal, 32)
-                    
-                    if isRecording {
-                        HStack(spacing: 12) {
-                            PulsingDot()
-                            Text("\(timeRemaining)s")
-                                .font(.system(size: 26, weight: .ultraLight))
-                                .foregroundColor(accentColor)
-                        }
-                        .transition(.opacity)
-                    }
-                    
-                    Spacer()
-                    
-                    RecordButton(
-                        isRecording: isRecording,
-                        progress: 0
-                    ) { 
-                        toggleRecording()
-                    }
-                    .padding(.bottom, 60)
-                }
-            }
-        }
-        
         private var pastLoopView: some View {
             ZStack {
                 VStack(spacing: 0) {
-                    Text("then loop brings back a previous entry")
+                    Text("loop brings back one previous entry a day")
                         .font(.system(size: 20, weight: .light))
                         .foregroundColor(textColor.opacity(0.6))
                         .padding(.top, 32)
@@ -236,7 +200,7 @@ struct OnboardingView: View {
         private var insightsView: some View {
             ZStack {
                 VStack(spacing: 0) {
-                    Text("compare then and now")
+                    Text("dive deeper into your reflections")
                         .font(.system(size: 20, weight: .light))
                         .foregroundColor(textColor.opacity(0.6))
                         .padding(.top, 32)
@@ -653,44 +617,6 @@ struct OnboardingView: View {
         }
     }
 
-    private func toggleRecording() {
-        withAnimation(.easeInOut(duration: 0.3)) {
-            isRecording.toggle()
-        }
-        
-        if !isRecording {
-            audioManager.stopRecording()
-            stopTimer()
-            currentStep = 2
-        } else {
-            startRecordingWithTimer()
-        }
-    }
-    
-    private func startRecordingWithTimer() {
-        audioManager.prepareForNewRecording()
-        audioManager.startRecording()
-        timeRemaining = 30
-        startTimer()
-    }
-    
-    private func startTimer() {
-        recordingTimer?.invalidate()
-        recordingTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
-            if timeRemaining > 0 {
-                timeRemaining -= 1
-            } else {
-                stopTimer()
-                audioManager.stopRecording()
-                currentStep = 2
-            }
-        }
-    }
-    
-    private func stopTimer() {
-        recordingTimer?.invalidate()
-        recordingTimer = nil
-    }
 }
 
 struct TrendDirection: RawRepresentable {
@@ -810,9 +736,10 @@ struct PromptsView: View {
     
     @State private var recordingTimer: Timer?
     
+    @ObservedObject var audioManager = AudioManager.shared
+    
     var body: some View {
         VStack(spacing: 0) {
-            // Category pill
             HStack(spacing: 8) {
                 Circle()
                     .fill(accentColor.opacity(0.2))
@@ -837,14 +764,7 @@ struct PromptsView: View {
                 accentColor: accentColor
             )
             .padding(.vertical, 24)
-            
-            // Description section
-            VStack(spacing: 16) {
-                Text("record your first loop")
-                    .font(.system(size: 20, weight: .light))
-                    .foregroundColor(textColor.opacity(0.6))
-            }
-            
+
             Spacer()
             
             // Main prompt
@@ -954,7 +874,10 @@ struct PromptsView: View {
         
         if !isRecording {
             stopTimer()
+            audioManager.stopRecording()
+            onContinue()
         } else {
+            audioManager.startRecording()
             startRecordingWithTimer()
         }
     }

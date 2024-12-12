@@ -18,9 +18,9 @@ struct WavyBackground: View {
                                endPoint: .bottom)
                     .edgesIgnoringSafeArea(.all)
 
-                OptimizedWaveLayer(phase: waveOffset, amplitude: 15, frequency: 1.5, color: Color(white: 0.9).opacity(0.6), size: geometry.size)
-                OptimizedWaveLayer(phase: waveOffset + 20, amplitude: 20, frequency: 1.2, color: Color(white: 0.85).opacity(0.4), size: geometry.size)
-                OptimizedWaveLayer(phase: waveOffset + 40, amplitude: 10, frequency: 2.0, color: Color(white: 0.8).opacity(0.3), size: geometry.size)
+                OptimizedWaveLayer(phase: waveOffset, amplitude: 20, frequency: 1.5, color: Color(white: 0.9).opacity(0.6), size: geometry.size)
+                OptimizedWaveLayer(phase: waveOffset + 20, amplitude: 40, frequency: 1.2, color: Color(white: 0.85).opacity(0.4), size: geometry.size)
+                OptimizedWaveLayer(phase: waveOffset + 60, amplitude: 10, frequency: 2.0, color: Color(white: 0.8).opacity(0.3), size: geometry.size)
             }
             .onAppear {
                 withAnimation(Animation.easeInOut(duration: 5).repeatForever(autoreverses: true)) {

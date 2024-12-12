@@ -68,7 +68,7 @@ struct RecordLoopsView: View {
             }
         }
         .onAppear {
-            audioManager.resetRecording()
+            audioManager.cleanup() 
         }
     }
     
@@ -387,7 +387,7 @@ struct RecordLoopsView: View {
         }
         .frame(maxWidth: .infinity)
         .onAppear {
-            audioManager.resetRecording()
+            audioManager.cleanup()
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                 dismiss()
             }
@@ -459,7 +459,7 @@ struct RecordLoopsView: View {
     }
     
     private func startRecordingWithTimer() {
-        audioManager.prepareForNewRecording()
+        try? audioManager.prepareForNewRecording()
         audioManager.startRecording()
         timeRemaining = 30
         startTimer()
@@ -514,11 +514,21 @@ struct RecordLoopsView: View {
                     }
                     
                     if userDays < 3 {
-                        userDaysThresholdNotMet = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                            isShowingMemory = false
-                            isLoadingMemory = false
+                        await MainActor.run {
+                            withAnimation {
+                                userDaysThresholdNotMet = true
+                            }
+                            
+                            // Use DispatchQueue with a completion handler
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                    loopManager.hasCompletedToday = true
+                                    loopManager.saveCachedState()
+                                    isShowingMemory = false
+                                }
+                            }
                         }
+                        return
                     }
                     
                     if let pastLoop = try? await loopManager.getPastLoopForComparison(
@@ -530,7 +540,7 @@ struct RecordLoopsView: View {
                                 isPostRecording = false
                                 isLoadingMemory = false
                             }
-                            audioManager.resetRecording()
+                            audioManager.cleanup()
                         }
                     } else {
                         await MainActor.run {
@@ -539,7 +549,7 @@ struct RecordLoopsView: View {
                                 loopManager.saveCachedState()
                                 isShowingMemory = false
                             }
-                            audioManager.resetRecording()
+                            audioManager.cleanup()
                         }
                     }
                 }
@@ -555,7 +565,7 @@ struct RecordLoopsView: View {
     private func retryRecording() {
         if loopManager.retryAttemptsLeft > 0 {
             loopManager.retryRecording()
-            audioManager.resetRecording()
+            audioManager.cleanup()
             isPostRecording = false
             isRecording = false
             timeRemaining = 30

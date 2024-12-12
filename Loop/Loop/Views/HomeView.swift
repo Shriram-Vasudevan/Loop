@@ -48,7 +48,7 @@ struct HomeView: View {
 //                        weekSchedule: loopManager.weekSchedule,
 //                        accentColor: accentColor
 //                    )
-                    
+//                    
                     todaysPromptCard
                         .transition(.opacity)
                     
@@ -96,15 +96,15 @@ struct HomeView: View {
                     .foregroundColor(textColor)
                 
                 HStack(spacing: 4) {
-                    Text("day")
+                    Text("time")
                         .font(.system(size: 16, weight: .light))
                         .foregroundColor(.gray)
-                    Text("eighteen")
+                    Text("to")
+                        .font(.system(size: 16, weight: .light))
+                        .foregroundColor(.gray)
+                    Text("reflect")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(accentColor)
-                    Text("on loop")
-                        .font(.system(size: 16, weight: .light))
-                        .foregroundColor(.gray)
                 }
             }
             

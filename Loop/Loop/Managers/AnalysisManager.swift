@@ -112,6 +112,20 @@ class AnalysisManager: ObservableObject {
     private let textAnalyzer = TextAnalyzer.shared
     private let audioAnalyzer = AudioAnalyzer.shared
     
+    private let analysisCache = UserDefaults.standard
+    private let dailyAnalysisCacheKey = "DailyAnalysisCache"
+    private let loopAnalysisCacheKey = "LoopAnalysisCache"
+    private let pastLoopAnalysisCacheKey = "PastLoopAnalysisCache"
+    private let lastAnalysisCacheDateKey = "LastAnalysisCacheDate"
+    
+    init() {
+        if isCacheValidForToday() {
+            loadAnalysisCache()
+        } else {
+            resetAnalysisCache()
+        }
+    }
+    
     func startAnalysis(_ loop: Loop, isPastLoop: Bool) async throws {
         isAnalyzing = true
         defer { isAnalyzing = false }
@@ -134,7 +148,12 @@ class AnalysisManager: ObservableObject {
                         allTimeComparison = statsManager.compareWithAllTimeStats(dailyAnalysis)
                         monthlyComparison = statsManager.compareWithMonthlyStats(dailyAnalysis)
                         weeklyComparison = statsManager.compareWithWeeklyStats(dailyAnalysis)
+                        
+                        saveAnalysisCache()
                     }
+                }
+                else {
+                    saveAnalysisCache()
                 }
             }
         }
@@ -354,6 +373,81 @@ class AnalysisManager: ObservableObject {
         )
     }
     
+    private func isCacheValidForToday() -> Bool {
+        guard let cachedData = analysisCache.dictionary(forKey: dailyAnalysisCacheKey),
+              let cacheDate = cachedData["cacheDate"] as? Date else {
+            return false
+        }
+        return Calendar.current.isDateInToday(cacheDate)
+    }
+    
+    private func saveAnalysisCache() {
+        let analysisData: [String: Any] = [
+            "dailyAnalysis": try? JSONEncoder().encode(currentDailyAnalysis),
+            "todaysLoops": try? JSONEncoder().encode(todaysLoops),
+            "pastLoopAnalysis": try? JSONEncoder().encode(pastLoopAnalysis),
+            "loopComparison": try? JSONEncoder().encode(loopComparison),
+            "allTimeComparison": try? JSONEncoder().encode(allTimeComparison),
+            "monthlyComparison": try? JSONEncoder().encode(monthlyComparison),
+            "weeklyComparison": try? JSONEncoder().encode(weeklyComparison),
+            "lastAnalysisDate": Date(),
+            "cacheDate": Date()
+        ]
+        
+        analysisCache.set(analysisData, forKey: dailyAnalysisCacheKey)
+    }
+
+    private func loadAnalysisCache() {
+        guard let cachedData = analysisCache.dictionary(forKey: dailyAnalysisCacheKey) else {
+                return
+            }
+            
+        if let dailyAnalysisData = cachedData["dailyAnalysis"] as? Data,
+           let dailyAnalysis = try? JSONDecoder().decode(DailyAnalysis.self, from: dailyAnalysisData) {
+            self.currentDailyAnalysis = dailyAnalysis
+        }
+        
+        if let todaysLoopsData = cachedData["todaysLoops"] as? Data,
+           let loopAnalyses = try? JSONDecoder().decode([LoopAnalysis].self, from: todaysLoopsData) {
+            self.todaysLoops = loopAnalyses
+        }
+        
+        if let pastLoopData = cachedData["pastLoopAnalysis"] as? Data,
+           let pastAnalysis = try? JSONDecoder().decode(LoopAnalysis.self, from: pastLoopData) {
+            self.pastLoopAnalysis = pastAnalysis
+        }
+        
+        if let comparisonData = cachedData["loopComparison"] as? Data,
+           let comparison = try? JSONDecoder().decode(LoopComparison.self, from: comparisonData) {
+            self.loopComparison = comparison
+        }
+        
+        if let allTimeComparisonData = cachedData["allTimeComparison"] as? Data,
+           let allTimeComparison = try? JSONDecoder().decode(LoopComparison.self, from: allTimeComparisonData) {
+            self.allTimeComparison = allTimeComparison
+        }
+        
+        if let monthlyComparisonData = cachedData["monthlyComparison"] as? Data,
+           let monthlyComparison = try? JSONDecoder().decode(LoopComparison.self, from: monthlyComparisonData) {
+            self.monthlyComparison = monthlyComparison
+        }
+        
+        if let weeklyComparisonData = cachedData["weeklyComparison"] as? Data,
+           let weeklyComparison = try? JSONDecoder().decode(LoopComparison.self, from: weeklyComparisonData) {
+            self.weeklyComparison = weeklyComparison
+        }
+    }
+    
+    private func resetAnalysisCache() {
+            currentDailyAnalysis = nil
+            todaysLoops = []
+            pastLoopAnalysis = nil
+            loopComparison = nil
+            allTimeComparison = nil
+            monthlyComparison = nil
+            weeklyComparison = nil
+            analysisCache.removeObject(forKey: dailyAnalysisCacheKey)
+        }
 }
 
 class StatsManager {
@@ -782,7 +876,7 @@ class AIAnalyzer {
         
         Analyze them as a set and provide:
         1. A single adjective that best captures the overall feeling/tone
-        2. A brief 1-2 sentence relatively informal explanation for why you chose that adjective
+        2. A brief 1-2 sentence relatively informal explanation for why you chose that adjective, addressing someone in the 2nd person
         
         Please format your response exactly as:
         feeling: [adjective]

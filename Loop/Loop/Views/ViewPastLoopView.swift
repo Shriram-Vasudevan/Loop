@@ -97,7 +97,7 @@ struct ViewPastLoopView: View {
                 .foregroundColor(textColor)
                 .padding(.horizontal, 40)
             
-            Text(formattedDate)
+            Text("October 27, 2024")
                 .font(.system(size: 15, weight: .regular))
                 .foregroundColor(textColor.opacity(0.6))
         }

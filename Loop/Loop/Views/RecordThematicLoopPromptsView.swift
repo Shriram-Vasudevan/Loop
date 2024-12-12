@@ -15,6 +15,7 @@ struct RecordThematicLoopPromptsView: View {
     
     @State private var showingFindAQuietSpace = true
     @State private var showingThemeName = false
+    @State private var showingThankYouScreen = false
     @State private var isRecording = false
     @State private var isPostRecording = false
     @State private var recordingTimer: Timer?
@@ -50,18 +51,19 @@ struct RecordThematicLoopPromptsView: View {
                 else if showingThemeName {
                     
                 }
-                else if currentPromptIndex == prompt.prompts.count {
+                else if showingThankYouScreen {
                     thankYouScreen
                 } else if isPostRecording {
                     postRecordingView
-                } else {
+                }
+                else {
                     recordingScreen
                 }
             }
             .padding(.horizontal, 32)
         }
         .onAppear {
-            audioManager.resetRecording()
+            audioManager.cleanup()
         }
     }
     
@@ -229,7 +231,7 @@ struct RecordThematicLoopPromptsView: View {
         }
         .frame(maxWidth: .infinity)
         .onAppear {
-            audioManager.resetRecording()
+            audioManager.cleanup()
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                 dismiss()
             }
@@ -293,7 +295,7 @@ struct RecordThematicLoopPromptsView: View {
     }
     
     private func startRecordingWithTimer() {
-        audioManager.prepareForNewRecording()
+        try? audioManager.prepareForNewRecording()
         audioManager.startRecording()
         timeRemaining = 30
         startTimer()
@@ -327,7 +329,14 @@ struct RecordThematicLoopPromptsView: View {
             )
             
             withAnimation {
-                currentPromptIndex += 1
+                if currentPromptIndex < prompt.prompts.count - 1 {
+                    currentPromptIndex += 1
+                    isPostRecording = false
+                }
+                else {
+                    isPostRecording = false
+                    showingThankYouScreen = true
+                }
             }
 
         }
@@ -336,7 +345,7 @@ struct RecordThematicLoopPromptsView: View {
     private func retryRecording() {
         if retryAttemptsLeft > 0 {
             retryAttemptsLeft -= 1
-            audioManager.resetRecording()
+            audioManager.cleanup()
             isPostRecording = false
             isRecording = false
             timeRemaining = 30
