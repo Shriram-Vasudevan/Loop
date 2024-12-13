@@ -10,7 +10,7 @@ import Darwin
 
 struct LoopsView: View {
     @ObservedObject private var loopManager = LoopManager.shared
-    @State private var selectedTab = "Recent"
+    @State private var selectedTab = "recent"
     @State private var selectedLoop: Loop?
     @State private var selectedMonthId: MonthIdentifier?
     @State private var backgroundOpacity = 1.0
@@ -31,8 +31,9 @@ struct LoopsView: View {
                 headerSection
                 
                 tabNavigation
+                    .padding(.top, 15)
                 
-                if selectedTab == "Recent" {
+                if selectedTab == "recent" {
                     RecentLoopsView(selectedLoop: $selectedLoop)
                 } else {
                     if let monthId = selectedMonthId {
@@ -63,25 +64,35 @@ struct LoopsView: View {
     private var headerSection: some View {
         VStack(spacing: 16) {
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .center, spacing: 0) {
                     Text("journal")
-                        .font(.system(size: 40, weight: .ultraLight))
+                        .font(.system(size: 40, weight: .bold))
                         .foregroundColor(textColor)
                     
-                    Text("see your reflections")
-                        .font(.system(size: 16, weight: .light))
-                        .foregroundColor(textColor.opacity(0.7))
+                    HStack(spacing: 4) {
+                        Text("see")
+                            .font(.system(size: 20, weight: .light))
+                            .foregroundColor(.gray)
+                        Text("your")
+                            .font(.system(size: 20, weight: .light))
+                            .foregroundColor(.gray)
+                        Text("reflections")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(accentColor)
+                    }
+                    .padding(.top, -5)
+
                 }
-                
-                Spacer()
-                
-                if !loopManager.hasCompletedToday {
-                    CircularProgress(
-                        progress: CGFloat(loopManager.currentPromptIndex) / CGFloat(loopManager.dailyPrompts.count),
-                        color: accentColor
-                    )
-                    .frame(width: 50, height: 50)
-                }
+//
+//                Spacer()
+//                
+//                if !loopManager.hasCompletedToday {
+//                    CircularProgress(
+//                        progress: CGFloat(loopManager.currentPromptIndex) / CGFloat(loopManager.dailyPrompts.count),
+//                        color: accentColor
+//                    )
+//                    .frame(width: 50, height: 50)
+//                }
             }
         }
         .padding(.horizontal, 24)
@@ -89,22 +100,55 @@ struct LoopsView: View {
     }
     
     private var tabNavigation: some View {
-        HStack(spacing: 8) {
-            ForEach(["Recent", "Past"], id: \.self) { tab in
-                TabButton(
-                    title: tab,
-                    isSelected: selectedTab == tab
-                ) {
-                    withAnimation(.easeOut(duration: 0.2)) {
-                        selectedTab = tab
-                    }
+        Menu {
+            Button("recent") {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    selectedTab = "recent"
                 }
             }
-            
-            Spacer()
+            Button("past") {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    selectedTab = "past"
+                }
+            }
+        } label: {
+            ZStack {
+
+                HStack(spacing: 8) {
+                    Text(selectedTab)
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(.black)
+                }
+                .frame(height: 56)
+                .frame(maxWidth: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    backgroundColor,
+                                    Color(hex: "FFFFFF")
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                )
+                .cornerRadius(28)
+                .shadow(color: accentColor.opacity(0.15), radius: 12, y: 6)
+                .padding(.horizontal)
+                
+                HStack {
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.black)
+                        .padding(.trailing)
+                }
+                .padding(.horizontal)
+            }
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 16)
+        .buttonStyle(ScaleButtonStyle())
     }
 }
 

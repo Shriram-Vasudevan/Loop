@@ -43,7 +43,7 @@ struct HomeView: View {
                         .padding(.top, 16)
                     
                     
-                    
+//                    
 //                    ScheduleBar(
 //                        weekSchedule: loopManager.weekSchedule,
 //                        accentColor: accentColor
@@ -89,52 +89,51 @@ struct HomeView: View {
     
     private var topBar: some View {
         HStack(spacing: 20) {
-            // Left side greeting and day counter
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text("good \(timeOfDay)")
-                    .font(.system(size: 28, weight: .light))
+                    .font(.system(size: 35, weight: .bold))
                     .foregroundColor(textColor)
                 
                 HStack(spacing: 4) {
                     Text("time")
-                        .font(.system(size: 16, weight: .light))
+                        .font(.system(size: 20, weight: .light))
                         .foregroundColor(.gray)
                     Text("to")
-                        .font(.system(size: 16, weight: .light))
+                        .font(.system(size: 20, weight: .light))
                         .foregroundColor(.gray)
                     Text("reflect")
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.system(size: 20, weight: .medium))
                         .foregroundColor(accentColor)
                 }
             }
             
             Spacer()
             
-            // Right side streak counter
-            if let currentStreak = loopManager.currentStreak?.currentStreak {
-                HStack(spacing: 8) {
-                    Text("\(currentStreak)")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(accentColor)
-                    
-                    Image(systemName: "flame.fill")
-                        .foregroundColor(accentColor)
-                        .font(.system(size: 16))
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(accentColor.opacity(0.08))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(accentColor.opacity(0.1), lineWidth: 1)
-                )
-            }
+//            // Right side streak counter
+//            if let currentStreak = loopManager.currentStreak?.currentStreak {
+//                HStack(spacing: 8) {
+//                    Text("\(currentStreak)")
+//                        .font(.system(size: 20, weight: .medium))
+//                        .foregroundColor(accentColor)
+//                    
+//                    Image(systemName: "flame.fill")
+//                        .foregroundColor(accentColor)
+//                        .font(.system(size: 16))
+//                }
+//                .padding(.horizontal, 16)
+//                .padding(.vertical, 8)
+//                .background(
+//                    RoundedRectangle(cornerRadius: 12)
+//                        .fill(accentColor.opacity(0.08))
+//                )
+//                .overlay(
+//                    RoundedRectangle(cornerRadius: 12)
+//                        .stroke(accentColor.opacity(0.1), lineWidth: 1)
+//                )
+//            }
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 16)
+        .padding(.top, 4)
         .padding(.bottom, 12)
     }
     

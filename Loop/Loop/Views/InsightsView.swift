@@ -50,26 +50,35 @@ struct InsightsView: View {
     var body: some View {
         ZStack {
 
-            ScrollView {
-                VStack(spacing: 10) {
-                    header
-                        .opacity(animateCards ? 1 : 0)
-                        .offset(y: animateCards ? 0 : 20)
-                    
-                    if selectedTab == "today" {
-                        if analysisManager.todaysLoops.count == 3
-                        {
-                            TodayAnalysisView(analysisManager: analysisManager)
+            VStack (spacing: 0) {
+                ScrollView {
+                    VStack(spacing: 10) {
+                        header
+                            .opacity(animateCards ? 1 : 0)
+                            .offset(y: animateCards ? 0 : 20)
+
+                        if selectedTab == "today" {
+                            if analysisManager.todaysLoops.count == 3
+                            {
+                                TodayAnalysisView(analysisManager: analysisManager)
+                            }
+                            else {
+                                Text("Complete Today's Loops for Analysis!")
+                            }
                         }
                         else {
-                            Text("Complete Today's Loops for Analysis!")
+                            Text("Working on it.")
                         }
                     }
-                    else {
-                        Text("Working on it.")
-                    }
+                    .padding(.horizontal, 24)
                 }
-                .padding(.horizontal, 24)
+            }
+            
+            VStack {
+                Spacer()
+                
+                toggleButton
+                    .padding(.bottom, 10)
             }
         }
 
@@ -81,6 +90,42 @@ struct InsightsView: View {
     }
     
     private var header: some View {
+        VStack(spacing: 16) {
+            HStack {
+                VStack(alignment: .center, spacing: 0) {
+                    Text("insights")
+                        .font(.system(size: 40, weight: .bold))
+                        .foregroundColor(textColor)
+                    
+                    HStack(spacing: 4) {
+                        Text("dive")
+                            .font(.system(size: 20, weight: .light))
+                            .foregroundColor(.gray)
+                       
+                        Text("deeper")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(accentColor)
+                    }
+                    .padding(.top, -5)
+
+                }
+//
+//                Spacer()
+//
+//                if !loopManager.hasCompletedToday {
+//                    CircularProgress(
+//                        progress: CGFloat(loopManager.currentPromptIndex) / CGFloat(loopManager.dailyPrompts.count),
+//                        color: accentColor
+//                    )
+//                    .frame(width: 50, height: 50)
+//                }
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 16)
+    }
+    
+    private var toggleButton: some View {
         VStack(spacing: 24) {
             Menu {
                 Button("today") {
@@ -109,7 +154,7 @@ struct InsightsView: View {
                                 LinearGradient(
                                     gradient: Gradient(colors: [
                                         backgroundColor,
-                                        Color(hex: "F5F5F5")
+                                        Color(hex: "FFFFFF")
                                     ]),
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
@@ -122,7 +167,7 @@ struct InsightsView: View {
                     
                     HStack {
                         Spacer()
-                        Image(systemName: "chevron.down")
+                        Image(systemName: "chevron.up")
                             .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.black)
                             .padding(.trailing)

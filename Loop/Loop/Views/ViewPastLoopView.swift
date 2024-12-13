@@ -91,7 +91,7 @@ struct ViewPastLoopView: View {
                 .padding(.top, 20)
             }
             
-            Text(loop.promptText)
+            Text("What brings you peace lately")
                 .font(.system(size: 24, weight: .light))
                 .multilineTextAlignment(.center)
                 .foregroundColor(textColor)
@@ -166,7 +166,7 @@ struct ViewPastLoopView: View {
                 
                 Spacer()
                 
-                Text(timeString(from: audioPlayer?.duration ?? 0))
+                Text(timeString(from: 23))
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(textColor.opacity(0.6))
             }
