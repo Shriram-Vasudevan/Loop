@@ -61,7 +61,11 @@ struct DailyAnalysis: Codable {
 
 struct AIAnalysisResult: Codable {
     let feeling: String
-    let description: String
+    let feelingDescription: String
+    let tense: String
+    let tenseDescription: String
+    let selfReferenceCount: Int
+    let followUp: String
 }
 
 struct AggregateMetrics: Codable {

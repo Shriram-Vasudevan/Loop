@@ -640,6 +640,23 @@ class LoopCloudKitUtility {
         return 0.0
     }
     
+    static func deleteLoop(withID loopID: String) async throws {
+        let privateDB = container.privateCloudDatabase
+        
+        // First find the record via a query
+        let predicate = NSPredicate(format: "ID == %@", loopID)
+        let query = CKQuery(recordType: "LoopRecord", predicate: predicate)
+        let (matchResults, _) = try await privateDB.records(matching: query)
+        
+        guard let firstMatch = matchResults.first else {
+            throw NSError(domain: "LoopCloudKitUtilityError", code: -1, userInfo: [NSLocalizedDescriptionKey: "No CloudKit record found for loop ID \(loopID)."])
+        }
+        
+        // Extract the record ID and delete it
+        let record = try firstMatch.1.get()
+        try await privateDB.deleteRecord(withID: record.recordID)
+    }
+    
 }
 enum FetchResult {
     case success(Loop)

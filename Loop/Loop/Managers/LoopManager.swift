@@ -121,17 +121,17 @@ class LoopManager: ObservableObject {
     func calculateDistinctLoopingDays() async {
         do {
             isCheckingDistinctDays = true
-            let cloudDistinctDays = try await LoopCloudKitUtility.checkThreeDayRequirement()
-            let localDistinctDays = try await LoopCloudKitUtility.checkThreeDayRequirement()
+            let cloudCheck = try await LoopCloudKitUtility.checkThreeDayRequirement()
+            let localCheckCount = try await localStorage.fetchDistinctLoopingDays() // Correct local call
             
-            let distinctDays = cloudDistinctDays.1 + localDistinctDays.1
+            let distinctDays = cloudCheck.1 + localCheckCount
             self.distinctDays = distinctDays
             isCheckingDistinctDays = false
         } catch {
             isCheckingDistinctDays = false
         }
     }
-        
+
     private func loadPrompts() async {
         await MainActor.run {
             isLoadingPrompts = true
@@ -251,32 +251,32 @@ class LoopManager: ObservableObject {
             .flatMap { $0 }
             .filter { !$0.isDailyPrompt && $0.category != .freeform }
         
-        let firstPrompt: Prompt
+        let thirdPrompt: Prompt
         if let randomShare = shareAnything.randomElement() {
-            firstPrompt = randomShare
+            thirdPrompt = randomShare
         } else {
-            firstPrompt = dailyPrompts.randomElement() ??
+            thirdPrompt = dailyPrompts.randomElement() ??
                 Prompt(text: "What's on your mind?", category: .freeform, isDailyPrompt: true)
         }
-        let secondPrompt: Prompt
-        let availableDailyPrompts = dailyPrompts.filter { $0.category != firstPrompt.category }
+        
+        let firstPrompt: Prompt
+        let availableDailyPrompts = dailyPrompts.filter { $0.category != thirdPrompt.category }
         if let randomDaily = availableDailyPrompts.randomElement() {
-            secondPrompt = randomDaily
+            firstPrompt = randomDaily
         } else {
-            secondPrompt = dailyPrompts.randomElement() ??
+            firstPrompt = dailyPrompts.randomElement() ??
                 Prompt(text: "How are you feeling today?", category: .emotionalWellbeing, isDailyPrompt: true)
         }
-        
-        // Third prompt: Random general prompt (excluding previous categories)
-        let thirdPrompt: Prompt
+
+        let secondPrompt: Prompt
         let availableGeneralPrompts = generalPrompts.filter {
-            $0.category != firstPrompt.category && $0.category != secondPrompt.category
+            $0.category != firstPrompt.category && $0.category != thirdPrompt.category
         }
         if let randomGeneral = availableGeneralPrompts.randomElement() {
-            thirdPrompt = randomGeneral
+            secondPrompt = randomGeneral
         } else {
             // Try any general prompt if filtered list is empty
-            thirdPrompt = generalPrompts.randomElement() ??
+            secondPrompt = generalPrompts.randomElement() ??
                 Prompt(text: "What's giving you hope lately?", category: .growth, isDailyPrompt: false)
         }
         
@@ -1039,7 +1039,20 @@ class LoopManager: ObservableObject {
             print("Error loading year data: \(error)")
         }
     }
-
+    
+    func deleteLoop(withID loopID: String) async {
+        do {
+            // Try local first if you want, or both
+            try await LoopLocalStorageUtility.shared.deleteLoop(withID: loopID)
+            
+            // If also stored in CloudKit, delete from cloud as well (if applicable)
+            try await LoopCloudKitUtility.deleteLoop(withID: loopID)
+            
+            print("Successfully deleted loop with ID \(loopID) from local and cloud storage")
+        } catch {
+            print("Error deleting loop: \(error)")
+        }
+    }
 }
 
 enum MemoryBankStatus {

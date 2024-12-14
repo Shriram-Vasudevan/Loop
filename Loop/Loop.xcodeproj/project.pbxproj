@@ -46,6 +46,7 @@
 		9953BE0E2D07AD9700348AC3 /* TrendModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BE0D2D07AD9700348AC3 /* TrendModels.swift */; };
 		9953BE102D07ADC100348AC3 /* LoopComparison.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BE0F2D07ADC100348AC3 /* LoopComparison.swift */; };
 		9953BE122D07ADE400348AC3 /* LoopAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BE112D07ADE400348AC3 /* LoopAnalysis.swift */; };
+		9953BE142D0CF79200348AC3 /* AppPromoVid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BE132D0CF79200348AC3 /* AppPromoVid.swift */; };
 		9988DB852CD9BFAC005628DE /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB842CD9BFAC005628DE /* FriendsView.swift */; };
 		9988DB8B2CD9CAEE005628DE /* SharedLoop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */; };
 		9988DB8D2CDA77C8005628DE /* PrivateUserRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8C2CDA77C8005628DE /* PrivateUserRecord.swift */; };
@@ -134,6 +135,7 @@
 		9953BE0D2D07AD9700348AC3 /* TrendModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendModels.swift; sourceTree = "<group>"; };
 		9953BE0F2D07ADC100348AC3 /* LoopComparison.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopComparison.swift; sourceTree = "<group>"; };
 		9953BE112D07ADE400348AC3 /* LoopAnalysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopAnalysis.swift; sourceTree = "<group>"; };
+		9953BE132D0CF79200348AC3 /* AppPromoVid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPromoVid.swift; sourceTree = "<group>"; };
 		9988DB842CD9BFAC005628DE /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedLoop.swift; sourceTree = "<group>"; };
 		9988DB8C2CDA77C8005628DE /* PrivateUserRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateUserRecord.swift; sourceTree = "<group>"; };
@@ -270,6 +272,7 @@
 				9953BDFD2CF810AB00348AC3 /* WebView.swift */,
 				9953BE032CFB940500348AC3 /* TabButton.swift */,
 				9953BE052CFBB30800348AC3 /* ArtisticBackground.swift */,
+				9953BE132D0CF79200348AC3 /* AppPromoVid.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -410,6 +413,7 @@
 				99AC6DDA2CE01A3E00B0D0D6 /* SendLoopOverlay.swift in Sources */,
 				99AC6DE82CE1235400B0D0D6 /* LoopLogoView.swift in Sources */,
 				9953BE022CFABA4400348AC3 /* LocalLoopStorageUtility.swift in Sources */,
+				9953BE142D0CF79200348AC3 /* AppPromoVid.swift in Sources */,
 				990E4AA42CC0A7CD009F88A0 /* InsightModels.swift in Sources */,
 				990E4A9E2CBDE063009F88A0 /* ViewPastLoopView.swift in Sources */,
 				99AC6DD62CDFFAFA00B0D0D6 /* LoopChatView.swift in Sources */,

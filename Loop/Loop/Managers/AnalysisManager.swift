@@ -874,13 +874,24 @@ class AIAnalyzer {
         Response 3:
         \(responses[2])
         
-        Analyze them as a set and provide:
-        1. A single adjective that best captures the overall feeling/tone
-        2. A brief 1-2 sentence relatively informal explanation for why you chose that adjective, addressing someone in the 2nd person
+        1. feeling: [Adjective]
+           - Describe the emotional tone or overall feeling conveyed in the response.
+
+        2. description: [1-2 sentence explanation]
+           - Provide a concise, informal explanation for the feeling you chose, addressing the user in the second person.
+
+        3. tense: [Past, Present, or Future]
+           - Identify the temporal focus of the response.
         
-        Please format your response exactly as:
-        feeling: [adjective]
-        description: [explanation]
+        4. description: [1 sentence explanation]
+           - Provide a very short, informal explanation for the tense you chose, addressing the user in the second person.
+
+        4. self-References: [Integer]
+           - Count how many times the user referenced themselves (e.g., "I," "me," "my").
+
+        5. actionable insight or prompt: [Sentence]
+           - Offer a thoughtful follow-up question based on the content, but doesn't specificlly reference personal information
+        
         """
         
         let requestBody: [String: Any] = [
@@ -889,9 +900,9 @@ class AIAnalyzer {
                 ["role": "system", "content": "You are an analyzer that responds in the exact format requested, no additional text."],
                 ["role": "user", "content": prompt]
             ],
-            "temperature": 0.3, // Lower temperature for more consistent responses
-            "max_tokens": 100,  // Reduced since our output is small
-            "top_p": 0.1,      // More focused sampling
+            "temperature": 0.3,
+            "max_tokens": 300,
+            "top_p": 0.1,
             "frequency_penalty": 0.0,
             "presence_penalty": 0.0
         ]

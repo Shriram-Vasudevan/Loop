@@ -567,4 +567,20 @@ class LoopLocalStorageUtility {
         }
         return 0.0
     }
+    
+    func deleteLoop(withID loopID: String) async throws {
+        // Assuming Core Data setup
+        let context = persistentContainer.viewContext
+        let fetchRequest: NSFetchRequest<LoopEntity> = LoopEntity.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "id == %@", loopID)
+        
+        let results = try context.fetch(fetchRequest)
+        
+        guard let entityToDelete = results.first else {
+            throw NSError(domain: "LoopLocalStorageUtilityError", code: -1, userInfo: [NSLocalizedDescriptionKey: "No local record found for loop ID \(loopID)."])
+        }
+        
+        context.delete(entityToDelete)
+        try context.save()
+    }
 }

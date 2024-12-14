@@ -68,7 +68,7 @@ struct RecordLoopsView: View {
             }
         }
         .onAppear {
-            audioManager.cleanup() 
+            audioManager.cleanup()
         }
     }
     
@@ -598,16 +598,16 @@ struct RecordLoopsView: View {
 //    @State private var audioPlayer: AVAudioPlayer?
 //    @State private var timer: Timer?
 //    @State private var waveformData: [CGFloat] = []
-//    
+//
 //    let accentColor = Color(hex: "A28497")
-//    
+//
 //    var body: some View {
 //        VStack(spacing: 32) {
 //            WaveformView(
 //                waveformData: waveformData,
 //                color: accentColor
 //            )
-//            
+//
 //            // Enhanced playback controls
 //            HStack(spacing: 40) {
 //                Button(action: togglePlayback) {
@@ -623,14 +623,14 @@ struct RecordLoopsView: View {
 //                        )
 //                }
 //            }
-//            
+//
 //            // Progress bar
 //            GeometryReader { geometry in
 //                ZStack(alignment: .leading) {
 //                    RoundedRectangle(cornerRadius: 2)
 //                        .fill(Color.gray.opacity(0.2))
 //                        .frame(height: 4)
-//                    
+//
 //                    RoundedRectangle(cornerRadius: 2)
 //                        .fill(accentColor)
 //                        .frame(width: geometry.size.width * progress, height: 4)
@@ -645,14 +645,14 @@ struct RecordLoopsView: View {
 //        }
 //        .onDisappear(perform: cleanup)
 //    }
-//    
+//
 //    private func generateWaveform() {
 //        // Generate random waveform data for visualization
 //        waveformData = (0..<50).map { _ in
 //            CGFloat.random(in: 10...50)
 //        }
 //    }
-//    
+//
 //    private func togglePlayback() {
 //        if isPlaying {
 //            stopPlayback()
@@ -660,10 +660,10 @@ struct RecordLoopsView: View {
 //            startPlayback()
 //        }
 //    }
-//    
+//
 //    private func setupAudioPlayer() {
 //        guard let url = loop.data.fileURL else { return }
-//        
+//
 //        do {
 //            audioPlayer = try AVAudioPlayer(contentsOf: url)
 //            audioPlayer?.prepareToPlay()
@@ -675,19 +675,19 @@ struct RecordLoopsView: View {
 //            print("Error setting up audio player: \(error)")
 //        }
 //    }
-//    
+//
 //    private func startPlayback() {
 //        audioPlayer?.play()
 //        isPlaying = true
 //        startProgressTimer()
 //    }
-//    
+//
 //    private func stopPlayback() {
 //        audioPlayer?.pause()
 //        isPlaying = false
 //        timer?.invalidate()
 //    }
-//    
+//
 //    private func startProgressTimer() {
 //        timer?.invalidate()
 //        timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
@@ -695,7 +695,7 @@ struct RecordLoopsView: View {
 //            progress = player.currentTime / player.duration
 //        }
 //    }
-//    
+//
 //    private func cleanup() {
 //        timer?.invalidate()
 //        timer = nil

@@ -79,7 +79,6 @@ struct TabBarBackground: View {
             
             GeometryReader { geometry in
                 ZStack {
-                    // Floating elements for bottom area
                     ForEach(0..<3) { index in
                         Circle()
                             .fill(
