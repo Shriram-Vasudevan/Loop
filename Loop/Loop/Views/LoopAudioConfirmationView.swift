@@ -17,6 +17,8 @@ struct LoopAudioConfirmationView: View {
     let onComplete: () -> Void
     let onRetry: () -> Void
     
+    let retryAttempts: Int
+    
     let accentColor = Color(hex: "A28497")
     let secondaryColor = Color(hex: "B7A284")
     let textColor = Color(hex: "2C3E50")
@@ -51,16 +53,18 @@ struct LoopAudioConfirmationView: View {
                         )
                 }
                 
-                Button(action: onRetry) {
-                    Text("try again")
-                        .font(.system(size: 18, weight: .light))
-                        .foregroundColor(accentColor)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(accentColor, lineWidth: 1)
-                        )
+                if retryAttempts > 0 {
+                    Button(action: onRetry) {
+                        Text("try again")
+                            .font(.system(size: 18, weight: .light))
+                            .foregroundColor(accentColor)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(accentColor, lineWidth: 1)
+                            )
+                    }
                 }
             }
             .padding(.horizontal, 20)

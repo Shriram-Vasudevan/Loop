@@ -66,6 +66,10 @@ struct AIAnalysisResult: Codable {
     let tenseDescription: String
     let selfReferenceCount: Int
     let followUp: String
+    let actionReflectionRatio: String
+    let actionReflectionDescription: String
+    let solutionFocus: String
+    let solutionFocusDescription: String
 }
 
 struct AggregateMetrics: Codable {

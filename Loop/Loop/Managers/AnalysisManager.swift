@@ -117,6 +117,14 @@ class AnalysisManager: ObservableObject {
     private let loopAnalysisCacheKey = "LoopAnalysisCache"
     private let pastLoopAnalysisCacheKey = "PastLoopAnalysisCache"
     private let lastAnalysisCacheDateKey = "LastAnalysisCacheDate"
+//    
+//    @Published private(set) var currentWeekStats: [DailyStats] = []
+    @Published private(set) var currentMonthWeeklyStats: [WeeklyStats] = []
+    @Published private(set) var currentYearMonthlyStats: [MonthlyStats] = []
+    
+    @Published private(set) var isLoadingWeekStats = false
+    @Published private(set) var isLoadingMonthStats = false
+    @Published private(set) var isLoadingYearStats = false
     
     init() {
         if isCacheValidForToday() {
@@ -140,7 +148,7 @@ class AnalysisManager: ObservableObject {
                 todaysLoops.append(analysis)
                 if todaysLoops.count == 3 {
                     print("reached three loops analyzed")
-
+                    
                     Task {
                         let dailyAnalysis = await createDailyAnalysis(todaysLoops)
                         currentDailyAnalysis = dailyAnalysis
@@ -148,7 +156,8 @@ class AnalysisManager: ObservableObject {
                         allTimeComparison = statsManager.compareWithAllTimeStats(dailyAnalysis)
                         monthlyComparison = statsManager.compareWithMonthlyStats(dailyAnalysis)
                         weeklyComparison = statsManager.compareWithWeeklyStats(dailyAnalysis)
-                        
+//                        
+//                        saveDailyStats()
                         saveAnalysisCache()
                     }
                 }
@@ -396,12 +405,12 @@ class AnalysisManager: ObservableObject {
         
         analysisCache.set(analysisData, forKey: dailyAnalysisCacheKey)
     }
-
+    
     private func loadAnalysisCache() {
         guard let cachedData = analysisCache.dictionary(forKey: dailyAnalysisCacheKey) else {
-                return
-            }
-            
+            return
+        }
+        
         if let dailyAnalysisData = cachedData["dailyAnalysis"] as? Data,
            let dailyAnalysis = try? JSONDecoder().decode(DailyAnalysis.self, from: dailyAnalysisData) {
             self.currentDailyAnalysis = dailyAnalysis
@@ -439,17 +448,141 @@ class AnalysisManager: ObservableObject {
     }
     
     private func resetAnalysisCache() {
-            currentDailyAnalysis = nil
-            todaysLoops = []
-            pastLoopAnalysis = nil
-            loopComparison = nil
-            allTimeComparison = nil
-            monthlyComparison = nil
-            weeklyComparison = nil
-            analysisCache.removeObject(forKey: dailyAnalysisCacheKey)
+        currentDailyAnalysis = nil
+        todaysLoops = []
+        pastLoopAnalysis = nil
+        loopComparison = nil
+        allTimeComparison = nil
+        monthlyComparison = nil
+        weeklyComparison = nil
+        analysisCache.removeObject(forKey: dailyAnalysisCacheKey)
+    }
+    
+//    func saveDailyStats() {
+//        guard let analysis = currentDailyAnalysis else { return }
+//        
+//        let context = statsManager.context
+//        let dailyStats = DailyStats(context: context)
+//        
+//        // Set basic info
+//        dailyStats.date = analysis.date
+//        let calendar = Calendar.current
+//        let components = calendar.dateComponents([.year, .month, .weekOfYear, .weekday], from: analysis.date)
+//        dailyStats.year = Int16(components.year ?? 0)
+//        dailyStats.month = Int16(components.month ?? 0)
+//        dailyStats.weekOfYear = Int16(components.weekOfYear ?? 0)
+//        dailyStats.weekday = Int16(components.weekday ?? 0)
+//        
+//        // Set metrics
+//        dailyStats.averageWPM = analysis.aggregateMetrics.averageWPM
+//        dailyStats.averageDuration = analysis.aggregateMetrics.averageDuration
+//        dailyStats.averageWordCount = analysis.aggregateMetrics.averageWordCount
+//        dailyStats.averageUniqueWordCount = analysis.aggregateMetrics.averageUniqueWordCount
+//        dailyStats.averageSelfReferences = analysis.aggregateMetrics.averageSelfReferences
+//        dailyStats.vocabularyDiversityRatio = analysis.aggregateMetrics.vocabularyDiversityRatio
+//        
+//        // Additional metrics
+//        dailyStats.loopCount = Int16(analysis.loops.count)
+//        dailyStats.averageWordLength = analysis.loops.reduce(0.0) { $0 + $1.metrics.averageWordLength } / Double(analysis.loops.count)
+//        
+//        // Save
+//        do {
+//            try context.save()
+//            print("Successfully saved daily stats")
+//        } catch {
+//            print("Failed to save daily stats: \(error)")
+//        }
+//    }
+//    
+//    func fetchCurrentWeekStats() async {
+//        isLoadingWeekStats = true
+//        defer { isLoadingWeekStats = false }
+//        
+//        let calendar = Calendar.current
+//        let today = Date()
+//        
+//        // Get start of current week (Sunday)
+//        guard let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)),
+//              let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) else {
+//            currentWeekStats = []
+//            return
+//        }
+//        
+//        let context = statsManager.context
+//        let request = NSFetchRequest<DailyStats>(entityName: "DailyStatsEntity")
+//        
+//        request.predicate = NSPredicate(format: "date >= %@ AND date <= %@",
+//                                        weekStart as NSDate,
+//                                        weekEnd as NSDate)
+//        
+//        request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
+//        
+//        do {
+//            currentWeekStats = try context.fetch(request)
+//        } catch {
+//            print("Error fetching daily stats: \(error)")
+//            currentWeekStats = []
+//        }
+//    }
+    
+    func fetchCurrentMonthWeeklyStats() async {
+        isLoadingMonthStats = true
+        defer { isLoadingMonthStats = false }
+        
+        let calendar = Calendar.current
+        let today = Date()
+        guard let year = calendar.dateComponents([.year], from: today).year,
+              let monthStart = calendar.date(from: DateComponents(year: year, month: calendar.component(.month, from: today))),
+              let monthEnd = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: monthStart),
+              let firstWeek = calendar.dateComponents([.weekOfYear], from: monthStart).weekOfYear,
+              let lastWeek = calendar.dateComponents([.weekOfYear], from: monthEnd).weekOfYear else {
+            print("Error calculating date components for weekly stats")
+            currentMonthWeeklyStats = []
+            return
         }
+        
+        let context = statsManager.context
+        let request = NSFetchRequest<WeeklyStats>(entityName: "WeeklyStatsEntity")
+        
+        request.predicate = NSPredicate(format: "year == %d AND weekNumber >= %d AND weekNumber <= %d",
+                                        year, firstWeek, lastWeek)
+        
+        request.sortDescriptors = [NSSortDescriptor(key: "weekNumber", ascending: true)]
+        
+        do {
+            currentMonthWeeklyStats = try context.fetch(request)
+        } catch {
+            print("Error fetching weekly stats: \(error)")
+            currentMonthWeeklyStats = []
+        }
+    }
+    
+    func fetchCurrentYearMonthlyStats() async {
+        isLoadingYearStats = true
+        defer { isLoadingYearStats = false }
+        
+        let calendar = Calendar.current
+        guard let year = calendar.dateComponents([.year], from: Date()).year else {
+            print("Error getting current year")
+            currentYearMonthlyStats = []
+            return
+        }
+        
+        let context = statsManager.context
+        let request = NSFetchRequest<MonthlyStats>(entityName: "MonthlyStatsEntity")
+        
+        request.predicate = NSPredicate(format: "year == %d", year)
+        request.sortDescriptors = [NSSortDescriptor(key: "month", ascending: true)]
+        
+        do {
+            currentYearMonthlyStats = try context.fetch(request)
+        } catch {
+            print("Error fetching monthly stats: \(error)")
+            currentYearMonthlyStats = []
+        }
+    }
 }
-
+    
 class StatsManager {
     static let shared = StatsManager()
     
@@ -466,6 +599,8 @@ class StatsManager {
     var context: NSManagedObjectContext {
         return persistentContainer.viewContext
     }
+    
+    
     
     private func fetchAllTimeStats() -> AllTimeStats? {
         let request = NSFetchRequest<AllTimeStats>(entityName: "AllTimeStatsEntity")
@@ -560,77 +695,77 @@ class StatsManager {
         let weeklyStats = fetchCurrentWeekStats() ?? initializeWeeklyStats()
         
         allTimeStats.averageWPM = updateRunningAverage(currentAvg: allTimeStats.averageWPM,
-                                                      currentCount: Int(allTimeStats.dataPointCount),
-                                                      newValue: analysis.aggregateMetrics.averageWPM)
+                                                       currentCount: Int(allTimeStats.dataPointCount),
+                                                       newValue: analysis.aggregateMetrics.averageWPM)
         allTimeStats.averageDuration = updateRunningAverage(currentAvg: allTimeStats.averageDuration,
-                                                          currentCount: Int(allTimeStats.dataPointCount),
-                                                          newValue: analysis.aggregateMetrics.averageDuration)
+                                                            currentCount: Int(allTimeStats.dataPointCount),
+                                                            newValue: analysis.aggregateMetrics.averageDuration)
         allTimeStats.averageWordCount = updateRunningAverage(currentAvg: allTimeStats.averageWordCount,
-                                                           currentCount: Int(allTimeStats.dataPointCount),
-                                                           newValue: analysis.aggregateMetrics.averageWordCount)
+                                                             currentCount: Int(allTimeStats.dataPointCount),
+                                                             newValue: analysis.aggregateMetrics.averageWordCount)
         allTimeStats.averageUniqueWordCount = updateRunningAverage(currentAvg: allTimeStats.averageUniqueWordCount,
-                                                                 currentCount: Int(allTimeStats.dataPointCount),
-                                                                 newValue: analysis.aggregateMetrics.averageUniqueWordCount)
-        allTimeStats.averageSelfReferences = updateRunningAverage(currentAvg: allTimeStats.averageSelfReferences,
-                                                                currentCount: Int(allTimeStats.dataPointCount),
-                                                                newValue: analysis.aggregateMetrics.averageSelfReferences)
-        allTimeStats.vocabularyDiversityRatio = updateRunningAverage(currentAvg: allTimeStats.vocabularyDiversityRatio,
                                                                    currentCount: Int(allTimeStats.dataPointCount),
-                                                                   newValue: analysis.aggregateMetrics.vocabularyDiversityRatio)
+                                                                   newValue: analysis.aggregateMetrics.averageUniqueWordCount)
+        allTimeStats.averageSelfReferences = updateRunningAverage(currentAvg: allTimeStats.averageSelfReferences,
+                                                                  currentCount: Int(allTimeStats.dataPointCount),
+                                                                  newValue: analysis.aggregateMetrics.averageSelfReferences)
+        allTimeStats.vocabularyDiversityRatio = updateRunningAverage(currentAvg: allTimeStats.vocabularyDiversityRatio,
+                                                                     currentCount: Int(allTimeStats.dataPointCount),
+                                                                     newValue: analysis.aggregateMetrics.vocabularyDiversityRatio)
         allTimeStats.averageWordLength = updateRunningAverage(currentAvg: allTimeStats.averageWordLength,
-                                                           currentCount: Int(allTimeStats.dataPointCount),
-                                                           newValue: analysis.loops.reduce(0.0) { $0 + $1.metrics.averageWordLength } / Double(analysis.loops.count))
+                                                              currentCount: Int(allTimeStats.dataPointCount),
+                                                              newValue: analysis.loops.reduce(0.0) { $0 + $1.metrics.averageWordLength } / Double(analysis.loops.count))
         allTimeStats.dataPointCount += 1
         allTimeStats.lastUpdated = Date()
         
         if let monthlyStats = monthlyStats {
             monthlyStats.averageWPM = updateRunningAverage(currentAvg: monthlyStats.averageWPM,
-                                                         currentCount: Int(monthlyStats.dataPointCount),
-                                                         newValue: analysis.aggregateMetrics.averageWPM)
+                                                           currentCount: Int(monthlyStats.dataPointCount),
+                                                           newValue: analysis.aggregateMetrics.averageWPM)
             monthlyStats.averageDuration = updateRunningAverage(currentAvg: monthlyStats.averageDuration,
-                                                             currentCount: Int(monthlyStats.dataPointCount),
-                                                             newValue: analysis.aggregateMetrics.averageDuration)
+                                                                currentCount: Int(monthlyStats.dataPointCount),
+                                                                newValue: analysis.aggregateMetrics.averageDuration)
             monthlyStats.averageWordCount = updateRunningAverage(currentAvg: monthlyStats.averageWordCount,
-                                                              currentCount: Int(monthlyStats.dataPointCount),
-                                                              newValue: analysis.aggregateMetrics.averageWordCount)
+                                                                 currentCount: Int(monthlyStats.dataPointCount),
+                                                                 newValue: analysis.aggregateMetrics.averageWordCount)
             monthlyStats.averageUniqueWordCount = updateRunningAverage(currentAvg: monthlyStats.averageUniqueWordCount,
-                                                                    currentCount: Int(monthlyStats.dataPointCount),
-                                                                    newValue: analysis.aggregateMetrics.averageUniqueWordCount)
+                                                                       currentCount: Int(monthlyStats.dataPointCount),
+                                                                       newValue: analysis.aggregateMetrics.averageUniqueWordCount)
             monthlyStats.averageSelfReferences = updateRunningAverage(currentAvg: monthlyStats.averageSelfReferences,
-                                                                   currentCount: Int(monthlyStats.dataPointCount),
-                                                                   newValue: analysis.aggregateMetrics.averageSelfReferences)
-            monthlyStats.vocabularyDiversityRatio = updateRunningAverage(currentAvg: monthlyStats.vocabularyDiversityRatio,
                                                                       currentCount: Int(monthlyStats.dataPointCount),
-                                                                      newValue: analysis.aggregateMetrics.vocabularyDiversityRatio)
+                                                                      newValue: analysis.aggregateMetrics.averageSelfReferences)
+            monthlyStats.vocabularyDiversityRatio = updateRunningAverage(currentAvg: monthlyStats.vocabularyDiversityRatio,
+                                                                         currentCount: Int(monthlyStats.dataPointCount),
+                                                                         newValue: analysis.aggregateMetrics.vocabularyDiversityRatio)
             monthlyStats.averageWordLength = updateRunningAverage(currentAvg: monthlyStats.averageWordLength,
-                                                              currentCount: Int(monthlyStats.dataPointCount),
-                                                              newValue: analysis.loops.reduce(0.0) { $0 + $1.metrics.averageWordLength } / Double(analysis.loops.count))
+                                                                  currentCount: Int(monthlyStats.dataPointCount),
+                                                                  newValue: analysis.loops.reduce(0.0) { $0 + $1.metrics.averageWordLength } / Double(analysis.loops.count))
             monthlyStats.dataPointCount += 1
             monthlyStats.lastUpdated = Date()
         }
         
         if let weeklyStats = weeklyStats {
             weeklyStats.averageWPM = updateRunningAverage(currentAvg: weeklyStats.averageWPM,
-                                                       currentCount: Int(weeklyStats.dataPointCount),
-                                                       newValue: analysis.aggregateMetrics.averageWPM)
+                                                          currentCount: Int(weeklyStats.dataPointCount),
+                                                          newValue: analysis.aggregateMetrics.averageWPM)
             weeklyStats.averageDuration = updateRunningAverage(currentAvg: weeklyStats.averageDuration,
-                                                           currentCount: Int(weeklyStats.dataPointCount),
-                                                           newValue: analysis.aggregateMetrics.averageDuration)
+                                                               currentCount: Int(weeklyStats.dataPointCount),
+                                                               newValue: analysis.aggregateMetrics.averageDuration)
             weeklyStats.averageWordCount = updateRunningAverage(currentAvg: weeklyStats.averageWordCount,
-                                                            currentCount: Int(weeklyStats.dataPointCount),
-                                                            newValue: analysis.aggregateMetrics.averageWordCount)
+                                                                currentCount: Int(weeklyStats.dataPointCount),
+                                                                newValue: analysis.aggregateMetrics.averageWordCount)
             weeklyStats.averageUniqueWordCount = updateRunningAverage(currentAvg: weeklyStats.averageUniqueWordCount,
-                                                                  currentCount: Int(weeklyStats.dataPointCount),
-                                                                  newValue: analysis.aggregateMetrics.averageUniqueWordCount)
+                                                                      currentCount: Int(weeklyStats.dataPointCount),
+                                                                      newValue: analysis.aggregateMetrics.averageUniqueWordCount)
             weeklyStats.averageSelfReferences = updateRunningAverage(currentAvg: weeklyStats.averageSelfReferences,
-                                                                 currentCount: Int(weeklyStats.dataPointCount),
-                                                                 newValue: analysis.aggregateMetrics.averageSelfReferences)
+                                                                     currentCount: Int(weeklyStats.dataPointCount),
+                                                                     newValue: analysis.aggregateMetrics.averageSelfReferences)
             weeklyStats.vocabularyDiversityRatio = updateRunningAverage(currentAvg: weeklyStats.vocabularyDiversityRatio,
-                                                                    currentCount: Int(weeklyStats.dataPointCount),
-                                                                    newValue: analysis.aggregateMetrics.vocabularyDiversityRatio)
+                                                                        currentCount: Int(weeklyStats.dataPointCount),
+                                                                        newValue: analysis.aggregateMetrics.vocabularyDiversityRatio)
             weeklyStats.averageWordLength = updateRunningAverage(currentAvg: weeklyStats.averageWordLength,
-                                                            currentCount: Int(weeklyStats.dataPointCount),
-                                                            newValue: analysis.loops.reduce(0.0) { $0 + $1.metrics.averageWordLength } / Double(analysis.loops.count))
+                                                                 currentCount: Int(weeklyStats.dataPointCount),
+                                                                 newValue: analysis.loops.reduce(0.0) { $0 + $1.metrics.averageWordLength } / Double(analysis.loops.count))
             weeklyStats.dataPointCount += 1
             weeklyStats.lastUpdated = Date()
         }
@@ -743,7 +878,7 @@ class StatsManager {
             commonWords: []
         )
     }
-
+    
     func compareWithMonthlyStats(_ analysis: DailyAnalysis) -> LoopComparison? {
         guard let monthlyStats = fetchCurrentMonthStats() else { return nil }
         
@@ -795,7 +930,7 @@ class StatsManager {
             commonWords: []
         )
     }
-
+    
     func compareWithWeeklyStats(_ analysis: DailyAnalysis) -> LoopComparison? {
         guard let weeklyStats = fetchCurrentWeekStats() else { return nil }
         
@@ -863,36 +998,31 @@ class AIAnalyzer {
         print("analyzing")
         
         let prompt = """
-        Given these 3 verbal responses:
-        
-        Response 1:
-        \(responses[0])
-        
-        Response 2:
-        \(responses[1])
-        
-        Response 3:
-        \(responses[2])
-        
-        1. feeling: [Adjective]
-           - Describe the emotional tone or overall feeling conveyed in the response.
-
-        2. description: [1-2 sentence explanation]
-           - Provide a concise, informal explanation for the feeling you chose, addressing the user in the second person.
-
-        3. tense: [Past, Present, or Future]
-           - Identify the temporal focus of the response.
-        
-        4. description: [1 sentence explanation]
-           - Provide a very short, informal explanation for the tense you chose, addressing the user in the second person.
-
-        4. self-References: [Integer]
-           - Count how many times the user referenced themselves (e.g., "I," "me," "my").
-
-        5. actionable insight or prompt: [Sentence]
-           - Offer a thoughtful follow-up question based on the content, but doesn't specificlly reference personal information
-        
-        """
+    Analyze these 3 responses:
+    
+    Response 1:
+    \(responses[0])
+    
+    Response 2:
+    \(responses[1])
+    
+    Response 3:
+    \(responses[2])
+    
+    1. feeling: [adjective]
+    2. description: [explain feeling in 2 detailed sentences addressing the user in the second person ("Your responses")]
+    3. tense: [past/present/future]
+    4. description: [explain tense briefly]
+    5. self-references: [count of I/me/my]
+    6. action-reflection: [%action/%reflection]
+    7. description: [brief explanation of whether they're doing things or thinking about them]
+    8. solution-focus: [problem%/solution%]
+    9. description: [brief explanation of problem vs solution orientation]
+    10. follow-up: [thoughtful question based on content]
+    
+    Format: label: answer
+    Keep descriptions informal and brief.
+    """
         
         let requestBody: [String: Any] = [
             "model": "gpt-4o-mini",
@@ -901,7 +1031,7 @@ class AIAnalyzer {
                 ["role": "user", "content": prompt]
             ],
             "temperature": 0.3,
-            "max_tokens": 300,
+            "max_tokens": 1000,
             "top_p": 0.1,
             "frequency_penalty": 0.0,
             "presence_penalty": 0.0
@@ -926,24 +1056,79 @@ class AIAnalyzer {
     }
     
     private func parseAIResponse(_ response: String) throws -> AIAnalysisResult {
-        print("parsing")
-        let lines = response.components(separatedBy: "\n")
+        let lines = response.components(separatedBy: .newlines)
         var feeling: String?
-        var description: String?
+        var feelingDescription: String?
+        var tense: String?
+        var tenseDescription: String?
+        var selfReferenceCount: Int?
+        var followUp: String?
+        var actionReflectionRatio: String?
+        var actionReflectionDescription: String?
+        var solutionFocus: String?
+        var solutionFocusDescription: String?
+        
+        var currentSection = ""
         
         for line in lines {
-            if line.lowercased().starts(with: "feeling:") {
-                feeling = line.replacingOccurrences(of: "feeling:", with: "").trimmingCharacters(in: .whitespaces)
-            } else if line.lowercased().starts(with: "description:") {
-                description = line.replacingOccurrences(of: "description:", with: "").trimmingCharacters(in: .whitespaces)
+            let lowercasedLine = line.lowercased()
+            
+            switch true {
+            case lowercasedLine.starts(with: "1. feeling:"):
+                currentSection = "feeling"
+                feeling = line.replacing("1. feeling:", with: "").trimmingCharacters(in: .whitespaces)
+            case lowercasedLine.starts(with: "2. description:") && currentSection == "feeling":
+                feelingDescription = line.replacing("2. description:", with: "").trimmingCharacters(in: .whitespaces)
+            case lowercasedLine.starts(with: "3. tense:"):
+                currentSection = "tense"
+                tense = line.replacing("3. tense:", with: "").trimmingCharacters(in: .whitespaces)
+            case lowercasedLine.starts(with: "4. description:") && currentSection == "tense":
+                tenseDescription = line.replacing("4. description:", with: "").trimmingCharacters(in: .whitespaces)
+            case lowercasedLine.starts(with: "5. self-references:"):
+                let countString = line.replacing("5. self-references:", with: "").trimmingCharacters(in: .whitespaces)
+                selfReferenceCount = Int(countString) ?? 0
+            case lowercasedLine.starts(with: "6. action-reflection:"):
+                currentSection = "action"
+                actionReflectionRatio = line.replacing("6. action-reflection:", with: "").trimmingCharacters(in: .whitespaces)
+            case lowercasedLine.starts(with: "7. description:") && currentSection == "action":
+                actionReflectionDescription = line.replacing("7. description:", with: "").trimmingCharacters(in: .whitespaces)
+            case lowercasedLine.starts(with: "8. solution-focus:"):
+                currentSection = "solution"
+                solutionFocus = line.replacing("8. solution-focus:", with: "").trimmingCharacters(in: .whitespaces)
+            case lowercasedLine.starts(with: "9. description:") && currentSection == "solution":
+                solutionFocusDescription = line.replacing("9. description:", with: "").trimmingCharacters(in: .whitespaces)
+            case lowercasedLine.starts(with: "10. follow-up:"):
+                followUp = line.replacing("10. follow-up:", with: "").trimmingCharacters(in: .whitespaces)
+            default:
+                continue
             }
         }
         
-        guard let feeling = feeling, let description = description else {
+        guard let feeling = feeling,
+              let feelingDescription = feelingDescription,
+              let tense = tense,
+              let tenseDescription = tenseDescription,
+              let selfReferenceCount = selfReferenceCount,
+              let followUp = followUp,
+              let actionReflectionRatio = actionReflectionRatio,
+              let actionReflectionDescription = actionReflectionDescription,
+              let solutionFocus = solutionFocus,
+              let solutionFocusDescription = solutionFocusDescription else {
             throw AnalysisError.invalidAIResponse
         }
         
-        return AIAnalysisResult(feeling: feeling, description: description)
+        return AIAnalysisResult(
+            feeling: feeling,
+            feelingDescription: feelingDescription,
+            tense: tense,
+            tenseDescription: tenseDescription,
+            selfReferenceCount: selfReferenceCount,
+            followUp: followUp,
+            actionReflectionRatio: actionReflectionRatio,
+            actionReflectionDescription: actionReflectionDescription,
+            solutionFocus: solutionFocus,
+            solutionFocusDescription: solutionFocusDescription
+        )
     }
 }
 

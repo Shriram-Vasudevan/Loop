@@ -181,8 +181,7 @@ struct HomeView: View {
                     }
                 }
                 .padding(.horizontal, 28)
-                
-                Spacer()
+                .padding(.bottom, 30)
                 
                 // Progress indicator at bottom
                 ProgressIndicator(
@@ -193,7 +192,6 @@ struct HomeView: View {
                 .padding(.horizontal, 28)
                 .padding(.bottom, 28)
             }
-            .frame(height: 340) // Fixed height for consistent card size
             .background(
                 ZStack {
                     // Main background

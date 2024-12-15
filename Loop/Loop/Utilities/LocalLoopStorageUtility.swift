@@ -80,6 +80,7 @@ class LoopLocalStorageUtility {
         loopEntity.setValue(loop.freeResponse, forKey: "freeResponse")
         loopEntity.setValue(loop.isVideo, forKey: "isVideo")
         loopEntity.setValue(loop.isDailyLoop, forKey: "isDailyLoop")
+        loopEntity.setValue(loop.isFollowUp, forKey: "isFollowUp")
         
         do {
             try context.save()
@@ -117,7 +118,8 @@ class LoopLocalStorageUtility {
             mood: entity.value(forKey: "mood") as? String,
             freeResponse: entity.value(forKey: "freeResponse") as? Bool ?? false,
             isVideo: entity.value(forKey: "isVideo") as? Bool ?? false,
-            isDailyLoop: entity.value(forKey: "isDailyLoop") as? Bool ?? false
+            isDailyLoop: entity.value(forKey: "isDailyLoop") as? Bool ?? false, 
+            isFollowUp: entity.value(forKey: "isFollowUp") as? Bool ?? false
         )
     }
     

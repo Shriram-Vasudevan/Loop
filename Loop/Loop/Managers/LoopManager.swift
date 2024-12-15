@@ -657,7 +657,7 @@ class LoopManager: ObservableObject {
 //        })
 //    }
     
-    func addLoop(mediaURL: URL, isVideo: Bool, prompt: String, mood: String? = nil, freeResponse: Bool = false, isDailyLoop: Bool) -> Loop {
+    func addLoop(mediaURL: URL, isVideo: Bool, prompt: String, mood: String? = nil, freeResponse: Bool = false, isDailyLoop: Bool, isFollowUp: Bool) -> Loop {
         let loopID = UUID().uuidString
         let timestamp = Date()
         let ckAsset = CKAsset(fileURL: mediaURL)
@@ -673,7 +673,7 @@ class LoopManager: ObservableObject {
             mood: mood,
             freeResponse: freeResponse,
             isVideo: isVideo,
-            isDailyLoop: isDailyLoop
+            isDailyLoop: isDailyLoop, isFollowUp: isFollowUp
         )
         
         // Check backup setting and store accordingly
@@ -1042,13 +1042,26 @@ class LoopManager: ObservableObject {
     
     func deleteLoop(withID loopID: String) async {
         do {
-            // Try local first if you want, or both
+            // First find the loop in our current data structure
+            for (date, loops) in loopsByDate {
+                if let index = loops.firstIndex(where: { $0.id == loopID }) {
+                    // Remove from local data structure
+                    await MainActor.run {
+                        loopsByDate[date]?.remove(at: index)
+                    }
+                    break
+                }
+            }
+            
+            // Delete from storage
             try await LoopLocalStorageUtility.shared.deleteLoop(withID: loopID)
             
-            // If also stored in CloudKit, delete from cloud as well (if applicable)
-            try await LoopCloudKitUtility.deleteLoop(withID: loopID)
+            // If cloud backup is enabled, delete from cloud too
+            if UserDefaults.standard.bool(forKey: "iCloudBackupEnabled") {
+                try await LoopCloudKitUtility.deleteLoop(withID: loopID)
+            }
             
-            print("Successfully deleted loop with ID \(loopID) from local and cloud storage")
+            print("Successfully deleted loop with ID \(loopID)")
         } catch {
             print("Error deleting loop: \(error)")
         }

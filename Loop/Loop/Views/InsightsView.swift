@@ -8,1225 +8,517 @@
 import SwiftUI
 import Charts
 
+//
+//  InsightsView.swift
+//  Loop
+//
+//  Created by Shriram Vasudevan on 10/7/24.
+//
 
 struct InsightsView: View {
-    @ObservedObject var analysisManager = AnalysisManager.shared
+    @ObservedObject var analysisManager: AnalysisManager = AnalysisManager.shared
     @State private var animateCards = false
-    @State private var selectedTimeframe = Timeframe.today
-    @State private var selectedInsightType: InsightType?
-    @State private var expandedSections: Set<Section> = [.overview]
-    @State private var selectedLoop: LoopAnalysis?
-    @State private var showingLoopDetail = false
-    
     @State private var selectedTab = "today"
+    
+    @State var selectedFollowUp: FollowUp?
     
     private let accentColor = Color(hex: "A28497")
     private let backgroundColor = Color(hex: "FAFBFC")
     private let surfaceColor = Color(hex: "F8F5F7")
     private let textColor = Color(hex: "2C3E50")
     
-
-    enum Timeframe: String, CaseIterable {
-        case today = "Today"
-        case week = "This Week"
-        case month = "This Month"
-    }
-    
-    enum InsightType: String, CaseIterable {
-        case pace = "Speaking Pace"
-        case vocabulary = "Vocabulary"
-        case patterns = "Patterns"
-        case duration = "Duration"
-    }
-    
-    enum Section: String {
-        case overview = "Overview"
-        case vocabulary = "Vocabulary Analysis"
-        case patterns = "Speaking Patterns"
-        case relationships = "Loop Relationships"
-    }
-    
-    // MARK: - Body
     var body: some View {
         ZStack {
-
-            VStack (spacing: 0) {
+            backgroundColor.ignoresSafeArea()
+            
+            VStack(spacing: 0) {
                 ScrollView {
-                    VStack(spacing: 10) {
-                        header
-                            .opacity(animateCards ? 1 : 0)
-                            .offset(y: animateCards ? 0 : 20)
-
-                        if selectedTab == "today" {
-                            if analysisManager.todaysLoops.count == 3
-                            {
-                                TodayAnalysisView(analysisManager: analysisManager)
+                    VStack(spacing: 12) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("insights")
+                                    .font(.system(size: 40, weight: .bold))
+                                    .foregroundColor(textColor)
+                                
+                                Text("dive deeper")
+                                    .font(.system(size: 15, weight: .light))
+                                    .foregroundColor(textColor.opacity(0.6))
+                                    .tracking(2)
                             }
-                            else {
-                                Text("Complete Today's Loops for Analysis!")
-                            }
+                            Spacer()
                         }
-                        else {
-                            Text("Working on it.")
+                        .padding(.top, 16)
+                        .opacity(animateCards ? 1 : 0)
+                        .offset(y: animateCards ? 0 : 20)
+                        
+                        if selectedTab == "today" {
+                            if analysisManager.todaysLoops.count == 3 {
+                                TodayInsightsContent(analysisManager: analysisManager, selectedFollowUp: $selectedFollowUp)
+                                    .opacity(animateCards ? 1 : 0)
+                                    .offset(y: animateCards ? 0 : 20)
+                            } else {
+                                Text("Complete Today's Loops for Analysis")
+                                    .font(.system(size: 17, weight: .regular))
+                                    .foregroundColor(textColor.opacity(0.7))
+                            }
+                        } else {
+//                            TrendsInsightsView(analysisManager: analysisManager)
                         }
                     }
                     .padding(.horizontal, 24)
                 }
-            }
-            
-            VStack {
-                Spacer()
                 
-                toggleButton
+                tabToggle
                     .padding(.bottom, 10)
             }
         }
-
         .onAppear {
             withAnimation(.easeOut(duration: 0.8)) {
                 animateCards = true
             }
         }
-    }
-    
-    private var header: some View {
-        VStack(spacing: 16) {
-            HStack {
-                VStack(alignment: .center, spacing: 0) {
-                    Text("insights")
-                        .font(.system(size: 40, weight: .bold))
-                        .foregroundColor(textColor)
-                    
-                    HStack(spacing: 4) {
-                        Text("dive")
-                            .font(.system(size: 20, weight: .light))
-                            .foregroundColor(.gray)
-                       
-                        Text("deeper")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(accentColor)
-                    }
-                    .padding(.top, -5)
-
-                }
-//
-//                Spacer()
-//
-//                if !loopManager.hasCompletedToday {
-//                    CircularProgress(
-//                        progress: CGFloat(loopManager.currentPromptIndex) / CGFloat(loopManager.dailyPrompts.count),
-//                        color: accentColor
-//                    )
-//                    .frame(width: 50, height: 50)
-//                }
-            }
+        .fullScreenCover(item: $selectedFollowUp) { selectedFollowUp in
+            RecordFollowUpLoopView(prompt: selectedFollowUp.prompt)
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 16)
     }
     
-    private var toggleButton: some View {
-        VStack(spacing: 24) {
-            Menu {
-                Button("today") {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        selectedTab = "today"
-                    }
-                }
-                Button("trends") {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        selectedTab = "trends"
-                    }
-                }
-            } label: {
-                ZStack {
-
-                    HStack(spacing: 8) {
-                        Text(selectedTab)
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.black)
-                    }
-                    .frame(height: 56)
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        backgroundColor,
-                                        Color(hex: "FFFFFF")
-                                    ]),
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                    )
-                    .cornerRadius(28)
-                    .shadow(color: accentColor.opacity(0.15), radius: 12, y: 6)
-                    .padding(.horizontal)
-                    
-                    HStack {
-                        Spacer()
-                        Image(systemName: "chevron.up")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.black)
-                            .padding(.trailing)
-                    }
-                    .padding(.horizontal)
+    private var tabToggle: some View {
+        Menu {
+            Button("today") {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    selectedTab = "today"
                 }
             }
-            .buttonStyle(ScaleButtonStyle())
+            Button("trends") {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    selectedTab = "trends"
+                }
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Text(selectedTab)
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(textColor)
+                Image(systemName: "chevron.up")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(textColor.opacity(0.7))
+            }
+            .frame(height: 55)
+            .frame(maxWidth: .infinity)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 22))
+            .shadow(color: accentColor.opacity(0.15), radius: 10, y: 4)
+            .padding(.horizontal)
         }
-        .padding(.top, 16)
     }
-    private var noDataView: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "chart.bar.xaxis")
-                .font(.system(size: 48))
-                .foregroundColor(accentColor)
-            
-            Text("No Insights Yet")
-                .font(.system(size: 24, weight: .bold))
-                .foregroundColor(textColor)
-            
-            Text("Complete your daily reflection loops to see insights about your speaking patterns.")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(textColor.opacity(0.6))
-                .multilineTextAlignment(.center)
-        }
-        .padding(40)
-        .cardStyle()
-    }
-    
-   
 }
 
-struct InsightWave: Shape {
-   func path(in rect: CGRect) -> Path {
-       var path = Path()
-       let width = rect.width
-       let height = rect.height
-       
-       path.move(to: CGPoint(x: 0, y: 0))
-       path.addLine(to: CGPoint(x: width, y: 0))
-       path.addLine(to: CGPoint(x: width, y: height))
-       
-       // Create wave
-       path.addCurve(
-           to: CGPoint(x: 0, y: height),
-           control1: CGPoint(x: width * 0.75, y: height * 0.8),
-           control2: CGPoint(x: width * 0.25, y: height * 1.2)
-       )
-       
-       path.closeSubpath()
-       return path
-   }
-}
-
-struct TodayAnalysisView: View {
+struct TodayInsightsContent: View {
     @ObservedObject var analysisManager: AnalysisManager
-    @State private var selectedComparison = "week"
-    @State private var selectedLoop = 0
     private let accentColor = Color(hex: "A28497")
     private let backgroundColor = Color(hex: "FAFBFC")
+    private let surfaceColor = Color(hex: "F8F5F7")
     private let textColor = Color(hex: "2C3E50")
-    let surfaceColor = Color(hex: "F8F5F7")
+    
+    @Binding var selectedFollowUp: FollowUp?
     
     var body: some View {
-        VStack(spacing: 20) {
-            aiAnalysis
-            
-            VStack(spacing: 12) {
-                Text("loop recap")
-                    .font(.system(size: 15, weight: .light))
-                    .foregroundColor(textColor.opacity(0.6))
-                    .padding(.top, 5)
+        VStack(spacing: 32) {
+            VStack (spacing: 16) {
+                aiAnalysisCard
                 
-                loopCard
-            }
-            
-            HStack(spacing: 12) {
-                Text("compare with")
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundColor(textColor.opacity(0.6))
-                
-                Menu {
-                    Button("week", action: { selectedComparison = "week" })
-                    Button("month", action: { selectedComparison = "month" })
-                    Button("all time", action: { selectedComparison = "all time" })
-                } label: {
-                    HStack(spacing: 4) {
-                        Text(selectedComparison)
-                            .font(.system(size: 14, weight: .medium))
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 10, weight: .semibold))
-                    }
-                    .foregroundColor(accentColor)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(accentColor.opacity(0.1))
+                if let followUp = analysisManager.currentDailyAnalysis?.aiAnalysis?.followUp {
+                    FollowUpWidget(
+                        followUpQuestion: followUp,
+                        onRecordTapped: {
+                            self.selectedFollowUp = FollowUp(id: UUID().uuidString, prompt: followUp)
+                        }
                     )
                 }
+                
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
             
-            VStack(spacing: 12) {
-                Text("speaking patterns")
-                    .font(.system(size: 15, weight: .light))
-                    .foregroundColor(textColor.opacity(0.6))
-                    .padding(.top, 15)
+            VStack(alignment: .leading, spacing: 12) {
+                sectionHeader("speaking patterns")
                 
                 VStack(spacing: 3) {
-                    wpmCard
+                    speakingRhythmCard
                     durationCard
                     selfReferenceCard
                 }
             }
             
-            VStack(spacing: 12) {
-                Text("patterns")
-                    .font(.system(size: 15, weight: .light))
-                    .foregroundColor(textColor.opacity(0.6))
-                    .padding(.top, 15)
+            VStack(alignment: .leading, spacing: 12) {
+                sectionHeader("focus")
                 
                 VStack(spacing: 3) {
-                    loopRelationshipsCard
+                    actionReflectionCard
+                    solutionFocusCard
+                    loopConnectionsCard
                 }
             }
         }
     }
     
-    private var aiAnalysis: some View {
-        ZStack {
-            
-            VStack(alignment: .leading, spacing: 16) {
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(accentColor.opacity(0.2))
-                        .frame(width: 8, height: 8)
-                        .overlay(
-                            Circle()
-                                .fill(accentColor)
-                                .frame(width: 4, height: 4)
-                        )
-                    
-                    Text("AI ANALYSIS")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(accentColor)
-                        .tracking(1.2)
-                }
+    private func sectionHeader(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 13, weight: .regular))
+            .foregroundColor(textColor.opacity(0.5))
+            .tracking(0.5)
+    }
+    
+    private var aiAnalysisCard: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(accentColor.opacity(0.2))
+                    .frame(width: 6, height: 6)
+                    .overlay(
+                        Circle()
+                            .fill(accentColor)
+                            .frame(width: 3, height: 3)
+                    )
                 
-                if let analysis = analysisManager.currentDailyAnalysis?.aiAnalysis {
-                    Text(analysis.feeling.capitalized)
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundColor(textColor)
+                Text("AI ANALYSIS")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(accentColor)
+                    .tracking(1)
+            }
+            
+            if let analysis = analysisManager.currentDailyAnalysis?.aiAnalysis {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text(analysis.feeling.capitalized)
+                            .font(.system(size: 36, weight: .medium))
+                            .foregroundColor(textColor)
+                        
+                        Spacer()
+                    }
                     
-                    Text(analysis.description)
-                        .font(.system(size: 16))
+                    Text(analysis.feelingDescription)
+                        .font(.system(size: 15, weight: .regular))
                         .foregroundColor(textColor.opacity(0.7))
                         .lineSpacing(4)
                 }
-                else {
-                    VStack(spacing: 6) {
-                        HStack {
-                            Text("analyzing...")
-                                .font(.system(size: 32, weight: .bold))
-                                .foregroundColor(textColor)
-                            
-                            Spacer()
-        
-                        }
-                        
-                        HStack {
-                            Text("we're working on it")
-                                .font(.system(size: 16))
-                                .foregroundColor(textColor.opacity(0.7))
-                                .lineSpacing(4)
-                            Spacer()
-                        }
-                    }
-                }
-
-            }
-            .padding(.top, 24)
-            .overlay (
-                HStack {
-                    Spacer()
-                    
-                    Circle()
-                        .stroke(accentColor.opacity(0.1), lineWidth: 1)
-                        .frame(width: 45, height: 45)
-                        .overlay(
-                            Circle()
-                                .stroke(accentColor.opacity(0.1), lineWidth: 1)
-                                .frame(width: 30, height: 30)
-                        )
-                }
-                    .padding([.top, .trailing]),
-                alignment: .topTrailing
-            )
-//            .background(
-//                ZStack {
-//                    Color.white
-//                    
-//                    WavyBackground()
-//                        .background(surfaceColor)
-//                }
-//            )
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
-        }
-        
-        
-
-    }
-    
-    private var loopCard: some View {
-        VStack(spacing: 12) {
-            if !analysisManager.todaysLoops.isEmpty {
-                TabView(selection: $selectedLoop) {
-                    ForEach(analysisManager.todaysLoops.indices, id: \.self) { index in
-                        let loop = analysisManager.todaysLoops[index]
-                        VStack(alignment: .leading, spacing: 20) {
-                            // Header
-                            VStack(alignment: .leading, spacing: 4) {
-                                HStack(spacing: 8) {
-                                    Circle()
-                                        .fill(accentColor.opacity(0.2))
-                                        .frame(width: 8, height: 8)
-                                        .overlay(
-                                            Circle()
-                                                .fill(accentColor)
-                                                .frame(width: 4, height: 4)
-                                        )
-                                    
-                                    Text("LOOP \(index + 1)")
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(accentColor)
-                                        .tracking(1.2)
-                                }
-                                
-                                Text(formatTime(loop.timestamp))
-                                    .font(.system(size: 13, weight: .regular))
-                                    .foregroundColor(textColor.opacity(0.6))
-                                
-                                // Prompt with decorative element
-                                HStack(spacing: 8) {
-                                    RoundedRectangle(cornerRadius: 1)
-                                        .fill(accentColor)
-                                        .frame(width: 2, height: 16)
-                                    
-                                    Text(loop.promptText)
-                                        .font(.system(size: 17, weight: .semibold))
-                                        .foregroundColor(textColor)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                            }
-                            
-                            // Primary metrics with unique visual style
-                            HStack(spacing: 32) {
-                                // WPM
-                                VStack(alignment: .leading, spacing: 4) {
-                                    ZStack(alignment: .leading) {
-                                        HStack(spacing: 4) {
-                                            Text("\(Int(loop.metrics.wordsPerMinute))")
-                                                .font(.system(size: 22, weight: .medium))
-                                                .foregroundColor(textColor)
-                                            
-                                            // Unique speed indicator
-                                            ForEach(0..<3) { i in
-                                                Circle()
-                                                    .fill(accentColor.opacity(
-                                                        loop.metrics.wordsPerMinute > Double(50 + i * 50) ? 0.8 : 0.2
-                                                    ))
-                                                    .frame(width: 4, height: 4)
-                                            }
-                                        }
-                                    }
-                                    
-                                    Text("words/min")
-                                        .font(.system(size: 13, weight: .regular))
-                                        .foregroundColor(textColor.opacity(0.6))
-                                        .textCase(.lowercase)
-                                }
-                                
-                                // Duration
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack(spacing: 4) {
-                                        Text(formatDuration(loop.metrics.duration))
-                                            .font(.system(size: 22, weight: .medium))
-                                            .foregroundColor(textColor)
-                                        
-                                        // Time indicator
-                                        Circle()
-                                            .stroke(accentColor.opacity(0.2), lineWidth: 1)
-                                            .frame(width: 12, height: 12)
-                                            .overlay(
-                                                Circle()
-                                                    .trim(from: 0, to: loop.metrics.duration / 180) // Normalized to 3 minutes
-                                                    .stroke(accentColor, lineWidth: 1)
-                                                    .rotationEffect(.degrees(-90))
-                                            )
-                                    }
-                                    
-                                    Text("duration")
-                                        .font(.system(size: 13, weight: .regular))
-                                        .foregroundColor(textColor.opacity(0.6))
-                                        .textCase(.lowercase)
-                                }
-                            }
-                            
-                            Divider()
-                                .background(textColor.opacity(0.1))
-                            
-                            // Secondary metrics with unique styling
-                            HStack(spacing: 32) {
-                                // Word counts
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                                        Text("\(loop.metrics.wordCount)")
-                                            .font(.system(size: 22, weight: .medium))
-                                            .foregroundColor(textColor)
-                                        
-                                        // Unique count indicator
-                                        Text("\(loop.metrics.uniqueWordCount)")
-                                            .font(.system(size: 13, weight: .regular))
-                                            .padding(.horizontal, 6)
-                                            .padding(.vertical, 2)
-                                            .background(accentColor.opacity(0.1))
-                                            .cornerRadius(4)
-                                            .foregroundColor(accentColor)
-                                    }
-                                    
-                                    Text("words (unique)")
-                                        .font(.system(size: 13, weight: .regular))
-                                        .foregroundColor(textColor.opacity(0.6))
-                                        .textCase(.lowercase)
-                                }
-                                
-                                // Self references
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack(spacing: 6) {
-                                        Text("\(loop.metrics.selfReferenceCount)")
-                                            .font(.system(size: 22, weight: .medium))
-                                            .foregroundColor(textColor)
-                                        
-                                        // Unique reference indicator
-                                        ForEach(0..<min(loop.metrics.selfReferenceCount, 3)) { _ in
-                                            Circle()
-                                                .fill(accentColor.opacity(0.3))
-                                                .frame(width: 4, height: 4)
-                                        }
-                                    }
-                                    
-                                    Text("self references")
-                                        .font(.system(size: 13, weight: .regular))
-                                        .foregroundColor(textColor.opacity(0.6))
-                                        .textCase(.lowercase)
-                                }
-                            }
-                            
-                            // Most used words with unique design
-                            if !loop.wordAnalysis.mostUsedWords.isEmpty {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("frequently used")
-                                        .font(.system(size: 13, weight: .regular))
-                                        .foregroundColor(textColor.opacity(0.6))
-                                        .textCase(.lowercase)
-                                    
-                                    ScrollView(.horizontal, showsIndicators: false) {
-                                        HStack(spacing: 8) {
-                                            ForEach(loop.wordAnalysis.mostUsedWords.prefix(3), id: \.word) { word in
-                                                HStack(spacing: 6) {
-                                                    Text(word.word)
-                                                        .font(.system(size: 13, weight: .medium))
-                                                    
-                                                    // Frequency indicator
-                                                    Text("\(word.count)×")
-                                                        .font(.system(size: 13, weight: .regular))
-                                                        .foregroundColor(textColor.opacity(0.6))
-                                                }
-                                                .padding(.horizontal, 12)
-                                                .padding(.vertical, 6)
-                                                .background(
-                                                    RoundedRectangle(cornerRadius: 8)
-                                                        .stroke(accentColor.opacity(0.15), lineWidth: 1)
-                                                        .background(surfaceColor)
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        .padding(.vertical, 20)
-                        .padding(.horizontal, 24)
-                        .tag(index)
-                    }
-                }
-                .tabViewStyle(.page)
-                .frame(height: 320)
-                
-                // Page indicator with unique style
-                HStack(spacing: 6) {
-                    ForEach(0..<analysisManager.todaysLoops.count, id: \.self) { index in
-                        Capsule()
-                            .fill(index == selectedLoop ? accentColor : accentColor.opacity(0.2))
-                            .frame(width: 12, height: 3)
-                    }
-                }
-                .padding(.top, -8)
-            }
-        }
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
-    }
-
-    private var wpmCard: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // Header section with icon
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
-                        Circle()
-                            .fill(accentColor.opacity(0.2))
-                            .frame(width: 8, height: 8)
-                            .overlay(
-                                Circle()
-                                    .fill(accentColor)
-                                    .frame(width: 4, height: 4)
-                            )
-                        
-                        Text("SPEAKING PACE")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(accentColor)
-                            .tracking(1.2)
-                    }
-                    
-                    Text("Time spent reflecting")
-                        .font(.system(size: 15, weight: .light))
-                        .foregroundColor(textColor.opacity(0.6))
-                }
-                
-                Spacer()
-                
-                Image(systemName: "waveform")
-                    .font(.system(size: 24))
-                    .foregroundColor(accentColor)
-            }
-            
-            // Main metric
-            VStack(alignment: .leading, spacing: 8) {
-                Text("\(Int(analysisManager.currentDailyAnalysis?.aggregateMetrics.averageWPM ?? 0))")
-                    .font(.system(size: 32, weight: .bold))
-                    .foregroundColor(textColor)
-                
-                Text("words per minute")
-                    .font(.system(size: 16))
+            } else {
+                Text("Analyzing your responses...")
+                    .font(.system(size: 17, weight: .regular))
                     .foregroundColor(textColor.opacity(0.7))
             }
-            
-            // Comparison with last week
-            if let comparison = analysisManager.weeklyComparison?.wpmComparison {
-                HStack(spacing: 8) {
-                    Image(systemName: comparison.direction == .increase ? "arrow.up.right.circle.fill" : "arrow.down.right.circle.fill")
-                        .font(.system(size: 18))
-                        .foregroundColor(accentColor)
-                    
-                    Text("\(Int(abs(comparison.percentageChange)))% \(comparison.direction == .increase ? "faster" : "slower")")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(textColor)
-                    
-                    Text("than last week")
-                        .font(.system(size: 15, weight: .light))
-                        .foregroundColor(textColor.opacity(0.7))
-                }
-                .padding(.vertical, 4)
-            }
-            
-            // Range section
-            if let range = analysisManager.currentDailyAnalysis?.rangeAnalysis.wpmRange {
-                HStack(spacing: 32) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("\(Int(range.min))")
-                            .font(.system(size: 22, weight: .medium))
-                            .foregroundColor(textColor)
-                        
-                        Text("slowest")
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(textColor.opacity(0.6))
-                            .textCase(.lowercase)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("\(Int(range.max))")
-                            .font(.system(size: 22, weight: .medium))
-                            .foregroundColor(textColor)
-                        
-                        Text("fastest")
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(textColor.opacity(0.6))
-                            .textCase(.lowercase)
-                    }
-                }
-                .padding(.top, 8)
-            }
         }
         .padding(24)
-        .background(Color.white)
+        .background(
+            ZStack {
+                Color.white
+                WavyBackground()
+                    .foregroundColor(surfaceColor)
+            }
+        )
         .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
     }
-        
-    private var durationCard: some View {
+    
+    private var speakingRhythmCard: some View {
         VStack(alignment: .leading, spacing: 20) {
-            // Header section with icon
-            HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Speaking Rhythm")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(textColor)
+                
+                Text("A measure of your natural speaking pace")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundColor(textColor.opacity(0.6))
+            }
+            
+            HStack(alignment: .top, spacing: 24) {
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
-                        Circle()
-                            .fill(accentColor.opacity(0.2))
-                            .frame(width: 8, height: 8)
-                            .overlay(
-                                Circle()
-                                    .fill(accentColor)
-                                    .frame(width: 4, height: 4)
-                            )
-                        
-                        Text("SPEAKING DURATION")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(accentColor)
-                            .tracking(1.2)
-                    }
+                    Text("\(Int(analysisManager.currentDailyAnalysis?.aggregateMetrics.averageWPM ?? 0))")
+                        .font(.system(size: 34, weight: .medium))
+                        .foregroundColor(textColor)
                     
-                    Text("Time spent on each loop")
-                        .font(.system(size: 15, weight: .light))
+                    Text("words/min")
+                        .font(.system(size: 13, weight: .regular))
                         .foregroundColor(textColor.opacity(0.6))
                 }
                 
-                Spacer()
-                
-                // Unique circular timer visual
-                ZStack {
-                    Circle()
-                        .stroke(accentColor.opacity(0.1), lineWidth: 2)
-                        .frame(width: 32, height: 32)
-                    
-                    Circle()
-                        .trim(from: 0, to: 0.7)
-                        .stroke(accentColor, lineWidth: 2)
-                        .frame(width: 32, height: 32)
-                        .rotationEffect(.degrees(-90))
-                    
-                    Image(systemName: "clock")
-                        .font(.system(size: 14))
-                        .foregroundColor(accentColor)
-                }
+                Text("You maintain a steady, thoughtful pace that allows for clear articulation")
+                    .font(.system(size: 15, weight: .regular))
+                    .foregroundColor(textColor.opacity(0.7))
+                    .lineSpacing(4)
             }
             
-            // Main duration display with visual separator
-            HStack(spacing: 16) {
-                Text(formatDuration(analysisManager.currentDailyAnalysis?.aggregateMetrics.averageDuration ?? 0))
-                    .font(.system(size: 32, weight: .bold))
-                    .foregroundColor(textColor)
-                
-                // Unique visual element - time markers
-                HStack(spacing: 4) {
-                    ForEach(0..<3) { i in
-                        RoundedRectangle(cornerRadius: 1)
-                            .fill(accentColor.opacity(0.2))
-                            .frame(width: 2, height: i == 1 ? 20 : 12)
-                    }
-                }
-                .padding(.leading, 8)
-            }
-            
-            // Timeline visualization (unique to duration card)
-            HStack(spacing: 0) {
-                ForEach(0..<5) { i in
-                    Rectangle()
-                        .fill(accentColor.opacity(Double(5-i) / 10))
-                        .frame(height: 3)
-                }
-            }
-            .clipShape(Capsule())
-            .padding(.vertical, 8)
-            
-            // Comparison with last week
-            if let comparison = analysisManager.weeklyComparison?.durationComparison {
-                HStack(spacing: 8) {
-                    Image(systemName: comparison.direction == .increase ? "arrow.up.right.circle.fill" : "arrow.down.right.circle.fill")
-                        .font(.system(size: 18))
-                        .foregroundColor(accentColor)
-                    
-                    Text("\(Int(abs(comparison.percentageChange)))% \(comparison.direction == .increase ? "longer" : "shorter")")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(textColor)
-                    
-                    Text("than last week")
-                        .font(.system(size: 15, weight: .light))
-                        .foregroundColor(textColor.opacity(0.7))
-                }
-            }
-            
-            // Range section with unique time-based styling
-            if let range = analysisManager.currentDailyAnalysis?.rangeAnalysis.durationRange {
-                HStack(spacing: 32) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(formatDuration(range.min))
-                            .font(.system(size: 22, weight: .medium))
-                            .foregroundColor(textColor)
-                        
-                        HStack(spacing: 4) {
-                            Rectangle()
-                                .fill(accentColor.opacity(0.2))
-                                .frame(width: 16, height: 2)
-                            
-                            Text("shortest")
-                                .font(.system(size: 14, weight: .regular))
-                                .foregroundColor(textColor.opacity(0.6))
-                                .textCase(.lowercase)
-                        }
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(formatDuration(range.max))
-                            .font(.system(size: 22, weight: .medium))
-                            .foregroundColor(textColor)
-                        
-                        HStack(spacing: 4) {
-                            Rectangle()
-                                .fill(accentColor.opacity(0.2))
-                                .frame(width: 16, height: 2)
-                            
-                            Text("longest")
-                                .font(.system(size: 14, weight: .regular))
-                                .foregroundColor(textColor.opacity(0.6))
-                                .textCase(.lowercase)
-                        }
-                    }
-                }
-                .padding(.top, 8)
-            }
+            waveformView
         }
         .padding(24)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
+    }
+    
+    private var durationCard: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Speaking Duration")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(textColor)
+                
+                Text("Time spent on each reflection")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundColor(textColor.opacity(0.6))
+            }
+            
+            HStack(alignment: .top, spacing: 24) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(formatDuration(analysisManager.currentDailyAnalysis?.aggregateMetrics.averageDuration ?? 0))
+                        .font(.system(size: 34, weight: .medium))
+                        .foregroundColor(textColor)
+                    
+                    Text("average")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(textColor.opacity(0.6))
+                }
+                
+                Text("Your responses are thoughtfully paced, allowing for detailed reflection")
+                    .font(.system(size: 15, weight: .regular))
+                    .foregroundColor(textColor.opacity(0.7))
+                    .lineSpacing(4)
+            }
+            
+            durationBar
+        }
+        .padding(24)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
     
     private var selfReferenceCard: some View {
         VStack(alignment: .leading, spacing: 20) {
-            // Header section
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
-                        Circle()
-                            .fill(accentColor.opacity(0.2))
-                            .frame(width: 8, height: 8)
-                            .overlay(
-                                Circle()
-                                    .fill(accentColor)
-                                    .frame(width: 4, height: 4)
-                            )
-                        
-                        Text("SELF EXPRESSION")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(accentColor)
-                            .tracking(1.2)
-                    }
-                    
-                    Text("How you reference yourself")
-                        .font(.system(size: 15, weight: .light))
-                        .foregroundColor(textColor.opacity(0.6))
-                }
-                
-                Spacer()
-                
-                // Unique layered circles icon
-                ZStack {
-                    Circle()
-                        .stroke(accentColor.opacity(0.1), lineWidth: 2)
-                        .frame(width: 32, height: 32)
-                    
-                    Image(systemName: "person.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(accentColor)
-                    
-                    ForEach(0..<3) { i in
-                        Circle()
-                            .stroke(accentColor.opacity(0.1), lineWidth: 1)
-                            .frame(width: CGFloat(40 + i * 8))
-                    }
-                }
-            }
-            
-            // Main metrics with unique visual style
-            HStack(spacing: 40) {
-                // Total references
-                VStack(alignment: .leading, spacing: 8) {
-                    ZStack(alignment: .leading) {
-                        Rectangle()
-                            .fill(accentColor.opacity(0.1))
-                            .frame(width: 60, height: 40)
-                        
-                        Text("\(Int(analysisManager.currentDailyAnalysis?.aggregateMetrics.averageSelfReferences ?? 0))")
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(textColor)
-                            .padding(.leading, 8)
-                    }
-                    
-                    Text("total mentions")
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundColor(textColor.opacity(0.6))
-                        .textCase(.lowercase)
-                }
-                
-                // Per loop average
-                VStack(alignment: .leading, spacing: 8) {
-                    ZStack(alignment: .leading) {
-                        Rectangle()
-                            .fill(accentColor.opacity(0.1))
-                            .frame(width: 60, height: 40)
-                        
-                        Text("\(Int(analysisManager.currentDailyAnalysis?.aggregateMetrics.averageSelfReferences ?? 0) / 3)")
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(textColor)
-                            .padding(.leading, 8)
-                    }
-                    
-                    Text("per loop")
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundColor(textColor.opacity(0.6))
-                        .textCase(.lowercase)
-                }
-            }
-            
-            // Unique personal pronouns section
-            VStack(alignment: .leading, spacing: 12) {
-                Text("personal pronouns")
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundColor(textColor.opacity(0.6))
-                    .textCase(.lowercase)
-                
-                HStack(spacing: 12) {
-                    ForEach(analysisManager.todaysLoops.first?.wordAnalysis.selfReferenceTypes.prefix(3) ?? [], id: \.self) { word in
-                        // Unique pronoun pill design
-                        HStack(spacing: 6) {
-                            Circle()
-                                .fill(accentColor)
-                                .frame(width: 4, height: 4)
-                            
-                            Text(word)
-                                .font(.system(size: 15, weight: .medium))
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(accentColor.opacity(0.2), lineWidth: 1)
-                                .background(accentColor.opacity(0.05))
-                        )
-                        .foregroundColor(accentColor)
-                    }
-                }
-            }
-            
-            // Weekly comparison
-            if let comparison = analysisManager.weeklyComparison?.selfReferenceComparison {
-                HStack(spacing: 8) {
-                    Image(systemName: comparison.direction == .increase ? "arrow.up.right.circle.fill" : "arrow.down.right.circle.fill")
-                        .font(.system(size: 18))
-                        .foregroundColor(accentColor)
-                    
-                    Text("\(Int(abs(comparison.percentageChange)))% \(comparison.direction == .increase ? "more" : "fewer")")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(textColor)
-                    
-                    Text("than last week")
-                        .font(.system(size: 15, weight: .light))
-                        .foregroundColor(textColor.opacity(0.7))
-                }
-            }
-            
-            // Range section with unique styling
-            if let range = analysisManager.currentDailyAnalysis?.rangeAnalysis.selfReferenceRange {
-                HStack(spacing: 32) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(alignment: .firstTextBaseline, spacing: 4) {
-                            Text("\(range.min)")
-                                .font(.system(size: 22, weight: .medium))
-                                .foregroundColor(textColor)
-                            
-                            Text("×")
-                                .font(.system(size: 14, weight: .light))
-                                .foregroundColor(textColor.opacity(0.4))
-                        }
-                        
-                        Text("fewest")
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(textColor.opacity(0.6))
-                            .textCase(.lowercase)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(alignment: .firstTextBaseline, spacing: 4) {
-                            Text("\(range.max)")
-                                .font(.system(size: 22, weight: .medium))
-                                .foregroundColor(textColor)
-                            
-                            Text("×")
-                                .font(.system(size: 14, weight: .light))
-                                .foregroundColor(textColor.opacity(0.4))
-                        }
-                        
-                        Text("most")
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(textColor.opacity(0.6))
-                            .textCase(.lowercase)
-                    }
-                }
-            }
-        }
-        .padding(24)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
-    }
-        private var vocabularyCard: some View {
-            VStack(alignment: .leading, spacing: 20) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Vocabulary")
-                            .font(.system(size: 22, weight: .semibold))
-                            .foregroundColor(textColor)
-                        
-                        Text("Word choice diversity")
-                            .font(.system(size: 15, weight: .light))
-                            .foregroundColor(textColor.opacity(0.6))
-                    }
-                    
-                    Spacer()
-                    
-                    Image(systemName: "textformat.abc")
-                        .font(.system(size: 24))
-                        .foregroundColor(accentColor)
-                }
-                
-                Text("\(Int((analysisManager.currentDailyAnalysis?.aggregateMetrics.vocabularyDiversityRatio ?? 0) * 100))%")
-                    .font(.system(size: 56, weight: .medium))
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Self References")
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(textColor)
                 
-                if let comparison = analysisManager.weeklyComparison?.vocabularyDiversityComparison {
-                    HStack(spacing: 8) {
-                        Image(systemName: comparison.direction == .increase ? "arrow.up.right.circle.fill" : "arrow.down.right.circle.fill")
-                            .font(.system(size: 18))
-                            .foregroundColor(accentColor)
-                        
-                        Text("\(Int(abs(comparison.percentageChange)))% \(comparison.direction == .increase ? "more" : "less")")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(textColor)
-                        
-                        Text("diverse than last week")
-                            .font(.system(size: 15, weight: .light))
-                            .foregroundColor(textColor.opacity(0.7))
-                    }
-                }
-                
-                if let wordPatterns = analysisManager.currentDailyAnalysis?.wordPatterns {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("most used words")
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(textColor.opacity(0.6))
-                            .textCase(.lowercase)
-                        
-                        FlowLayout(spacing: 8) {
-                            ForEach(wordPatterns.mostUsedWords.prefix(5), id: \.word) { word in
-                                HStack(spacing: 4) {
-                                    Text(word.word)
-                                        .font(.system(size: 15, weight: .medium))
-                                    Text("\(word.count)")
-                                        .font(.system(size: 13, weight: .regular))
-                                        .foregroundColor(textColor.opacity(0.6))
-                                }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(accentColor.opacity(0.1))
-                                .foregroundColor(accentColor)
-                                .cornerRadius(8)
-                            }
-                        }
-                    }
-                }
+                Text("How you express personal experiences")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundColor(textColor.opacity(0.6))
             }
-            .padding(24)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
-        }
-
-    private var loopRelationshipsCard: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // Header section
-            HStack {
+            
+            HStack(alignment: .top, spacing: 24) {
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
-                        Circle()
-                            .fill(accentColor.opacity(0.2))
-                            .frame(width: 8, height: 8)
-                            .overlay(
-                                Circle()
-                                    .fill(accentColor)
-                                    .frame(width: 4, height: 4)
-                            )
-                        
-                        Text("LOOP CONNECTIONS")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(accentColor)
-                            .tracking(1.2)
-                    }
+                    Text("\(analysisManager.currentDailyAnalysis?.aiAnalysis?.selfReferenceCount ?? 0)")
+                        .font(.system(size: 34, weight: .medium))
+                        .foregroundColor(textColor)
                     
-                    Text("Patterns across reflections")
-                        .font(.system(size: 15, weight: .light))
+                    Text("mentions")
+                        .font(.system(size: 13, weight: .regular))
                         .foregroundColor(textColor.opacity(0.6))
                 }
                 
-                Spacer()
-                
-                // Unique connected circles icon
-                ZStack {
-                    // Connection lines
-                    Path { path in
-                        path.move(to: CGPoint(x: 8, y: 16))
-                        path.addLine(to: CGPoint(x: 24, y: 16))
-                        path.move(to: CGPoint(x: 16, y: 8))
-                        path.addLine(to: CGPoint(x: 16, y: 24))
-                    }
-                    .stroke(accentColor.opacity(0.3), lineWidth: 1)
-                    
-                    // Corner circles
-                    ForEach(0..<4) { i in
-                        Circle()
-                            .fill(accentColor.opacity(0.1))
-                            .frame(width: 8, height: 8)
-                            .offset(
-                                x: i % 2 == 0 ? -8 : 8,
-                                y: i < 2 ? -8 : 8
-                            )
-                    }
-                    
-                    // Center circle
-                    Circle()
-                        .fill(accentColor)
-                        .frame(width: 8, height: 8)
-                }
-                .frame(width: 32, height: 32)
+                Text(analysisManager.currentDailyAnalysis?.aiAnalysis?.tenseDescription ?? "")
+                    .font(.system(size: 15, weight: .regular))
+                    .foregroundColor(textColor.opacity(0.7))
+                    .lineSpacing(4)
             }
             
-            if let overlapAnalysis = analysisManager.currentDailyAnalysis?.overlapAnalysis {
-                // Main similarity score with unique visualization
-                HStack(spacing: 24) {
-                    // Circular connection visualization
-                    ZStack {
-                        ForEach(0..<3) { i in
-                            Circle()
-                                .stroke(accentColor.opacity(0.1), lineWidth: 1)
-                                .frame(width: CGFloat(60 + i * 20))
-                        }
-                        
-                        // Connection lines
-                        ForEach(0..<3) { i in
-                            Path { path in
-                                let angle = Double(i) * (2 * .pi / 3)
-                                path.move(to: CGPoint(x: 40, y: 40))
-                                path.addLine(to: CGPoint(
-                                    x: 40 + cos(angle) * 30,
-                                    y: 40 + sin(angle) * 30
-                                ))
-                            }
-                            .stroke(accentColor.opacity(0.2), lineWidth: 1)
-                        }
-                        
-                        // Similarity percentage
-                        Text("\(Int(overlapAnalysis.overallSimilarity * 100))%")
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(textColor)
-                    }
-                    .frame(width: 80, height: 80)
-                    
-                    // Connection description
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("thematic")
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(textColor.opacity(0.6))
-                            .textCase(.lowercase)
-                        
-                        Text("similarity")
-                            .font(.system(size: 22, weight: .medium))
-                            .foregroundColor(textColor)
-                    }
-                }
-                
-                // Shared themes section
-                VStack(spacing: 16) {
-                    ForEach(Array(overlapAnalysis.commonWords.keys.prefix(2)), id: \.self) { key in
-                        if let words = overlapAnalysis.commonWords[key] {
-                            VStack(alignment: .leading, spacing: 8) {
-                                // Connection indicator
-                                HStack(spacing: 4) {
-                                    Circle()
-                                        .fill(accentColor)
-                                        .frame(width: 4, height: 4)
-                                    
-                                    Text("shared elements")
-                                        .font(.system(size: 14, weight: .regular))
-                                        .foregroundColor(textColor.opacity(0.6))
-                                        .textCase(.lowercase)
-                                }
-                                
-                                // Common words with unique styling
-                                FlowLayout(spacing: 8) {
-                                    ForEach(words.prefix(3), id: \.self) { word in
-                                        Text(word)
-                                            .font(.system(size: 15, weight: .medium))
-                                            .padding(.horizontal, 12)
-                                            .padding(.vertical, 6)
-                                            .background(
-                                                RoundedRectangle(cornerRadius: 8)
-                                                    .stroke(accentColor.opacity(0.2), lineWidth: 1)
-                                                    .background(
-                                                        LinearGradient(
-                                                            colors: [
-                                                                accentColor.opacity(0.05),
-                                                                accentColor.opacity(0.02)
-                                                            ],
-                                                            startPoint: .topLeading,
-                                                            endPoint: .bottomTrailing
-                                                        )
-                                                    )
-                                            )
-                                            .foregroundColor(accentColor)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            selfReferenceIndicators
         }
         .padding(24)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
     }
     
-    private func formatTime(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        return formatter.string(from: date).lowercased()
+    private var actionReflectionCard: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Action vs Reflection")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(textColor)
+                
+                Text("Balance between doing and thinking")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundColor(textColor.opacity(0.6))
+            }
+            
+            HStack(alignment: .top, spacing: 24) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(analysisManager.currentDailyAnalysis?.aiAnalysis?.actionReflectionRatio ?? "")
+                        .font(.system(size: 34, weight: .medium))
+                        .foregroundColor(textColor)
+                    
+                    Text("action/reflection")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(textColor.opacity(0.6))
+                }
+                
+                Text(analysisManager.currentDailyAnalysis?.aiAnalysis?.actionReflectionDescription ?? "")
+                    .font(.system(size: 15, weight: .regular))
+                    .foregroundColor(textColor.opacity(0.7))
+                    .lineSpacing(4)
+            }
+            
+            balanceBar
+        }
+        .padding(24)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+    
+    private var solutionFocusCard: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Solution Focus")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(textColor)
+                
+                Text("How you approach challenges")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundColor(textColor.opacity(0.6))
+            }
+            
+            HStack(alignment: .top, spacing: 24) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(analysisManager.currentDailyAnalysis?.aiAnalysis?.solutionFocus ?? "")
+                        .font(.system(size: 34, weight: .medium))
+                        .foregroundColor(textColor)
+                    
+                    Text("solution/problem")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(textColor.opacity(0.6))
+                }
+                
+                Text(analysisManager.currentDailyAnalysis?.aiAnalysis?.solutionFocusDescription ?? "")
+                    .font(.system(size: 15, weight: .regular))
+                    .foregroundColor(textColor.opacity(0.7))
+                    .lineSpacing(4)
+            }
+            
+            solutionFocusIndicator
+        }
+        .padding(24)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+    
+    private var loopConnectionsCard: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Loop Connections")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(textColor)
+                
+                Text("Themes across your reflections")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundColor(textColor.opacity(0.6))
+            }
+            
+            HStack(alignment: .top, spacing: 24) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(Int((analysisManager.currentDailyAnalysis?.overlapAnalysis.overallSimilarity ?? 0) * 100))%")
+                        .font(.system(size: 34, weight: .medium))
+                        .foregroundColor(textColor)
+                    
+                    Text("thematic similarity")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(textColor.opacity(0.6))
+                }
+                
+                Text("Your reflections share common themes while exploring different perspectives")
+                    .font(.system(size: 15, weight: .regular))
+                    .foregroundColor(textColor.opacity(0.7))
+                    .lineSpacing(4)
+            }
+            
+            connectionIndicator
+        }
+        .padding(24)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+    
+    private var waveformView: some View {
+        HStack(spacing: 3) {
+            ForEach(0..<30) { i in
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(accentColor.opacity(0.3))
+                    .frame(width: 2, height: CGFloat(sin(Double(i) * 0.3) * 20 + 25))
+            }
+        }
+        .frame(height: 50)
+    }
+    
+    private var durationBar: some View {
+        GeometryReader { geometry in
+            HStack(spacing: 4) {
+                ForEach(0..<3) { i in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(accentColor.opacity(0.2))
+                        .frame(height: 4)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(accentColor)
+                                .frame(width: geometry.size.width / 3 * 0.8)
+                                .offset(x: CGFloat(i) * 4),
+                            alignment: .leading
+                        )
+                }
+            }
+        }
+        .frame(height: 4)
+    }
+    
+    private var selfReferenceIndicators: some View {
+        HStack(spacing: 12) {
+            ForEach(0..<min(analysisManager.currentDailyAnalysis?.aiAnalysis?.selfReferenceCount ?? 0, 5)) { _ in
+                Circle()
+                    .fill(accentColor.opacity(0.3))
+                    .frame(width: 8, height: 8)
+            }
+        }
+    }
+    
+    private var balanceBar: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(accentColor.opacity(0.2))
+                    .frame(height: 4)
+                
+                let ratio = getActionRatio()
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(accentColor)
+                    .frame(width: geometry.size.width * ratio, height: 4)
+            }
+        }
+        .frame(height: 4)
+    }
+    
+    private var solutionFocusIndicator: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(accentColor.opacity(0.2))
+                    .frame(height: 4)
+                
+                let ratio = getSolutionRatio()
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(accentColor)
+                    .frame(width: geometry.size.width * ratio, height: 4)
+            }
+        }
+        .frame(height: 4)
+    }
+    
+    private var connectionIndicator: some View {
+        HStack(spacing: 20) {
+            ForEach(0..<3) { i in
+                Circle()
+                    .stroke(accentColor.opacity(0.3), lineWidth: 1)
+                    .frame(width: 12, height: 12)
+                    .overlay(
+                        Circle()
+                            .fill(accentColor.opacity(0.2))
+                            .frame(width: 6, height: 6)
+                    )
+            }
+        }
     }
     
     private func formatDuration(_ duration: TimeInterval) -> String {
@@ -1234,58 +526,540 @@ struct TodayAnalysisView: View {
         let seconds = Int(duration) % 60
         return seconds == 0 ? "\(minutes)m" : "\(minutes)m \(seconds)s"
     }
+    
+    private func getActionRatio() -> CGFloat {
+        guard let ratio = analysisManager.currentDailyAnalysis?.aiAnalysis?.actionReflectionRatio else { return 0.5 }
+        let components = ratio.split(separator: "/")
+        guard components.count == 2,
+              let action = Double(components[0]),
+              let reflection = Double(components[1]) else {
+            return 0.5
+        }
+        let total = action + reflection
+        return CGFloat(action / total)
+    }
+
+    private func getSolutionRatio() -> CGFloat {
+        guard let ratio = analysisManager.currentDailyAnalysis?.aiAnalysis?.solutionFocus else { return 0.5 }
+        let components = ratio.split(separator: "/")
+        guard components.count == 2,
+              let solution = Double(components[0]),
+              let problem = Double(components[1]) else {
+            return 0.5
+        }
+        let total = solution + problem
+        return CGFloat(solution / total)
+    }
 }
 
-    struct FlowLayout: Layout {
-        var spacing: CGFloat = 8
-        
-        func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-            let result = FlowResult(in: proposal.width ?? 0, subviews: subviews, spacing: spacing)
-            return result.size
-        }
-        
-        func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-            let result = FlowResult(in: bounds.width, subviews: subviews, spacing: spacing)
-            for (index, frame) in result.frames {
-                let position = CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY)
-                subviews[index].place(at: position, proposal: ProposedViewSize(frame.size))
-            }
-        }
-        
-        struct FlowResult {
-            var size: CGSize
-            var frames: [Int: CGRect]
-            
-            init(in width: CGFloat, subviews: Subviews, spacing: CGFloat) {
-                var height: CGFloat = 0
-                var maxWidth: CGFloat = 0
-                var x: CGFloat = 0
-                var y: CGFloat = 0
-                var row: CGFloat = 0
-                var frames = [Int: CGRect]()
-                
-                for (index, subview) in subviews.enumerated() {
-                    let size = subview.sizeThatFits(.unspecified)
-                    
-                    if x + size.width > width {
-                        x = 0
-                        y += row + spacing
-                        row = 0
-                    }
-                    
-                    frames[index] = CGRect(x: x, y: y, width: size.width, height: size.height)
-                    row = max(row, size.height)
-                    x += size.width + spacing
-                    maxWidth = max(maxWidth, x)
-                    height = max(height, y + row)
-                }
-                
-                self.size = CGSize(width: maxWidth, height: height)
-                self.frames = frames
-            }
-        }
-    }
+struct FollowUpWidget: View {
+    let followUpQuestion: String
+    let onRecordTapped: () -> Void
     
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(accentColor.opacity(0.2))
+                    .frame(width: 6, height: 6)
+                    .overlay(
+                        Circle()
+                            .fill(accentColor)
+                            .frame(width: 3, height: 3)
+                    )
+                
+                Text("FOLLOW UP")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(accentColor)
+                    .tracking(1)
+            }
+            
+            Text(followUpQuestion)
+                .font(.system(size: 17, weight: .regular))
+                .foregroundColor(textColor)
+                .lineSpacing(4)
+            
+            Button(action: onRecordTapped) {
+                HStack(spacing: 8) {
+                    Image(systemName: "mic.fill")
+                        .font(.system(size: 16))
+                    Text("Record Now")
+                        .font(.system(size: 16, weight: .medium))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(accentColor)
+                .clipShape(RoundedRectangle(cornerRadius: 25))
+            }
+        }
+        .padding(24)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+}
+
+//struct TrendsInsightsView: View {
+//    @ObservedObject var analysisManager: AnalysisManager
+//    @State private var selectedPeriod = "week"
+//    @State private var selectedMetric: GraphData.MetricType = .wpm
+//    
+//    private let accentColor = Color(hex: "A28497")
+//    private let backgroundColor = Color(hex: "FAFBFC")
+//    private let surfaceColor = Color(hex: "F8F5F7")
+//    private let textColor = Color(hex: "2C3E50")
+//    
+//    var body: some View {
+//        VStack(spacing: 0) {
+//            // Time Period Selector
+//            VStack(spacing: 16) {
+//                HStack {
+//                    Text("insights")
+//                        .font(.system(size: 40, weight: .bold))
+//                        .foregroundColor(textColor)
+//                    Spacer()
+//                }
+//                .padding(.top, 16)
+//                
+//                periodSelector
+//            }
+//            .padding(.horizontal, 24)
+//            
+//            // Main Content
+//            ScrollView {
+//                VStack(spacing: 24) {
+//                    // Metric Selector and Value
+//                    HStack {
+//                        if let currentValue = getCurrentValue() {
+//                            VStack(alignment: .leading) {
+//                                Text(selectedMetric.rawValue)
+//                                    .font(.system(size: 13, weight: .medium))
+//                                    .foregroundColor(textColor.opacity(0.6))
+//                                Text(String(format: "%.1f", currentValue))
+//                                    .font(.system(size: 24, weight: .bold))
+//                                    .foregroundColor(textColor)
+//                            }
+//                        }
+//                        
+//                        Spacer()
+//                        
+//                        Menu {
+//                            ForEach(GraphData.MetricType.allCases, id: \.self) { metric in
+//                                Button(metric.rawValue) {
+//                                    withAnimation {
+//                                        selectedMetric = metric
+//                                    }
+//                                }
+//                            }
+//                        } label: {
+//                            HStack {
+//                                Image(systemName: "chart.xyaxis.line")
+//                                    .font(.system(size: 14, weight: .medium))
+//                                Image(systemName: "chevron.down")
+//                                    .font(.system(size: 12, weight: .medium))
+//                            }
+//                            .foregroundColor(textColor)
+//                            .padding(8)
+//                            .background(surfaceColor)
+//                            .clipShape(Circle())
+//                        }
+//                    }
+//                    .padding(.top, 8)
+//                    
+//                    // Graph Section
+//                    ZStack {
+//                        if isLoading {
+//                            StatsLoadingView()
+//                        } else if let graphData = createGraphData() {
+//                            TrendsGraphView(data: graphData)
+//                        } else {
+//                            Text("No data available")
+//                                .font(.system(size: 16, weight: .medium))
+//                                .foregroundColor(textColor.opacity(0.6))
+//                        }
+//                    }
+//                    .frame(height: 300)
+//                    .background(Color.white)
+//                    .clipShape(RoundedRectangle(cornerRadius: 16))
+//                
+//                }
+//                .padding(.horizontal, 24)
+//            }
+//        }
+//        .task {
+//            await loadDataForPeriod()
+//        }
+//    }
+//    
+//    private var periodSelector: some View {
+//        HStack(spacing: 24) {
+//            ForEach(["week", "month", "year"], id: \.self) { period in
+//                Button(action: {
+//                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+//                        selectedPeriod = period
+//                    }
+//                    Task {
+//                        await loadDataForPeriod()
+//                    }
+//                }) {
+//                    VStack(spacing: 8) {
+//                        Text(period.capitalized)
+//                            .font(.system(size: 16, weight: .semibold))
+//                            .foregroundColor(selectedPeriod == period ? textColor : textColor.opacity(0.5))
+//                        
+//                        Rectangle()
+//                            .fill(selectedPeriod == period ? accentColor : Color.clear)
+//                            .frame(height: 2)
+//                    }
+//                }
+//            }
+//        }
+//    }
+//    
+//    private var isLoading: Bool {
+//        switch selectedPeriod {
+//        case "week":
+//            return analysisManager.isLoadingWeekStats
+//        case "month":
+//            return analysisManager.isLoadingMonthStats
+//        case "year":
+//            return analysisManager.isLoadingYearStats
+//        default:
+//            return false
+//        }
+//    }
+//    
+//    private func loadDataForPeriod() async {
+//        switch selectedPeriod {
+//        case "week":
+//            await analysisManager.fetchCurrentWeekStats()
+//        case "month":
+//            await analysisManager.fetchCurrentMonthWeeklyStats()
+//        case "year":
+//            await analysisManager.fetchCurrentYearMonthlyStats()
+//        default:
+//            break
+//        }
+//    }
+////    
+////    private func getCurrentValue() -> Double? {
+////        switch selectedPeriod {
+////        case "week":
+////            return analysisManager.currentWeekStats.last?.averageWPM
+////        case "month":
+////            return analysisManager.currentMonthWeeklyStats.last?.averageWPM
+////        case "year":
+////            return analysisManager.currentYearMonthlyStats.last?.averageWPM
+////        default:
+////            return nil
+////        }
+////    }
+////    
+////    private func createGraphData() -> GraphData? {
+////        switch selectedPeriod {
+////        case "week":
+////            return createWeekGraphData()
+////        case "month":
+////            return createMonthGraphData()
+////        case "year":
+////            return createYearGraphData()
+////        default:
+////            return nil
+////        }
+////    }
+//}
+//
+//// MARK: - Graph Data Creation
+////extension TrendsInsightsView {
+////    private func createWeekGraphData() -> GraphData? {
+////        let stats = analysisManager.currentWeekStats
+////        guard !stats.isEmpty else { return nil }
+////        
+////        let points = stats.map { stat in
+////            GraphPoint(
+////                date: stat.date ?? Date(),
+////                value: getValue(from: stat),
+////                label: formatDate(stat.date ?? Date(), for: "week")
+////            )
+////        }
+////        
+////        let values = points.map { $0.value }
+////        return GraphData(
+////            points: points,
+////            maxY: values.max() ?? 0,
+////            minY: values.min() ?? 0,
+////            average: values.reduce(0, +) / Double(values.count),
+////            metric: selectedMetric
+////        )
+////    }
+////    
+////    private func createMonthGraphData() -> GraphData? {
+////        let stats = analysisManager.currentMonthWeeklyStats
+////        guard !stats.isEmpty else { return nil }
+////        
+////        let points = stats.map { stat in
+////            GraphPoint(
+////                date: stat.lastUpdated ?? Date(),
+////                value: getValue(from: stat),
+////                label: "Week \(stat.weekNumber)"
+////            )
+////        }
+////        
+////        let values = points.map { $0.value }
+////        return GraphData(
+////            points: points,
+////            maxY: values.max() ?? 0,
+////            minY: values.min() ?? 0,
+////            average: values.reduce(0, +) / Double(values.count),
+////            metric: selectedMetric
+////        )
+////    }
+////    
+////    private func createYearGraphData() -> GraphData? {
+////        let stats = analysisManager.currentYearMonthlyStats
+////        guard !stats.isEmpty else { return nil }
+////        
+////        let points = stats.map { stat in
+////            GraphPoint(
+////                date: stat.lastUpdated ?? Date(),
+////                value: getValue(from: stat),
+////                label: formatDate(stat.lastUpdated ?? Date(), for: "year")
+////            )
+////        }
+////        
+////        let values = points.map { $0.value }
+////        return GraphData(
+////            points: points,
+////            maxY: values.max() ?? 0,
+////            minY: values.min() ?? 0,
+////            average: values.reduce(0, +) / Double(values.count),
+////            metric: selectedMetric
+////        )
+////    }
+////    
+//////    private func getValue(from stat: DailyStats) -> Double {
+//////        switch selectedMetric {
+//////        case .wpm: return stat.averageWPM
+//////        case .duration: return stat.averageDuration
+//////        case .wordCount: return stat.averageWordCount
+//////        case .uniqueWords: return stat.averageUniqueWordCount
+//////        case .selfReferences: return stat.averageSelfReferences
+//////        case .vocabularyDiversity: return stat.vocabularyDiversityRatio
+//////        }
+//////    }
+////    
+////    private func getValue(from stat: WeeklyStats) -> Double {
+////        switch selectedMetric {
+////        case .wpm: return stat.averageWPM
+////        case .duration: return stat.averageDuration
+////        case .wordCount: return stat.averageWordCount
+////        case .uniqueWords: return stat.averageUniqueWordCount
+////        case .selfReferences: return stat.averageSelfReferences
+////        case .vocabularyDiversity: return stat.vocabularyDiversityRatio
+////        }
+////    }
+////    
+////    private func getValue(from stat: MonthlyStats) -> Double {
+////        switch selectedMetric {
+////        case .wpm: return stat.averageWPM
+////        case .duration: return stat.averageDuration
+////        case .wordCount: return stat.averageWordCount
+////        case .uniqueWords: return stat.averageUniqueWordCount
+////        case .selfReferences: return stat.averageSelfReferences
+////        case .vocabularyDiversity: return stat.vocabularyDiversityRatio
+////        }
+////    }
+////    
+////    private func formatDate(_ date: Date, for period: String) -> String {
+////        let formatter = DateFormatter()
+////        switch period {
+////        case "week":
+////            formatter.dateFormat = "EEE"
+////        case "month":
+////            formatter.dateFormat = "MMM d"
+////        case "year":
+////            formatter.dateFormat = "MMM"
+////        default:
+////            formatter.dateFormat = "MMM d"
+////        }
+////        return formatter.string(from: date)
+////    }
+////}
+//
+//struct TrendsGraphView: View {
+//    let data: GraphData
+//    @State private var selectedPoint: GraphPoint?
+//    @State private var showingPopover = false
+//    @State private var popoverPosition: CGPoint = .zero
+//    
+//    private let accentColor = Color(hex: "A28497")
+//    private let backgroundColor = Color(hex: "FAFBFC")
+//    private let surfaceColor = Color(hex: "F8F5F7")
+//    private let textColor = Color(hex: "2C3E50")
+//    
+//    private let numberFormatter: NumberFormatter = {
+//        let formatter = NumberFormatter()
+//        formatter.maximumFractionDigits = 1
+//        return formatter
+//    }()
+//    
+//    var body: some View {
+//        GeometryReader { geometry in
+//            ZStack(alignment: .leading) {
+//                // Background grid
+//                VStack(spacing: 0) {
+//                    ForEach(0..<4) { _ in
+//                        Divider()
+//                            .frame(height: 1)
+//                            .opacity(0.1)
+//                        Spacer()
+//                    }
+//                }
+//                
+//                // Graph content
+//                if data.points.count > 1 {
+//                    // Area fill beneath line
+//                    Path { path in
+//                        path.move(to: CGPoint(x: 0, y: geometry.size.height))
+//                        
+//                        for (index, point) in data.points.enumerated() {
+//                            let x = getX(for: index, width: geometry.size.width)
+//                            let y = getY(for: point.value, height: geometry.size.height)
+//                            
+//                            if index == 0 {
+//                                path.move(to: CGPoint(x: x, y: y))
+//                            } else {
+//                                let control = CGPoint(x: x - (geometry.size.width / CGFloat(data.points.count * 2)),
+//                                                    y: getY(for: data.points[index - 1].value, height: geometry.size.height))
+//                                let control2 = CGPoint(x: x, y: y)
+//                                path.addCurve(to: CGPoint(x: x, y: y),
+//                                            control1: control,
+//                                            control2: control2)
+//                            }
+//                        }
+//                        
+//                        // Complete the path to create area
+//                        path.addLine(to: CGPoint(x: geometry.size.width, y: geometry.size.height))
+//                        path.addLine(to: CGPoint(x: 0, y: geometry.size.height))
+//                    }
+//                    .fill(LinearGradient(
+//                        gradient: Gradient(colors: [
+//                            accentColor.opacity(0.3),
+//                            accentColor.opacity(0.1),
+//                            accentColor.opacity(0.05)
+//                        ]),
+//                        startPoint: .top,
+//                        endPoint: .bottom
+//                    ))
+//                    
+//                    // Main line
+//                    Path { path in
+//                        for (index, point) in data.points.enumerated() {
+//                            let x = getX(for: index, width: geometry.size.width)
+//                            let y = getY(for: point.value, height: geometry.size.height)
+//                            
+//                            if index == 0 {
+//                                path.move(to: CGPoint(x: x, y: y))
+//                            } else {
+//                                let control = CGPoint(x: x - (geometry.size.width / CGFloat(data.points.count * 2)),
+//                                                    y: getY(for: data.points[index - 1].value, height: geometry.size.height))
+//                                let control2 = CGPoint(x: x, y: y)
+//                                path.addCurve(to: CGPoint(x: x, y: y),
+//                                            control1: control,
+//                                            control2: control2)
+//                            }
+//                        }
+//                    }
+//                    .stroke(accentColor, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+//                    
+//                    // Data points
+//                    ForEach(Array(data.points.enumerated()), id: \.element.id) { index, point in
+//                        Circle()
+//                            .fill(accentColor)
+//                            .frame(width: 8, height: 8)
+//                            .background(
+//                                Circle()
+//                                    .fill(.white)
+//                                    .frame(width: 16, height: 16)
+//                            )
+//                            .position(
+//                                x: getX(for: index, width: geometry.size.width),
+//                                y: getY(for: point.value, height: geometry.size.height)
+//                            )
+//                            .gesture(
+//                                TapGesture()
+//                                    .onEnded { _ in
+//                                        selectedPoint = point
+//                                        popoverPosition = CGPoint(
+//                                            x: getX(for: index, width: geometry.size.width),
+//                                            y: getY(for: point.value, height: geometry.size.height)
+//                                        )
+//                                        withAnimation(.easeInOut(duration: 0.2)) {
+//                                            showingPopover = true
+//                                        }
+//                                    }
+//                            )
+//                    }
+//                }
+//                
+//                // X-axis labels
+//                VStack {
+//                    Spacer()
+//                    HStack {
+//                        ForEach(data.points, id: \.id) { point in
+//                            Text(point.label)
+//                                .font(.system(size: 12))
+//                                .foregroundColor(textColor.opacity(0.6))
+//                                .frame(maxWidth: .infinity)
+//                        }
+//                    }
+//                }
+//            }
+//            
+//            // Value popover
+//            if showingPopover, let point = selectedPoint {
+//                VStack(alignment: .leading, spacing: 4) {
+//                    Text(point.label)
+//                        .font(.system(size: 12, weight: .medium))
+//                        .foregroundColor(textColor.opacity(0.6))
+//                    Text(numberFormatter.string(from: NSNumber(value: point.value)) ?? "")
+//                        .font(.system(size: 16, weight: .bold))
+//                        .foregroundColor(textColor)
+//                }
+//                .padding(.horizontal, 12)
+//                .padding(.vertical, 8)
+//                .background(Color.white)
+//                .cornerRadius(8)
+//                .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+//                .position(x: popoverPosition.x, y: popoverPosition.y - 40)
+//            }
+//        }
+//        .padding(.vertical)
+//        .onTapGesture {
+//            withAnimation(.easeInOut(duration: 0.2)) {
+//                showingPopover = false
+//            }
+//        }
+//    }
+//    
+//    private func getX(for index: Int, width: CGFloat) -> CGFloat {
+//        let spacing = width / CGFloat(max(1, data.points.count - 1))
+//        return spacing * CGFloat(index)
+//    }
+//    
+//    private func getY(for value: Double, height: CGFloat) -> CGFloat {
+//        let range = data.maxY - data.minY
+//        guard range > 0 else { return height / 2 }
+//        
+//        let normalized = (value - data.minY) / range
+//        return height - (normalized * (height - 40)) - 20 // Padding for top and bottom
+//    }
+//}
+//
+
 extension AnalysisManager {
     static var mock: AnalysisManager {
         let manager = AnalysisManager()
@@ -1347,7 +1121,18 @@ extension AnalysisManager {
                 wordCountRange: IntRange(min: 110, max: 130),
                 selfReferenceRange: IntRange(min: 8, max: 12)
             ),
-            aiAnalysis: AIAnalysisResult(feeling: "Contemplative", description: "Your reflections today show deep introspection and thoughtful consideration of personal experiences, with a focus on emotional awareness.")
+            aiAnalysis: AIAnalysisResult(
+                feeling: "Contemplative",
+                feelingDescription: "Your reflections today show deep introspection and thoughtful consideration of personal experiences",
+                tense: "Present",
+                tenseDescription: "You're focused on understanding your current state of mind",
+                selfReferenceCount: 12,
+                followUp: "How do these moments of reflection influence your daily choices?",
+                actionReflectionRatio: "30/70",
+                actionReflectionDescription: "You spend more time in thought than planning next steps",
+                solutionFocus: "40/60",
+                solutionFocusDescription: "Your responses explore situations more than seeking solutions"
+            )
         )
         
         manager.currentDailyAnalysis = mockDailyAnalysis
@@ -1402,3 +1187,56 @@ struct InsightsView_Previews: PreviewProvider {
             .previewDisplayName("Insights View")
     }
 }
+
+
+
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+    
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let result = FlowResult(in: proposal.width ?? 0, subviews: subviews, spacing: spacing)
+        return result.size
+    }
+    
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = FlowResult(in: bounds.width, subviews: subviews, spacing: spacing)
+        for (index, frame) in result.frames {
+            let position = CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY)
+            subviews[index].place(at: position, proposal: ProposedViewSize(frame.size))
+        }
+    }
+    
+    struct FlowResult {
+        var size: CGSize
+        var frames: [Int: CGRect]
+        
+        init(in width: CGFloat, subviews: Subviews, spacing: CGFloat) {
+            var height: CGFloat = 0
+            var maxWidth: CGFloat = 0
+            var x: CGFloat = 0
+            var y: CGFloat = 0
+            var row: CGFloat = 0
+            var frames = [Int: CGRect]()
+            
+            for (index, subview) in subviews.enumerated() {
+                let size = subview.sizeThatFits(.unspecified)
+                
+                if x + size.width > width {
+                    x = 0
+                    y += row + spacing
+                    row = 0
+                }
+                
+                frames[index] = CGRect(x: x, y: y, width: size.width, height: size.height)
+                row = max(row, size.height)
+                x += size.width + spacing
+                maxWidth = max(maxWidth, x)
+                height = max(height, y + row)
+            }
+            
+            self.size = CGSize(width: maxWidth, height: height)
+            self.frames = frames
+        }
+    }
+}
+    

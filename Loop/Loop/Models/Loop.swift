@@ -19,6 +19,7 @@ struct Loop: Hashable, Identifiable {
     var freeResponse: Bool
     var isVideo: Bool
     var isDailyLoop: Bool
+    var isFollowUp: Bool
     
     static func from(record: CKRecord) -> Loop? {
         guard let id = record["ID"] as? String,
@@ -39,7 +40,7 @@ struct Loop: Hashable, Identifiable {
             mood: record["Mood"] as? String,
             freeResponse: record["FreeResponse"] as? Bool ?? false,
             isVideo: record["IsVideo"] as? Bool ?? false,
-            isDailyLoop: record["IsDailyLoop"] as? Bool ?? false
+            isDailyLoop: record["IsDailyLoop"] as? Bool ?? false, isFollowUp: record["isFollowUp"] as? Bool ?? false
         )
     }
 }

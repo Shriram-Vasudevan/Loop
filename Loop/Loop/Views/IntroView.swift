@@ -678,46 +678,6 @@ struct LiveWaveformView: View {
     }
 }
 
-struct RecordButton: View {
-    let isRecording: Bool
-    let progress: CGFloat
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            ZStack {
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: 88)
-                    .shadow(color: Color(hex: "A28497").opacity(0.2), radius: 20)
-                
-                Circle()
-                    .fill(Color(hex: "A28497"))
-                    .frame(width: 74)
-                
-                if isRecording {
-                    Circle()
-                        .stroke(Color(hex: "A28497").opacity(0.2), lineWidth: 4)
-                        .frame(width: 96)
-                    
-                    Circle()
-                        .trim(from: 0, to: progress)
-                        .stroke(Color(hex: "A28497"), lineWidth: 4)
-                        .frame(width: 96)
-                        .rotationEffect(.degrees(-90))
-                    
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.white)
-                        .frame(width: 24, height: 24)
-                }
-                
-                if isRecording {
-                    PulsingRing(color: Color(hex: "A28497"))
-                }
-            }
-        }
-    }
-}
 
 struct PromptsView: View {
     let onContinue: () -> Void
@@ -873,12 +833,16 @@ struct PromptsView: View {
         }
         
         if !isRecording {
-            stopTimer()
-            audioManager.stopRecording()
-            onContinue()
+            withAnimation {
+                stopTimer()
+                audioManager.stopRecording()
+                onContinue()
+            }
         } else {
-            audioManager.startRecording()
-            startRecordingWithTimer()
+            withAnimation {
+                audioManager.startRecording()
+                startRecordingWithTimer()
+            }
         }
     }
     

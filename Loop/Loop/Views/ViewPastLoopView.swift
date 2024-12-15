@@ -91,13 +91,13 @@ struct ViewPastLoopView: View {
                 .padding(.top, 20)
             }
             
-            Text("What brings you peace lately")
+            Text(loop.promptText)
                 .font(.system(size: 24, weight: .light))
                 .multilineTextAlignment(.center)
                 .foregroundColor(textColor)
                 .padding(.horizontal, 40)
             
-            Text("October 27, 2024")
+            Text(formattedDate)
                 .font(.system(size: 15, weight: .regular))
                 .foregroundColor(textColor.opacity(0.6))
         }

@@ -63,7 +63,7 @@ struct RecordLoopsView: View {
             }
             .padding(.horizontal, 32)
             
-            if showingPromptOptions && !isRecording && !isPostRecording && loopManager.currentPromptIndex > 0 {
+            if showingPromptOptions && !isRecording && !isPostRecording && loopManager.currentPromptIndex < 2 {
                 promptSwitcherOverlay
             }
         }
@@ -282,7 +282,7 @@ struct RecordLoopsView: View {
                 audioURL: audioManager.getRecordedAudioFile() ?? URL(fileURLWithPath: ""),
                 waveformData: generateRandomWaveform(count: 40),
                 onComplete: { completeRecording() },
-                onRetry: { retryRecording() }
+                onRetry: { retryRecording() }, retryAttempts: loopManager.retryAttemptsLeft
             )
         }
     }
@@ -378,7 +378,7 @@ struct RecordLoopsView: View {
                     .font(.system(size: 32, weight: .thin))
                     .foregroundColor(accentColor)
                 
-                Text("see you tomorrow")
+                Text("see your insights")
                     .font(.system(size: 24, weight: .thin))
                     .foregroundColor(Color.gray)
             }
@@ -488,7 +488,7 @@ struct RecordLoopsView: View {
             let loop = loopManager.addLoop(
                 mediaURL: audioFileURL,
                 isVideo: false,
-                prompt: loopManager.getCurrentPrompt(), isDailyLoop: true
+                prompt: loopManager.getCurrentPrompt(), isDailyLoop: true, isFollowUp: false
             )
             
             Task {

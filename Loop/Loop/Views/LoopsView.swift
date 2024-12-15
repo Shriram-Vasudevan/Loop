@@ -238,6 +238,7 @@ struct DaySection: View {
 struct LoopCard: View {
     let loop: Loop
     let action: () -> Void
+    @State private var showDeleteConfirmation = false
     
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
@@ -247,54 +248,60 @@ struct LoopCard: View {
     @State private var isPressed = false
     
     var body: some View {
-        Button(action: action) {
-            VStack(spacing: 16) {
-                HStack {
-                    Text(formatTime())
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(accentColor)
-                    
-                    Spacer()
-                    
-                    WaveformIndicator(color: accentColor)
+        VStack(spacing: 16) {
+            HStack {
+                Text(formatTime())
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(accentColor)
+                
+                Spacer()
+                
+                Menu {
+                    Button(role: .destructive) {
+                        showDeleteConfirmation = true
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .foregroundColor(textColor.opacity(0.6))
                 }
                 
-                Text(loop.promptText)
-                    .font(.system(size: 16, weight: .light))
-                    .foregroundColor(textColor)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                WaveformIndicator(color: accentColor)
+            }
+            
+            Text(loop.promptText)
+                .font(.system(size: 16, weight: .light))
+                .foregroundColor(textColor)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            HStack {
+                AudioWaveform(color: accentColor)
                 
-                HStack {
-                    AudioWaveform(color: accentColor)
-                    
-                    Spacer()
+                Spacer()
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(.white)
+                .shadow(color: Color.black.opacity(0.05), radius: 15)
+        )
+        .scaleEffect(isPressed ? 0.97 : 1)
+        .offset(y: cardOffset)
+        .opacity(cardOpacity)
+        .onTapGesture(perform: action)
+        .alert("Delete Loop", isPresented: $showDeleteConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                Task {
+                    await LoopManager.shared.deleteLoop(withID: loop.id)
                 }
             }
-            .padding(20)
-            .background(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(.white)
-                    .shadow(color: Color.black.opacity(0.05), radius: 15)
-            )
-            .scaleEffect(isPressed ? 0.97 : 1)
-            .offset(y: cardOffset)
-            .opacity(cardOpacity)
+        } message: {
+            Text("Are you sure you want to delete this loop? This action cannot be undone.")
         }
-        .buttonStyle(.plain)
-        .gesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        isPressed = true
-                    }
-                }
-                .onEnded { _ in
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        isPressed = false
-                    }
-                }
-        )
         .onAppear {
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                 cardOffset = 0
