@@ -117,8 +117,8 @@ class AnalysisManager: ObservableObject {
     private let loopAnalysisCacheKey = "LoopAnalysisCache"
     private let pastLoopAnalysisCacheKey = "PastLoopAnalysisCache"
     private let lastAnalysisCacheDateKey = "LastAnalysisCacheDate"
-//    
-//    @Published private(set) var currentWeekStats: [DailyStats] = []
+    
+    @Published private(set) var currentWeekStats: [DailyStats] = []
     @Published private(set) var currentMonthWeeklyStats: [WeeklyStats] = []
     @Published private(set) var currentYearMonthlyStats: [MonthlyStats] = []
     
@@ -156,8 +156,10 @@ class AnalysisManager: ObservableObject {
                         allTimeComparison = statsManager.compareWithAllTimeStats(dailyAnalysis)
                         monthlyComparison = statsManager.compareWithMonthlyStats(dailyAnalysis)
                         weeklyComparison = statsManager.compareWithWeeklyStats(dailyAnalysis)
-//                        
-//                        saveDailyStats()
+                        
+                        statsManager.updateStats(with: dailyAnalysis)
+                        
+                        saveDailyStats()
                         saveAnalysisCache()
                     }
                 }
@@ -458,72 +460,81 @@ class AnalysisManager: ObservableObject {
         analysisCache.removeObject(forKey: dailyAnalysisCacheKey)
     }
     
-//    func saveDailyStats() {
-//        guard let analysis = currentDailyAnalysis else { return }
-//        
-//        let context = statsManager.context
-//        let dailyStats = DailyStats(context: context)
-//        
-//        // Set basic info
-//        dailyStats.date = analysis.date
-//        let calendar = Calendar.current
-//        let components = calendar.dateComponents([.year, .month, .weekOfYear, .weekday], from: analysis.date)
-//        dailyStats.year = Int16(components.year ?? 0)
-//        dailyStats.month = Int16(components.month ?? 0)
-//        dailyStats.weekOfYear = Int16(components.weekOfYear ?? 0)
-//        dailyStats.weekday = Int16(components.weekday ?? 0)
-//        
-//        // Set metrics
-//        dailyStats.averageWPM = analysis.aggregateMetrics.averageWPM
-//        dailyStats.averageDuration = analysis.aggregateMetrics.averageDuration
-//        dailyStats.averageWordCount = analysis.aggregateMetrics.averageWordCount
-//        dailyStats.averageUniqueWordCount = analysis.aggregateMetrics.averageUniqueWordCount
-//        dailyStats.averageSelfReferences = analysis.aggregateMetrics.averageSelfReferences
-//        dailyStats.vocabularyDiversityRatio = analysis.aggregateMetrics.vocabularyDiversityRatio
-//        
-//        // Additional metrics
-//        dailyStats.loopCount = Int16(analysis.loops.count)
-//        dailyStats.averageWordLength = analysis.loops.reduce(0.0) { $0 + $1.metrics.averageWordLength } / Double(analysis.loops.count)
-//        
-//        // Save
-//        do {
-//            try context.save()
-//            print("Successfully saved daily stats")
-//        } catch {
-//            print("Failed to save daily stats: \(error)")
-//        }
-//    }
-//    
-//    func fetchCurrentWeekStats() async {
-//        isLoadingWeekStats = true
-//        defer { isLoadingWeekStats = false }
-//        
-//        let calendar = Calendar.current
-//        let today = Date()
-//        
-//        // Get start of current week (Sunday)
-//        guard let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)),
-//              let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) else {
-//            currentWeekStats = []
-//            return
-//        }
-//        
-//        let context = statsManager.context
-//        let request = NSFetchRequest<DailyStats>(entityName: "DailyStatsEntity")
-//        
-//        request.predicate = NSPredicate(format: "date >= %@ AND date <= %@",
-//                                        weekStart as NSDate,
-//                                        weekEnd as NSDate)
-//        
-//        request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
-//        
-//        do {
-//            currentWeekStats = try context.fetch(request)
-//        } catch {
-//            print("Error fetching daily stats: \(error)")
-//            currentWeekStats = []
-//        }
-//    }
+    func saveDailyStats() {
+        guard let analysis = currentDailyAnalysis,
+              let entity = NSEntityDescription.entity(forEntityName: "DailyStatsEntity", in: statsManager.context) else {
+            print("Failed to get DailyStatsEntity")
+            return
+        }
+        
+        let statsEntity = NSManagedObject(entity: entity, insertInto: statsManager.context)
+        
+        // Set basic info
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.year, .month, .weekOfYear, .weekday], from: analysis.date)
+        
+        statsEntity.setValue(analysis.date, forKey: "date")
+        statsEntity.setValue(Int16(components.year ?? 0), forKey: "year")
+        statsEntity.setValue(Int16(components.month ?? 0), forKey: "month")
+        statsEntity.setValue(Int16(components.weekOfYear ?? 0), forKey: "weekOfYear")
+        statsEntity.setValue(Int16(components.weekday ?? 0), forKey: "weekday")
+        
+        // Set metrics
+        statsEntity.setValue(analysis.aggregateMetrics.averageWPM, forKey: "averageWPM")
+        statsEntity.setValue(analysis.aggregateMetrics.averageDuration, forKey: "averageDuration")
+        statsEntity.setValue(analysis.aggregateMetrics.averageWordCount, forKey: "averageWordCount")
+        statsEntity.setValue(analysis.aggregateMetrics.averageUniqueWordCount, forKey: "averageUniqueWordCount")
+        statsEntity.setValue(analysis.aggregateMetrics.averageSelfReferences, forKey: "averageSelfReferences")
+        statsEntity.setValue(analysis.aggregateMetrics.vocabularyDiversityRatio, forKey: "vocabularyDiversityRatio")
+        
+        // Additional metrics
+        statsEntity.setValue(Int16(analysis.loops.count), forKey: "loopCount")
+        statsEntity.setValue(analysis.loops.reduce(0.0) { $0 + $1.metrics.averageWordLength } / Double(analysis.loops.count), forKey: "averageWordLength")
+        statsEntity.setValue(Date(), forKey: "lastUpdated")
+        
+        do {
+            try statsManager.context.save()
+            print("Successfully saved daily stats")
+        } catch {
+            print("Failed to save daily stats: \(error)")
+        }
+    }
+    
+    func fetchCurrentWeekStats() async {
+        isLoadingWeekStats = true
+        defer { isLoadingWeekStats = false }
+        
+        let calendar = Calendar.current
+        let today = Date()
+        
+        guard let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)),
+              let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) else {
+            currentWeekStats = []
+            return
+        }
+        
+        let context = statsManager.context
+        // Change this line to use DailyStatsEntity instead of DailyStats
+        let request = NSFetchRequest<DailyStatsEntity>(entityName: "DailyStatsEntity")
+        
+        request.predicate = NSPredicate(format: "date >= %@ AND date <= %@",
+                                        weekStart as NSDate,
+                                        weekEnd as NSDate)
+        
+        request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
+        
+        do {
+            // Update the property type to match
+            let results = try context.fetch(request)
+            currentWeekStats = results.compactMap { entity -> DailyStats? in
+                // Convert DailyStatsEntity to DailyStats here if needed
+                return entity as? DailyStats
+            }
+        } catch {
+            print("Error fetching daily stats: \(error)")
+            currentWeekStats = []
+        }
+    }
     
     func fetchCurrentMonthWeeklyStats() async {
         isLoadingMonthStats = true
@@ -542,7 +553,7 @@ class AnalysisManager: ObservableObject {
         }
         
         let context = statsManager.context
-        let request = NSFetchRequest<WeeklyStats>(entityName: "WeeklyStatsEntity")
+        let request = NSFetchRequest<WeeklyStatsEntity>(entityName: "WeeklyStatsEntity")
         
         request.predicate = NSPredicate(format: "year == %d AND weekNumber >= %d AND weekNumber <= %d",
                                         year, firstWeek, lastWeek)
@@ -550,13 +561,16 @@ class AnalysisManager: ObservableObject {
         request.sortDescriptors = [NSSortDescriptor(key: "weekNumber", ascending: true)]
         
         do {
-            currentMonthWeeklyStats = try context.fetch(request)
+            let results = try context.fetch(request)
+            currentMonthWeeklyStats = results.compactMap { entity -> WeeklyStats? in
+                return entity as? WeeklyStats
+            }
         } catch {
             print("Error fetching weekly stats: \(error)")
             currentMonthWeeklyStats = []
         }
     }
-    
+
     func fetchCurrentYearMonthlyStats() async {
         isLoadingYearStats = true
         defer { isLoadingYearStats = false }
@@ -569,13 +583,16 @@ class AnalysisManager: ObservableObject {
         }
         
         let context = statsManager.context
-        let request = NSFetchRequest<MonthlyStats>(entityName: "MonthlyStatsEntity")
+        let request = NSFetchRequest<MonthlyStatsEntity>(entityName: "MonthlyStatsEntity")
         
         request.predicate = NSPredicate(format: "year == %d", year)
         request.sortDescriptors = [NSSortDescriptor(key: "month", ascending: true)]
         
         do {
-            currentYearMonthlyStats = try context.fetch(request)
+            let results = try context.fetch(request)
+            currentYearMonthlyStats = results.compactMap { entity -> MonthlyStats? in
+                return entity as? MonthlyStats
+            }
         } catch {
             print("Error fetching monthly stats: \(error)")
             currentYearMonthlyStats = []
@@ -627,61 +644,97 @@ class StatsManager {
         return try? context.fetch(request).first
     }
     
-    private func initializeAllTimeStats() -> AllTimeStats {
-        let stats = AllTimeStats(context: context)
-        stats.dataPointCount = 0
-        stats.averageWPM = 0
-        stats.averageDuration = 0
-        stats.averageWordCount = 0
-        stats.averageUniqueWordCount = 0
-        stats.averageSelfReferences = 0
-        stats.vocabularyDiversityRatio = 0
-        stats.averageWordLength = 0
-        stats.lastUpdated = Date()
-        try? context.save()
-        return stats
+    private func createAllTimeStats() -> AllTimeStats? {
+        guard let entity = NSEntityDescription.entity(forEntityName: "AllTimeStatsEntity", in: context) else {
+            print("Failed to get AllTimeStatsEntity")
+            return nil
+        }
+        
+        let statsEntity = NSManagedObject(entity: entity, insertInto: context)
+        
+        // Set values like your Loop code
+        statsEntity.setValue(0, forKey: "dataPointCount")
+        statsEntity.setValue(0.0, forKey: "averageWPM")
+        statsEntity.setValue(0.0, forKey: "averageDuration")
+        statsEntity.setValue(0.0, forKey: "averageWordCount")
+        statsEntity.setValue(0.0, forKey: "averageUniqueWordCount")
+        statsEntity.setValue(0.0, forKey: "averageSelfReferences")
+        statsEntity.setValue(0.0, forKey: "vocabularyDiversityRatio")
+        statsEntity.setValue(0.0, forKey: "averageWordLength")
+        statsEntity.setValue(Date(), forKey: "lastUpdated")
+        
+        do {
+            try context.save()
+            // Cast to AllTimeStats after saving
+            return statsEntity as? AllTimeStats
+        } catch {
+            print("Failed to save AllTimeStats: \(error)")
+            return nil
+        }
     }
     
-    private func initializeMonthlyStats() -> MonthlyStats? {
+    private func createMonthlyStats() -> MonthlyStats? {
         let components = Calendar.current.dateComponents([.month, .year], from: Date())
         guard let month = components.month,
-              let year = components.year else { return nil }
+              let year = components.year,
+              let entity = NSEntityDescription.entity(forEntityName: "MonthlyStatsEntity", in: context) else {
+            print("Failed to get MonthlyStatsEntity")
+            return nil
+        }
         
-        let stats = MonthlyStats(context: context)
-        stats.dataPointCount = 0
-        stats.averageWPM = 0
-        stats.averageDuration = 0
-        stats.averageWordCount = 0
-        stats.averageUniqueWordCount = 0
-        stats.averageSelfReferences = 0
-        stats.vocabularyDiversityRatio = 0
-        stats.averageWordLength = 0
-        stats.lastUpdated = Date()
-        stats.month = Int16(month)
-        stats.year = Int16(year)
-        try? context.save()
-        return stats
+        let statsEntity = NSManagedObject(entity: entity, insertInto: context)
+        
+        statsEntity.setValue(0, forKey: "dataPointCount")
+        statsEntity.setValue(0.0, forKey: "averageWPM")
+        statsEntity.setValue(0.0, forKey: "averageDuration")
+        statsEntity.setValue(0.0, forKey: "averageWordCount")
+        statsEntity.setValue(0.0, forKey: "averageUniqueWordCount")
+        statsEntity.setValue(0.0, forKey: "averageSelfReferences")
+        statsEntity.setValue(0.0, forKey: "vocabularyDiversityRatio")
+        statsEntity.setValue(0.0, forKey: "averageWordLength")
+        statsEntity.setValue(Date(), forKey: "lastUpdated")
+        statsEntity.setValue(Int16(month), forKey: "month")
+        statsEntity.setValue(Int16(year), forKey: "year")
+        
+        do {
+            try context.save()
+            return statsEntity as? MonthlyStats
+        } catch {
+            print("Failed to save MonthlyStats: \(error)")
+            return nil
+        }
     }
-    
-    private func initializeWeeklyStats() -> WeeklyStats? {
+
+    private func createWeeklyStats() -> WeeklyStats? {
         let components = Calendar.current.dateComponents([.weekOfYear, .year], from: Date())
         guard let week = components.weekOfYear,
-              let year = components.year else { return nil }
+              let year = components.year,
+              let entity = NSEntityDescription.entity(forEntityName: "WeeklyStatsEntity", in: context) else {
+            print("Failed to get WeeklyStatsEntity")
+            return nil
+        }
         
-        let stats = WeeklyStats(context: context)
-        stats.dataPointCount = 0
-        stats.averageWPM = 0
-        stats.averageDuration = 0
-        stats.averageWordCount = 0
-        stats.averageUniqueWordCount = 0
-        stats.averageSelfReferences = 0
-        stats.vocabularyDiversityRatio = 0
-        stats.averageWordLength = 0
-        stats.lastUpdated = Date()
-        stats.weekNumber = Int16(week)
-        stats.year = Int16(year)
-        try? context.save()
-        return stats
+        let statsEntity = NSManagedObject(entity: entity, insertInto: context)
+        
+        statsEntity.setValue(0, forKey: "dataPointCount")
+        statsEntity.setValue(0.0, forKey: "averageWPM")
+        statsEntity.setValue(0.0, forKey: "averageDuration")
+        statsEntity.setValue(0.0, forKey: "averageWordCount")
+        statsEntity.setValue(0.0, forKey: "averageUniqueWordCount")
+        statsEntity.setValue(0.0, forKey: "averageSelfReferences")
+        statsEntity.setValue(0.0, forKey: "vocabularyDiversityRatio")
+        statsEntity.setValue(0.0, forKey: "averageWordLength")
+        statsEntity.setValue(Date(), forKey: "lastUpdated")
+        statsEntity.setValue(Int16(week), forKey: "weekNumber")
+        statsEntity.setValue(Int16(year), forKey: "year")
+        
+        do {
+            try context.save()
+            return statsEntity as? WeeklyStats
+        } catch {
+            print("Failed to save WeeklyStats: \(error)")
+            return nil
+        }
     }
     
     private func updateRunningAverage(currentAvg: Double, currentCount: Int, newValue: Double) -> Double {
@@ -690,33 +743,35 @@ class StatsManager {
     }
     
     func updateStats(with analysis: DailyAnalysis) {
-        let allTimeStats = fetchAllTimeStats() ?? initializeAllTimeStats()
-        let monthlyStats = fetchCurrentMonthStats() ?? initializeMonthlyStats()
-        let weeklyStats = fetchCurrentWeekStats() ?? initializeWeeklyStats()
+        let allTimeStats = fetchAllTimeStats() ?? createAllTimeStats()
+        let monthlyStats = fetchCurrentMonthStats() ?? createMonthlyStats()
+        let weeklyStats = fetchCurrentWeekStats() ?? createWeeklyStats()
         
-        allTimeStats.averageWPM = updateRunningAverage(currentAvg: allTimeStats.averageWPM,
-                                                       currentCount: Int(allTimeStats.dataPointCount),
-                                                       newValue: analysis.aggregateMetrics.averageWPM)
-        allTimeStats.averageDuration = updateRunningAverage(currentAvg: allTimeStats.averageDuration,
+        if let allTimeStats = allTimeStats {
+            allTimeStats.averageWPM = updateRunningAverage(currentAvg: allTimeStats.averageWPM,
                                                             currentCount: Int(allTimeStats.dataPointCount),
-                                                            newValue: analysis.aggregateMetrics.averageDuration)
-        allTimeStats.averageWordCount = updateRunningAverage(currentAvg: allTimeStats.averageWordCount,
-                                                             currentCount: Int(allTimeStats.dataPointCount),
-                                                             newValue: analysis.aggregateMetrics.averageWordCount)
-        allTimeStats.averageUniqueWordCount = updateRunningAverage(currentAvg: allTimeStats.averageUniqueWordCount,
-                                                                   currentCount: Int(allTimeStats.dataPointCount),
-                                                                   newValue: analysis.aggregateMetrics.averageUniqueWordCount)
-        allTimeStats.averageSelfReferences = updateRunningAverage(currentAvg: allTimeStats.averageSelfReferences,
+                                                           newValue: analysis.aggregateMetrics.averageWPM)
+            allTimeStats.averageDuration = updateRunningAverage(currentAvg: allTimeStats.averageDuration,
+                                                                currentCount: Int(allTimeStats.dataPointCount),
+                                                                newValue: analysis.aggregateMetrics.averageDuration)
+            allTimeStats.averageWordCount = updateRunningAverage(currentAvg: allTimeStats.averageWordCount,
+                                                                 currentCount: Int(allTimeStats.dataPointCount),
+                                                                 newValue: analysis.aggregateMetrics.averageWordCount)
+            allTimeStats.averageUniqueWordCount = updateRunningAverage(currentAvg: allTimeStats.averageUniqueWordCount,
+                                                                       currentCount: Int(allTimeStats.dataPointCount),
+                                                                       newValue: analysis.aggregateMetrics.averageUniqueWordCount)
+            allTimeStats.averageSelfReferences = updateRunningAverage(currentAvg: allTimeStats.averageSelfReferences,
+                                                                      currentCount: Int(allTimeStats.dataPointCount),
+                                                                      newValue: analysis.aggregateMetrics.averageSelfReferences)
+            allTimeStats.vocabularyDiversityRatio = updateRunningAverage(currentAvg: allTimeStats.vocabularyDiversityRatio,
+                                                                         currentCount: Int(allTimeStats.dataPointCount),
+                                                                         newValue: analysis.aggregateMetrics.vocabularyDiversityRatio)
+            allTimeStats.averageWordLength = updateRunningAverage(currentAvg: allTimeStats.averageWordLength,
                                                                   currentCount: Int(allTimeStats.dataPointCount),
-                                                                  newValue: analysis.aggregateMetrics.averageSelfReferences)
-        allTimeStats.vocabularyDiversityRatio = updateRunningAverage(currentAvg: allTimeStats.vocabularyDiversityRatio,
-                                                                     currentCount: Int(allTimeStats.dataPointCount),
-                                                                     newValue: analysis.aggregateMetrics.vocabularyDiversityRatio)
-        allTimeStats.averageWordLength = updateRunningAverage(currentAvg: allTimeStats.averageWordLength,
-                                                              currentCount: Int(allTimeStats.dataPointCount),
-                                                              newValue: analysis.loops.reduce(0.0) { $0 + $1.metrics.averageWordLength } / Double(analysis.loops.count))
-        allTimeStats.dataPointCount += 1
-        allTimeStats.lastUpdated = Date()
+                                                                  newValue: analysis.loops.reduce(0.0) { $0 + $1.metrics.averageWordLength } / Double(analysis.loops.count))
+            allTimeStats.dataPointCount += 1
+            allTimeStats.lastUpdated = Date()
+        }
         
         if let monthlyStats = monthlyStats {
             monthlyStats.averageWPM = updateRunningAverage(currentAvg: monthlyStats.averageWPM,
@@ -773,8 +828,8 @@ class StatsManager {
         try? context.save()
     }
     
-    func compareWithCurrentStats(_ analysis: DailyAnalysis) -> LoopComparison {
-        let allTimeStats = fetchAllTimeStats() ?? initializeAllTimeStats()
+    func compareWithCurrentStats(_ analysis: DailyAnalysis) -> LoopComparison? {
+        let allTimeStats = fetchAllTimeStats() ?? createAllTimeStats()
         let monthlyStats = fetchCurrentMonthStats()
         let weeklyStats = fetchCurrentWeekStats()
         
@@ -791,40 +846,44 @@ class StatsManager {
             return MetricComparison(direction: direction, percentageChange: abs(percentChange))
         }
         
-        return LoopComparison(
-            date: analysis.date,
-            pastLoopDate: allTimeStats.lastUpdated ?? Date(),
-            durationComparison: createComparison(
-                current: analysis.aggregateMetrics.averageDuration,
-                past: allTimeStats.averageDuration
-            ),
-            wpmComparison: createComparison(
-                current: analysis.aggregateMetrics.averageWPM,
-                past: allTimeStats.averageWPM
-            ),
-            wordCountComparison: createComparison(
-                current: analysis.aggregateMetrics.averageWordCount,
-                past: allTimeStats.averageWordCount
-            ),
-            uniqueWordComparison: createComparison(
-                current: analysis.aggregateMetrics.averageUniqueWordCount,
-                past: allTimeStats.averageUniqueWordCount
-            ),
-            vocabularyDiversityComparison: createComparison(
-                current: analysis.aggregateMetrics.vocabularyDiversityRatio,
-                past: allTimeStats.vocabularyDiversityRatio
-            ),
-            averageWordLengthComparison: createComparison(
-                current: analysis.loops.reduce(0.0) { $0 + $1.metrics.averageWordLength } / Double(analysis.loops.count),
-                past: allTimeStats.averageWordLength
-            ),
-            selfReferenceComparison: createComparison(
-                current: analysis.aggregateMetrics.averageSelfReferences,
-                past: allTimeStats.averageSelfReferences
-            ),
-            similarityScore: 0,
-            commonWords: []
-        )
+        if let allTimeStats = allTimeStats {
+            return LoopComparison(
+                date: analysis.date,
+                pastLoopDate: allTimeStats.lastUpdated ?? Date(),
+                durationComparison: createComparison(
+                    current: analysis.aggregateMetrics.averageDuration,
+                    past: allTimeStats.averageDuration
+                ),
+                wpmComparison: createComparison(
+                    current: analysis.aggregateMetrics.averageWPM,
+                    past: allTimeStats.averageWPM
+                ),
+                wordCountComparison: createComparison(
+                    current: analysis.aggregateMetrics.averageWordCount,
+                    past: allTimeStats.averageWordCount
+                ),
+                uniqueWordComparison: createComparison(
+                    current: analysis.aggregateMetrics.averageUniqueWordCount,
+                    past: allTimeStats.averageUniqueWordCount
+                ),
+                vocabularyDiversityComparison: createComparison(
+                    current: analysis.aggregateMetrics.vocabularyDiversityRatio,
+                    past: allTimeStats.vocabularyDiversityRatio
+                ),
+                averageWordLengthComparison: createComparison(
+                    current: analysis.loops.reduce(0.0) { $0 + $1.metrics.averageWordLength } / Double(analysis.loops.count),
+                    past: allTimeStats.averageWordLength
+                ),
+                selfReferenceComparison: createComparison(
+                    current: analysis.aggregateMetrics.averageSelfReferences,
+                    past: allTimeStats.averageSelfReferences
+                ),
+                similarityScore: 0,
+                commonWords: []
+            )
+        }
+        
+        return nil
     }
     
     func compareWithAllTimeStats(_ analysis: DailyAnalysis) -> LoopComparison? {

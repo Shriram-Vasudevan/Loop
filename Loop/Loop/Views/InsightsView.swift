@@ -62,7 +62,7 @@ struct InsightsView: View {
                                     .foregroundColor(textColor.opacity(0.7))
                             }
                         } else {
-//                            TrendsInsightsView(analysisManager: analysisManager)
+                            TrendsInsightsView(analysisManager: analysisManager)
                         }
                     }
                     .padding(.horizontal, 24)
@@ -602,463 +602,462 @@ struct FollowUpWidget: View {
     }
 }
 
-//struct TrendsInsightsView: View {
-//    @ObservedObject var analysisManager: AnalysisManager
-//    @State private var selectedPeriod = "week"
-//    @State private var selectedMetric: GraphData.MetricType = .wpm
-//    
-//    private let accentColor = Color(hex: "A28497")
-//    private let backgroundColor = Color(hex: "FAFBFC")
-//    private let surfaceColor = Color(hex: "F8F5F7")
-//    private let textColor = Color(hex: "2C3E50")
-//    
-//    var body: some View {
-//        VStack(spacing: 0) {
-//            // Time Period Selector
-//            VStack(spacing: 16) {
-//                HStack {
-//                    Text("insights")
-//                        .font(.system(size: 40, weight: .bold))
-//                        .foregroundColor(textColor)
-//                    Spacer()
-//                }
-//                .padding(.top, 16)
-//                
-//                periodSelector
-//            }
-//            .padding(.horizontal, 24)
-//            
-//            // Main Content
-//            ScrollView {
-//                VStack(spacing: 24) {
-//                    // Metric Selector and Value
-//                    HStack {
-//                        if let currentValue = getCurrentValue() {
-//                            VStack(alignment: .leading) {
-//                                Text(selectedMetric.rawValue)
-//                                    .font(.system(size: 13, weight: .medium))
-//                                    .foregroundColor(textColor.opacity(0.6))
-//                                Text(String(format: "%.1f", currentValue))
-//                                    .font(.system(size: 24, weight: .bold))
-//                                    .foregroundColor(textColor)
-//                            }
-//                        }
-//                        
-//                        Spacer()
-//                        
-//                        Menu {
-//                            ForEach(GraphData.MetricType.allCases, id: \.self) { metric in
-//                                Button(metric.rawValue) {
-//                                    withAnimation {
-//                                        selectedMetric = metric
-//                                    }
-//                                }
-//                            }
-//                        } label: {
-//                            HStack {
-//                                Image(systemName: "chart.xyaxis.line")
-//                                    .font(.system(size: 14, weight: .medium))
-//                                Image(systemName: "chevron.down")
-//                                    .font(.system(size: 12, weight: .medium))
-//                            }
-//                            .foregroundColor(textColor)
-//                            .padding(8)
-//                            .background(surfaceColor)
-//                            .clipShape(Circle())
-//                        }
-//                    }
-//                    .padding(.top, 8)
-//                    
-//                    // Graph Section
-//                    ZStack {
-//                        if isLoading {
-//                            StatsLoadingView()
-//                        } else if let graphData = createGraphData() {
-//                            TrendsGraphView(data: graphData)
-//                        } else {
-//                            Text("No data available")
-//                                .font(.system(size: 16, weight: .medium))
-//                                .foregroundColor(textColor.opacity(0.6))
-//                        }
-//                    }
-//                    .frame(height: 300)
-//                    .background(Color.white)
-//                    .clipShape(RoundedRectangle(cornerRadius: 16))
-//                
-//                }
-//                .padding(.horizontal, 24)
-//            }
-//        }
-//        .task {
-//            await loadDataForPeriod()
-//        }
-//    }
-//    
-//    private var periodSelector: some View {
-//        HStack(spacing: 24) {
-//            ForEach(["week", "month", "year"], id: \.self) { period in
-//                Button(action: {
-//                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-//                        selectedPeriod = period
-//                    }
-//                    Task {
-//                        await loadDataForPeriod()
-//                    }
-//                }) {
-//                    VStack(spacing: 8) {
-//                        Text(period.capitalized)
-//                            .font(.system(size: 16, weight: .semibold))
-//                            .foregroundColor(selectedPeriod == period ? textColor : textColor.opacity(0.5))
-//                        
-//                        Rectangle()
-//                            .fill(selectedPeriod == period ? accentColor : Color.clear)
-//                            .frame(height: 2)
-//                    }
-//                }
-//            }
-//        }
-//    }
-//    
-//    private var isLoading: Bool {
-//        switch selectedPeriod {
-//        case "week":
-//            return analysisManager.isLoadingWeekStats
-//        case "month":
-//            return analysisManager.isLoadingMonthStats
-//        case "year":
-//            return analysisManager.isLoadingYearStats
-//        default:
-//            return false
-//        }
-//    }
-//    
-//    private func loadDataForPeriod() async {
-//        switch selectedPeriod {
-//        case "week":
-//            await analysisManager.fetchCurrentWeekStats()
-//        case "month":
-//            await analysisManager.fetchCurrentMonthWeeklyStats()
-//        case "year":
-//            await analysisManager.fetchCurrentYearMonthlyStats()
-//        default:
-//            break
-//        }
-//    }
-////    
-////    private func getCurrentValue() -> Double? {
-////        switch selectedPeriod {
-////        case "week":
-////            return analysisManager.currentWeekStats.last?.averageWPM
-////        case "month":
-////            return analysisManager.currentMonthWeeklyStats.last?.averageWPM
-////        case "year":
-////            return analysisManager.currentYearMonthlyStats.last?.averageWPM
-////        default:
-////            return nil
-////        }
-////    }
-////    
-////    private func createGraphData() -> GraphData? {
-////        switch selectedPeriod {
-////        case "week":
-////            return createWeekGraphData()
-////        case "month":
-////            return createMonthGraphData()
-////        case "year":
-////            return createYearGraphData()
-////        default:
-////            return nil
-////        }
-////    }
-//}
-//
-//// MARK: - Graph Data Creation
-////extension TrendsInsightsView {
-////    private func createWeekGraphData() -> GraphData? {
-////        let stats = analysisManager.currentWeekStats
-////        guard !stats.isEmpty else { return nil }
-////        
-////        let points = stats.map { stat in
-////            GraphPoint(
-////                date: stat.date ?? Date(),
-////                value: getValue(from: stat),
-////                label: formatDate(stat.date ?? Date(), for: "week")
-////            )
-////        }
-////        
-////        let values = points.map { $0.value }
-////        return GraphData(
-////            points: points,
-////            maxY: values.max() ?? 0,
-////            minY: values.min() ?? 0,
-////            average: values.reduce(0, +) / Double(values.count),
-////            metric: selectedMetric
-////        )
-////    }
-////    
-////    private func createMonthGraphData() -> GraphData? {
-////        let stats = analysisManager.currentMonthWeeklyStats
-////        guard !stats.isEmpty else { return nil }
-////        
-////        let points = stats.map { stat in
-////            GraphPoint(
-////                date: stat.lastUpdated ?? Date(),
-////                value: getValue(from: stat),
-////                label: "Week \(stat.weekNumber)"
-////            )
-////        }
-////        
-////        let values = points.map { $0.value }
-////        return GraphData(
-////            points: points,
-////            maxY: values.max() ?? 0,
-////            minY: values.min() ?? 0,
-////            average: values.reduce(0, +) / Double(values.count),
-////            metric: selectedMetric
-////        )
-////    }
-////    
-////    private func createYearGraphData() -> GraphData? {
-////        let stats = analysisManager.currentYearMonthlyStats
-////        guard !stats.isEmpty else { return nil }
-////        
-////        let points = stats.map { stat in
-////            GraphPoint(
-////                date: stat.lastUpdated ?? Date(),
-////                value: getValue(from: stat),
-////                label: formatDate(stat.lastUpdated ?? Date(), for: "year")
-////            )
-////        }
-////        
-////        let values = points.map { $0.value }
-////        return GraphData(
-////            points: points,
-////            maxY: values.max() ?? 0,
-////            minY: values.min() ?? 0,
-////            average: values.reduce(0, +) / Double(values.count),
-////            metric: selectedMetric
-////        )
-////    }
-////    
-//////    private func getValue(from stat: DailyStats) -> Double {
-//////        switch selectedMetric {
-//////        case .wpm: return stat.averageWPM
-//////        case .duration: return stat.averageDuration
-//////        case .wordCount: return stat.averageWordCount
-//////        case .uniqueWords: return stat.averageUniqueWordCount
-//////        case .selfReferences: return stat.averageSelfReferences
-//////        case .vocabularyDiversity: return stat.vocabularyDiversityRatio
-//////        }
-//////    }
-////    
-////    private func getValue(from stat: WeeklyStats) -> Double {
-////        switch selectedMetric {
-////        case .wpm: return stat.averageWPM
-////        case .duration: return stat.averageDuration
-////        case .wordCount: return stat.averageWordCount
-////        case .uniqueWords: return stat.averageUniqueWordCount
-////        case .selfReferences: return stat.averageSelfReferences
-////        case .vocabularyDiversity: return stat.vocabularyDiversityRatio
-////        }
-////    }
-////    
-////    private func getValue(from stat: MonthlyStats) -> Double {
-////        switch selectedMetric {
-////        case .wpm: return stat.averageWPM
-////        case .duration: return stat.averageDuration
-////        case .wordCount: return stat.averageWordCount
-////        case .uniqueWords: return stat.averageUniqueWordCount
-////        case .selfReferences: return stat.averageSelfReferences
-////        case .vocabularyDiversity: return stat.vocabularyDiversityRatio
-////        }
-////    }
-////    
-////    private func formatDate(_ date: Date, for period: String) -> String {
-////        let formatter = DateFormatter()
-////        switch period {
-////        case "week":
-////            formatter.dateFormat = "EEE"
-////        case "month":
-////            formatter.dateFormat = "MMM d"
-////        case "year":
-////            formatter.dateFormat = "MMM"
-////        default:
-////            formatter.dateFormat = "MMM d"
-////        }
-////        return formatter.string(from: date)
-////    }
-////}
-//
-//struct TrendsGraphView: View {
-//    let data: GraphData
-//    @State private var selectedPoint: GraphPoint?
-//    @State private var showingPopover = false
-//    @State private var popoverPosition: CGPoint = .zero
-//    
-//    private let accentColor = Color(hex: "A28497")
-//    private let backgroundColor = Color(hex: "FAFBFC")
-//    private let surfaceColor = Color(hex: "F8F5F7")
-//    private let textColor = Color(hex: "2C3E50")
-//    
-//    private let numberFormatter: NumberFormatter = {
-//        let formatter = NumberFormatter()
-//        formatter.maximumFractionDigits = 1
-//        return formatter
-//    }()
-//    
-//    var body: some View {
-//        GeometryReader { geometry in
-//            ZStack(alignment: .leading) {
-//                // Background grid
-//                VStack(spacing: 0) {
-//                    ForEach(0..<4) { _ in
-//                        Divider()
-//                            .frame(height: 1)
-//                            .opacity(0.1)
-//                        Spacer()
-//                    }
-//                }
-//                
-//                // Graph content
-//                if data.points.count > 1 {
-//                    // Area fill beneath line
-//                    Path { path in
-//                        path.move(to: CGPoint(x: 0, y: geometry.size.height))
-//                        
-//                        for (index, point) in data.points.enumerated() {
-//                            let x = getX(for: index, width: geometry.size.width)
-//                            let y = getY(for: point.value, height: geometry.size.height)
-//                            
-//                            if index == 0 {
-//                                path.move(to: CGPoint(x: x, y: y))
-//                            } else {
-//                                let control = CGPoint(x: x - (geometry.size.width / CGFloat(data.points.count * 2)),
-//                                                    y: getY(for: data.points[index - 1].value, height: geometry.size.height))
-//                                let control2 = CGPoint(x: x, y: y)
-//                                path.addCurve(to: CGPoint(x: x, y: y),
-//                                            control1: control,
-//                                            control2: control2)
-//                            }
-//                        }
-//                        
-//                        // Complete the path to create area
-//                        path.addLine(to: CGPoint(x: geometry.size.width, y: geometry.size.height))
-//                        path.addLine(to: CGPoint(x: 0, y: geometry.size.height))
-//                    }
-//                    .fill(LinearGradient(
-//                        gradient: Gradient(colors: [
-//                            accentColor.opacity(0.3),
-//                            accentColor.opacity(0.1),
-//                            accentColor.opacity(0.05)
-//                        ]),
-//                        startPoint: .top,
-//                        endPoint: .bottom
-//                    ))
-//                    
-//                    // Main line
-//                    Path { path in
-//                        for (index, point) in data.points.enumerated() {
-//                            let x = getX(for: index, width: geometry.size.width)
-//                            let y = getY(for: point.value, height: geometry.size.height)
-//                            
-//                            if index == 0 {
-//                                path.move(to: CGPoint(x: x, y: y))
-//                            } else {
-//                                let control = CGPoint(x: x - (geometry.size.width / CGFloat(data.points.count * 2)),
-//                                                    y: getY(for: data.points[index - 1].value, height: geometry.size.height))
-//                                let control2 = CGPoint(x: x, y: y)
-//                                path.addCurve(to: CGPoint(x: x, y: y),
-//                                            control1: control,
-//                                            control2: control2)
-//                            }
-//                        }
-//                    }
-//                    .stroke(accentColor, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
-//                    
-//                    // Data points
-//                    ForEach(Array(data.points.enumerated()), id: \.element.id) { index, point in
-//                        Circle()
-//                            .fill(accentColor)
-//                            .frame(width: 8, height: 8)
-//                            .background(
-//                                Circle()
-//                                    .fill(.white)
-//                                    .frame(width: 16, height: 16)
-//                            )
-//                            .position(
-//                                x: getX(for: index, width: geometry.size.width),
-//                                y: getY(for: point.value, height: geometry.size.height)
-//                            )
-//                            .gesture(
-//                                TapGesture()
-//                                    .onEnded { _ in
-//                                        selectedPoint = point
-//                                        popoverPosition = CGPoint(
-//                                            x: getX(for: index, width: geometry.size.width),
-//                                            y: getY(for: point.value, height: geometry.size.height)
-//                                        )
-//                                        withAnimation(.easeInOut(duration: 0.2)) {
-//                                            showingPopover = true
-//                                        }
-//                                    }
-//                            )
-//                    }
-//                }
-//                
-//                // X-axis labels
-//                VStack {
-//                    Spacer()
-//                    HStack {
-//                        ForEach(data.points, id: \.id) { point in
-//                            Text(point.label)
-//                                .font(.system(size: 12))
-//                                .foregroundColor(textColor.opacity(0.6))
-//                                .frame(maxWidth: .infinity)
-//                        }
-//                    }
-//                }
-//            }
-//            
-//            // Value popover
-//            if showingPopover, let point = selectedPoint {
-//                VStack(alignment: .leading, spacing: 4) {
-//                    Text(point.label)
-//                        .font(.system(size: 12, weight: .medium))
-//                        .foregroundColor(textColor.opacity(0.6))
-//                    Text(numberFormatter.string(from: NSNumber(value: point.value)) ?? "")
-//                        .font(.system(size: 16, weight: .bold))
-//                        .foregroundColor(textColor)
-//                }
-//                .padding(.horizontal, 12)
-//                .padding(.vertical, 8)
-//                .background(Color.white)
-//                .cornerRadius(8)
-//                .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-//                .position(x: popoverPosition.x, y: popoverPosition.y - 40)
-//            }
-//        }
-//        .padding(.vertical)
-//        .onTapGesture {
-//            withAnimation(.easeInOut(duration: 0.2)) {
-//                showingPopover = false
-//            }
-//        }
-//    }
-//    
-//    private func getX(for index: Int, width: CGFloat) -> CGFloat {
-//        let spacing = width / CGFloat(max(1, data.points.count - 1))
-//        return spacing * CGFloat(index)
-//    }
-//    
-//    private func getY(for value: Double, height: CGFloat) -> CGFloat {
-//        let range = data.maxY - data.minY
-//        guard range > 0 else { return height / 2 }
-//        
-//        let normalized = (value - data.minY) / range
-//        return height - (normalized * (height - 40)) - 20 // Padding for top and bottom
-//    }
-//}
-//
+struct TrendsInsightsView: View {
+    @ObservedObject var analysisManager: AnalysisManager
+    @State private var selectedPeriod = "week"
+    @State private var selectedMetric: GraphData.MetricType = .wpm
+    
+    private let accentColor = Color(hex: "A28497")
+    private let backgroundColor = Color(hex: "FAFBFC")
+    private let surfaceColor = Color(hex: "F8F5F7")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Time Period Selector
+            VStack(spacing: 16) {
+                HStack {
+                    Text("insights")
+                        .font(.system(size: 40, weight: .bold))
+                        .foregroundColor(textColor)
+                    Spacer()
+                }
+                .padding(.top, 16)
+                
+                periodSelector
+            }
+            .padding(.horizontal, 24)
+            
+            // Main Content
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Metric Selector and Value
+                    HStack {
+                        if let currentValue = getCurrentValue() {
+                            VStack(alignment: .leading) {
+                                Text(selectedMetric.rawValue)
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(textColor.opacity(0.6))
+                                Text(String(format: "%.1f", currentValue))
+                                    .font(.system(size: 24, weight: .bold))
+                                    .foregroundColor(textColor)
+                            }
+                        }
+                        
+                        Spacer()
+                        
+                        Menu {
+                            ForEach(GraphData.MetricType.allCases, id: \.self) { metric in
+                                Button(metric.rawValue) {
+                                    withAnimation {
+                                        selectedMetric = metric
+                                    }
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "chart.xyaxis.line")
+                                    .font(.system(size: 14, weight: .medium))
+                                Image(systemName: "chevron.down")
+                                    .font(.system(size: 12, weight: .medium))
+                            }
+                            .foregroundColor(textColor)
+                            .padding(8)
+                            .background(surfaceColor)
+                            .clipShape(Circle())
+                        }
+                    }
+                    .padding(.top, 8)
+                    
+                    // Graph Section
+                    ZStack {
+                        if isLoading {
+                            StatsLoadingView()
+                        } else if let graphData = createGraphData() {
+                            TrendsGraphView(data: graphData)
+                        } else {
+                            Text("No data available")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(textColor.opacity(0.6))
+                        }
+                    }
+                    .frame(height: 300)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                
+                }
+                .padding(.horizontal, 24)
+            }
+        }
+        .task {
+            await loadDataForPeriod()
+        }
+    }
+    
+    private var periodSelector: some View {
+        HStack(spacing: 24) {
+            ForEach(["week", "month", "year"], id: \.self) { period in
+                Button(action: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        selectedPeriod = period
+                    }
+                    Task {
+                        await loadDataForPeriod()
+                    }
+                }) {
+                    VStack(spacing: 8) {
+                        Text(period.capitalized)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(selectedPeriod == period ? textColor : textColor.opacity(0.5))
+                        
+                        Rectangle()
+                            .fill(selectedPeriod == period ? accentColor : Color.clear)
+                            .frame(height: 2)
+                    }
+                }
+            }
+        }
+    }
+    
+    private var isLoading: Bool {
+        switch selectedPeriod {
+        case "week":
+            return analysisManager.isLoadingWeekStats
+        case "month":
+            return analysisManager.isLoadingMonthStats
+        case "year":
+            return analysisManager.isLoadingYearStats
+        default:
+            return false
+        }
+    }
+    
+    private func loadDataForPeriod() async {
+        switch selectedPeriod {
+        case "week":
+            await analysisManager.fetchCurrentWeekStats()
+        case "month":
+            await analysisManager.fetchCurrentMonthWeeklyStats()
+        case "year":
+            await analysisManager.fetchCurrentYearMonthlyStats()
+        default:
+            break
+        }
+    }
+    
+    private func getCurrentValue() -> Double? {
+        switch selectedPeriod {
+        case "week":
+            return analysisManager.currentWeekStats.last?.averageWPM
+        case "month":
+            return analysisManager.currentMonthWeeklyStats.last?.averageWPM
+        case "year":
+            return analysisManager.currentYearMonthlyStats.last?.averageWPM
+        default:
+            return nil
+        }
+    }
+    
+    private func createGraphData() -> GraphData? {
+        switch selectedPeriod {
+        case "week":
+            return createWeekGraphData()
+        case "month":
+            return createMonthGraphData()
+        case "year":
+            return createYearGraphData()
+        default:
+            return nil
+        }
+    }
+}
+
+extension TrendsInsightsView {
+    private func createWeekGraphData() -> GraphData? {
+        let stats = analysisManager.currentWeekStats
+        guard !stats.isEmpty else { return nil }
+        
+        let points = stats.map { stat in
+            GraphPoint(
+                date: stat.date ?? Date(),
+                value: getValue(from: stat),
+                label: formatDate(stat.date ?? Date(), for: "week")
+            )
+        }
+        
+        let values = points.map { $0.value }
+        return GraphData(
+            points: points,
+            maxY: values.max() ?? 0,
+            minY: values.min() ?? 0,
+            average: values.reduce(0, +) / Double(values.count),
+            metric: selectedMetric
+        )
+    }
+    
+    private func createMonthGraphData() -> GraphData? {
+        let stats = analysisManager.currentMonthWeeklyStats
+        guard !stats.isEmpty else { return nil }
+        
+        let points = stats.map { stat in
+            GraphPoint(
+                date: stat.lastUpdated ?? Date(),
+                value: getValue(from: stat),
+                label: "Week \(stat.weekNumber)"
+            )
+        }
+        
+        let values = points.map { $0.value }
+        return GraphData(
+            points: points,
+            maxY: values.max() ?? 0,
+            minY: values.min() ?? 0,
+            average: values.reduce(0, +) / Double(values.count),
+            metric: selectedMetric
+        )
+    }
+    
+    private func createYearGraphData() -> GraphData? {
+        let stats = analysisManager.currentYearMonthlyStats
+        guard !stats.isEmpty else { return nil }
+        
+        let points = stats.map { stat in
+            GraphPoint(
+                date: stat.lastUpdated ?? Date(),
+                value: getValue(from: stat),
+                label: formatDate(stat.lastUpdated ?? Date(), for: "year")
+            )
+        }
+        
+        let values = points.map { $0.value }
+        return GraphData(
+            points: points,
+            maxY: values.max() ?? 0,
+            minY: values.min() ?? 0,
+            average: values.reduce(0, +) / Double(values.count),
+            metric: selectedMetric
+        )
+    }
+    
+        private func getValue(from stat: DailyStats) -> Double {
+            switch selectedMetric {
+            case .wpm: return stat.averageWPM
+            case .duration: return stat.averageDuration
+            case .wordCount: return stat.averageWordCount
+            case .uniqueWords: return stat.averageUniqueWordCount
+            case .selfReferences: return stat.averageSelfReferences
+            case .vocabularyDiversity: return stat.vocabularyDiversityRatio
+            }
+        }
+    
+    private func getValue(from stat: WeeklyStats) -> Double {
+        switch selectedMetric {
+        case .wpm: return stat.averageWPM
+        case .duration: return stat.averageDuration
+        case .wordCount: return stat.averageWordCount
+        case .uniqueWords: return stat.averageUniqueWordCount
+        case .selfReferences: return stat.averageSelfReferences
+        case .vocabularyDiversity: return stat.vocabularyDiversityRatio
+        }
+    }
+    
+    private func getValue(from stat: MonthlyStats) -> Double {
+        switch selectedMetric {
+        case .wpm: return stat.averageWPM
+        case .duration: return stat.averageDuration
+        case .wordCount: return stat.averageWordCount
+        case .uniqueWords: return stat.averageUniqueWordCount
+        case .selfReferences: return stat.averageSelfReferences
+        case .vocabularyDiversity: return stat.vocabularyDiversityRatio
+        }
+    }
+    
+    private func formatDate(_ date: Date, for period: String) -> String {
+        let formatter = DateFormatter()
+        switch period {
+        case "week":
+            formatter.dateFormat = "EEE"
+        case "month":
+            formatter.dateFormat = "MMM d"
+        case "year":
+            formatter.dateFormat = "MMM"
+        default:
+            formatter.dateFormat = "MMM d"
+        }
+        return formatter.string(from: date)
+    }
+}
+
+struct TrendsGraphView: View {
+    let data: GraphData
+    @State private var selectedPoint: GraphPoint?
+    @State private var showingPopover = false
+    @State private var popoverPosition: CGPoint = .zero
+    
+    private let accentColor = Color(hex: "A28497")
+    private let backgroundColor = Color(hex: "FAFBFC")
+    private let surfaceColor = Color(hex: "F8F5F7")
+    private let textColor = Color(hex: "2C3E50")
+    
+    private let numberFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.maximumFractionDigits = 1
+        return formatter
+    }()
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                // Background grid
+                VStack(spacing: 0) {
+                    ForEach(0..<4) { _ in
+                        Divider()
+                            .frame(height: 1)
+                            .opacity(0.1)
+                        Spacer()
+                    }
+                }
+                
+                // Graph content
+                if data.points.count > 1 {
+                    // Area fill beneath line
+                    Path { path in
+                        path.move(to: CGPoint(x: 0, y: geometry.size.height))
+                        
+                        for (index, point) in data.points.enumerated() {
+                            let x = getX(for: index, width: geometry.size.width)
+                            let y = getY(for: point.value, height: geometry.size.height)
+                            
+                            if index == 0 {
+                                path.move(to: CGPoint(x: x, y: y))
+                            } else {
+                                let control = CGPoint(x: x - (geometry.size.width / CGFloat(data.points.count * 2)),
+                                                    y: getY(for: data.points[index - 1].value, height: geometry.size.height))
+                                let control2 = CGPoint(x: x, y: y)
+                                path.addCurve(to: CGPoint(x: x, y: y),
+                                            control1: control,
+                                            control2: control2)
+                            }
+                        }
+                        
+                        // Complete the path to create area
+                        path.addLine(to: CGPoint(x: geometry.size.width, y: geometry.size.height))
+                        path.addLine(to: CGPoint(x: 0, y: geometry.size.height))
+                    }
+                    .fill(LinearGradient(
+                        gradient: Gradient(colors: [
+                            accentColor.opacity(0.3),
+                            accentColor.opacity(0.1),
+                            accentColor.opacity(0.05)
+                        ]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ))
+                    
+                    // Main line
+                    Path { path in
+                        for (index, point) in data.points.enumerated() {
+                            let x = getX(for: index, width: geometry.size.width)
+                            let y = getY(for: point.value, height: geometry.size.height)
+                            
+                            if index == 0 {
+                                path.move(to: CGPoint(x: x, y: y))
+                            } else {
+                                let control = CGPoint(x: x - (geometry.size.width / CGFloat(data.points.count * 2)),
+                                                    y: getY(for: data.points[index - 1].value, height: geometry.size.height))
+                                let control2 = CGPoint(x: x, y: y)
+                                path.addCurve(to: CGPoint(x: x, y: y),
+                                            control1: control,
+                                            control2: control2)
+                            }
+                        }
+                    }
+                    .stroke(accentColor, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                    
+                    // Data points
+                    ForEach(Array(data.points.enumerated()), id: \.element.id) { index, point in
+                        Circle()
+                            .fill(accentColor)
+                            .frame(width: 8, height: 8)
+                            .background(
+                                Circle()
+                                    .fill(.white)
+                                    .frame(width: 16, height: 16)
+                            )
+                            .position(
+                                x: getX(for: index, width: geometry.size.width),
+                                y: getY(for: point.value, height: geometry.size.height)
+                            )
+                            .gesture(
+                                TapGesture()
+                                    .onEnded { _ in
+                                        selectedPoint = point
+                                        popoverPosition = CGPoint(
+                                            x: getX(for: index, width: geometry.size.width),
+                                            y: getY(for: point.value, height: geometry.size.height)
+                                        )
+                                        withAnimation(.easeInOut(duration: 0.2)) {
+                                            showingPopover = true
+                                        }
+                                    }
+                            )
+                    }
+                }
+                
+                // X-axis labels
+                VStack {
+                    Spacer()
+                    HStack {
+                        ForEach(data.points, id: \.id) { point in
+                            Text(point.label)
+                                .font(.system(size: 12))
+                                .foregroundColor(textColor.opacity(0.6))
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                }
+            }
+            
+            // Value popover
+            if showingPopover, let point = selectedPoint {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(point.label)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(textColor.opacity(0.6))
+                    Text(numberFormatter.string(from: NSNumber(value: point.value)) ?? "")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(textColor)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.white)
+                .cornerRadius(8)
+                .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                .position(x: popoverPosition.x, y: popoverPosition.y - 40)
+            }
+        }
+        .padding(.vertical)
+        .onTapGesture {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showingPopover = false
+            }
+        }
+    }
+    
+    private func getX(for index: Int, width: CGFloat) -> CGFloat {
+        let spacing = width / CGFloat(max(1, data.points.count - 1))
+        return spacing * CGFloat(index)
+    }
+    
+    private func getY(for value: Double, height: CGFloat) -> CGFloat {
+        let range = data.maxY - data.minY
+        guard range > 0 else { return height / 2 }
+        
+        let normalized = (value - data.minY) / range
+        return height - (normalized * (height - 40)) - 20 // Padding for top and bottom
+    }
+}
+
 
 extension AnalysisManager {
     static var mock: AnalysisManager {
