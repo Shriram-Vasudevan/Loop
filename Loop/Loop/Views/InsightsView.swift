@@ -601,11 +601,11 @@ struct FollowUpWidget: View {
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 }
-
 struct TrendsInsightsView: View {
     @ObservedObject var analysisManager: AnalysisManager
     @State private var selectedPeriod = "week"
     @State private var selectedMetric: GraphData.MetricType = .wpm
+    @State private var showingMetricPicker = false
     
     private let accentColor = Color(hex: "A28497")
     private let backgroundColor = Color(hex: "FAFBFC")
@@ -613,40 +613,67 @@ struct TrendsInsightsView: View {
     private let textColor = Color(hex: "2C3E50")
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Time Period Selector
-            VStack(spacing: 16) {
-                HStack {
-                    Text("insights")
-                        .font(.system(size: 40, weight: .bold))
-                        .foregroundColor(textColor)
-                    Spacer()
-                }
-                .padding(.top, 16)
-                
-                periodSelector
-            }
-            .padding(.horizontal, 24)
-            
-            // Main Content
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Metric Selector and Value
-                    HStack {
-                        if let currentValue = getCurrentValue() {
-                            VStack(alignment: .leading) {
-                                Text(selectedMetric.rawValue)
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(textColor.opacity(0.6))
-                                Text(String(format: "%.1f", currentValue))
-                                    .font(.system(size: 24, weight: .bold))
-                                    .foregroundColor(textColor)
+        ScrollView {
+            VStack(spacing: 24) {
+                // Period Selector
+                HStack(spacing: 24) {
+                    ForEach(["week", "month", "year"], id: \.self) { period in
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                selectedPeriod = period
                             }
+                            Task {
+                                await loadDataForPeriod()
+                            }
+                        }) {
+                            Text(period.capitalized)
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(selectedPeriod == period ? textColor : textColor.opacity(0.5))
                         }
+                    }
+                }
+                
+                // Graph Section
+                VStack(alignment: .leading, spacing: 16) {
+                    // Metric Value and Selector
+                    HStack(alignment: .center) {
+                        // Current Value Display
+                        VStack(alignment: .leading, spacing: 4) {
+                           Text("\(selectedPeriod.capitalized) Average")
+                               .font(.system(size: 13, weight: .medium))
+                               .foregroundColor(textColor.opacity(0.6))
+                           if let currentValue = getCurrentValue() {
+                               Text(formatValue(currentValue, for: selectedMetric))
+                                   .font(.system(size: 28, weight: .bold))
+                                   .foregroundColor(textColor)
+                           }
+                           
+                           Text(selectedMetric.rawValue)
+                               .font(.system(size: 13, weight: .medium))
+                               .foregroundColor(textColor.opacity(0.6))
+                       }
                         
                         Spacer()
                         
-                        Menu {
+                        // Metric Selector Capsule
+                        Button(action: {
+                            withAnimation {
+                                showingMetricPicker.toggle()
+                            }
+                        }) {
+                            HStack(spacing: 6) {
+                                Text(selectedMetric.shortName)
+                                    .font(.system(size: 14, weight: .medium))
+                                Image(systemName: "chevron.down")
+                                    .font(.system(size: 10, weight: .bold))
+                            }
+                            .foregroundColor(textColor.opacity(0.8))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(surfaceColor)
+                            .clipShape(Capsule())
+                        }
+                        .confirmationDialog("Select Metric", isPresented: $showingMetricPicker) {
                             ForEach(GraphData.MetricType.allCases, id: \.self) { metric in
                                 Button(metric.rawValue) {
                                     withAnimation {
@@ -654,27 +681,16 @@ struct TrendsInsightsView: View {
                                     }
                                 }
                             }
-                        } label: {
-                            HStack {
-                                Image(systemName: "chart.xyaxis.line")
-                                    .font(.system(size: 14, weight: .medium))
-                                Image(systemName: "chevron.down")
-                                    .font(.system(size: 12, weight: .medium))
-                            }
-                            .foregroundColor(textColor)
-                            .padding(8)
-                            .background(surfaceColor)
-                            .clipShape(Circle())
                         }
                     }
-                    .padding(.top, 8)
                     
-                    // Graph Section
+                    // Graph View
                     ZStack {
                         if isLoading {
-                            StatsLoadingView()
+                            ProgressView()
                         } else if let graphData = createGraphData() {
-                            TrendsGraphView(data: graphData)
+                            CleanGraphView(data: graphData)
+                                .frame(height: 300)
                         } else {
                             Text("No data available")
                                 .font(.system(size: 16, weight: .medium))
@@ -682,79 +698,98 @@ struct TrendsInsightsView: View {
                         }
                     }
                     .frame(height: 300)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+                .padding(24)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
                 
+                if selectedPeriod == "week" {
+                    TrendWidgets(analysisManager: analysisManager, period: "week")
+                } else if selectedPeriod == "month" {
+                    TrendWidgets(analysisManager: analysisManager, period: "month")
+                } else {
+                    TrendWidgets(analysisManager: analysisManager, period: "year")
                 }
-                .padding(.horizontal, 24)
             }
-        }
-        .task {
-            await loadDataForPeriod()
-        }
-    }
-    
-    private var periodSelector: some View {
-        HStack(spacing: 24) {
-            ForEach(["week", "month", "year"], id: \.self) { period in
-                Button(action: {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        selectedPeriod = period
-                    }
-                    Task {
-                        await loadDataForPeriod()
-                    }
-                }) {
-                    VStack(spacing: 8) {
-                        Text(period.capitalized)
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(selectedPeriod == period ? textColor : textColor.opacity(0.5))
-                        
-                        Rectangle()
-                            .fill(selectedPeriod == period ? accentColor : Color.clear)
-                            .frame(height: 2)
-                    }
-                }
+            .task {
+                await loadDataForPeriod()
             }
         }
     }
     
     private var isLoading: Bool {
         switch selectedPeriod {
-        case "week":
-            return analysisManager.isLoadingWeekStats
-        case "month":
-            return analysisManager.isLoadingMonthStats
-        case "year":
-            return analysisManager.isLoadingYearStats
-        default:
-            return false
-        }
-    }
-    
-    private func loadDataForPeriod() async {
-        switch selectedPeriod {
-        case "week":
-            await analysisManager.fetchCurrentWeekStats()
-        case "month":
-            await analysisManager.fetchCurrentMonthWeeklyStats()
-        case "year":
-            await analysisManager.fetchCurrentYearMonthlyStats()
-        default:
-            break
+        case "week": return analysisManager.isLoadingWeekStats
+        case "month": return analysisManager.isLoadingMonthStats
+        case "year": return analysisManager.isLoadingYearStats
+        default: return false
         }
     }
     
     private func getCurrentValue() -> Double? {
         switch selectedPeriod {
         case "week":
-            return analysisManager.currentWeekStats.last?.averageWPM
+            let stats = analysisManager.currentWeekStats
+            guard !stats.isEmpty else { return nil }
+            let sum = stats.reduce(0.0) { total, stat in
+                switch selectedMetric {
+                case .wpm: return total + stat.averageWPM
+                case .duration: return total + stat.averageDuration
+                case .wordCount: return total + stat.averageWordCount
+                case .uniqueWords: return total + stat.averageUniqueWordCount
+                case .selfReferences: return total + stat.averageSelfReferences
+                case .vocabularyDiversity: return total + stat.vocabularyDiversityRatio
+                }
+            }
+            return sum / Double(stats.count)
+            
         case "month":
-            return analysisManager.currentMonthWeeklyStats.last?.averageWPM
+            let stats = analysisManager.currentMonthWeeklyStats
+            guard !stats.isEmpty else { return nil }
+            let sum = stats.reduce(0.0) { total, stat in
+                switch selectedMetric {
+                case .wpm: return total + stat.averageWPM
+                case .duration: return total + stat.averageDuration
+                case .wordCount: return total + stat.averageWordCount
+                case .uniqueWords: return total + stat.averageUniqueWordCount
+                case .selfReferences: return total + stat.averageSelfReferences
+                case .vocabularyDiversity: return total + stat.vocabularyDiversityRatio
+                }
+            }
+            return sum / Double(stats.count)
+            
         case "year":
-            return analysisManager.currentYearMonthlyStats.last?.averageWPM
+            let stats = analysisManager.currentYearMonthlyStats
+            guard !stats.isEmpty else { return nil }
+            let sum = stats.reduce(0.0) { total, stat in
+                switch selectedMetric {
+                case .wpm: return total + stat.averageWPM
+                case .duration: return total + stat.averageDuration
+                case .wordCount: return total + stat.averageWordCount
+                case .uniqueWords: return total + stat.averageUniqueWordCount
+                case .selfReferences: return total + stat.averageSelfReferences
+                case .vocabularyDiversity: return total + stat.vocabularyDiversityRatio
+                }
+            }
+            return sum / Double(stats.count)
+            
         default:
             return nil
+        }
+    }
+    
+    private func formatValue(_ value: Double, for metric: GraphData.MetricType) -> String {
+        switch metric {
+        case .wpm:
+            return String(format: "%.1f", value)
+        case .duration:
+            let minutes = Int(value) / 60
+            let seconds = Int(value) % 60
+            return seconds == 0 ? "\(minutes)m" : "\(minutes)m \(seconds)s"
+        case .wordCount, .uniqueWords, .selfReferences:
+            return String(format: "%.0f", value)
+        case .vocabularyDiversity:
+            return String(format: "%.1f%%", value * 100)
         }
     }
     
@@ -770,9 +805,7 @@ struct TrendsInsightsView: View {
             return nil
         }
     }
-}
-
-extension TrendsInsightsView {
+    
     private func createWeekGraphData() -> GraphData? {
         let stats = analysisManager.currentWeekStats
         guard !stats.isEmpty else { return nil }
@@ -781,18 +814,11 @@ extension TrendsInsightsView {
             GraphPoint(
                 date: stat.date ?? Date(),
                 value: getValue(from: stat),
-                label: formatDate(stat.date ?? Date(), for: "week")
+                label: "" // Will be formatted by GraphData
             )
         }
         
-        let values = points.map { $0.value }
-        return GraphData(
-            points: points,
-            maxY: values.max() ?? 0,
-            minY: values.min() ?? 0,
-            average: values.reduce(0, +) / Double(values.count),
-            metric: selectedMetric
-        )
+        return GraphData(points: points, metric: selectedMetric, period: .week)
     }
     
     private func createMonthGraphData() -> GraphData? {
@@ -803,18 +829,11 @@ extension TrendsInsightsView {
             GraphPoint(
                 date: stat.lastUpdated ?? Date(),
                 value: getValue(from: stat),
-                label: "Week \(stat.weekNumber)"
+                label: "" // Will be formatted by GraphData
             )
         }
         
-        let values = points.map { $0.value }
-        return GraphData(
-            points: points,
-            maxY: values.max() ?? 0,
-            minY: values.min() ?? 0,
-            average: values.reduce(0, +) / Double(values.count),
-            metric: selectedMetric
-        )
+        return GraphData(points: points, metric: selectedMetric, period: .month)
     }
     
     private func createYearGraphData() -> GraphData? {
@@ -825,30 +844,23 @@ extension TrendsInsightsView {
             GraphPoint(
                 date: stat.lastUpdated ?? Date(),
                 value: getValue(from: stat),
-                label: formatDate(stat.lastUpdated ?? Date(), for: "year")
+                label: "" // Will be formatted by GraphData
             )
         }
         
-        let values = points.map { $0.value }
-        return GraphData(
-            points: points,
-            maxY: values.max() ?? 0,
-            minY: values.min() ?? 0,
-            average: values.reduce(0, +) / Double(values.count),
-            metric: selectedMetric
-        )
+        return GraphData(points: points, metric: selectedMetric, period: .year)
     }
     
-        private func getValue(from stat: DailyStats) -> Double {
-            switch selectedMetric {
-            case .wpm: return stat.averageWPM
-            case .duration: return stat.averageDuration
-            case .wordCount: return stat.averageWordCount
-            case .uniqueWords: return stat.averageUniqueWordCount
-            case .selfReferences: return stat.averageSelfReferences
-            case .vocabularyDiversity: return stat.vocabularyDiversityRatio
-            }
+    private func getValue(from stat: DailyStats) -> Double {
+        switch selectedMetric {
+        case .wpm: return stat.averageWPM
+        case .duration: return stat.averageDuration
+        case .wordCount: return stat.averageWordCount
+        case .uniqueWords: return stat.averageUniqueWordCount
+        case .selfReferences: return stat.averageSelfReferences
+        case .vocabularyDiversity: return stat.vocabularyDiversityRatio
         }
+    }
     
     private func getValue(from stat: WeeklyStats) -> Double {
         switch selectedMetric {
@@ -872,193 +884,436 @@ extension TrendsInsightsView {
         }
     }
     
-    private func formatDate(_ date: Date, for period: String) -> String {
-        let formatter = DateFormatter()
-        switch period {
+    private func loadDataForPeriod() async {
+        switch selectedPeriod {
         case "week":
-            formatter.dateFormat = "EEE"
+            await analysisManager.fetchCurrentWeekStats()
         case "month":
-            formatter.dateFormat = "MMM d"
+            await analysisManager.fetchCurrentMonthWeeklyStats()
         case "year":
-            formatter.dateFormat = "MMM"
+            await analysisManager.fetchCurrentYearMonthlyStats()
         default:
-            formatter.dateFormat = "MMM d"
+            break
         }
-        return formatter.string(from: date)
     }
 }
 
-struct TrendsGraphView: View {
-    let data: GraphData
-    @State private var selectedPoint: GraphPoint?
-    @State private var showingPopover = false
-    @State private var popoverPosition: CGPoint = .zero
+struct TrendWidgets: View {
+    @ObservedObject var analysisManager: AnalysisManager
+    let period: String // "week", "month", or "year"
     
     private let accentColor = Color(hex: "A28497")
-    private let backgroundColor = Color(hex: "FAFBFC")
-    private let surfaceColor = Color(hex: "F8F5F7")
     private let textColor = Color(hex: "2C3E50")
     
-    private let numberFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.maximumFractionDigits = 1
-        return formatter
-    }()
-    
     var body: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .leading) {
-                // Background grid
-                VStack(spacing: 0) {
-                    ForEach(0..<4) { _ in
-                        Divider()
-                            .frame(height: 1)
-                            .opacity(0.1)
-                        Spacer()
-                    }
-                }
+        VStack(spacing: 32) {
+            VStack(alignment: .leading, spacing: 12) {
+                sectionHeader("speaking patterns")
                 
-                // Graph content
-                if data.points.count > 1 {
-                    // Area fill beneath line
-                    Path { path in
-                        path.move(to: CGPoint(x: 0, y: geometry.size.height))
-                        
-                        for (index, point) in data.points.enumerated() {
-                            let x = getX(for: index, width: geometry.size.width)
-                            let y = getY(for: point.value, height: geometry.size.height)
+                VStack(spacing: 3) {
+                    // Speaking Rhythm (WPM)
+                    VStack(alignment: .leading, spacing: 20) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Speaking Rhythm")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(textColor)
                             
-                            if index == 0 {
-                                path.move(to: CGPoint(x: x, y: y))
-                            } else {
-                                let control = CGPoint(x: x - (geometry.size.width / CGFloat(data.points.count * 2)),
-                                                    y: getY(for: data.points[index - 1].value, height: geometry.size.height))
-                                let control2 = CGPoint(x: x, y: y)
-                                path.addCurve(to: CGPoint(x: x, y: y),
-                                            control1: control,
-                                            control2: control2)
-                            }
-                        }
-                        
-                        // Complete the path to create area
-                        path.addLine(to: CGPoint(x: geometry.size.width, y: geometry.size.height))
-                        path.addLine(to: CGPoint(x: 0, y: geometry.size.height))
-                    }
-                    .fill(LinearGradient(
-                        gradient: Gradient(colors: [
-                            accentColor.opacity(0.3),
-                            accentColor.opacity(0.1),
-                            accentColor.opacity(0.05)
-                        ]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    ))
-                    
-                    // Main line
-                    Path { path in
-                        for (index, point) in data.points.enumerated() {
-                            let x = getX(for: index, width: geometry.size.width)
-                            let y = getY(for: point.value, height: geometry.size.height)
-                            
-                            if index == 0 {
-                                path.move(to: CGPoint(x: x, y: y))
-                            } else {
-                                let control = CGPoint(x: x - (geometry.size.width / CGFloat(data.points.count * 2)),
-                                                    y: getY(for: data.points[index - 1].value, height: geometry.size.height))
-                                let control2 = CGPoint(x: x, y: y)
-                                path.addCurve(to: CGPoint(x: x, y: y),
-                                            control1: control,
-                                            control2: control2)
-                            }
-                        }
-                    }
-                    .stroke(accentColor, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
-                    
-                    // Data points
-                    ForEach(Array(data.points.enumerated()), id: \.element.id) { index, point in
-                        Circle()
-                            .fill(accentColor)
-                            .frame(width: 8, height: 8)
-                            .background(
-                                Circle()
-                                    .fill(.white)
-                                    .frame(width: 16, height: 16)
-                            )
-                            .position(
-                                x: getX(for: index, width: geometry.size.width),
-                                y: getY(for: point.value, height: geometry.size.height)
-                            )
-                            .gesture(
-                                TapGesture()
-                                    .onEnded { _ in
-                                        selectedPoint = point
-                                        popoverPosition = CGPoint(
-                                            x: getX(for: index, width: geometry.size.width),
-                                            y: getY(for: point.value, height: geometry.size.height)
-                                        )
-                                        withAnimation(.easeInOut(duration: 0.2)) {
-                                            showingPopover = true
-                                        }
-                                    }
-                            )
-                    }
-                }
-                
-                // X-axis labels
-                VStack {
-                    Spacer()
-                    HStack {
-                        ForEach(data.points, id: \.id) { point in
-                            Text(point.label)
-                                .font(.system(size: 12))
+                            Text("Average speaking pace")
+                                .font(.system(size: 14, weight: .regular))
                                 .foregroundColor(textColor.opacity(0.6))
-                                .frame(maxWidth: .infinity)
                         }
+                        
+                        HStack(alignment: .top, spacing: 24) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("\(Int(getAverageWPM()))")
+                                    .font(.system(size: 34, weight: .medium))
+                                    .foregroundColor(textColor)
+                                
+                                Text("words/min")
+                                    .font(.system(size: 13, weight: .regular))
+                                    .foregroundColor(textColor.opacity(0.6))
+                            }
+                            
+                            Text(getWPMDescription())
+                                .font(.system(size: 15, weight: .regular))
+                                .foregroundColor(textColor.opacity(0.7))
+                                .lineSpacing(4)
+                        }
+                        
+                        waveformView
                     }
+                    .padding(24)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    
+                    // Duration
+                    VStack(alignment: .leading, spacing: 20) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Speaking Duration")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(textColor)
+                            
+                            Text("Average reflection length")
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(textColor.opacity(0.6))
+                        }
+                        
+                        HStack(alignment: .top, spacing: 24) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(formatDuration(getAverageDuration()))
+                                    .font(.system(size: 34, weight: .medium))
+                                    .foregroundColor(textColor)
+                                
+                                Text("average")
+                                    .font(.system(size: 13, weight: .regular))
+                                    .foregroundColor(textColor.opacity(0.6))
+                            }
+                            
+                            Text(getDurationDescription())
+                                .font(.system(size: 15, weight: .regular))
+                                .foregroundColor(textColor.opacity(0.7))
+                                .lineSpacing(4)
+                        }
+                        
+                        durationBar
+                    }
+                    .padding(24)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    
+                    // Self References
+                    VStack(alignment: .leading, spacing: 20) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Self References")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(textColor)
+                            
+                            Text("Personal experience expression")
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(textColor.opacity(0.6))
+                        }
+                        
+                        HStack(alignment: .top, spacing: 24) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("\(Int(getAverageSelfReferences()))")
+                                    .font(.system(size: 34, weight: .medium))
+                                    .foregroundColor(textColor)
+                                
+                                Text("mentions")
+                                    .font(.system(size: 13, weight: .regular))
+                                    .foregroundColor(textColor.opacity(0.6))
+                            }
+                            
+                            Text(getSelfReferencesDescription())
+                                .font(.system(size: 15, weight: .regular))
+                                .foregroundColor(textColor.opacity(0.7))
+                                .lineSpacing(4)
+                        }
+                        
+                        selfReferenceIndicators
+                    }
+                    .padding(24)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
                 }
             }
             
-            // Value popover
-            if showingPopover, let point = selectedPoint {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(point.label)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(textColor.opacity(0.6))
-                    Text(numberFormatter.string(from: NSNumber(value: point.value)) ?? "")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(textColor)
+            VStack(alignment: .leading, spacing: 12) {
+                sectionHeader("language patterns")
+                
+                VStack(spacing: 3) {
+                    // Unique Words
+                    VStack(alignment: .leading, spacing: 20) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Vocabulary Range")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(textColor)
+                            
+                            Text("Distinct words used")
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(textColor.opacity(0.6))
+                        }
+                        
+                        HStack(alignment: .top, spacing: 24) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("\(Int(getAverageUniqueWords()))")
+                                    .font(.system(size: 34, weight: .medium))
+                                    .foregroundColor(textColor)
+                                
+                                Text("unique words")
+                                    .font(.system(size: 13, weight: .regular))
+                                    .foregroundColor(textColor.opacity(0.6))
+                            }
+                            
+                            Text(getUniqueWordsDescription())
+                                .font(.system(size: 15, weight: .regular))
+                                .foregroundColor(textColor.opacity(0.7))
+                                .lineSpacing(4)
+                        }
+                    }
+                    .padding(24)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color.white)
-                .cornerRadius(8)
-                .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-                .position(x: popoverPosition.x, y: popoverPosition.y - 40)
-            }
-        }
-        .padding(.vertical)
-        .onTapGesture {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                showingPopover = false
             }
         }
     }
     
-    private func getX(for index: Int, width: CGFloat) -> CGFloat {
-        let spacing = width / CGFloat(max(1, data.points.count - 1))
-        return spacing * CGFloat(index)
+    private func sectionHeader(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 13, weight: .regular))
+            .foregroundColor(textColor.opacity(0.5))
+            .tracking(0.5)
     }
     
-    private func getY(for value: Double, height: CGFloat) -> CGFloat {
-        let range = data.maxY - data.minY
-        guard range > 0 else { return height / 2 }
+    // Visual Elements
+    private var waveformView: some View {
+        HStack(spacing: 3) {
+            ForEach(0..<30) { i in
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(accentColor.opacity(0.3))
+                    .frame(width: 2, height: CGFloat(sin(Double(i) * 0.3) * 20 + 25))
+            }
+        }
+        .frame(height: 50)
+    }
+    
+    private var durationBar: some View {
+        GeometryReader { geometry in
+            HStack(spacing: 4) {
+                ForEach(0..<3) { i in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(accentColor.opacity(0.2))
+                        .frame(height: 4)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(accentColor)
+                                .frame(width: geometry.size.width / 3 * 0.8)
+                                .offset(x: CGFloat(i) * 4),
+                            alignment: .leading
+                        )
+                }
+            }
+        }
+        .frame(height: 4)
+    }
+    
+    private var selfReferenceIndicators: some View {
+        HStack(spacing: 12) {
+            ForEach(0..<min(Int(getAverageSelfReferences()), 5)) { _ in
+                Circle()
+                    .fill(accentColor.opacity(0.3))
+                    .frame(width: 8, height: 8)
+            }
+        }
+    }
+    
+    // Data Functions
+    private func getAverageWPM() -> Double {
+        let stats = getStatsForPeriod()
+        return stats.reduce(0.0) { $0 + $1.averageWPM } / Double(max(1, stats.count))
+    }
+    
+    private func getAverageDuration() -> Double {
+        let stats = getStatsForPeriod()
+        return stats.reduce(0.0) { $0 + $1.averageDuration } / Double(max(1, stats.count))
+    }
+    
+    private func getAverageSelfReferences() -> Double {
+        let stats = getStatsForPeriod()
+        return stats.reduce(0.0) { $0 + $1.averageSelfReferences } / Double(max(1, stats.count))
+    }
+    
+    private func getAverageUniqueWords() -> Double {
+        let stats = getStatsForPeriod()
+        return stats.reduce(0.0) { $0 + $1.averageUniqueWordCount } / Double(max(1, stats.count))
+    }
+    
+    private func getStatsForPeriod() -> [any StatsProtocol] {
+        switch period {
+        case "week":
+            return analysisManager.currentWeekStats
+        case "month":
+            return analysisManager.currentMonthWeeklyStats
+        case "year":
+            return analysisManager.currentYearMonthlyStats
+        default:
+            return []
+        }
+    }
+    
+    // Formatting Functions
+    private func formatDuration(_ duration: Double) -> String {
+        let minutes = Int(duration) / 60
+        let seconds = Int(duration) % 60
+        return seconds == 0 ? "\(minutes)m" : "\(minutes)m \(seconds)s"
+    }
+    
+    private func getWPMDescription() -> String {
+        let averageWPM = getAverageWPM()
+        switch period {
+        case "week":
+            if averageWPM > 150 {
+                return "Your reflections this week show a rapid speaking pace"
+            } else if averageWPM > 120 {
+                return "You're speaking at a brisk, energetic pace this week"
+            } else if averageWPM > 90 {
+                return "Your speaking pace this week is conversational and natural"
+            } else if averageWPM > 60 {
+                return "You're taking your time to express thoughts this week"
+            } else {
+                return "Your pace this week is slow and deliberate"
+            }
+            
+        case "month":
+            if averageWPM > 150 {
+                return "This month shows consistently quick verbal expression"
+            } else if averageWPM > 120 {
+                return "Your monthly pace trends toward energetic speech"
+            } else if averageWPM > 90 {
+                return "Your monthly average shows natural conversational speed"
+            } else if averageWPM > 60 {
+                return "This month shows a measured speaking rhythm"
+            } else {
+                return "Your monthly pace emphasizes careful word choice"
+            }
+            
+        case "year":
+            if averageWPM > 150 {
+                return "Your yearly pattern shows naturally quick expression"
+            } else if averageWPM > 120 {
+                return "You tend toward lively, energetic speech this year"
+            } else if averageWPM > 90 {
+                return "Your yearly pace stays conversationally fluid"
+            } else if averageWPM > 60 {
+                return "Your yearly trend shows measured, thoughtful speech"
+            } else {
+                return "You consistently take time to choose words carefully"
+            }
+        default: return ""
+        }
+    }
+
+    private func getDurationDescription() -> String {
+        let avgDuration = getAverageDuration()
+        let minutes = avgDuration / 60
         
-        let normalized = (value - data.minY) / range
-        return height - (normalized * (height - 40)) - 20 // Padding for top and bottom
+        switch period {
+        case "week":
+            if minutes > 5 {
+                return "Your reflections this week are extensively detailed"
+            } else if minutes > 3 {
+                return "You're taking good time to develop thoughts this week"
+            } else if minutes > 2 {
+                return "Your responses this week are concise but complete"
+            } else {
+                return "You're keeping reflections brief and focused this week"
+            }
+            
+        case "month":
+            if minutes > 5 {
+                return "This month shows consistently detailed responses"
+            } else if minutes > 3 {
+                return "Your monthly pattern shows thorough reflection time"
+            } else if minutes > 2 {
+                return "Monthly responses maintain focused brevity"
+            } else {
+                return "You're staying succinct in monthly reflections"
+            }
+            
+        case "year":
+            if minutes > 5 {
+                return "You tend toward detailed exploration this year"
+            } else if minutes > 3 {
+                return "Your yearly responses show steady thoroughness"
+            } else if minutes > 2 {
+                return "You maintain efficient expression this year"
+            } else {
+                return "Your yearly pattern favors quick, focused thoughts"
+            }
+        default: return ""
+        }
     }
+
+    private func getSelfReferencesDescription() -> String {
+        let avg = getAverageSelfReferences()
+        switch period {
+        case "week":
+            if avg > 15 {
+                return "Reflections this week are highly self-focused"
+            } else if avg > 10 {
+                return "You're drawing strongly from personal experience"
+            } else if avg > 5 {
+                return "Your responses balance self-reference and context"
+            } else {
+                return "This week's focus tends toward external perspectives"
+            }
+            
+        case "month":
+            if avg > 15 {
+                return "Monthly pattern shows frequent self-reference"
+            } else if avg > 10 {
+                return "Personal perspective features strongly this month"
+            } else if avg > 5 {
+                return "You mix personal and external views monthly"
+            } else {
+                return "Monthly focus leans toward external observation"
+            }
+            
+        case "year":
+            if avg > 15 {
+                return "Your yearly style emphasizes personal perspective"
+            } else if avg > 10 {
+                return "Self-reference is a key part of your expression"
+            } else if avg > 5 {
+                return "You balance personal and external views yearly"
+            } else {
+                return "Your yearly focus tends toward external contexts"
+            }
+        default: return ""
+        }
+    }
+
+    private func getUniqueWordsDescription() -> String {
+        let avg = getAverageUniqueWords()
+        switch period {
+        case "week":
+            if avg > 100 {
+                return "Your vocabulary range this week is notably broad"
+            } else if avg > 75 {
+                return "You're using varied language in reflections"
+            } else if avg > 50 {
+                return "Your word choice shows moderate variety"
+            } else {
+                return "You're working with a focused vocabulary set"
+            }
+            
+        case "month":
+            if avg > 100 {
+                return "Monthly vocabulary shows significant range"
+            } else if avg > 75 {
+                return "Your monthly language use is nicely varied"
+            } else if avg > 50 {
+                return "Word choice shows consistent variety monthly"
+            } else {
+                return "You maintain a focused vocabulary this month"
+            }
+            
+        case "year":
+            if avg > 100 {
+                return "Your yearly pattern shows extensive vocabulary"
+            } else if avg > 75 {
+                return "You maintain good word variety this year"
+            } else if avg > 50 {
+                return "Yearly vocabulary shows steady range"
+            } else {
+                return "You work with a consistent core vocabulary"
+            }
+        default: return ""
+        }
+    }
+    
 }
-
-
 extension AnalysisManager {
     static var mock: AnalysisManager {
         let manager = AnalysisManager()

@@ -460,77 +460,107 @@ class LoopManager: ObservableObject {
     }
     
     func getPastLoopForComparison(recordedPrompts: [String]) async throws -> Loop? {
-        print("\n🔄 Starting getPastLoopForComparison")
-        print("📝 Recorded prompts: \(recordedPrompts)")
+        print("\n🔍 Starting getPastLoopForComparison")
+        print("📝 Input prompts:", recordedPrompts)
         
-        // Need at least 3 days of history
+        // Check minimum history requirement first
         let userDays = try await fetchDistinctLoopingDays()
+        print("📅 User has \(userDays) days of history")
+        
         guard userDays >= 3 else {
             print("❌ Not enough history (need 3 days, have \(userDays))")
             return nil
         }
         
-        // Get prompt objects to determine categories and types
+        // Get prompt objects to determine categories
         let promptObjects = recordedPrompts.compactMap { promptText in
             promptGroups.values
                 .flatMap { $0 }
                 .first { $0.text == promptText }
         }
         
-        // Determine which storage to try first
-        let preferredStorage = try await determinePreferredStorage()
-        print("🗄️ Using \(preferredStorage) storage first")
+        print("🎯 Found \(promptObjects.count) matching prompt objects")
         
-        // Try matches in order of priority
+        // Determine storage preference
+        let preferredStorage = try await determinePreferredStorage()
+        print("💾 Using \(preferredStorage) storage first")
+        
+        // Try each prompt
         for prompt in promptObjects {
-            // Try preferred storage first
+            print("\n📋 Trying prompt: \(prompt.text)")
+            print("📂 Category: \(prompt.category.rawValue)")
+            print("🔄 Daily prompt: \(prompt.isDailyPrompt)")
+            
+            // Try preferred storage
             if let loop = try await fetchFromStorage(
                 storage: preferredStorage,
                 prompts: recordedPrompts,
                 category: prompt.category,
                 isDailyPrompt: prompt.isDailyPrompt
             ) {
-                // Update lastRetrieved
+                print("✅ Found matching loop in \(preferredStorage) storage")
+                
+                // Update lastRetrieved based on storage type
                 if preferredStorage == .cloud {
-                    try await LoopCloudKitUtility.updateLastRetrieved(for: loop)
+                    try? await LoopCloudKitUtility.updateLastRetrieved(for: loop)
                 } else {
-                    try await localStorage.updateLastRetrieved(for: loop)
+                    try? localStorage.updateLastRetrieved(for: loop)
                 }
+                
+                self.pastLoop = loop
+                print("returning loop")
                 return loop
             }
             
-            // Try secondary storage
+            print("⚠️ No match in \(preferredStorage) storage, trying alternate")
+            
+            // Try alternate storage
+            let alternateStorage: StorageSystem = preferredStorage == .cloud ? .local : .cloud
             if let loop = try await fetchFromStorage(
-                storage: preferredStorage == .cloud ? .local : .cloud,
+                storage: alternateStorage,
                 prompts: recordedPrompts,
                 category: prompt.category,
                 isDailyPrompt: prompt.isDailyPrompt
             ) {
-                // Update lastRetrieved
-                if preferredStorage == .cloud {
-                    try await localStorage.updateLastRetrieved(for: loop)
-                } else {
+                print("✅ Found matching loop in \(alternateStorage) storage")
+                
+                // Update lastRetrieved based on storage type
+                if alternateStorage == .cloud {
                     try await LoopCloudKitUtility.updateLastRetrieved(for: loop)
+                } else {
+                    try await localStorage.updateLastRetrieved(for: loop)
                 }
+                
+                self.pastLoop = loop
                 return loop
             }
         }
         
-        // Try one last time with no filters
-        let finalLoop = if let firstTry = try await fetchFromStorage(
+        print("\n⚡️ No matches found with category filters, trying one last time without filters")
+        
+        // Final attempt without category filters
+        let finalLoop: Loop?
+        
+        if let firstTry = try await fetchFromStorage(
             storage: preferredStorage,
             prompts: recordedPrompts,
             category: nil,
             isDailyPrompt: nil
         ) {
-            firstTry
+            print("✅ Found unfiltered match in \(preferredStorage) storage")
+            finalLoop = firstTry
         } else {
-            try await fetchFromStorage(
-                storage: preferredStorage == .cloud ? .local : .cloud,
+            let alternateStorage: StorageSystem = preferredStorage == .cloud ? .local : .cloud
+            let altLoop = try await fetchFromStorage(
+                storage: alternateStorage,
                 prompts: recordedPrompts,
                 category: nil,
                 isDailyPrompt: nil
             )
+            if altLoop != nil {
+                print("✅ Found unfiltered match in \(alternateStorage) storage")
+            }
+            finalLoop = altLoop
         }
         
         if let finalLoop = finalLoop {
@@ -540,6 +570,8 @@ class LoopManager: ObservableObject {
             } else {
                 try await localStorage.updateLastRetrieved(for: finalLoop)
             }
+        } else {
+            print("❌ No matching loops found in any storage")
         }
         
         self.pastLoop = finalLoop
@@ -552,12 +584,20 @@ class LoopManager: ObservableObject {
         category: PromptCategory?,
         isDailyPrompt: Bool?
     ) async throws -> Loop? {
+        print("\n🔎 Fetching from \(storage) storage")
+        print("⏰ Time windows: \(isDailyPrompt == true ? "Daily prompt windows" : "General prompt windows")")
+        
+        // Define time windows based on prompt type
         let timeWindows: [(min: Int, max: Int)] = isDailyPrompt == true ?
             [(14, 45), (3, 14)] :  // Daily prompts
             [(30, 90), (14, 30), (7, 14), (1, 7)]  // General prompts
         
+        // Try each time window
         for window in timeWindows {
+            print("📅 Trying window: \(window.min)-\(window.max) days ago")
+            
             let loop = try await (storage == .cloud ?
+                // Use CloudKit utility
                 LoopCloudKitUtility.fetchPastLoop(
                     forPrompts: prompts,
                     minDaysAgo: window.min,
@@ -565,6 +605,7 @@ class LoopManager: ObservableObject {
                     preferGeneralPrompts: isDailyPrompt == false,
                     category: category
                 ) :
+                // Use local storage utility
                 localStorage.fetchPastLoop(
                     forPrompts: prompts,
                     minDaysAgo: window.min,
@@ -574,10 +615,12 @@ class LoopManager: ObservableObject {
                 ))
             
             if let loop = loop {
+                print("✅ Found matching loop from \(window.min)-\(window.max) days ago")
                 return loop
             }
         }
         
+        print("❌ No matches found in any time window")
         return nil
     }
     
@@ -684,6 +727,7 @@ class LoopManager: ObservableObject {
                 await localStorage.addLoop(loop: loop)
             }
         }
+        
         
         return loop
     }

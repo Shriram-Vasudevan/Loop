@@ -9,65 +9,91 @@ import Foundation
 import CoreData
 
 
-
-@objc(DailyStats)
-public class DailyStats: NSManagedObject {
-    @NSManaged public var date: Date?
-    @NSManaged public var year: Int16
-    @NSManaged public var month: Int16
-    @NSManaged public var weekOfYear: Int16
-    @NSManaged public var weekday: Int16
-    @NSManaged public var averageWPM: Double
-    @NSManaged public var averageDuration: Double
-    @NSManaged public var averageWordCount: Double
-    @NSManaged public var averageUniqueWordCount: Double
-    @NSManaged public var averageSelfReferences: Double
-    @NSManaged public var vocabularyDiversityRatio: Double
-    @NSManaged public var averageWordLength: Double
-    @NSManaged public var loopCount: Int16
-    @NSManaged public var lastUpdated: Date?
+struct DailyStats: Identifiable {
+    var date: Date?
+    var year: Int16
+    var month: Int16
+    var weekOfYear: Int16
+    var weekday: Int16
+    var averageWPM: Double
+    var averageDuration: Double
+    var averageWordCount: Double
+    var averageUniqueWordCount: Double
+    var averageSelfReferences: Double
+    var vocabularyDiversityRatio: Double
+    var averageWordLength: Double
+    var loopCount: Int16
+    var lastUpdated: Date?
+    
+    // To match Loop pattern of having an ID
+    var id: String {
+        return date?.description ?? UUID().uuidString
+    }
 }
 
-@objc(AllTimeStats)
-public class AllTimeStats: NSManagedObject {
-    @NSManaged public var dataPointCount: Int64
-    @NSManaged public var averageWPM: Double
-    @NSManaged public var averageDuration: Double
-    @NSManaged public var averageWordCount: Double
-    @NSManaged public var averageUniqueWordCount: Double
-    @NSManaged public var averageSelfReferences: Double
-    @NSManaged public var vocabularyDiversityRatio: Double
-    @NSManaged public var averageWordLength: Double
-    @NSManaged public var lastUpdated: Date?
+// MARK: - Models
+struct AllTimeStats: Identifiable {
+   var dataPointCount: Int64
+   var averageWPM: Double
+   var averageDuration: Double
+   var averageWordCount: Double
+   var averageUniqueWordCount: Double
+   var averageSelfReferences: Double
+   var vocabularyDiversityRatio: Double
+   var averageWordLength: Double
+   var lastUpdated: Date?
+   
+   var id: String {
+       return lastUpdated?.description ?? UUID().uuidString
+   }
 }
 
-@objc(MonthlyStats)
-public class MonthlyStats: NSManagedObject {
-    @NSManaged public var dataPointCount: Int64
-    @NSManaged public var averageWPM: Double
-    @NSManaged public var averageDuration: Double
-    @NSManaged public var averageWordCount: Double
-    @NSManaged public var averageUniqueWordCount: Double
-    @NSManaged public var averageSelfReferences: Double
-    @NSManaged public var vocabularyDiversityRatio: Double
-    @NSManaged public var averageWordLength: Double
-    @NSManaged public var lastUpdated: Date?
-    @NSManaged public var month: Int16
-    @NSManaged public var year: Int16
+struct MonthlyStats: Identifiable {
+   var dataPointCount: Int64
+   var averageWPM: Double
+   var averageDuration: Double
+   var averageWordCount: Double
+   var averageUniqueWordCount: Double
+   var averageSelfReferences: Double
+   var vocabularyDiversityRatio: Double
+   var averageWordLength: Double
+   var lastUpdated: Date?
+   var month: Int16
+   var year: Int16
+   
+   var id: String {
+       return "\(year)-\(month)"
+   }
 }
 
-@objc(WeeklyStats)
-public class WeeklyStats: NSManagedObject {
-    @NSManaged public var dataPointCount: Int64
-    @NSManaged public var averageWPM: Double
-    @NSManaged public var averageDuration: Double
-    @NSManaged public var averageWordCount: Double
-    @NSManaged public var averageUniqueWordCount: Double
-    @NSManaged public var averageSelfReferences: Double
-    @NSManaged public var vocabularyDiversityRatio: Double
-    @NSManaged public var averageWordLength: Double
-    @NSManaged public var lastUpdated: Date?
-    @NSManaged public var weekNumber: Int16
-    @NSManaged public var year: Int16
+struct WeeklyStats: Identifiable {
+   var dataPointCount: Int64
+   var averageWPM: Double
+   var averageDuration: Double
+   var averageWordCount: Double
+   var averageUniqueWordCount: Double
+   var averageSelfReferences: Double
+   var vocabularyDiversityRatio: Double
+   var averageWordLength: Double
+   var lastUpdated: Date?
+   var weekNumber: Int16
+   var year: Int16
+   
+   var id: String {
+       return "\(year)-\(weekNumber)"
+   }
 }
 
+protocol StatsProtocol {
+    var averageWPM: Double { get }
+    var averageDuration: Double { get }
+    var averageWordCount: Double { get }
+    var averageUniqueWordCount: Double { get }
+    var averageSelfReferences: Double { get }
+    var vocabularyDiversityRatio: Double { get }
+}
+
+// Make all stat types conform to it
+extension DailyStats: StatsProtocol {}
+extension WeeklyStats: StatsProtocol {}
+extension MonthlyStats: StatsProtocol {}

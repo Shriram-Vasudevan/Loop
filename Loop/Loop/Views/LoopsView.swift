@@ -239,59 +239,84 @@ struct LoopCard: View {
     let loop: Loop
     let action: () -> Void
     @State private var showDeleteConfirmation = false
-    
-    private let accentColor = Color(hex: "A28497")
-    private let textColor = Color(hex: "2C3E50")
-    
-    @State private var cardOffset: CGFloat = 50
-    @State private var cardOpacity: Double = 0
     @State private var isPressed = false
     
+    // Colors
+    private let accentColor = Color(hex: "A28497")  // Purple
+    private let thematicColor = Color(hex: "84A297") // Green
+    private let followUpColor = Color(hex: "8497A2") // Blue
+    private let textColor = Color(hex: "2C3E50")
+    
+    private var cardAccentColor: Color {
+        if !loop.isDailyLoop && !loop.isFollowUp {
+            return thematicColor
+        } else if loop.isFollowUp {
+            return followUpColor
+        }
+        return accentColor
+    }
+    
     var body: some View {
-        VStack(spacing: 16) {
-            HStack {
-                Text(formatTime())
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(accentColor)
-                
-                Spacer()
-                
-                Menu {
-                    Button(role: .destructive) {
-                        showDeleteConfirmation = true
-                    } label: {
-                        Label("Delete", systemImage: "trash")
+        Button(action: {
+            withAnimation {
+                isPressed = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    isPressed = false
+                    action()
+                }
+            }
+        }) {
+            VStack(spacing: 16) {
+                // Header section
+                HStack(alignment: .center, spacing: 8) {
+                    // Time and badges
+                    HStack(spacing: 8) {
+                        Text(formatTime())
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(cardAccentColor)
+                        
+                        if !loop.isDailyLoop && !loop.isFollowUp {
+                            LoopTypeBadge(text: "thematic", color: thematicColor)
+                        } else if loop.isFollowUp {
+                            LoopTypeBadge(text: "follow up", color: followUpColor)
+                        }
                     }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .foregroundColor(textColor.opacity(0.6))
+                    
+                    Spacer()
+                    
+                    // Menu and waveform
+                    HStack(spacing: 16) {
+                        // Menu button wrapped in a view that prevents tap propagation
+                        MenuButton(
+                            showDeleteConfirmation: $showDeleteConfirmation,
+                            textColor: textColor
+                        )
+                        
+                        WaveformIndicator(color: cardAccentColor)
+                    }
                 }
                 
-                WaveformIndicator(color: accentColor)
-            }
-            
-            Text(loop.promptText)
-                .font(.system(size: 16, weight: .light))
-                .foregroundColor(textColor)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            HStack {
-                AudioWaveform(color: accentColor)
+                // Prompt text
+                Text(loop.promptText)
+                    .font(.system(size: 16, weight: .light))
+                    .foregroundColor(textColor)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 
-                Spacer()
+                // Audio waveform
+                HStack {
+                    AudioWaveform(color: cardAccentColor)
+                    Spacer()
+                }
             }
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(.white)
+                    .shadow(color: Color.black.opacity(0.05), radius: 15)
+            )
         }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 24)
-                .fill(.white)
-                .shadow(color: Color.black.opacity(0.05), radius: 15)
-        )
-        .scaleEffect(isPressed ? 0.97 : 1)
-        .offset(y: cardOffset)
-        .opacity(cardOpacity)
-        .onTapGesture(perform: action)
+        .buttonStyle(CardButtonStyle(isPressed: isPressed))
         .alert("Delete Loop", isPresented: $showDeleteConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
@@ -302,18 +327,77 @@ struct LoopCard: View {
         } message: {
             Text("Are you sure you want to delete this loop? This action cannot be undone.")
         }
-        .onAppear {
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                cardOffset = 0
-                cardOpacity = 1
-            }
-        }
     }
     
     private func formatTime() -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"
         return formatter.string(from: loop.timestamp)
+    }
+}
+
+struct MenuButton: View {
+    @Binding var showDeleteConfirmation: Bool
+    let textColor: Color
+    
+    var body: some View {
+        Menu {
+            Button(role: .destructive) {
+                showDeleteConfirmation = true
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 20))
+                .foregroundColor(textColor.opacity(0.6))
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(MenuButtonStyle())
+        // This is the key modification - preventing tap gesture propagation
+        .simultaneousGesture(TapGesture().onEnded { })
+    }
+}
+
+// Custom button style for the entire card
+struct CardButtonStyle: ButtonStyle {
+    let isPressed: Bool
+    
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(isPressed ? 0.97 : 1)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
+    }
+}
+
+
+// Badge for loop types
+struct LoopTypeBadge: View {
+    let text: String
+    let color: Color
+    
+    var body: some View {
+        Text(text)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundColor(color)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill(color.opacity(0.12))
+            )
+    }
+}
+
+struct MenuButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(
+                Circle()
+                    .fill(Color.black.opacity(configuration.isPressed ? 0.05 : 0))
+            )
+            .animation(.easeOut(duration: 0.2), value: configuration.isPressed)
     }
 }
 

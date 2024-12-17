@@ -27,17 +27,35 @@ class LoopLocalStorageUtility {
     }
     
     private lazy var persistentContainer: NSPersistentContainer = {
-        guard let modelURL = Bundle.main.url(forResource: "LoopData", withExtension: "momd"),
-              let model = NSManagedObjectModel(contentsOf: modelURL) else {
-            fatalError("Core Data model not found") // This is okay as it's an app configuration error
-        }
-        
+        // Create the container first
         let container = NSPersistentContainer(name: "LoopData")
-        container.loadPersistentStores { description, error in
-            if let error = error {
-                print("Core Data store failed to load: \(error.localizedDescription)")
+        
+        // Add persistent store options for migration support
+        let options = [
+            NSMigratePersistentStoresAutomaticallyOption: true,
+            NSInferMappingModelAutomaticallyOption: true
+        ]
+        
+        container.loadPersistentStores { storeDescription, error in
+            if let error = error as NSError? {
+                // Better error handling with specific error information
+                print("Persistent store failed to load: \(error.localizedDescription)")
+                print("Detailed error: \(error)")
+                print("Error user info: \(error.userInfo)")
+                
+                // If there's a serious store error, you might want to handle it gracefully
+                // For development, you could delete the store and try again:
+                /*
+                try? FileManager.default.removeItem(at: storeDescription.url!)
+                try? container.loadPersistentStores { /* handle retry */ }
+                */
             }
         }
+        
+        // Configure the context
+        container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        container.viewContext.automaticallyMergesChangesFromParent = true
+        
         return container
     }()
 
@@ -176,53 +194,51 @@ class LoopLocalStorageUtility {
         let calendar = Calendar.current
         let now = Date()
         
-        // Calculate date range
         guard let minDate = calendar.date(byAdding: .day, value: -maxDaysAgo, to: now),
               let maxDate = calendar.date(byAdding: .day, value: -minDaysAgo, to: now) else {
             throw NSError(domain: "DateCalculationError", code: -1)
         }
         
-        // First check for anniversary matches
-        if let anniversaryLoop = try await checkForLocalAnniversaryMatches(
-            prompts: prompts,
-            category: category,
-            now: now
-        ) {
-            return anniversaryLoop
-        }
+        print("🔍 Searching local storage between \(minDate) and \(maxDate)")
         
-        // Build fetch request
+        // First just get ANY loops in the date range
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "LoopEntity")
-        var predicates: [NSPredicate] = []
-        
-        // Date range predicate
-        predicates.append(NSPredicate(
+        fetchRequest.predicate = NSPredicate(
             format: "timestamp >= %@ AND timestamp <= %@",
             minDate as NSDate,
             maxDate as NSDate
-        ))
-        
-        // Optional category predicate
-        if let category = category {
-            predicates.append(NSPredicate(format: "category == %@", category.rawValue))
-        }
-        
-        fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
-        
-        // Execute fetch
-        let results = try context.fetch(fetchRequest)
-        
-        // Process and score results
-        let scoredLoops = try await processAndScoreLoops(
-            localResults: results,
-            prompts: prompts,
-            category: category,
-            preferGeneralPrompts: preferGeneralPrompts,
-            now: now
         )
         
-        // Return best match if it meets threshold
-        return scoredLoops.first { $0.1 >= 0.3 }?.0
+        let results = try context.fetch(fetchRequest)
+        print("📊 Found \(results.count) total loops in date range")
+        
+        // Convert to Loops
+        let loops = results.compactMap { convertToLoop(from: $0) }
+        print("🎯 Successfully converted \(loops.count) records to Loops")
+        
+        if !loops.isEmpty {
+            // Score and sort loops
+            let scoredLoops = loops.map { loop -> (Loop, Double) in
+                let score = calculateLoopScore(
+                    loop: loop,
+                    prompts: prompts,
+                    category: category,
+                    preferGeneralPrompts: preferGeneralPrompts,
+                    now: now
+                )
+                return (loop, score)
+            }.sorted { $0.1 > $1.1 }
+            
+            print("⭐️ Top scoring loops:")
+            scoredLoops.prefix(3).forEach { loop, score in
+                print("   Score: \(score) - Prompt: \(loop.promptText)")
+            }
+            
+            return scoredLoops.first { $0.1 >= 0.3 }?.0
+        }
+        
+        print("❌ No loops found in date range")
+        return nil
     }
 
     private func calculateLoopScore(
@@ -235,62 +251,59 @@ class LoopLocalStorageUtility {
         var score: Double = 0
         let calendar = Calendar.current
         
-        // Cache prompt lookup
         let loopPrompt = LoopManager.shared.promptGroups.values
             .flatMap({ $0 })
             .first(where: { $0.text == loop.promptText })
         
-        // 1. Exact Prompt Match (0.4)
         if prompts.contains(loop.promptText) {
-            score += 0.4
+            score += 0.6
+            print("📝 Exact prompt match: +0.6")
         }
         
-        // 2. Category Match (0.3)
         if let category = category,
            let promptCategory = loopPrompt?.category,
            promptCategory == category {
             score += 0.3
+            print("📂 Category match: +0.3")
         }
         
-        // 3. Prompt Type Hierarchy
-        if let prompt = loopPrompt {
-            if !prompt.isDailyPrompt {
-                score += 0.2 // General prompts
-            } else {
-                score += 0.1 // Daily prompts
+        if let lastRetrieved = loop.lastRetrieved {
+            let daysAgo = calendar.dateComponents([.day], from: lastRetrieved, to: now).day ?? 0
+            if daysAgo < 30 {  // Penalty for recently retrieved loops
+                let penalty = Double(30 - daysAgo) / 100.0  // Max penalty of 0.3 for very recent retrievals
+                score -= penalty
+                print("⏱️ Recent retrieval penalty: -\(penalty)")
             }
-        } else {
-            score += 0.05 // Freeform
         }
         
-        // 4. Time Relevance
         let monthsAgo = Double(calendar.dateComponents([.month], from: loop.timestamp, to: now).month ?? 0)
         
-        // Time scoring
         if monthsAgo >= 3 && monthsAgo <= 6 {
             score += 0.2
+            print("📅 Ideal time range (3-6 months): +0.2")
         } else if monthsAgo >= 1 && monthsAgo <= 3 {
             score += 0.15
+            print("📅 Good time range (1-3 months): +0.15")
         } else if monthsAgo >= 6 && monthsAgo <= 12 {
             score += 0.1
-        } else {
-            score += 0.05
+            print("📅 Acceptable time range (6-12 months): +0.1")
         }
         
-        // Anniversary bonus
         let dayOfMonth = calendar.component(.day, from: loop.timestamp)
         let currentDay = calendar.component(.day, from: now)
         if dayOfMonth == currentDay {
             if [3, 6, 9, 12].contains(monthsAgo) {
-                score += 0.2 // Significant anniversary bonus
+                score += 0.2
+                print("🎉 Significant anniversary: +0.2")
             } else {
-                score += 0.1 // Regular anniversary bonus
+                score += 0.1
+                print("📆 Monthly anniversary: +0.1")
             }
         }
         
-        return min(score, 1.0) // Cap at 1.0
+        print("🎯 Final score for '\(loop.promptText)': \(score)")
+        return min(score, 1.0)
     }
-    
     
     private func processAndScoreLoops(
         localResults: [NSManagedObject],

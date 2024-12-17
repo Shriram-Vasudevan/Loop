@@ -117,7 +117,7 @@ struct OnboardingView: View {
         private var pastLoopView: some View {
             ZStack {
                 VStack(spacing: 0) {
-                    Text("loop brings back one previous entry a day")
+                    Text("complete the loop")
                         .font(.system(size: 20, weight: .light))
                         .foregroundColor(textColor.opacity(0.6))
                         .padding(.top, 32)
@@ -725,6 +725,11 @@ struct PromptsView: View {
             )
             .padding(.vertical, 24)
 
+            Text("record a loop")
+                .font(.system(size: 20, weight: .light))
+                .foregroundColor(textColor.opacity(0.6))
+                .padding(.top, 32)
+            
             Spacer()
             
             // Main prompt
@@ -893,32 +898,9 @@ struct OnboardingInsightsView: View {
     private let surfaceColor = Color(hex: "F8F5F7")
     
     @State private var selectedTimeframe = 0
-    private let timeframes = ["Today", "This Week", "This Month"]
-    
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 24) {
-                // Timeframe selector
-                HStack(spacing: 12) {
-                    ForEach(Array(timeframes.enumerated()), id: \.offset) { index, timeframe in
-                        Button(action: {
-                            withAnimation { selectedTimeframe = index }
-                        }) {
-                            Text(timeframe)
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(selectedTimeframe == index ? .white : textColor)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(
-                                    Capsule()
-                                        .fill(selectedTimeframe == index ? accentColor : Color.white)
-                                )
-                                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
-                        }
-                    }
-                }
-                .padding(.top, 16)
-                
                 // AI Analysis Card
                 VStack(alignment: .leading, spacing: 16) {
                     HStack(spacing: 8) {
@@ -935,6 +917,8 @@ struct OnboardingInsightsView: View {
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(accentColor)
                             .tracking(1.2)
+                        
+                        Spacer()
                     }
                     
                     Text("Contemplative")
@@ -986,23 +970,27 @@ struct OnboardingInsightsView: View {
                     .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
                     
                     // Duration Card
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Image(systemName: "clock")
-                                .foregroundColor(accentColor)
+                    HStack {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Image(systemName: "clock")
+                                    .foregroundColor(accentColor)
+                                
+                                Text("Duration")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(textColor)
+                            }
                             
-                            Text("Duration")
-                                .font(.system(size: 14, weight: .medium))
+                            Text("1:45")
+                                .font(.system(size: 32, weight: .bold))
                                 .foregroundColor(textColor)
+                            
+                            Text("minutes")
+                                .font(.system(size: 14))
+                                .foregroundColor(textColor.opacity(0.6))
                         }
                         
-                        Text("1:45")
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(textColor)
-                        
-                        Text("minutes")
-                            .font(.system(size: 14))
-                            .foregroundColor(textColor.opacity(0.6))
+                        Spacer()
                     }
                     .padding(20)
                     .frame(maxWidth: .infinity)
@@ -1010,67 +998,8 @@ struct OnboardingInsightsView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
                 }
+               
                 
-                // Sentiment Timeline
-                VStack(alignment: .leading, spacing: 20) {
-                    Text("Emotional Journey")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(textColor)
-                    
-                    VStack(alignment: .leading, spacing: 16) {
-                        ForEach(["Morning", "Afternoon", "Evening"], id: \.self) { time in
-                            HStack(spacing: 12) {
-                                Text(time)
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(textColor.opacity(0.6))
-                                    .frame(width: 80, alignment: .leading)
-                                
-                                Circle()
-                                    .fill(accentColor)
-                                    .frame(width: 8, height: 8)
-                                
-                                Text(getMockSentiment(for: time))
-                                    .font(.system(size: 15))
-                                    .foregroundColor(textColor)
-                            }
-                        }
-                    }
-                }
-                .padding(24)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
-                
-                // Common Themes
-                VStack(alignment: .leading, spacing: 20) {
-                    Text("Recurring Themes")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(textColor)
-                    
-                    FlowLayout(spacing: 8) {
-                        ForEach(mockThemes, id: \.self) { theme in
-                            HStack(spacing: 6) {
-                                Circle()
-                                    .fill(accentColor)
-                                    .frame(width: 4, height: 4)
-                                
-                                Text(theme)
-                                    .font(.system(size: 15, weight: .medium))
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(accentColor.opacity(0.15), lineWidth: 1)
-                                    .background(surfaceColor)
-                            )
-                        }
-                    }
-                }
-                .padding(24)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 32)

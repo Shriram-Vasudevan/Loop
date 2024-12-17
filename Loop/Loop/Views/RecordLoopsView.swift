@@ -144,7 +144,7 @@ struct RecordLoopsView: View {
                         .foregroundColor(accentColor)
                 }
                 .transition(.opacity)
-            } else if !isPostRecording && loopManager.currentPromptIndex > 0 {
+            } else if !isPostRecording && loopManager.currentPromptIndex < 2 {
                 Button(action: {
                     withAnimation {
                         showingPromptOptions.toggle()
@@ -185,29 +185,27 @@ struct RecordLoopsView: View {
                     .foregroundColor(.black)
                 
                 VStack(spacing: 16) {
-                    ScrollView(.vertical) {
-                        ForEach(loopManager.getAlternativePrompts(), id: \.text) { prompt in
-                            Button(action: {
-                                withAnimation {
-                                    loopManager.switchToPrompt(prompt)
-                                    showingPromptOptions = false
-                                }
-                            }) {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text(prompt.category.rawValue)
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(accentColor)
-                                    
-                                    Text(prompt.text)
-                                        .font(.system(size: 18, weight: .light))
-                                        .foregroundColor(.black)
-                                        .multilineTextAlignment(.leading)
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding()
-                                .background(Color.white.opacity(0.1))
-                                .cornerRadius(12)
+                    ForEach(loopManager.getAlternativePrompts(), id: \.text) { prompt in
+                        Button(action: {
+                            withAnimation {
+                                loopManager.switchToPrompt(prompt)
+                                showingPromptOptions = false
                             }
+                        }) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(prompt.category.rawValue)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(accentColor)
+                                
+                                Text(prompt.text)
+                                    .font(.system(size: 18, weight: .light))
+                                    .foregroundColor(.black)
+                                    .multilineTextAlignment(.leading)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding()
+                            .background(Color.white.opacity(0.1))
+                            .cornerRadius(12)
                         }
                     }
                 }
@@ -307,6 +305,7 @@ struct RecordLoopsView: View {
             } else if let pastLoop = pastLoop {
                 ViewPastLoopView(loop: pastLoop, isThroughRecordLoopsView: true)
                     .transition(.opacity.combined(with: .move(edge: .trailing)))
+                    .padding(.top)
                 
                 Button(action: {
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
@@ -536,7 +535,9 @@ struct RecordLoopsView: View {
                     ) {
                         await MainActor.run {
                             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                print("got the past loop")
                                 self.pastLoop = pastLoop
+                                isShowingMemory = true
                                 isPostRecording = false
                                 isLoadingMemory = false
                             }
