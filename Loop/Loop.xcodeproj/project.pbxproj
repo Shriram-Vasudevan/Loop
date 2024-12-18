@@ -74,6 +74,7 @@
 		99CCFBBC2D10DF4300DA8A55 /* CleanGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CCFBBB2D10DF4300DA8A55 /* CleanGraphView.swift */; };
 		99CCFBBE2D121F2400DA8A55 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CCFBBD2D121F2400DA8A55 /* EmptyStateView.swift */; };
 		99CCFBC02D122B0E00DA8A55 /* LoopInsightProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CCFBBF2D122B0E00DA8A55 /* LoopInsightProgressView.swift */; };
+		99CCFBC22D137A2100DA8A55 /* AnalysisState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CCFBC12D137A2100DA8A55 /* AnalysisState.swift */; };
 		99F31CA72D0F2DA300330180 /* RecordFollowUpLoopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CA62D0F2DA300330180 /* RecordFollowUpLoopView.swift */; };
 		99F31CA92D0F31AF00330180 /* FollowUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CA82D0F31AF00330180 /* FollowUp.swift */; };
 		99F31CAB2D0F477500330180 /* Graph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CAA2D0F477500330180 /* Graph.swift */; };
@@ -174,6 +175,7 @@
 		99CCFBBB2D10DF4300DA8A55 /* CleanGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanGraphView.swift; sourceTree = "<group>"; };
 		99CCFBBD2D121F2400DA8A55 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		99CCFBBF2D122B0E00DA8A55 /* LoopInsightProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopInsightProgressView.swift; sourceTree = "<group>"; };
+		99CCFBC12D137A2100DA8A55 /* AnalysisState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisState.swift; sourceTree = "<group>"; };
 		99F31CA62D0F2DA300330180 /* RecordFollowUpLoopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordFollowUpLoopView.swift; sourceTree = "<group>"; };
 		99F31CA82D0F31AF00330180 /* FollowUp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FollowUp.swift; sourceTree = "<group>"; };
 		99F31CAA2D0F477500330180 /* Graph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Graph.swift; sourceTree = "<group>"; };
@@ -341,6 +343,7 @@
 				9953BE112D07ADE400348AC3 /* LoopAnalysis.swift */,
 				99F31CA82D0F31AF00330180 /* FollowUp.swift */,
 				99F31CAA2D0F477500330180 /* Graph.swift */,
+				99CCFBC12D137A2100DA8A55 /* AnalysisState.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -435,6 +438,7 @@
 				99AC6DE62CE0F99800B0D0D6 /* CachedLoop.swift in Sources */,
 				9953BE122D07ADE400348AC3 /* LoopAnalysis.swift in Sources */,
 				99AC6DDE2CE03CC600B0D0D6 /* AudioBulletJournal.swift in Sources */,
+				99CCFBC22D137A2100DA8A55 /* AnalysisState.swift in Sources */,
 				9915BAB92CEC332500D3C44B /* AnalysisManager.swift in Sources */,
 				9953BDFE2CF810AB00348AC3 /* WebView.swift in Sources */,
 				99AC6DDA2CE01A3E00B0D0D6 /* SendLoopOverlay.swift in Sources */,

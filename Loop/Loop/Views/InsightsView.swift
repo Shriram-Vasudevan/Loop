@@ -118,67 +118,71 @@ struct TodayInsightsContent: View {
     
     var body: some View {
         VStack(spacing: 32) {
-            if let analysis = analysisManager.currentDailyAnalysis {
-                VStack (spacing: 16) {
-                    aiAnalysisCard
-                    
-                    if let followUp = analysisManager.currentDailyAnalysis?.aiAnalysis?.followUp {
-                        FollowUpWidget(
-                            followUpQuestion: followUp,
-                            onRecordTapped: {
-                                self.selectedFollowUp = FollowUp(id: UUID().uuidString, prompt: followUp)
-                            }
-                        )
+            switch analysisManager.analysisState {
+                case .completed(let analysis):
+                    VStack (spacing: 16) {
+                        aiAnalysisCard
+                        
+                        if let followUp = analysis.aiAnalysis?.followUp {
+                            FollowUpWidget(
+                                followUpQuestion: followUp,
+                                onRecordTapped: {
+                                    self.selectedFollowUp = FollowUp(id: UUID().uuidString, prompt: followUp)
+                                }
+                            )
+                        }
+                        
                     }
                     
-                }
-                
-                VStack(alignment: .leading, spacing: 12) {
-                    sectionHeader("speaking patterns")
-                    
-                    VStack(spacing: 3) {
-                        speakingRhythmCard
-                        durationCard
-                        tenseCard
+                    VStack(alignment: .leading, spacing: 12) {
+                        sectionHeader("speaking patterns")
+                        
+                        VStack(spacing: 3) {
+                            speakingRhythmCard
+                            durationCard
+                            tenseCard
+                            wordCountCard
+                            uniqueWordsCard
+                        }
                     }
-                }
-                
-                VStack(alignment: .leading, spacing: 12) {
-                    sectionHeader("focus")
                     
-                    VStack(spacing: 3) {
-                        actionReflectionCard
-                        solutionFocusCard
-                        loopConnectionsCard
+                    VStack(alignment: .leading, spacing: 12) {
+                        sectionHeader("focus")
+                        
+                        VStack(spacing: 3) {
+                            actionReflectionCard
+                            solutionFocusCard
+                            loopConnectionsCard
+                        }
                     }
-                }
-            }
-            else if analysisManager.isAnalyzing {
-                VStack(spacing: 16) {
-                    Text("Preparing your insights")
+                        
+                case .analyzing, .transcribing, .analyzing_ai:
+                    VStack(spacing: 16) {
+                        Text(analysisManager.analysisState.description)
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(textColor)
+                        PulsingDots(accentColor: accentColor)
+                    }
+                    .padding(24)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    
+                case .noLoops:
+                    Text(analysisManager.analysisState.description)
                         .font(.system(size: 17, weight: .medium))
                         .foregroundColor(textColor)
-                    PulsingDots(accentColor: accentColor)
-                }
-                .padding(24)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-            }
-            else if analysisManager.todaysLoops.count == 0 {
-                Text("Record Loops to get insights!")
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundColor(textColor)
-                    .padding(.top, 24)
-            }
-            else if analysisManager.todaysLoops.count < 3 {
-                LoopProgress(
-                    completedLoops: analysisManager.todaysLoops.count,
-                    isAnalyzing: analysisManager.isAnalyzing,
-                    accentColor: accentColor,
-                    textColor: textColor
-                )
-            } else if let error = analysisManager.analysisError {
-                ErrorView(error: error, textColor: textColor)
+                        .padding(.top, 24)
+                    
+                case .partial(let count):
+                    LoopProgress(
+                        completedLoops: count,
+                        isAnalyzing: false,
+                        accentColor: accentColor,
+                        textColor: textColor
+                    )
+                    
+                case .failed(let error):
+                    ErrorView(error: error, textColor: textColor)
             }
         }
     }
@@ -270,7 +274,7 @@ struct TodayInsightsContent: View {
                         .foregroundColor(textColor.opacity(0.6))
                 }
                 
-                Text("You maintain a steady, thoughtful pace that allows for clear articulation")
+                Text(getWPMDescription())
                     .font(.system(size: 15, weight: .regular))
                     .foregroundColor(textColor.opacity(0.7))
                     .lineSpacing(4)
@@ -306,7 +310,7 @@ struct TodayInsightsContent: View {
                         .foregroundColor(textColor.opacity(0.6))
                 }
                 
-                Text("Your responses are thoughtfully paced, allowing for detailed reflection")
+                Text(getDurationDescription())
                     .font(.system(size: 15, weight: .regular))
                     .foregroundColor(textColor.opacity(0.7))
                     .lineSpacing(4)
@@ -461,7 +465,7 @@ struct TodayInsightsContent: View {
                         .foregroundColor(textColor.opacity(0.6))
                 }
                 
-                Text("Your reflections share common themes while exploring different perspectives")
+                Text(getConnectionDescription())
                     .font(.system(size: 15, weight: .regular))
                     .foregroundColor(textColor.opacity(0.7))
                     .lineSpacing(4)
@@ -562,10 +566,136 @@ struct TodayInsightsContent: View {
         }
     }
     
+    private var uniqueWordsCard: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Vocabulary Range")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(textColor)
+                
+                Text("Diversity of word choice")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundColor(textColor.opacity(0.6))
+            }
+            
+            HStack(alignment: .top, spacing: 24) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(Int(getUniqueWordCount()))")
+                        .font(.system(size: 34, weight: .medium))
+                        .foregroundColor(textColor)
+                    
+                    Text("unique words")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(textColor.opacity(0.6))
+                }
+                
+                Text(getUniqueWordsDescription())
+                    .font(.system(size: 15, weight: .regular))
+                    .foregroundColor(textColor.opacity(0.7))
+                    .lineSpacing(4)
+            }
+            
+            vocabularyBar
+        }
+        .padding(24)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var wordCountCard: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Expression Length")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(textColor)
+                
+                Text("Average words per response")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundColor(textColor.opacity(0.6))
+            }
+            
+            HStack(alignment: .top, spacing: 24) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(Int(getAverageWordCount()))")
+                        .font(.system(size: 34, weight: .medium))
+                        .foregroundColor(textColor)
+                    
+                    Text("words")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundColor(textColor.opacity(0.6))
+                }
+                
+                Text(getWordCountDescription())
+                    .font(.system(size: 15, weight: .regular))
+                    .foregroundColor(textColor.opacity(0.7))
+                    .lineSpacing(4)
+            }
+            
+            wordCountBar
+        }
+        .padding(24)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var vocabularyBar: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(accentColor.opacity(0.2))
+                    .frame(height: 4)
+                
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(accentColor)
+                    .frame(width: geometry.size.width * getVocabularyDiversity(), height: 4)
+            }
+        }
+        .frame(height: 4)
+    }
+
+    private var wordCountBar: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(accentColor.opacity(0.2))
+                    .frame(height: 4)
+                
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(accentColor)
+                    .frame(width: geometry.size.width * min(getAverageWordCount() / 200, 1), height: 4)
+            }
+        }
+        .frame(height: 4)
+    }
+    
     private func formatDuration(_ duration: TimeInterval) -> String {
         let minutes = Int(duration) / 60
         let seconds = Int(duration) % 60
         return seconds == 0 ? "\(minutes)m" : "\(minutes)m \(seconds)s"
+    }
+    
+    private func getAverageWPM() -> Double {
+        return analysisManager.currentDailyAnalysis?.aggregateMetrics.averageWPM ?? 0
+    }
+    
+    private func getAverageDuration() -> TimeInterval {
+        return analysisManager.currentDailyAnalysis?.aggregateMetrics.averageDuration ?? 0
+    }
+
+    private func getAverageSelfReferences() -> Double {
+        return analysisManager.currentDailyAnalysis?.aggregateMetrics.averageSelfReferences ?? 0
+    }
+
+    private func getAverageWordCount() -> Double {
+        return analysisManager.currentDailyAnalysis?.aggregateMetrics.averageWordCount ?? 0
+    }
+
+    private func getUniqueWordCount() -> Double {
+        return analysisManager.currentDailyAnalysis?.aggregateMetrics.averageUniqueWordCount ?? 0
+    }
+
+    private func getVocabularyDiversity() -> Double {
+        return analysisManager.currentDailyAnalysis?.aggregateMetrics.vocabularyDiversityRatio ?? 0
     }
     
     private func getActionRatio() -> CGFloat {
@@ -590,6 +720,92 @@ struct TodayInsightsContent: View {
         }
         let total = solution + problem
         return CGFloat(solution / total)
+    }
+    
+    private func getWPMDescription() -> String {
+        let averageWPM = Int(getAverageWPM())
+        if averageWPM > 150 {
+            return "Your speech flows quickly and energetically today"
+        } else if averageWPM > 120 {
+            return "You're expressing yourself at a lively pace today"
+        } else if averageWPM > 90 {
+            return "Your pace is natural and conversational today"
+        } else if averageWPM > 60 {
+            return "You're taking time to choose words carefully"
+        } else {
+            return "Your pace today is measured and deliberate"
+        }
+    }
+
+    // Duration
+    private func getDurationDescription() -> String {
+        let avgDuration = getAverageDuration()
+        let minutes = avgDuration / 60
+        if minutes > 5 {
+            return "You're taking time for in-depth exploration today"
+        } else if minutes > 3 {
+            return "Your responses show thorough development today"
+        } else if minutes > 2 {
+            return "You're balancing detail and conciseness well"
+        } else {
+            return "You're keeping responses clear and focused"
+        }
+    }
+
+    // Loop Connections (Similarity)
+    private func getConnectionDescription() -> String {
+        let similarity = analysisManager.currentDailyAnalysis?.overlapAnalysis.overallSimilarity ?? 0
+        if similarity > 0.8 {
+            return "Your responses strongly connect to common themes"
+        } else if similarity > 0.6 {
+            return "You're maintaining consistent themes while exploring"
+        } else if similarity > 0.4 {
+            return "You're exploring varied but related perspectives"
+        } else {
+            return "Each response brings distinct viewpoints today"
+        }
+    }
+
+    // Word Count
+    private func getWordCountDescription() -> String {
+        let count = Int(getAverageWordCount())
+        if count > 200 {
+            return "You're expressing thoughts very thoroughly today"
+        } else if count > 150 {
+            return "Your responses show substantial development"
+        } else if count > 100 {
+            return "You're finding a good balance of detail"
+        } else {
+            return "You're being clear and concise today"
+        }
+    }
+
+    // Unique Words
+    private func getUniqueWordsDescription() -> String {
+        let count = Int(getUniqueWordCount())
+        if count > 120 {
+            return "Your vocabulary range is particularly broad"
+        } else if count > 90 {
+            return "You're drawing from varied language today"
+        } else if count > 60 {
+            return "Your word choice shows good variety"
+        } else {
+            return "You're using focused, precise language"
+        }
+    }
+
+    // Vocabulary Diversity
+    private func getVocabularyDiversityDescription() -> String {
+        let ratio = getVocabularyDiversity()
+        if ratio > 0.8 {
+            return "You're using an exceptionally varied vocabulary"
+        } else if ratio > 0.6 {
+            return "Your word choice shows strong diversity"
+        } else if ratio > 0.4 {
+            return "You're maintaining good vocabulary range"
+        } else {
+            return "You're using focused, consistent language"
+        }
     }
 }
 

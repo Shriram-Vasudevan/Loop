@@ -102,11 +102,9 @@ struct RangeAnalysis: Codable {
 
 enum AnalysisError: Error {
     case transcriptionFailed
-    case invalidData
     case analysisFailure
-    case insufficientData
     case aiAnalysisFailed
-    case invalidAIResponse
+    case invalidData
 }
 
 struct MetricComparison: Codable {

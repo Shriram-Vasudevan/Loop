@@ -35,12 +35,12 @@ class AIAnalyzer {
         1. feeling: [use a specific adjective to describe the tone or emotion of the response]
         2. description: [explain the feeling in 2-3 short-medium sentences, addressing the user directly in the second person ("your response conveys..."). provide insight into the tone and its possible implications.]
         3. tense: [past/present/future]
-        4. description: [in 1 sentence, explain how the tense influences the response's tone, focus, or narrative perspective.]
+        4. description: [in 1 sentence (under 15 words), explain how the tense influences the response's tone, focus, or narrative perspective.]
         5. self-references: [count the number of "I/me/my" to measure self-focus]
         6. action-reflection: [provide a clear and balanced ratio like 50/50, 40/60, or 60/40. avoid extremes like 70/30 unless strongly justified]
-        7. description: [in 1 short sentence, explain if the response leans toward actions (doing things) or reflections (thinking about them) and why that balance matters.]
+        7. description: [in 1 short sentence (under 15 words), explain if the response leans toward actions (doing things) or reflections (thinking about them) and why that balance matters.]
         8. solution-focus: [provide a balanced ratio like 50/50, 40/60, or 60/40, showing how much of the response focuses on problems vs solutions. avoid extreme ratios unless strongly justified]
-        9. description: [in 1 short sentence, explain whether the response emphasizes solving problems or dwelling on them, and how this focus affects its tone or direction.]
+        9. description: [in 1 short sentence (under 15 words), explain whether the response emphasizes solving problems or dwelling on them, and how this focus affects its tone or direction.]
         10. follow-up: [generate a thoughtful and specific question related to the feeling described in 1. avoid mentioning personal details directly but instead generalize the idea to encourage broader reflection (e.g., if the response mentions liking a specific person, ask about what they value in people overall).]
         """
 
@@ -135,8 +135,10 @@ class AIAnalyzer {
               let actionReflectionDescription = actionReflectionDescription,
               let solutionFocus = solutionFocus,
               let solutionFocusDescription = solutionFocusDescription else {
-            throw AnalysisError.invalidAIResponse
+            throw AnalysisError.aiAnalysisFailed
         }
+        
+        print("parsed")
         
         return AIAnalysisResult(
             feeling: feeling,

@@ -95,24 +95,52 @@ class StatsManager {
         
         guard let week = components.weekOfYear,
               let year = components.year else {
+            print("❌ Failed to get week/year components")
             return nil
         }
         
+        print("📅 Creating/Fetching Weekly Stats - Week: \(week), Year: \(year)")
         request.predicate = NSPredicate(format: "weekNumber == %d AND year == %d", week, year)
         
-        if let existing = try? context.fetch(request).first {
-            return existing
+        do {
+            let results = try context.fetch(request)
+            print("🔍 Found \(results.count) existing weekly stats entries")
+            if let existing = results.first {
+                print("✅ Using existing weekly stats for Week \(week)")
+                return existing
+            }
+        } catch {
+            print("❌ Error fetching weekly stats: \(error)")
         }
         
         guard let entity = NSEntityDescription.entity(forEntityName: "WeeklyStatsEntity", in: context) else {
+            print("❌ Failed to create WeeklyStatsEntity")
             return nil
         }
         
         let new = NSManagedObject(entity: entity, insertInto: context)
+        print("🆕 Creating new weekly stats for Week \(week)")
         initializeEntity(new)
         new.setValue(Int16(week), forKey: "weekNumber")
         new.setValue(Int16(year), forKey: "year")
         return new
+    }
+
+    func verifyWeeklyStats() {
+        let request = NSFetchRequest<NSManagedObject>(entityName: "WeeklyStatsEntity")
+        
+        do {
+            let results = try context.fetch(request)
+            print("\n📊 All Weekly Stats Entries:")
+            for result in results {
+                let week = result.value(forKey: "weekNumber") as? Int16 ?? 0
+                let year = result.value(forKey: "year") as? Int16 ?? 0
+                let count = result.value(forKey: "dataPointCount") as? Int64 ?? 0
+                print("Week \(week) of \(year): \(count) data points")
+            }
+        } catch {
+            print("❌ Error verifying weekly stats: \(error)")
+        }
     }
     
     private func initializeEntity(_ entity: NSManagedObject) {

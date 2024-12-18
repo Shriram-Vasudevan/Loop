@@ -72,15 +72,34 @@ class AudioAnalyzer {
             throw AnalysisError.transcriptionFailed
         }
         
+        // Create request and force on-device recognition
         let request = SFSpeechURLRecognitionRequest(url: url)
         request.shouldReportPartialResults = false
+        request.requiresOnDeviceRecognition = true  // Force on-device recognition
         
-        return try await withCheckedThrowingContinuation { continuation in
-            recognizer.recognitionTask(with: request) { result, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                } else if let result = result, result.isFinal {
-                    continuation.resume(returning: result.bestTranscription.formattedString)
+        // First try on-device
+        if recognizer.supportsOnDeviceRecognition {
+            return try await withCheckedThrowingContinuation { continuation in
+                recognizer.recognitionTask(with: request) { result, error in
+                    if let error = error {
+                        print("Speech recognition error: \(error)")
+                        continuation.resume(throwing: error)
+                    } else if let result = result, result.isFinal {
+                        continuation.resume(returning: result.bestTranscription.formattedString)
+                    }
+                }
+            }
+        } else {
+            // Fallback to network recognition if on-device not available
+            request.requiresOnDeviceRecognition = false
+            return try await withCheckedThrowingContinuation { continuation in
+                recognizer.recognitionTask(with: request) { result, error in
+                    if let error = error {
+                        print("Speech recognition error: \(error)")
+                        continuation.resume(throwing: error)
+                    } else if let result = result, result.isFinal {
+                        continuation.resume(returning: result.bestTranscription.formattedString)
+                    }
                 }
             }
         }
@@ -132,6 +151,8 @@ class AnalysisManager: ObservableObject {
     
     @Published private(set) var isFollowUpCompletedToday: Bool = false
     
+    @Published private(set) var analysisState: AnalysisState = .noLoops
+    
     init() {
         if isCacheValidForToday() {
             loadAnalysisCache()
@@ -142,12 +163,20 @@ class AnalysisManager: ObservableObject {
     }
     
     func startAnalysis(_ loop: Loop, isPastLoop: Bool) async {
-        DispatchQueue.main.async {
-           self.isAnalyzing = true
-           self.analysisError = nil
-       }
+        if !isPastLoop {
+            // If this is first loop, move to partial state
+            if todaysLoops.isEmpty {
+                DispatchQueue.main.async {
+                    self.analysisState = .partial(count: 1)
+                }
+            }
+        }
         
         do {
+            DispatchQueue.main.async {
+                self.analysisState = .transcribing
+            }
+            
             let analysis = try await analyzeLoop(loop)
             
             if isPastLoop {
@@ -155,41 +184,56 @@ class AnalysisManager: ObservableObject {
                 self.loopComparison = compareWithPastLoop()
             } else {
                 todaysLoops.append(analysis)
-                if todaysLoops.count == 3 {
+                
+                if todaysLoops.count < 3 {
+                    DispatchQueue.main.async {
+                        self.analysisState = .partial(count: self.todaysLoops.count)
+                    }
+                    saveAnalysisCache()
+                } else {
                     print("reached three loops analyzed")
                     
                     Task {
+                        DispatchQueue.main.async {
+                            self.analysisState = .analyzing
+                        }
+                        
                         startAnalysisWithTimeout()
+                        
+                        DispatchQueue.main.async {
+                            self.analysisState = .analyzing_ai
+                        }
                         
                         let dailyAnalysis = await createDailyAnalysis(todaysLoops)
                         
-                        self.currentDailyAnalysis = dailyAnalysis
-                        
-                        allTimeComparison = statsManager.compareWithAllTimeStats(dailyAnalysis)
-                        monthlyComparison = statsManager.compareWithMonthlyStats(dailyAnalysis)
-                        weeklyComparison = statsManager.compareWithWeeklyStats(dailyAnalysis)
-                        
-                        statsManager.updateStats(with: dailyAnalysis)
-                        
-                        saveDailyStats()
-                        saveAnalysisCache()
+                        DispatchQueue.main.async {
+                            self.currentDailyAnalysis = dailyAnalysis
+                            self.analysisState = .completed(dailyAnalysis)
+                            
+                            self.allTimeComparison = self.statsManager.compareWithAllTimeStats(dailyAnalysis)
+                            self.monthlyComparison = self.statsManager.compareWithMonthlyStats(dailyAnalysis)
+                            self.weeklyComparison = self.statsManager.compareWithWeeklyStats(dailyAnalysis)
+                            
+                            self.statsManager.updateStats(with: dailyAnalysis)
+                            
+                            self.saveDailyStats()
+                            self.saveAnalysisCache()
+                        }
                     }
-                }
-                else {
-                    saveAnalysisCache()
-                }
-                
-                DispatchQueue.main.async {
-                    self.isAnalyzing = false
                 }
             }
         } catch {
+            print("Analysis error: \(error)")
             DispatchQueue.main.async {
-                self.isAnalyzing = false
+                if let analysisError = error as? AnalysisError {
+                    self.analysisState = .failed(analysisError)
+                } else {
+                    self.analysisState = .failed(.analysisFailure)
+                }
             }
-            self.analysisError = AnalysisError.analysisFailure
         }
     }
+        
     
     func analyzeLoop(_ loop: Loop) async throws -> LoopAnalysis {
         guard let fileURL = loop.data.fileURL else {
@@ -244,7 +288,17 @@ class AnalysisManager: ObservableObject {
         
         let transcripts = loops.map { $0.transcript }
         
+        DispatchQueue.main.async {
+            self.analysisState = .analyzing_ai
+        }
+        
         let aiAnalysis = try? await AIAnalyzer.shared.analyzeResponses(transcripts)
+        
+        if aiAnalysis == nil {
+            DispatchQueue.main.async {
+                self.analysisState = .failed(.aiAnalysisFailed)
+            }
+        }
         
         return DailyAnalysis(
             date: Date(),
@@ -423,6 +477,12 @@ class AnalysisManager: ObservableObject {
             "cacheDate": Date()
         ]
         
+        if case .completed(let analysis) = analysisState {
+            if let dailyAnalysisData = try? JSONEncoder().encode(analysis) {
+                analysisData["dailyAnalysis"] = dailyAnalysisData.base64EncodedString()
+            }
+        }
+        
         if let dailyAnalysisData = try? JSONEncoder().encode(currentDailyAnalysis) {
             analysisData["dailyAnalysis"] = dailyAnalysisData.base64EncodedString()
         }
@@ -578,67 +638,92 @@ class AnalysisManager: ObservableObject {
         isLoadingWeekStats = true
         defer { isLoadingWeekStats = false }
         
-        let request = NSFetchRequest<NSManagedObject>(entityName: "DailyStatsEntity")
-        // Let's temporarily remove the date filter
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.weekOfYear, .year], from: Date())
         
+        guard let week = components.weekOfYear,
+              let year = components.year else {
+            print("❌ Failed to get current week components")
+            return
+        }
+        
+        print("\n🔍 Fetching stats for Week \(week) of \(year)")
+        
+        let request = NSFetchRequest<NSManagedObject>(entityName: "DailyStatsEntity")
+        request.predicate = NSPredicate(format: "weekOfYear == %d AND year == %d", week, year)
         request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
         
         do {
             let results = try statsManager.context.fetch(request)
-            print("\nFetching stats:")
-            print("Found \(results.count) entries in DailyStatsEntity")
+            print("📊 Found \(results.count) entries for current week")
             
-            // Print details of each entry we found
+            // Debug info for each entry
             results.forEach { entity in
-                print("\nEntry details:")
-                print("Date: \(entity.value(forKey: "date") as? Date ?? Date())")
-                print("Average WPM: \(entity.value(forKey: "averageWPM") as? Double ?? 0)")
-                print("Year: \(entity.value(forKey: "year") as? Int16 ?? 0)")
-                print("Month: \(entity.value(forKey: "month") as? Int16 ?? 0)")
+                if let date = entity.value(forKey: "date") as? Date {
+                    let weekNum = calendar.component(.weekOfYear, from: date)
+                    print("Entry date: \(date), Week: \(weekNum)")
+                }
             }
             
             currentWeekStats = results.compactMap { convertToDailyStats(from: $0) }
-            print("\nConverted \(currentWeekStats.count) entries to DailyStats")
+            print("📈 Converted \(currentWeekStats.count) entries to DailyStats")
             
         } catch {
-            print("Error fetching daily stats: \(error)")
+            print("❌ Error fetching daily stats: \(error)")
             currentWeekStats = []
         }
     }
 
     func fetchCurrentMonthWeeklyStats() async {
-       isLoadingMonthStats = true
-       defer { isLoadingMonthStats = false }
-       
-       let calendar = Calendar.current
-       let today = Date()
-       guard let year = calendar.dateComponents([.year], from: today).year,
-             let monthStart = calendar.date(from: DateComponents(year: year, month: calendar.component(.month, from: today))),
-             let monthEnd = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: monthStart),
-             let firstWeek = calendar.dateComponents([.weekOfYear], from: monthStart).weekOfYear,
-             let lastWeek = calendar.dateComponents([.weekOfYear], from: monthEnd).weekOfYear else {
-           print("Error calculating date components for weekly stats")
-           currentMonthWeeklyStats = []
-           return
-       }
-       
-       let request = NSFetchRequest<NSManagedObject>(entityName: "WeeklyStatsEntity")
-       request.predicate = NSPredicate(format: "year == %d AND weekNumber >= %d AND weekNumber <= %d",
-                                       year, firstWeek, lastWeek)
-       request.sortDescriptors = [NSSortDescriptor(key: "weekNumber", ascending: true)]
-       
-       do {
-           let results = try statsManager.context.fetch(request)
-           print("\nFetching weekly stats:")
-           print("Found \(results.count) entries")
-           currentMonthWeeklyStats = results.compactMap { convertToWeeklyStats(from: $0) }
-           print("Converted \(currentMonthWeeklyStats.count) entries")
-       } catch {
-           print("Error fetching weekly stats: \(error)")
-           currentMonthWeeklyStats = []
-       }
+        isLoadingMonthStats = true
+        defer { isLoadingMonthStats = false }
+        
+        let calendar = Calendar.current
+        let today = Date()
+        guard let year = calendar.dateComponents([.year], from: today).year,
+              let monthStart = calendar.date(from: DateComponents(year: year, month: calendar.component(.month, from: today))),
+              let monthEnd = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: monthStart),
+              let firstWeek = calendar.dateComponents([.weekOfYear], from: monthStart).weekOfYear,
+              let lastWeek = calendar.dateComponents([.weekOfYear], from: monthEnd).weekOfYear else {
+            print("❌ Error calculating date components for weekly stats")
+            currentMonthWeeklyStats = []
+            return
+        }
+        
+        print("📅 Fetching weekly stats for:")
+        print("Year: \(year)")
+        print("First Week of Month: \(firstWeek)")
+        print("Last Week of Month: \(lastWeek)")
+        print("Month Start: \(monthStart)")
+        print("Month End: \(monthEnd)")
+        
+        let request = NSFetchRequest<NSManagedObject>(entityName: "WeeklyStatsEntity")
+        request.predicate = NSPredicate(format: "year == %d AND weekNumber >= %d AND weekNumber <= %d",
+                                      year, firstWeek, lastWeek)
+        
+        // Debug the actual query
+        print("🔍 Query predicate: year == \(year) AND weekNumber >= \(firstWeek) AND weekNumber <= \(lastWeek)")
+        
+        do {
+            let results = try statsManager.context.fetch(request)
+            print("\n📊 Weekly stats query results:")
+            print("Found \(results.count) entries")
+            
+            // Debug each result before conversion
+            results.forEach { entity in
+                let weekNum = entity.value(forKey: "weekNumber") as? Int16 ?? -1
+                let yearVal = entity.value(forKey: "year") as? Int16 ?? -1
+                print("Entry - Week: \(weekNum), Year: \(yearVal)")
+            }
+            
+            currentMonthWeeklyStats = results.compactMap { convertToWeeklyStats(from: $0) }
+            print("✅ Converted \(currentMonthWeeklyStats.count) entries")
+        } catch {
+            print("❌ Error fetching weekly stats: \(error)")
+            currentMonthWeeklyStats = []
+        }
     }
-
+    
     func fetchCurrentYearMonthlyStats() async {
        isLoadingYearStats = true
        defer { isLoadingYearStats = false }
