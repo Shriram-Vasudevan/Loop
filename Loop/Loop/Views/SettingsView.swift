@@ -17,6 +17,8 @@ struct SettingsView: View {
     @State private var selectedWebView: WebViewData?
     @State private var reminderTime: Date
     @State private var showTimeSelector = false
+    @State private var showNameEditor = false
+    @State private var userName: String
     
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
@@ -26,8 +28,14 @@ struct SettingsView: View {
     private let build = "42"
     
     init() {
+        // Load name from UserDefaults
+        let savedName = UserDefaults.standard.string(forKey: "userName") ?? "Set your name"
+        _userName = State(initialValue: savedName)
+        
+        // Load reminder time from UserDefaults
+        let savedTime = UserDefaults.standard.object(forKey: "reminderTime") as? Date
         let defaultTime = Calendar.current.date(from: DateComponents(hour: 21, minute: 0)) ?? Date()
-        _reminderTime = State(initialValue: NotificationManager.shared.loadReminderTime() ?? defaultTime)
+        _reminderTime = State(initialValue: savedTime ?? defaultTime)
     }
     
     var body: some View {
@@ -63,48 +71,91 @@ struct SettingsView: View {
                         }
                 }
             }
+            .sheet(isPresented: $showNameEditor) {
+                nameEditorView
+            }
         }
     }
     
     private var profileCard: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack(spacing: 16) {
-                Circle()
-                    .fill(accentColor.opacity(0.1))
-                    .frame(width: 64, height: 64)
-                    .overlay(
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(accentColor)
-                    )
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("John Appleseed")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(textColor)
+        Button(action: { showNameEditor = true }) {
+            VStack(alignment: .leading, spacing: 20) {
+                HStack(spacing: 16) {
+                    Circle()
+                        .fill(accentColor.opacity(0.1))
+                        .frame(width: 64, height: 64)
+                        .overlay(
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(accentColor)
+                        )
                     
-                    HStack(spacing: 6) {
-                        Circle()
-                            .fill(accentColor)
-                            .frame(width: 6, height: 6)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(userName)
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(textColor)
                         
-                        Text("Premium")
+                        Text("Edit Profile")
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(accentColor)
                     }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(textColor.opacity(0.3))
                 }
+            }
+            .padding(20)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
+        }
+    }
+    
+    private var nameEditorView: some View {
+        NavigationView {
+            ZStack {
+                backgroundColor.ignoresSafeArea()
                 
-                Spacer()
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(textColor.opacity(0.3))
+                VStack(spacing: 20) {
+                    TextField("Your Name", text: $userName)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .font(.system(size: 17))
+                        .padding()
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .padding(.horizontal)
+                    
+                    Button(action: {
+                        UserDefaults.standard.set(userName, forKey: "userName")
+                        showNameEditor = false
+                    }) {
+                        Text("Save")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(accentColor)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .padding(.horizontal)
+                    
+                    Spacer()
+                }
+                .padding(.top, 20)
+            }
+            .navigationTitle("Edit Name")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        showNameEditor = false
+                    }
+                }
             }
         }
-        .padding(20)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
     }
     
     private var preferencesCard: some View {
@@ -193,6 +244,7 @@ struct SettingsView: View {
                     .padding()
                 
                 Button(action: {
+                    UserDefaults.standard.set(reminderTime, forKey: "reminderTime")
                     NotificationManager.shared.saveAndScheduleReminder(at: reminderTime)
                     showTimeSelector = false
                 }) {

@@ -306,7 +306,7 @@ struct RecordLoopsView: View {
                 ViewPastLoopView(loop: pastLoop, isThroughRecordLoopsView: true)
                     .transition(.opacity.combined(with: .move(edge: .trailing)))
                     .padding(.top)
-                
+                 
                 Button(action: {
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                         isShowingMemory = false

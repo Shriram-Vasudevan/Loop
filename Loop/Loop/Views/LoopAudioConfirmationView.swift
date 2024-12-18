@@ -23,6 +23,8 @@ struct LoopAudioConfirmationView: View {
     let secondaryColor = Color(hex: "B7A284")
     let textColor = Color(hex: "2C3E50")
     
+    @State private var isWaveformReady = false
+    
     var body: some View {
         VStack(spacing: 40) {
             Text("review your loop")
@@ -31,7 +33,9 @@ struct LoopAudioConfirmationView: View {
                 .padding(.top, 24)
             
             VStack(spacing: 24) {
-                WaveformView(waveformData: waveformData, color: accentColor.opacity(0.8))
+                WaveformView(waveformData: waveformData, color: accentColor.opacity(0.8), onAnimationComplete: {
+                    isWaveformReady = true
+                })
                 AudioPlayerControls(audioURL: audioURL, accentColor: accentColor)
             }
             .padding(.vertical, 20)
@@ -49,9 +53,10 @@ struct LoopAudioConfirmationView: View {
                         .frame(height: 56)
                         .background(
                             RoundedRectangle(cornerRadius: 16)
-                                .fill(accentColor)
+                                .fill(isWaveformReady ? accentColor : accentColor.opacity(0.5))
                         )
                 }
+                .disabled(!isWaveformReady)
                 
                 if retryAttempts > 0 {
                     Button(action: onRetry) {
@@ -76,6 +81,7 @@ struct LoopAudioConfirmationView: View {
 struct WaveformView: View {
     let waveformData: [CGFloat]
     let color: Color
+    let onAnimationComplete: () -> Void
     @State private var showBars = false
     
     var body: some View {
@@ -94,6 +100,12 @@ struct WaveformView: View {
         .frame(height: 70)
         .onAppear {
             showBars = true
+            // Calculate total animation duration
+            let totalDuration = 0.5 + (Double(waveformData.count) * 0.02)
+            // Call completion after animation
+            DispatchQueue.main.asyncAfter(deadline: .now() + totalDuration) {
+                onAnimationComplete()
+            }
         }
     }
 }

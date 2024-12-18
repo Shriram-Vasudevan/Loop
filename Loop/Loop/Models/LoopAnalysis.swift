@@ -115,3 +115,38 @@ struct MetricComparison: Codable {
     
     
 }
+
+extension LoopMetrics {
+    static let fallback = LoopMetrics(
+        duration: 0,
+        wordCount: 0,
+        uniqueWordCount: 0,
+        wordsPerMinute: 0,
+        selfReferenceCount: 0,
+        uniqueSelfReferenceCount: 0,
+        averageWordLength: 0
+    )
+}
+
+extension WordAnalysis {
+    static let fallback = WordAnalysis(
+        words: [],
+        uniqueWords: [],
+        mostUsedWords: [],
+        selfReferenceTypes: []
+    )
+}
+
+extension LoopAnalysis {
+    static func createFallback(id: String = UUID().uuidString, timestamp: Date = Date(), promptText: String = "") -> LoopAnalysis {
+        LoopAnalysis(
+            id: id,
+            timestamp: timestamp,
+            promptText: promptText,
+            category: "",
+            transcript: "",
+            metrics: .fallback,
+            wordAnalysis: .fallback
+        )
+    }
+}

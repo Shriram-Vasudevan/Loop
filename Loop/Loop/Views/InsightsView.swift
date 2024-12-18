@@ -124,37 +124,66 @@ struct TodayInsightsContent: View {
     
     var body: some View {
         VStack(spacing: 32) {
-            VStack (spacing: 16) {
-                aiAnalysisCard
+            if analysisManager.isAnalyzing {
+                VStack(spacing: 16) {
+                    Text("Preparing your insights")
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundColor(textColor)
+                    PulsingDots(accentColor: accentColor)
+                }
+                .padding(24)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            else if analysisManager.todaysLoops.count == 0 {
+                Text("Record Loops to get insights!")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundColor(textColor)
+                    .padding(.top, 24)
+            }
+            else if analysisManager.todaysLoops.count < 3 {
+                LoopProgress(
+                    completedLoops: analysisManager.todaysLoops.count,
+                    isAnalyzing: analysisManager.isAnalyzing,
+                    accentColor: accentColor,
+                    textColor: textColor
+                )
+            } else if let error = analysisManager.analysisError {
+                ErrorView(error: error, textColor: textColor)
+            } else if let analysis = analysisManager.currentDailyAnalysis {
                 
-                if let followUp = analysisManager.currentDailyAnalysis?.aiAnalysis?.followUp {
-                    FollowUpWidget(
-                        followUpQuestion: followUp,
-                        onRecordTapped: {
-                            self.selectedFollowUp = FollowUp(id: UUID().uuidString, prompt: followUp)
-                        }
-                    )
+                VStack (spacing: 16) {
+                    aiAnalysisCard
+                    
+                    if let followUp = analysisManager.currentDailyAnalysis?.aiAnalysis?.followUp {
+                        FollowUpWidget(
+                            followUpQuestion: followUp,
+                            onRecordTapped: {
+                                self.selectedFollowUp = FollowUp(id: UUID().uuidString, prompt: followUp)
+                            }
+                        )
+                    }
+                    
                 }
                 
-            }
-            
-            VStack(alignment: .leading, spacing: 12) {
-                sectionHeader("speaking patterns")
-                
-                VStack(spacing: 3) {
-                    speakingRhythmCard
-                    durationCard
-                    selfReferenceCard
+                VStack(alignment: .leading, spacing: 12) {
+                    sectionHeader("speaking patterns")
+                    
+                    VStack(spacing: 3) {
+                        speakingRhythmCard
+                        durationCard
+                        tenseCard
+                    }
                 }
-            }
-            
-            VStack(alignment: .leading, spacing: 12) {
-                sectionHeader("focus")
                 
-                VStack(spacing: 3) {
-                    actionReflectionCard
-                    solutionFocusCard
-                    loopConnectionsCard
+                VStack(alignment: .leading, spacing: 12) {
+                    sectionHeader("focus")
+                    
+                    VStack(spacing: 3) {
+                        actionReflectionCard
+                        solutionFocusCard
+                        loopConnectionsCard
+                    }
                 }
             }
         }
@@ -220,13 +249,20 @@ struct TodayInsightsContent: View {
     private var speakingRhythmCard: some View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Speaking Rhythm")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(textColor)
+                HStack {
+                    Text("Speaking Rhythm")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(textColor)
+                    
+                    Spacer()
+                }
                 
-                Text("A measure of your natural speaking pace")
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundColor(textColor.opacity(0.6))
+                HStack {
+                    Text("A measure of your natural speaking pace")
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundColor(textColor.opacity(0.6))
+                    Spacer()
+                }
             }
             
             HStack(alignment: .top, spacing: 24) {
@@ -289,25 +325,25 @@ struct TodayInsightsContent: View {
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
     
-    private var selfReferenceCard: some View {
+    private var tenseCard: some View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Self References")
+                Text("Time Perspective")
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(textColor)
                 
-                Text("How you express personal experiences")
+                Text("How you frame your experiences")
                     .font(.system(size: 14, weight: .regular))
                     .foregroundColor(textColor.opacity(0.6))
             }
             
             HStack(alignment: .top, spacing: 24) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("\(analysisManager.currentDailyAnalysis?.aiAnalysis?.selfReferenceCount ?? 0)")
+                    Text(analysisManager.currentDailyAnalysis?.aiAnalysis?.tense ?? "")
                         .font(.system(size: 34, weight: .medium))
                         .foregroundColor(textColor)
                     
-                    Text("mentions")
+                    Text("focused")
                         .font(.system(size: 13, weight: .regular))
                         .foregroundColor(textColor.opacity(0.6))
                 }
@@ -318,11 +354,22 @@ struct TodayInsightsContent: View {
                     .lineSpacing(4)
             }
             
-            selfReferenceIndicators
+            temporalIndicator
         }
         .padding(24)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var temporalIndicator: some View {
+        let tense = analysisManager.currentDailyAnalysis?.aiAnalysis?.tense.lowercased() ?? ""
+        return HStack(spacing: 16) {
+            ForEach(["past", "present", "future"], id: \.self) { timeframe in
+                Circle()
+                    .fill(timeframe == tense ? accentColor : accentColor.opacity(0.2))
+                    .frame(width: 8, height: 8)
+            }
+        }
     }
     
     private var actionReflectionCard: some View {
@@ -555,6 +602,7 @@ struct TodayInsightsContent: View {
 struct FollowUpWidget: View {
     let followUpQuestion: String
     let onRecordTapped: () -> Void
+    @ObservedObject private var analysisManager = AnalysisManager.shared
     
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
@@ -575,32 +623,42 @@ struct FollowUpWidget: View {
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(accentColor)
                     .tracking(1)
+                
+                if analysisManager.isFollowUpCompletedToday {
+                    Spacer()
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(accentColor)
+                }
             }
             
             Text(followUpQuestion)
                 .font(.system(size: 17, weight: .regular))
                 .foregroundColor(textColor)
                 .lineSpacing(4)
+                .opacity(analysisManager.isFollowUpCompletedToday ? 0.6 : 1)
             
             Button(action: onRecordTapped) {
                 HStack(spacing: 8) {
                     Image(systemName: "mic.fill")
                         .font(.system(size: 16))
-                    Text("Record Now")
+                    Text(analysisManager.isFollowUpCompletedToday ? "Recorded" : "Record Now")
                         .font(.system(size: 16, weight: .medium))
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
-                .background(accentColor)
+                .background(analysisManager.isFollowUpCompletedToday ? accentColor.opacity(0.5) : accentColor)
                 .clipShape(RoundedRectangle(cornerRadius: 25))
             }
+            .disabled(analysisManager.isFollowUpCompletedToday)
         }
         .padding(24)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 16))
+        .opacity(analysisManager.isFollowUpCompletedToday ? 0.8 : 1)
     }
 }
+
 struct TrendsInsightsView: View {
     @ObservedObject var analysisManager: AnalysisManager
     @State private var selectedPeriod = "week"
@@ -914,13 +972,21 @@ struct TrendWidgets: View {
                     // Speaking Rhythm (WPM)
                     VStack(alignment: .leading, spacing: 20) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Speaking Rhythm")
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundColor(textColor)
+                            HStack {
+                                Text("Speaking Rhythm")
+                                    .font(.system(size: 17, weight: .semibold))
+                                    .foregroundColor(textColor)
+                                
+                                Spacer()
+                            }
                             
-                            Text("Average speaking pace")
-                                .font(.system(size: 14, weight: .regular))
-                                .foregroundColor(textColor.opacity(0.6))
+                            HStack {
+                                Text("Average speaking pace")
+                                    .font(.system(size: 14, weight: .regular))
+                                    .foregroundColor(textColor.opacity(0.6))
+                                
+                                Spacer()
+                            }
                         }
                         
                         HStack(alignment: .top, spacing: 24) {
@@ -1494,3 +1560,36 @@ struct FlowLayout: Layout {
     }
 }
     
+struct ErrorView: View {
+    let error: AnalysisError
+    let textColor: Color
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 32))
+                .foregroundColor(.orange)
+            
+            Text(errorMessage)
+                .font(.system(size: 17, weight: .medium))
+                .foregroundColor(textColor)
+                .multilineTextAlignment(.center)
+        }
+        .padding(24)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+    
+    private var errorMessage: String {
+        switch error {
+        case .aiAnalysisFailed:
+            return "AI analysis unavailable.\nYou can still view your other insights."
+        case .transcriptionFailed:
+            return "Some speech analysis failed.\nShowing available insights."
+        case .analysisFailure:
+            return "Analysis incomplete.\nShowing partial results."
+        default:
+            return "Something went wrong.\nShowing available insights."
+        }
+    }
+}

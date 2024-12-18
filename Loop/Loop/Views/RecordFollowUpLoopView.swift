@@ -272,6 +272,8 @@ struct RecordFollowUpLoopView: View {
                 isDailyLoop: false, isFollowUp: true
             )
             
+            AnalysisManager.shared.markFollowUpComplete()
+            
             withAnimation {
                 isPostRecording = false
                 showingThankYouScreen = true

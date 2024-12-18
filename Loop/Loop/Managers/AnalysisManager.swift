@@ -126,47 +126,60 @@ class AnalysisManager: ObservableObject {
     @Published private(set) var isLoadingMonthStats = false
     @Published private(set) var isLoadingYearStats = false
     
+    
+    @Published var analysisError: AnalysisError?
+    private var analysisTimer: Timer?
+    
+    @Published private(set) var isFollowUpCompletedToday: Bool = false
+    
     init() {
         if isCacheValidForToday() {
             loadAnalysisCache()
+            isFollowUpCompletedToday = UserDefaults.standard.bool(forKey: "FollowUpCompletedToday")
         } else {
             resetAnalysisCache()
         }
     }
     
-    func startAnalysis(_ loop: Loop, isPastLoop: Bool) async throws {
+    func startAnalysis(_ loop: Loop, isPastLoop: Bool) async {
         isAnalyzing = true
         defer { isAnalyzing = false }
         
-        let analysis = try await analyzeLoop(loop)
-        
-        await MainActor.run {
-            if isPastLoop {
-                pastLoopAnalysis = analysis
-                self.loopComparison = compareWithPastLoop()
-            } else {
-                todaysLoops.append(analysis)
-                if todaysLoops.count == 3 {
-                    print("reached three loops analyzed")
-                    
-                    Task {
-                        let dailyAnalysis = await createDailyAnalysis(todaysLoops)
-                        currentDailyAnalysis = dailyAnalysis
+        do {
+            let analysis = try await analyzeLoop(loop)
+            
+            await MainActor.run {
+                if isPastLoop {
+                    pastLoopAnalysis = analysis
+                    self.loopComparison = compareWithPastLoop()
+                } else {
+                    todaysLoops.append(analysis)
+                    if todaysLoops.count == 3 {
+                        print("reached three loops analyzed")
                         
-                        allTimeComparison = statsManager.compareWithAllTimeStats(dailyAnalysis)
-                        monthlyComparison = statsManager.compareWithMonthlyStats(dailyAnalysis)
-                        weeklyComparison = statsManager.compareWithWeeklyStats(dailyAnalysis)
-                        
-                        statsManager.updateStats(with: dailyAnalysis)
-                        
-                        saveDailyStats()
+                        Task {
+                            startAnalysisWithTimeout()
+                            
+                            let dailyAnalysis = await createDailyAnalysis(todaysLoops)
+                            currentDailyAnalysis = dailyAnalysis
+                            
+                            allTimeComparison = statsManager.compareWithAllTimeStats(dailyAnalysis)
+                            monthlyComparison = statsManager.compareWithMonthlyStats(dailyAnalysis)
+                            weeklyComparison = statsManager.compareWithWeeklyStats(dailyAnalysis)
+                            
+                            statsManager.updateStats(with: dailyAnalysis)
+                            
+                            saveDailyStats()
+                            saveAnalysisCache()
+                        }
+                    }
+                    else {
                         saveAnalysisCache()
                     }
                 }
-                else {
-                    saveAnalysisCache()
-                }
             }
+        } catch {
+//            self.analysisError = AnalysisError.analysisFailure
         }
     }
     
@@ -175,40 +188,44 @@ class AnalysisManager: ObservableObject {
             throw AnalysisError.invalidData
         }
         
-        let transcript = try await audioAnalyzer.transcribeAudio(url: fileURL)
-        let duration = audioAnalyzer.getDuration(url: fileURL)
-        
-        let (words, uniqueWords) = textAnalyzer.analyzeText(transcript)
-        let selfRefs = textAnalyzer.analyzeSelfReferences(words)
-        let avgWordLength = textAnalyzer.calculateAverageWordLength(words)
-        let mostUsed = textAnalyzer.findMostUsedWords(words)
-        
-        let metrics = LoopMetrics(
-            duration: duration,
-            wordCount: words.count,
-            uniqueWordCount: uniqueWords.count,
-            wordsPerMinute: Double(words.count) / (duration / 60.0),
-            selfReferenceCount: selfRefs.count,
-            uniqueSelfReferenceCount: selfRefs.types.count,
-            averageWordLength: avgWordLength
-        )
-        
-        let wordAnalysis = WordAnalysis(
-            words: words,
-            uniqueWords: uniqueWords,
-            mostUsedWords: mostUsed,
-            selfReferenceTypes: selfRefs.types
-        )
-        
-        print("finished analying loop")
-        return LoopAnalysis(
-            id: loop.id,
-            timestamp: loop.timestamp,
-            promptText: loop.promptText,
-            category: LoopManager.shared.getCategoryForPrompt(loop.promptText)?.rawValue ?? "Share Anything", transcript: transcript,
-            metrics: metrics,
-            wordAnalysis: wordAnalysis
-        )
+        do {
+            let transcript = try await audioAnalyzer.transcribeAudio(url: fileURL)
+            let duration = audioAnalyzer.getDuration(url: fileURL)
+            
+            let (words, uniqueWords) = textAnalyzer.analyzeText(transcript)
+            let selfRefs = textAnalyzer.analyzeSelfReferences(words)
+            let avgWordLength = textAnalyzer.calculateAverageWordLength(words)
+            let mostUsed = textAnalyzer.findMostUsedWords(words)
+            
+            let metrics = LoopMetrics(
+                duration: duration,
+                wordCount: words.count,
+                uniqueWordCount: uniqueWords.count,
+                wordsPerMinute: Double(words.count) / (duration / 60.0),
+                selfReferenceCount: selfRefs.count,
+                uniqueSelfReferenceCount: selfRefs.types.count,
+                averageWordLength: avgWordLength
+            )
+            
+            let wordAnalysis = WordAnalysis(
+                words: words,
+                uniqueWords: uniqueWords,
+                mostUsedWords: mostUsed,
+                selfReferenceTypes: selfRefs.types
+            )
+            
+            print("finished analying loop")
+            return LoopAnalysis(
+                id: loop.id,
+                timestamp: loop.timestamp,
+                promptText: loop.promptText,
+                category: LoopManager.shared.getCategoryForPrompt(loop.promptText)?.rawValue ?? "Share Anything", transcript: transcript,
+                metrics: metrics,
+                wordAnalysis: wordAnalysis
+            )
+        } catch {
+            throw AnalysisError.invalidData
+        }
     }
     
     private func createDailyAnalysis(_ loops: [LoopAnalysis]) async -> DailyAnalysis {
@@ -393,17 +410,38 @@ class AnalysisManager: ObservableObject {
     }
     
     private func saveAnalysisCache() {
-        let analysisData: [String: Any] = [
-            "dailyAnalysis": try? JSONEncoder().encode(currentDailyAnalysis),
-            "todaysLoops": try? JSONEncoder().encode(todaysLoops),
-            "pastLoopAnalysis": try? JSONEncoder().encode(pastLoopAnalysis),
-            "loopComparison": try? JSONEncoder().encode(loopComparison),
-            "allTimeComparison": try? JSONEncoder().encode(allTimeComparison),
-            "monthlyComparison": try? JSONEncoder().encode(monthlyComparison),
-            "weeklyComparison": try? JSONEncoder().encode(weeklyComparison),
+        var analysisData: [String: Any] = [
             "lastAnalysisDate": Date(),
             "cacheDate": Date()
         ]
+        
+        if let dailyAnalysisData = try? JSONEncoder().encode(currentDailyAnalysis) {
+            analysisData["dailyAnalysis"] = dailyAnalysisData.base64EncodedString()
+        }
+        
+        if let todaysLoopsData = try? JSONEncoder().encode(todaysLoops) {
+            analysisData["todaysLoops"] = todaysLoopsData.base64EncodedString()
+        }
+        
+        if let pastLoopData = try? JSONEncoder().encode(pastLoopAnalysis) {
+            analysisData["pastLoopAnalysis"] = pastLoopData.base64EncodedString()
+        }
+        
+        if let comparisonData = try? JSONEncoder().encode(loopComparison) {
+            analysisData["loopComparison"] = comparisonData.base64EncodedString()
+        }
+        
+        if let allTimeComparisonData = try? JSONEncoder().encode(allTimeComparison) {
+            analysisData["allTimeComparison"] = allTimeComparisonData.base64EncodedString()
+        }
+        
+        if let monthlyComparisonData = try? JSONEncoder().encode(monthlyComparison) {
+            analysisData["monthlyComparison"] = monthlyComparisonData.base64EncodedString()
+        }
+        
+        if let weeklyComparisonData = try? JSONEncoder().encode(weeklyComparison) {
+            analysisData["weeklyComparison"] = weeklyComparisonData.base64EncodedString()
+        }
         
         analysisCache.set(analysisData, forKey: dailyAnalysisCacheKey)
     }
@@ -413,37 +451,44 @@ class AnalysisManager: ObservableObject {
             return
         }
         
-        if let dailyAnalysisData = cachedData["dailyAnalysis"] as? Data,
+        if let dailyAnalysisString = cachedData["dailyAnalysis"] as? String,
+           let dailyAnalysisData = Data(base64Encoded: dailyAnalysisString),
            let dailyAnalysis = try? JSONDecoder().decode(DailyAnalysis.self, from: dailyAnalysisData) {
             self.currentDailyAnalysis = dailyAnalysis
         }
         
-        if let todaysLoopsData = cachedData["todaysLoops"] as? Data,
+        if let todaysLoopsString = cachedData["todaysLoops"] as? String,
+           let todaysLoopsData = Data(base64Encoded: todaysLoopsString),
            let loopAnalyses = try? JSONDecoder().decode([LoopAnalysis].self, from: todaysLoopsData) {
             self.todaysLoops = loopAnalyses
         }
         
-        if let pastLoopData = cachedData["pastLoopAnalysis"] as? Data,
+        if let pastLoopString = cachedData["pastLoopAnalysis"] as? String,
+           let pastLoopData = Data(base64Encoded: pastLoopString),
            let pastAnalysis = try? JSONDecoder().decode(LoopAnalysis.self, from: pastLoopData) {
             self.pastLoopAnalysis = pastAnalysis
         }
         
-        if let comparisonData = cachedData["loopComparison"] as? Data,
+        if let comparisonString = cachedData["loopComparison"] as? String,
+           let comparisonData = Data(base64Encoded: comparisonString),
            let comparison = try? JSONDecoder().decode(LoopComparison.self, from: comparisonData) {
             self.loopComparison = comparison
         }
         
-        if let allTimeComparisonData = cachedData["allTimeComparison"] as? Data,
+        if let allTimeComparisonString = cachedData["allTimeComparison"] as? String,
+           let allTimeComparisonData = Data(base64Encoded: allTimeComparisonString),
            let allTimeComparison = try? JSONDecoder().decode(LoopComparison.self, from: allTimeComparisonData) {
             self.allTimeComparison = allTimeComparison
         }
         
-        if let monthlyComparisonData = cachedData["monthlyComparison"] as? Data,
+        if let monthlyComparisonString = cachedData["monthlyComparison"] as? String,
+           let monthlyComparisonData = Data(base64Encoded: monthlyComparisonString),
            let monthlyComparison = try? JSONDecoder().decode(LoopComparison.self, from: monthlyComparisonData) {
             self.monthlyComparison = monthlyComparison
         }
         
-        if let weeklyComparisonData = cachedData["weeklyComparison"] as? Data,
+        if let weeklyComparisonString = cachedData["weeklyComparison"] as? String,
+           let weeklyComparisonData = Data(base64Encoded: weeklyComparisonString),
            let weeklyComparison = try? JSONDecoder().decode(LoopComparison.self, from: weeklyComparisonData) {
             self.weeklyComparison = weeklyComparison
         }
@@ -458,7 +503,15 @@ class AnalysisManager: ObservableObject {
         monthlyComparison = nil
         weeklyComparison = nil
         analysisCache.removeObject(forKey: dailyAnalysisCacheKey)
+        isFollowUpCompletedToday = false
+        UserDefaults.standard.removeObject(forKey: "FollowUpCompletedToday")
     }
+    
+    func markFollowUpComplete() {
+        isFollowUpCompletedToday = true
+        UserDefaults.standard.set(true, forKey: "FollowUpCompletedToday")
+    }
+
     
     func saveDailyStats() {
         print("Starting to save daily stats")
@@ -485,15 +538,13 @@ class AnalysisManager: ObservableObject {
         statsEntity.setValue(Int16(components.weekOfYear ?? 0), forKey: "weekOfYear")
         statsEntity.setValue(Int16(components.weekday ?? 0), forKey: "weekday")
         
-        // Set metrics
         statsEntity.setValue(analysis.aggregateMetrics.averageWPM, forKey: "averageWPM")
         statsEntity.setValue(analysis.aggregateMetrics.averageDuration, forKey: "averageDuration")
         statsEntity.setValue(analysis.aggregateMetrics.averageWordCount, forKey: "averageWordCount")
         statsEntity.setValue(analysis.aggregateMetrics.averageUniqueWordCount, forKey: "averageUniqueWordCount")
         statsEntity.setValue(analysis.aggregateMetrics.averageSelfReferences, forKey: "averageSelfReferences")
         statsEntity.setValue(analysis.aggregateMetrics.vocabularyDiversityRatio, forKey: "vocabularyDiversityRatio")
-        
-        // Additional metrics
+
         statsEntity.setValue(Int16(analysis.loops.count), forKey: "loopCount")
         statsEntity.setValue(analysis.loops.reduce(0.0) { $0 + $1.metrics.averageWordLength } / Double(analysis.loops.count), forKey: "averageWordLength")
         statsEntity.setValue(Date(), forKey: "lastUpdated")
@@ -514,6 +565,7 @@ class AnalysisManager: ObservableObject {
             print("Failed to save daily stats: \(error)")
         }
     }
+    
     func fetchCurrentWeekStats() async {
         isLoadingWeekStats = true
         defer { isLoadingWeekStats = false }
@@ -673,7 +725,29 @@ class AnalysisManager: ObservableObject {
        )
     }
 
+    func startAnalysisWithTimeout() {
+        analysisTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: false) { [weak self] _ in
+            self?.handleTimeout()
+        }
+    }
     
+    private func handleTimeout() {
+        DispatchQueue.main.async {
+            self.analysisError = .analysisFailure
+            if let currentAnalysis = self.currentDailyAnalysis {
+                let fallbackAnalysis = DailyAnalysis(
+                    date: currentAnalysis.date,
+                    loops: currentAnalysis.loops,
+                    aggregateMetrics: currentAnalysis.aggregateMetrics,
+                    wordPatterns: currentAnalysis.wordPatterns,
+                    overlapAnalysis: currentAnalysis.overlapAnalysis,
+                    rangeAnalysis: currentAnalysis.rangeAnalysis,
+                    aiAnalysis: nil
+                )
+                self.currentDailyAnalysis = fallbackAnalysis
+            }
+        }
+    }
 }
     
 

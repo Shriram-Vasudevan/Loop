@@ -128,6 +128,7 @@ struct OnboardingView: View {
                         .multilineTextAlignment(.center)
                         .foregroundColor(textColor)
                         .padding(.horizontal, 40)
+                        .padding(.bottom, 8)
                     
                     Text("September 24, 2024")
                         .font(.system(size: 15, weight: .regular))
@@ -157,7 +158,7 @@ struct OnboardingView: View {
                     .safeAreaPadding(.horizontal, 24)
                     
                     HStack {
-                        Text("0:00")
+                        Text("0:05")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(textColor.opacity(0.6))
                         
@@ -204,6 +205,7 @@ struct OnboardingView: View {
                         .font(.system(size: 20, weight: .light))
                         .foregroundColor(textColor.opacity(0.6))
                         .padding(.top, 32)
+                        .padding(.bottom, 12)
                     
                     OnboardingInsightsView()
                     
@@ -697,7 +699,7 @@ struct PromptsView: View {
     @State private var recordingTimer: Timer?
     
     @ObservedObject var audioManager = AudioManager.shared
-    
+    @ObservedObject var loopManager = LoopManager.shared
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
@@ -841,10 +843,12 @@ struct PromptsView: View {
             withAnimation {
                 stopTimer()
                 audioManager.stopRecording()
+                completeRecording()
                 onContinue()
             }
         } else {
             withAnimation {
+                try? audioManager.prepareForNewRecording()
                 audioManager.startRecording()
                 startRecordingWithTimer()
             }
@@ -863,6 +867,7 @@ struct PromptsView: View {
                 timeRemaining -= 1
             } else {
                 stopTimer()
+                audioManager.stopRecording()
             }
         }
     }
@@ -870,6 +875,16 @@ struct PromptsView: View {
     private func stopTimer() {
         recordingTimer?.invalidate()
         recordingTimer = nil
+    }
+    
+    private func completeRecording() {
+        if let audioFileURL = audioManager.getRecordedAudioFile() {
+            let loop = loopManager.addLoop(
+                mediaURL: audioFileURL,
+                isVideo: false,
+                prompt: "What made you smile today?", isDailyLoop: true, isFollowUp: false
+            )
+        }
     }
 
 }
@@ -981,7 +996,7 @@ struct OnboardingInsightsView: View {
                                     .foregroundColor(textColor)
                             }
                             
-                            Text("1:45")
+                            Text("1:17")
                                 .font(.system(size: 32, weight: .bold))
                                 .foregroundColor(textColor)
                             
@@ -998,11 +1013,63 @@ struct OnboardingInsightsView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
                 }
-               
+            
                 
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text("Time Perspective")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(textColor)
+                            Spacer()
+                        }
+                        
+                        HStack {
+                            Text("How you frame your experiences")
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(textColor.opacity(0.6))
+                            
+                            Spacer()
+                        }
+                    }
+                    
+                    HStack(alignment: .top, spacing: 24) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Present")
+                                .font(.system(size: 34, weight: .medium))
+                                .foregroundColor(textColor)
+                            
+                            Text("focused")
+                                .font(.system(size: 13, weight: .regular))
+                                .foregroundColor(textColor.opacity(0.6))
+                        }
+                        
+                        Text("You're focused on understanding your current state of mind")
+                            .font(.system(size: 15, weight: .regular))
+                            .foregroundColor(textColor.opacity(0.7))
+                            .lineSpacing(4)
+                    }
+                    
+                    temporalIndicator
+                }
+                .padding(24)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
+        }
+    }
+    
+    private var temporalIndicator: some View {
+        let tense = "present"
+        return HStack(spacing: 16) {
+            ForEach(["past", "present", "future"], id: \.self) { timeframe in
+                Circle()
+                    .fill(timeframe == tense ? accentColor : accentColor.opacity(0.2))
+                    .frame(width: 8, height: 8)
+            }
         }
     }
     

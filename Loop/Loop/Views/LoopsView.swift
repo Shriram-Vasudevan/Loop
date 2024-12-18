@@ -64,7 +64,7 @@ struct LoopsView: View {
     private var headerSection: some View {
         VStack(spacing: 16) {
             HStack {
-                VStack(alignment: .center, spacing: 0) {
+                VStack(alignment: .leading, spacing: 0) {
                     Text("journal")
                         .font(.system(size: 40, weight: .bold))
                         .foregroundColor(textColor)
@@ -83,9 +83,9 @@ struct LoopsView: View {
                     .padding(.top, -5)
 
                 }
+
+                Spacer()
 //
-//                Spacer()
-//                
 //                if !loopManager.hasCompletedToday {
 //                    CircularProgress(
 //                        progress: CGFloat(loopManager.currentPromptIndex) / CGFloat(loopManager.dailyPrompts.count),
@@ -163,14 +163,28 @@ struct RecentLoopsView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             LazyVStack(spacing: 24) {
-                ForEach(loopManager.recentDates, id: \.self) { date in
-                    DaySection(
-                        date: date,
-                        loops: loopManager.loopsByDate[date] ?? [],
-                        selectedLoop: $selectedLoop
+                if loopManager.recentDates.isEmpty {
+                    EmptyStateView(
+                        title: "No Recent Entries",
+                        message: "Your journal entries will appear here once you start recording.",
+                        systemImage: "text.bubble"
                     )
+                } else {
+                    LazyVStack(spacing: 24) {
+                        ForEach(loopManager.recentDates, id: \.self) { date in
+                            DaySection(
+                                date: date,
+                                loops: loopManager.loopsByDate[date] ?? [],
+                                selectedLoop: $selectedLoop
+                            )
+                        }
+                        
+                        if loadingMore {
+                            ProgressView()
+                                .frame(height: 50)
+                        }
+                    }
                 }
-                
                 if loadingMore {
                     ProgressView()
                         .frame(height: 50)
@@ -412,20 +426,28 @@ struct MonthsGridView: View {
     
     var body: some View {
         ScrollView(showsIndicators: false) {
-            LazyVGrid(columns: columns, spacing: 16) {
-                ForEach(loopManager.activeMonths, id: \.self) { monthId in
-                    MonthCard(monthId: monthId) {
-                        withAnimation {
-                            selectedMonthId = monthId
-                            Task {
-                                await loopManager.loadMonthData(monthId: monthId)
+            if loopManager.activeMonths.isEmpty {
+                EmptyStateView(
+                    title: "No Past Entries",
+                    message: "Your monthly archives will appear here once you start recording.",
+                    systemImage: "calendar"
+                )
+            } else {
+                LazyVGrid(columns: columns, spacing: 16) {
+                    ForEach(loopManager.activeMonths, id: \.self) { monthId in
+                        MonthCard(monthId: monthId) {
+                            withAnimation {
+                                selectedMonthId = monthId
+                                Task {
+                                    await loopManager.loadMonthData(monthId: monthId)
+                                }
                             }
                         }
                     }
                 }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 16)
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
         }
     }
 }

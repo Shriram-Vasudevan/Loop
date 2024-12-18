@@ -72,6 +72,8 @@
 		99CCFBB82D10DB9300DA8A55 /* AIAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CCFBB72D10DB9300DA8A55 /* AIAnalyzer.swift */; };
 		99CCFBBA2D10DBAE00DA8A55 /* StatsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CCFBB92D10DBAE00DA8A55 /* StatsManager.swift */; };
 		99CCFBBC2D10DF4300DA8A55 /* CleanGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CCFBBB2D10DF4300DA8A55 /* CleanGraphView.swift */; };
+		99CCFBBE2D121F2400DA8A55 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CCFBBD2D121F2400DA8A55 /* EmptyStateView.swift */; };
+		99CCFBC02D122B0E00DA8A55 /* LoopInsightProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CCFBBF2D122B0E00DA8A55 /* LoopInsightProgressView.swift */; };
 		99F31CA72D0F2DA300330180 /* RecordFollowUpLoopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CA62D0F2DA300330180 /* RecordFollowUpLoopView.swift */; };
 		99F31CA92D0F31AF00330180 /* FollowUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CA82D0F31AF00330180 /* FollowUp.swift */; };
 		99F31CAB2D0F477500330180 /* Graph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CAA2D0F477500330180 /* Graph.swift */; };
@@ -170,6 +172,8 @@
 		99CCFBB72D10DB9300DA8A55 /* AIAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIAnalyzer.swift; sourceTree = "<group>"; };
 		99CCFBB92D10DBAE00DA8A55 /* StatsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsManager.swift; sourceTree = "<group>"; };
 		99CCFBBB2D10DF4300DA8A55 /* CleanGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanGraphView.swift; sourceTree = "<group>"; };
+		99CCFBBD2D121F2400DA8A55 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
+		99CCFBBF2D122B0E00DA8A55 /* LoopInsightProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopInsightProgressView.swift; sourceTree = "<group>"; };
 		99F31CA62D0F2DA300330180 /* RecordFollowUpLoopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordFollowUpLoopView.swift; sourceTree = "<group>"; };
 		99F31CA82D0F31AF00330180 /* FollowUp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FollowUp.swift; sourceTree = "<group>"; };
 		99F31CAA2D0F477500330180 /* Graph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Graph.swift; sourceTree = "<group>"; };
@@ -290,6 +294,8 @@
 				9953BE132D0CF79200348AC3 /* AppPromoVid.swift */,
 				99F31CAC2D0F5DAF00330180 /* StatsLoadingView.swift */,
 				99CCFBBB2D10DF4300DA8A55 /* CleanGraphView.swift */,
+				99CCFBBD2D121F2400DA8A55 /* EmptyStateView.swift */,
+				99CCFBBF2D122B0E00DA8A55 /* LoopInsightProgressView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -482,6 +488,7 @@
 				990E4A862CB30EB8009F88A0 /* LoopAudioConfirmationView.swift in Sources */,
 				99F31CA72D0F2DA300330180 /* RecordFollowUpLoopView.swift in Sources */,
 				9988DB8F2CDA77FB005628DE /* PublicUserRecord.swift in Sources */,
+				99CCFBC02D122B0E00DA8A55 /* LoopInsightProgressView.swift in Sources */,
 				99CCFBB82D10DB9300DA8A55 /* AIAnalyzer.swift in Sources */,
 				990E4A922CB48CEF009F88A0 /* InsightsView.swift in Sources */,
 				9953BE042CFB940500348AC3 /* TabButton.swift in Sources */,
@@ -494,6 +501,7 @@
 				9915BAB72CE6AF9E00D3C44B /* DailyCheckinManager.swift in Sources */,
 				9953BDF62CF40E4A00348AC3 /* ProgressIndicator.swift in Sources */,
 				99A0C9042CA9F70500F9281A /* UserCloudKitUtility.swift in Sources */,
+				99CCFBBE2D121F2400DA8A55 /* EmptyStateView.swift in Sources */,
 				99F7F6FF2CAF8580009858AC /* Extensions.swift in Sources */,
 				99CCFBBA2D10DBAE00DA8A55 /* StatsManager.swift in Sources */,
 				99AC6DD42CDED81100B0D0D6 /* LoopsView.swift in Sources */,
