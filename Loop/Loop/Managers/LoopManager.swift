@@ -704,22 +704,41 @@ class LoopManager: ObservableObject {
         let loopID = UUID().uuidString
         let timestamp = Date()
         let ckAsset = CKAsset(fileURL: mediaURL)
-        
-        let category = LoopManager.shared.getCategoryForPrompt(prompt)?.rawValue ?? "Share Anything"
-        
+
+        let category = getCategoryForPrompt(prompt)?.rawValue ?? "Share Anything"
+
         let loop = Loop(
             id: loopID,
             data: ckAsset,
             timestamp: timestamp,
             lastRetrieved: timestamp,
-            promptText: prompt, category: category,
+            promptText: prompt,
+            category: category,
             mood: mood,
             freeResponse: freeResponse,
             isVideo: isVideo,
-            isDailyLoop: isDailyLoop, isFollowUp: isFollowUp
+            isDailyLoop: isDailyLoop,
+            isFollowUp: isFollowUp
         )
-        
-        // Check backup setting and store accordingly
+
+        // Add the loop to loopsByDate (check for duplicates)
+        let loopDate = Calendar.current.startOfDay(for: timestamp) // Normalize to day
+        if var existingLoops = loopsByDate[loopDate] {
+            if !existingLoops.contains(where: { $0.id == loop.id }) {
+                existingLoops.append(loop)
+                loopsByDate[loopDate] = existingLoops.sorted { $0.timestamp > $1.timestamp }
+            }
+        } else {
+            loopsByDate[loopDate] = [loop]
+        }
+
+        // Ensure the date is in recentDates
+        if !recentDates.contains(loopDate) {
+            recentDates.append(loopDate)
+            recentDates.sort(by: >) // Ensure sorted
+        }
+
+        // Save based on iCloud backup setting
         if UserDefaults.standard.bool(forKey: "iCloudBackupEnabled") {
             LoopCloudKitUtility.addLoop(loop: loop)
         } else {
@@ -727,10 +746,11 @@ class LoopManager: ObservableObject {
                 await localStorage.addLoop(loop: loop)
             }
         }
-        
-        
+
         return loop
     }
+
+
     
     func fetchRecentDates(limit: Int = 6, completion: @escaping () -> Void) {
         let group = DispatchGroup()
@@ -821,12 +841,12 @@ class LoopManager: ObservableObject {
         for date in dates {
             group.enter()
             
-            // Fetch from CloudKit
+            // Fetch loops from CloudKit
             LoopCloudKitUtility.fetchLoops(for: date) { [weak self] result in
                 switch result {
                 case .success(let cloudLoops):
                     DispatchQueue.main.async {
-                        self?.loopsByDate[date, default: []].append(contentsOf: cloudLoops)
+                        self?.addUniqueLoops(cloudLoops, to: date)
                     }
                 case .failure(let error):
                     print("CloudKit fetch error for \(date): \(error)")
@@ -835,16 +855,12 @@ class LoopManager: ObservableObject {
             }
             
             group.enter()
-            // Fetch from local storage
+            // Fetch loops from local storage
             Task {
                 do {
                     let localLoops = try await localStorage.fetchLoops(for: date)
                     await MainActor.run { [weak self] in
-                        // Combine results, avoiding duplicates using Loop.id
-                        let existingLoops = self?.loopsByDate[date] ?? []
-                        let existingIds = Set(existingLoops.map { $0.id })
-                        let uniqueLocalLoops = localLoops.filter { !existingIds.contains($0.id) }
-                        self?.loopsByDate[date, default: []].append(contentsOf: uniqueLocalLoops)
+                        self?.addUniqueLoops(localLoops, to: date)
                     }
                 } catch {
                     print("Local storage fetch error for \(date): \(error)")
@@ -857,6 +873,16 @@ class LoopManager: ObservableObject {
             completion()
         }
     }
+
+    private func addUniqueLoops(_ newLoops: [Loop], to date: Date) {
+        var existingLoops = loopsByDate[date] ?? []
+        let existingIds = Set(existingLoops.map { $0.id })
+        
+        let uniqueLoops = newLoops.filter { !existingIds.contains($0.id) }
+        existingLoops.append(contentsOf: uniqueLoops)
+        loopsByDate[date] = existingLoops.sorted { $0.timestamp > $1.timestamp }
+    }
+
     
     
 //    // MARK: - Queue Management
@@ -872,6 +898,7 @@ class LoopManager: ObservableObject {
 //                
 //                if index == loops.count - 1 {
 //                    completion()
+//                }
 //                }
 //            }
 //        }

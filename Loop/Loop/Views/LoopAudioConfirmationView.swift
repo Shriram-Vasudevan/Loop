@@ -59,7 +59,11 @@ struct LoopAudioConfirmationView: View {
                 .disabled(!isWaveformReady)
                 
                 if retryAttempts > 0 {
-                    Button(action: onRetry) {
+                    Button(action: {
+                        withAnimation {
+                            onRetry()
+                        }
+                    }) {
                         Text("try again")
                             .font(.system(size: 18, weight: .light))
                             .foregroundColor(accentColor)
@@ -103,8 +107,10 @@ struct WaveformView: View {
             // Calculate total animation duration
             let totalDuration = 0.5 + (Double(waveformData.count) * 0.02)
             // Call completion after animation
-            DispatchQueue.main.asyncAfter(deadline: .now() + totalDuration) {
-                onAnimationComplete()
+            DispatchQueue.main.asyncAfter(deadline: .now() + totalDuration + 0.5 ) {
+                withAnimation {
+                    onAnimationComplete()
+                }
             }
         }
     }

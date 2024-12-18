@@ -142,44 +142,52 @@ class AnalysisManager: ObservableObject {
     }
     
     func startAnalysis(_ loop: Loop, isPastLoop: Bool) async {
-        isAnalyzing = true
-        defer { isAnalyzing = false }
+        DispatchQueue.main.async {
+           self.isAnalyzing = true
+           self.analysisError = nil
+       }
         
         do {
             let analysis = try await analyzeLoop(loop)
             
-            await MainActor.run {
-                if isPastLoop {
-                    pastLoopAnalysis = analysis
-                    self.loopComparison = compareWithPastLoop()
-                } else {
-                    todaysLoops.append(analysis)
-                    if todaysLoops.count == 3 {
-                        print("reached three loops analyzed")
+            if isPastLoop {
+                pastLoopAnalysis = analysis
+                self.loopComparison = compareWithPastLoop()
+            } else {
+                todaysLoops.append(analysis)
+                if todaysLoops.count == 3 {
+                    print("reached three loops analyzed")
+                    
+                    Task {
+                        startAnalysisWithTimeout()
                         
-                        Task {
-                            startAnalysisWithTimeout()
-                            
-                            let dailyAnalysis = await createDailyAnalysis(todaysLoops)
-                            currentDailyAnalysis = dailyAnalysis
-                            
-                            allTimeComparison = statsManager.compareWithAllTimeStats(dailyAnalysis)
-                            monthlyComparison = statsManager.compareWithMonthlyStats(dailyAnalysis)
-                            weeklyComparison = statsManager.compareWithWeeklyStats(dailyAnalysis)
-                            
-                            statsManager.updateStats(with: dailyAnalysis)
-                            
-                            saveDailyStats()
-                            saveAnalysisCache()
-                        }
-                    }
-                    else {
+                        let dailyAnalysis = await createDailyAnalysis(todaysLoops)
+                        
+                        self.currentDailyAnalysis = dailyAnalysis
+                        
+                        allTimeComparison = statsManager.compareWithAllTimeStats(dailyAnalysis)
+                        monthlyComparison = statsManager.compareWithMonthlyStats(dailyAnalysis)
+                        weeklyComparison = statsManager.compareWithWeeklyStats(dailyAnalysis)
+                        
+                        statsManager.updateStats(with: dailyAnalysis)
+                        
+                        saveDailyStats()
                         saveAnalysisCache()
                     }
                 }
+                else {
+                    saveAnalysisCache()
+                }
+                
+                DispatchQueue.main.async {
+                    self.isAnalyzing = false
+                }
             }
         } catch {
-//            self.analysisError = AnalysisError.analysisFailure
+            DispatchQueue.main.async {
+                self.isAnalyzing = false
+            }
+            self.analysisError = AnalysisError.analysisFailure
         }
     }
     

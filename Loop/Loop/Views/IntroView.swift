@@ -19,7 +19,6 @@ struct OnboardingView: View {
     @State private var showInsights = false
     @State private var showStorageInfo = false
     @State private var userName = ""
-    @State private var reminderTime = Date()
     @State private var selectedPurposes: Set<String> = []
     @State private var backgroundOpacity = 0.0
     @State private var waveformData: [CGFloat] = Array(repeating: 0, count: 60)
@@ -28,6 +27,14 @@ struct OnboardingView: View {
     @State private var progress: CGFloat = 0.3
     @State private var showInitialPrompt = true
     @State private var contentOpacity: CGFloat = 0
+    
+    @State private var reminderTime: Date = {
+        var components = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+        components.hour = 21 // 9 PM
+        components.minute = 0
+        return Calendar.current.date(from: components) ?? Date()
+    }()
+
     
     @State private var recordingTimer: Timer?
     @State private var timeRemaining: Int = 30

@@ -316,6 +316,7 @@ struct RecordLoopsView: View {
                     HStack(spacing: 8) {
                         Text("continue")
                             .font(.system(size: 18, weight: .light))
+                            .disabled(true)
                         Image(systemName: "arrow.right")
                             .font(.system(size: 16, weight: .light))
                     }

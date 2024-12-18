@@ -52,15 +52,9 @@ struct InsightsView: View {
                         .offset(y: animateCards ? 0 : 20)
                         
                         if selectedTab == "today" {
-                            if analysisManager.todaysLoops.count == 3 {
-                                TodayInsightsContent(analysisManager: analysisManager, selectedFollowUp: $selectedFollowUp)
-                                    .opacity(animateCards ? 1 : 0)
-                                    .offset(y: animateCards ? 0 : 20)
-                            } else {
-                                Text("Complete Today's Loops for Analysis")
-                                    .font(.system(size: 17, weight: .regular))
-                                    .foregroundColor(textColor.opacity(0.7))
-                            }
+                            TodayInsightsContent(analysisManager: analysisManager, selectedFollowUp: $selectedFollowUp)
+                                .opacity(animateCards ? 1 : 0)
+                                .offset(y: animateCards ? 0 : 20)
                         } else {
                             TrendsInsightsView(analysisManager: analysisManager)
                         }
@@ -124,34 +118,7 @@ struct TodayInsightsContent: View {
     
     var body: some View {
         VStack(spacing: 32) {
-            if analysisManager.isAnalyzing {
-                VStack(spacing: 16) {
-                    Text("Preparing your insights")
-                        .font(.system(size: 17, weight: .medium))
-                        .foregroundColor(textColor)
-                    PulsingDots(accentColor: accentColor)
-                }
-                .padding(24)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-            }
-            else if analysisManager.todaysLoops.count == 0 {
-                Text("Record Loops to get insights!")
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundColor(textColor)
-                    .padding(.top, 24)
-            }
-            else if analysisManager.todaysLoops.count < 3 {
-                LoopProgress(
-                    completedLoops: analysisManager.todaysLoops.count,
-                    isAnalyzing: analysisManager.isAnalyzing,
-                    accentColor: accentColor,
-                    textColor: textColor
-                )
-            } else if let error = analysisManager.analysisError {
-                ErrorView(error: error, textColor: textColor)
-            } else if let analysis = analysisManager.currentDailyAnalysis {
-                
+            if let analysis = analysisManager.currentDailyAnalysis {
                 VStack (spacing: 16) {
                     aiAnalysisCard
                     
@@ -185,6 +152,33 @@ struct TodayInsightsContent: View {
                         loopConnectionsCard
                     }
                 }
+            }
+            else if analysisManager.isAnalyzing {
+                VStack(spacing: 16) {
+                    Text("Preparing your insights")
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundColor(textColor)
+                    PulsingDots(accentColor: accentColor)
+                }
+                .padding(24)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            else if analysisManager.todaysLoops.count == 0 {
+                Text("Record Loops to get insights!")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundColor(textColor)
+                    .padding(.top, 24)
+            }
+            else if analysisManager.todaysLoops.count < 3 {
+                LoopProgress(
+                    completedLoops: analysisManager.todaysLoops.count,
+                    isAnalyzing: analysisManager.isAnalyzing,
+                    accentColor: accentColor,
+                    textColor: textColor
+                )
+            } else if let error = analysisManager.analysisError {
+                ErrorView(error: error, textColor: textColor)
             }
         }
     }

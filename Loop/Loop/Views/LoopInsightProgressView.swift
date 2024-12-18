@@ -56,7 +56,7 @@ struct LoopProgress: View {
             }
             
             // Status text
-            Text(isAnalyzing ? "Analyzing your responses..." : "\(completedLoops)/3 loops completed")
+            Text(isAnalyzing ? "Analyzing your responses..." : "\(completedLoops)/3 loops completed analyzing")
                 .font(.system(size: 17, weight: .medium))
                 .foregroundColor(textColor)
                 .multilineTextAlignment(.center)
