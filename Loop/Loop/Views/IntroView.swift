@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SpriteKit
+import Speech
 
 struct OnboardingView: View {
     let onIntroCompletion: () -> Void
@@ -615,13 +616,29 @@ struct OnboardingView: View {
         }
     }
     
+    
+    
     private func saveUserPreferences() {
         UserDefaults.standard.set(userName, forKey: "userName")
         UserDefaults.standard.set(reminderTime, forKey: "reminderTime")
-        
         Task {
-            if await NotificationManager.shared.requestNotificationPermissions() {
+            // Request speech recognition authorization first
+            let speechStatus = await withCheckedContinuation { continuation in
+                SFSpeechRecognizer.requestAuthorization { status in
+                    continuation.resume(returning: status)
+                }
+            }
+            
+            // Then request notification permissions if needed
+            if speechStatus == .authorized {
+                if await NotificationManager.shared.requestNotificationPermissions() {
                     NotificationManager.shared.scheduleDailyReminder(at: reminderTime)
+                }
+            }
+            
+            // Complete onboarding regardless of permission status
+            DispatchQueue.main.async {
+                onIntroCompletion()
             }
         }
     }

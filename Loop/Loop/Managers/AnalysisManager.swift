@@ -63,44 +63,55 @@ class TextAnalyzer {
     }
 }
 
+enum TranscriptionError: Error {
+    case authorizationFailed
+    case recognizerUnavailable
+    case transcriptionFailed(String)
+}
+
 class AudioAnalyzer {
     static let shared = AudioAnalyzer()
     
     func transcribeAudio(url: URL) async throws -> String {
-        let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
-        guard let recognizer = recognizer else {
+        // First request authorization
+        let authStatus = try await withCheckedThrowingContinuation { continuation in
+            SFSpeechRecognizer.requestAuthorization { status in
+                continuation.resume(returning: status)
+            }
+        }
+        
+        print("Speech recognition authorization status after request: \(authStatus.rawValue)")
+        
+        guard authStatus == .authorized else {
+            print("Speech recognition not authorized: \(authStatus)")
             throw AnalysisError.transcriptionFailed
         }
         
-        // Create request and force on-device recognition
+        let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+        guard let recognizer = recognizer else {
+            print("Failed to create recognizer")
+            throw AnalysisError.transcriptionFailed
+        }
+        
         let request = SFSpeechURLRecognitionRequest(url: url)
         request.shouldReportPartialResults = false
-        request.requiresOnDeviceRecognition = true  // Force on-device recognition
         
-        // First try on-device
-        if recognizer.supportsOnDeviceRecognition {
-            return try await withCheckedThrowingContinuation { continuation in
-                recognizer.recognitionTask(with: request) { result, error in
-                    if let error = error {
-                        print("Speech recognition error: \(error)")
-                        continuation.resume(throwing: error)
-                    } else if let result = result, result.isFinal {
-                        continuation.resume(returning: result.bestTranscription.formattedString)
-                    }
+        print("Starting transcription for audio at: \(url)")
+        
+        return try await withCheckedThrowingContinuation { continuation in
+            let task = recognizer.recognitionTask(with: request) { result, error in
+                if let error = error {
+                    print("Transcription failed with error: \(error)")
+                    continuation.resume(throwing: error)
+                } else if let result = result, result.isFinal {
+                    print("Transcription succeeded")
+                    continuation.resume(returning: result.bestTranscription.formattedString)
                 }
             }
-        } else {
-            // Fallback to network recognition if on-device not available
-            request.requiresOnDeviceRecognition = false
-            return try await withCheckedThrowingContinuation { continuation in
-                recognizer.recognitionTask(with: request) { result, error in
-                    if let error = error {
-                        print("Speech recognition error: \(error)")
-                        continuation.resume(throwing: error)
-                    } else if let result = result, result.isFinal {
-                        continuation.resume(returning: result.bestTranscription.formattedString)
-                    }
-                }
+            
+            if task == nil {
+                print("Failed to create recognition task")
+                continuation.resume(throwing: AnalysisError.transcriptionFailed)
             }
         }
     }
