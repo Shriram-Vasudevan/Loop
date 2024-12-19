@@ -73,21 +73,12 @@ class AudioAnalyzer {
     static let shared = AudioAnalyzer()
     
     func transcribeAudio(url: URL) async throws -> String {
-        // First request authorization
-        let authStatus = try await withCheckedThrowingContinuation { continuation in
-            SFSpeechRecognizer.requestAuthorization { status in
-                continuation.resume(returning: status)
-            }
-        }
-        
-        print("Speech recognition authorization status after request: \(authStatus.rawValue)")
-        
-        guard authStatus == .authorized else {
-            print("Speech recognition not authorized: \(authStatus)")
-            throw AnalysisError.transcriptionFailed
-        }
+        let authStatus = SFSpeechRecognizer.authorizationStatus()
+        print("Speech recognition authorization status: \(authStatus.rawValue)")
         
         let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+        print("Recognizer exists: \(recognizer != nil)")
+        
         guard let recognizer = recognizer else {
             print("Failed to create recognizer")
             throw AnalysisError.transcriptionFailed
@@ -96,15 +87,27 @@ class AudioAnalyzer {
         let request = SFSpeechURLRecognitionRequest(url: url)
         request.shouldReportPartialResults = false
         
-        print("Starting transcription for audio at: \(url)")
+        // Check the audio file
+        let asset = AVURLAsset(url: url)
+        print("Audio URL: \(url)")
+        print("Audio file exists: \(FileManager.default.fileExists(atPath: url.path))")
+        print("Audio duration: \(CMTimeGetSeconds(asset.duration))")
+        
+        print("Starting transcription")
         
         return try await withCheckedThrowingContinuation { continuation in
+            // Create task
             let task = recognizer.recognitionTask(with: request) { result, error in
-                if let error = error {
-                    print("Transcription failed with error: \(error)")
+                if let error = error as NSError? {
+                    print("Transcription error:")
+                    print("Domain: \(error.domain)")
+                    print("Code: \(error.code)")
+                    print("Description: \(error.localizedDescription)")
+                    print("User Info: \(error.userInfo)")
+                    
                     continuation.resume(throwing: error)
                 } else if let result = result, result.isFinal {
-                    print("Transcription succeeded")
+                    print("Transcription completed successfully with text length: \(result.bestTranscription.formattedString.count)")
                     continuation.resume(returning: result.bestTranscription.formattedString)
                 }
             }
@@ -112,6 +115,8 @@ class AudioAnalyzer {
             if task == nil {
                 print("Failed to create recognition task")
                 continuation.resume(throwing: AnalysisError.transcriptionFailed)
+            } else {
+                print("Recognition task created successfully")
             }
         }
     }
