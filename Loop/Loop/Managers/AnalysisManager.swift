@@ -71,14 +71,38 @@ enum TranscriptionError: Error {
 
 class AudioAnalyzer {
     static let shared = AudioAnalyzer()
+    private let apiKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY"] ?? ""
     
     func transcribeAudio(url: URL) async throws -> String {
-        let authStatus = SFSpeechRecognizer.authorizationStatus()
-        print("Speech recognition authorization status: \(authStatus.rawValue)")
+        print("Starting transcription process...")
+        
+        // Try Apple's speech recognition first
+        do {
+            print("Attempting Apple Speech Recognition...")
+            return try await transcribeWithApple(url: url)
+        } catch {
+            print("Apple Speech Recognition failed with error: \(error)")
+            print("Falling back to Whisper API...")
+            return try await transcribeWithWhisper(url: url)
+        }
+    }
+    
+    private func transcribeWithApple(url: URL) async throws -> String {
+        // First request authorization
+        let authStatus = try await withCheckedThrowingContinuation { continuation in
+            SFSpeechRecognizer.requestAuthorization { status in
+                continuation.resume(returning: status)
+            }
+        }
+        
+        print("Speech recognition authorization status after request: \(authStatus.rawValue)")
+        
+        guard authStatus == .authorized else {
+            print("Speech recognition not authorized: \(authStatus)")
+            throw AnalysisError.transcriptionFailed
+        }
         
         let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
-        print("Recognizer exists: \(recognizer != nil)")
-        
         guard let recognizer = recognizer else {
             print("Failed to create recognizer")
             throw AnalysisError.transcriptionFailed
@@ -87,27 +111,15 @@ class AudioAnalyzer {
         let request = SFSpeechURLRecognitionRequest(url: url)
         request.shouldReportPartialResults = false
         
-        // Check the audio file
-        let asset = AVURLAsset(url: url)
-        print("Audio URL: \(url)")
-        print("Audio file exists: \(FileManager.default.fileExists(atPath: url.path))")
-        print("Audio duration: \(CMTimeGetSeconds(asset.duration))")
-        
-        print("Starting transcription")
+        print("Starting transcription for audio at: \(url)")
         
         return try await withCheckedThrowingContinuation { continuation in
-            // Create task
             let task = recognizer.recognitionTask(with: request) { result, error in
-                if let error = error as NSError? {
-                    print("Transcription error:")
-                    print("Domain: \(error.domain)")
-                    print("Code: \(error.code)")
-                    print("Description: \(error.localizedDescription)")
-                    print("User Info: \(error.userInfo)")
-                    
+                if let error = error {
+                    print("Transcription failed with error: \(error)")
                     continuation.resume(throwing: error)
                 } else if let result = result, result.isFinal {
-                    print("Transcription completed successfully with text length: \(result.bestTranscription.formattedString.count)")
+                    print("Transcription succeeded")
                     continuation.resume(returning: result.bestTranscription.formattedString)
                 }
             }
@@ -115,9 +127,72 @@ class AudioAnalyzer {
             if task == nil {
                 print("Failed to create recognition task")
                 continuation.resume(throwing: AnalysisError.transcriptionFailed)
-            } else {
-                print("Recognition task created successfully")
             }
+        }
+    }
+    
+    private func transcribeWithWhisper(url: URL) async throws -> String {
+        print("Preparing Whisper API request for: \(url)")
+        
+        guard !apiKey.isEmpty else {
+            print("Missing OpenAI API key")
+            throw AnalysisError.transcriptionFailed
+        }
+        
+        // Get audio data
+        print("Reading audio file data...")
+        let audioData = try Data(contentsOf: url)
+        print("Audio data size: \(audioData.count) bytes")
+        
+        // Create form data
+        let boundary = UUID().uuidString
+        print("Creating Whisper API request...")
+        
+        guard let apiUrl = URL(string: "https://api.openai.com/v1/audio/transcriptions") else {
+            print("❌ Failed to create Whisper API URL")
+            throw AnalysisError.transcriptionFailed
+        }
+
+        var request = URLRequest(url: apiUrl)
+        
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        
+        print("Creating multipart form data...")
+        var body = Data()
+        // Add model
+        body.append("--\(boundary)\r\n")
+        body.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n")
+        body.append("whisper-1\r\n")
+        
+        // Add audio file
+        body.append("--\(boundary)\r\n")
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"audio.m4a\"\r\n")
+        body.append("Content-Type: audio/m4a\r\n\r\n")
+        body.append(audioData)
+        body.append("\r\n")
+        
+        body.append("--\(boundary)--\r\n")
+        request.httpBody = body
+        
+        print("Sending request to Whisper API...")
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        if let httpResponse = response as? HTTPURLResponse {
+            print("Whisper API response status: \(httpResponse.statusCode)")
+        }
+        
+        do {
+            let result = try JSONDecoder().decode(WhisperResponse.self, from: data)
+            print("Successfully decoded Whisper response")
+            return result.text
+        } catch {
+            print("Failed to decode Whisper response: \(error)")
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("Raw response: \(responseString)")
+            }
+            throw AnalysisError.transcriptionFailed
         }
     }
     
@@ -127,6 +202,17 @@ class AudioAnalyzer {
     }
 }
 
+struct WhisperResponse: Codable {
+    let text: String
+}
+
+extension Data {
+    mutating func append(_ string: String) {
+        if let data = string.data(using: .utf8) {
+            append(data)
+        }
+    }
+}
 
 class AnalysisManager: ObservableObject {
     static let shared = AnalysisManager()

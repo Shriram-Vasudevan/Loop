@@ -105,6 +105,7 @@ enum AnalysisError: Error {
     case analysisFailure
     case aiAnalysisFailed
     case invalidData
+    case missingFields(fields: [String])
 }
 
 struct MetricComparison: Codable {

@@ -408,6 +408,7 @@
 			mainGroup = 99A0C8E42CA9EF2400F9281A;
 			packageReferences = (
 				9988DBA42CDADE37005628DE /* XCRemoteSwiftPackageReference "PhoneNumberKit" */,
+				99CCFBC32D1509BF00DA8A55 /* XCRemoteSwiftPackageReference "whisperkit" */,
 			);
 			productRefGroup = 99A0C8EE2CA9EF2400F9281A /* Products */;
 			projectDirPath = "";
@@ -743,6 +744,14 @@
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 4.0.0;
+			};
+		};
+		99CCFBC32D1509BF00DA8A55 /* XCRemoteSwiftPackageReference "whisperkit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/argmaxinc/whisperkit";
+			requirement = {
+				branch = main;
+				kind = branch;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

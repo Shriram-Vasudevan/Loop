@@ -40,6 +40,8 @@ enum AnalysisState {
                 return "Analysis incomplete. Some results may be unavailable."
             case .invalidData:
                 return "Invalid data. Please contact us if the issue persists."
+            case .missingFields(fields: let fields):
+                return  "AI analysis unavailable. Other insights are still viewable."
             }
         }
     }

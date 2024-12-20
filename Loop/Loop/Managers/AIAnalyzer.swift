@@ -22,16 +22,16 @@ class AIAnalyzer {
         
         let prompt = """
         analyze these 3 responses:
-
+        
         response 1:
         \(responses[0])
-
+        
         response 2:
         \(responses[1])
-
+        
         response 3:
         \(responses[2])
-
+        
         1. feeling: [use a specific adjective to describe the tone or emotion of the response]
         2. description: [explain the feeling in 2-3 short-medium sentences, addressing the user directly in the second person ("your response conveys..."). provide insight into the tone and its possible implications.]
         3. tense: [past/present/future]
@@ -43,7 +43,7 @@ class AIAnalyzer {
         9. description: [in 1 short sentence (under 15 words), explain whether the response emphasizes solving problems or dwelling on them, and how this focus affects its tone or direction.]
         10. follow-up: [generate a thoughtful and specific question related to the feeling described in 1. avoid mentioning personal details directly but instead generalize the idea to encourage broader reflection (e.g., if the response mentions liking a specific person, ask about what they value in people overall).]
         """
-
+        
         
         let requestBody: [String: Any] = [
             "model": "gpt-4o-mini",
@@ -88,74 +88,100 @@ class AIAnalyzer {
         var actionReflectionDescription: String?
         var solutionFocus: String?
         var solutionFocusDescription: String?
+
+        print("Raw AI Response:")
+        print(response)
         
         var currentSection = ""
         
-        for line in lines {
-            let lowercasedLine = line.lowercased()
+        for (index, line) in lines.enumerated() {
+            print("Processing line \(index): \(line)")
+            
+            let lowercasedLine = line.lowercased().trimmingCharacters(in: .whitespaces)
+
+            func extractContent(from line: String, prefix: String) -> String {
+                if let range = line.range(of: prefix, options: .caseInsensitive) {
+                    return String(line[range.upperBound...]).trimmingCharacters(in: .whitespaces)
+                }
+                return line.trimmingCharacters(in: .whitespaces)
+            }
             
             switch true {
-            case lowercasedLine.starts(with: "1. feeling:"):
+            case lowercasedLine.contains("1. feeling"):
                 currentSection = "feeling"
-                feeling = line.replacing("1. feeling:", with: "").trimmingCharacters(in: .whitespaces)
-            case lowercasedLine.starts(with: "2. description:") && currentSection == "feeling":
-                feelingDescription = line.replacing("2. description:", with: "").trimmingCharacters(in: .whitespaces)
-            case lowercasedLine.starts(with: "3. tense:"):
+                feeling = extractContent(from: line, prefix: "1. feeling:")
+            case lowercasedLine.contains("2. description") && currentSection == "feeling":
+                feelingDescription = extractContent(from: line, prefix: "2. description:")
+            case lowercasedLine.contains("3. tense"):
                 currentSection = "tense"
-                tense = line.replacing("3. tense:", with: "").trimmingCharacters(in: .whitespaces)
-            case lowercasedLine.starts(with: "4. description:") && currentSection == "tense":
-                tenseDescription = line.replacing("4. description:", with: "").trimmingCharacters(in: .whitespaces)
-            case lowercasedLine.starts(with: "5. self-references:"):
-                let countString = line.replacing("5. self-references:", with: "").trimmingCharacters(in: .whitespaces)
-                selfReferenceCount = Int(countString) ?? 0
-            case lowercasedLine.starts(with: "6. action-reflection:"):
+                tense = extractContent(from: line, prefix: "3. tense:")
+            case lowercasedLine.contains("4. description") && currentSection == "tense":
+                tenseDescription = extractContent(from: line, prefix: "4. description:")
+            case lowercasedLine.contains("5. self-references"):
+                let countString = extractContent(from: line, prefix: "5. self-references:")
+                selfReferenceCount = Int(countString.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()) ?? 0
+            case lowercasedLine.contains("6. action-reflection"):
                 currentSection = "action"
-                actionReflectionRatio = line.replacing("6. action-reflection:", with: "").trimmingCharacters(in: .whitespaces)
-            case lowercasedLine.starts(with: "7. description:") && currentSection == "action":
-                actionReflectionDescription = line.replacing("7. description:", with: "").trimmingCharacters(in: .whitespaces)
-            case lowercasedLine.starts(with: "8. solution-focus:"):
+                actionReflectionRatio = extractContent(from: line, prefix: "6. action-reflection:")
+            case lowercasedLine.contains("7. description") && currentSection == "action":
+                actionReflectionDescription = extractContent(from: line, prefix: "7. description:")
+            case lowercasedLine.contains("8. solution-focus"):
                 currentSection = "solution"
-                solutionFocus = line.replacing("8. solution-focus:", with: "").trimmingCharacters(in: .whitespaces)
-            case lowercasedLine.starts(with: "9. description:") && currentSection == "solution":
-                solutionFocusDescription = line.replacing("9. description:", with: "").trimmingCharacters(in: .whitespaces)
-            case lowercasedLine.starts(with: "10. follow-up:"):
-                followUp = line.replacing("10. follow-up:", with: "").trimmingCharacters(in: .whitespaces)
+                solutionFocus = extractContent(from: line, prefix: "8. solution-focus:")
+            case lowercasedLine.contains("9. description") && currentSection == "solution":
+                solutionFocusDescription = extractContent(from: line, prefix: "9. description:")
+            case lowercasedLine.contains("10. follow-up"):
+                followUp = extractContent(from: line, prefix: "10. follow-up:")
             default:
+                print("Unhandled line: \(line)")
                 continue
             }
         }
+
+        print("Parsed values:")
+        print("Feeling: \(feeling ?? "nil")")
+        print("Feeling Description: \(feelingDescription ?? "nil")")
+        print("Tense: \(tense ?? "nil")")
+        print("Tense Description: \(tenseDescription ?? "nil")")
+        print("Self Reference Count: \(selfReferenceCount ?? -1)")
+        print("Action Reflection Ratio: \(actionReflectionRatio ?? "nil")")
+        print("Action Reflection Description: \(actionReflectionDescription ?? "nil")")
+        print("Solution Focus: \(solutionFocus ?? "nil")")
+        print("Solution Focus Description: \(solutionFocusDescription ?? "nil")")
+        print("Follow Up: \(followUp ?? "nil")")
         
-        guard let feeling = feeling,
-              let feelingDescription = feelingDescription,
-              let tense = tense,
-              let tenseDescription = tenseDescription,
-              let selfReferenceCount = selfReferenceCount,
-              let followUp = followUp,
-              let actionReflectionRatio = actionReflectionRatio,
-              let actionReflectionDescription = actionReflectionDescription,
-              let solutionFocus = solutionFocus,
-              let solutionFocusDescription = solutionFocusDescription else {
-            throw AnalysisError.aiAnalysisFailed
+        var missingFields: [String] = []
+
+        if feeling == nil { missingFields.append("feeling") }
+        if feelingDescription == nil { missingFields.append("feelingDescription") }
+        if tense == nil { missingFields.append("tense") }
+        if tenseDescription == nil { missingFields.append("tenseDescription") }
+        if selfReferenceCount == nil { missingFields.append("selfReferenceCount") }
+        if actionReflectionRatio == nil { missingFields.append("actionReflectionRatio") }
+        if actionReflectionDescription == nil { missingFields.append("actionReflectionDescription") }
+        if solutionFocus == nil { missingFields.append("solutionFocus") }
+        if solutionFocusDescription == nil { missingFields.append("solutionFocusDescription") }
+        if followUp == nil { missingFields.append("followUp") }
+
+        if !missingFields.isEmpty {
+            throw AnalysisError.missingFields(fields: missingFields)
         }
         
-        print("parsed")
-        
         return AIAnalysisResult(
-            feeling: feeling,
-            feelingDescription: feelingDescription,
-            tense: tense,
-            tenseDescription: tenseDescription,
-            selfReferenceCount: selfReferenceCount,
-            followUp: followUp,
-            actionReflectionRatio: actionReflectionRatio,
-            actionReflectionDescription: actionReflectionDescription,
-            solutionFocus: solutionFocus,
-            solutionFocusDescription: solutionFocusDescription
+            feeling: feeling!,
+            feelingDescription: feelingDescription!,
+            tense: tense!,
+            tenseDescription: tenseDescription!,
+            selfReferenceCount: selfReferenceCount!,
+            followUp: followUp!,
+            actionReflectionRatio: actionReflectionRatio!,
+            actionReflectionDescription: actionReflectionDescription!,
+            solutionFocus: solutionFocus!,
+            solutionFocusDescription: solutionFocusDescription!
         )
     }
 }
 
-// Response models
 private struct OpenAIResponse: Codable {
     let choices: [Choice]
     
