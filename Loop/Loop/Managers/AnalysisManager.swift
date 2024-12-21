@@ -321,6 +321,10 @@ class AnalysisManager: ObservableObject {
                             self.saveDailyStats()
                             self.saveAnalysisCache()
                         }
+                        
+                        objectWillChange.send()
+
+                        
                     }
                 }
             }

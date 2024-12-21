@@ -257,6 +257,7 @@ class LoopCloudKitUtility {
 
             if let bestMatch = scoredLoops.first {
                 print("📈 Selected best matching loop - Score: \(bestMatch.1) - Prompt: \(bestMatch.0.promptText)")
+                try await updateLastRetrieved(for: bestMatch.0)
                 return bestMatch.0
             }
         }
@@ -323,10 +324,10 @@ class LoopCloudKitUtility {
         let currentDay = calendar.component(.day, from: now)
         if dayOfMonth == currentDay {
             if [3, 6, 9, 12].contains(monthsAgo) {
-                score += 0.2
+                score += 0.3
                 print("🎉 Significant anniversary: +0.2")
             } else {
-                score += 0.1
+                score += 0.15
                 print("📆 Monthly anniversary: +0.1")
             }
         }

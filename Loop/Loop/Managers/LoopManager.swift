@@ -300,7 +300,7 @@ class LoopManager: ObservableObject {
     }
     
     func getAlternativePrompts() -> [Prompt] {
-        guard currentPromptIndex > 0 else { return [] }
+        guard currentPromptIndex < 2 else { return [] }
         
         let currentPrompt = getCurrentPrompt()
         let currentCategory = getCategoryForPrompt(currentPrompt)

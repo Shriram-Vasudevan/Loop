@@ -326,13 +326,19 @@ struct TodayInsightsContent: View {
     private var tenseCard: some View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Time Perspective")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(textColor)
+                HStack {
+                    Text("Time Perspective")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(textColor)
+                    
+                    Spacer()
+                }
                 
-                Text("How you frame your experiences")
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundColor(textColor.opacity(0.6))
+                HStack {
+                    Text("How you frame your experiences")
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundColor(textColor.opacity(0.6))
+                }
             }
             
             HStack(alignment: .top, spacing: 24) {

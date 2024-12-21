@@ -201,7 +201,6 @@ class LoopLocalStorageUtility {
         
         print("🔍 Searching local storage between \(minDate) and \(maxDate)")
         
-        // First just get ANY loops in the date range
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "LoopEntity")
         fetchRequest.predicate = NSPredicate(
             format: "timestamp >= %@ AND timestamp <= %@",
@@ -212,12 +211,10 @@ class LoopLocalStorageUtility {
         let results = try context.fetch(fetchRequest)
         print("📊 Found \(results.count) total loops in date range")
         
-        // Convert to Loops
         let loops = results.compactMap { convertToLoop(from: $0) }
         print("🎯 Successfully converted \(loops.count) records to Loops")
         
         if !loops.isEmpty {
-            // Score and sort loops
             let scoredLoops = loops.map { loop -> (Loop, Double) in
                 let score = calculateLoopScore(
                     loop: loop,
@@ -234,7 +231,11 @@ class LoopLocalStorageUtility {
                 print("   Score: \(score) - Prompt: \(loop.promptText)")
             }
             
-            return scoredLoops.first { $0.1 >= 0.3 }?.0
+            if let bestMatch = scoredLoops.first, bestMatch.1 >= 0.3 {
+                // Update lastRetrieved after finding the best match
+                try updateLastRetrieved(for: bestMatch.0)
+                return bestMatch.0
+            }
         }
         
         print("❌ No loops found in date range")
@@ -380,6 +381,7 @@ class LoopLocalStorageUtility {
             )
             
             if let bestMatch = scoredLoops.first, bestMatch.1 >= 0.5 {
+                try updateLastRetrieved(for: bestMatch.0)
                 return bestMatch.0
             }
         }

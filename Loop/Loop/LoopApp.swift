@@ -10,6 +10,9 @@ import CloudKit
 
 @main
 struct LoopApp: App {
+    init() {
+        UIApplication.shared.windows.first?.overrideUserInterfaceStyle = .light
+    }
     
     var body: some Scene {
         WindowGroup {

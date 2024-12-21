@@ -23,6 +23,7 @@ class AudioManager: NSObject, ObservableObject, AVAudioRecorderDelegate {
     private var audioRecorder: AVAudioRecorder?
     private var audioPlayer: AVAudioPlayer?
     private var audioFilename: URL?
+    private var isSessionActive = false
     
     @Published var isRecording = false
     @Published var isPlaying = false
@@ -35,37 +36,83 @@ class AudioManager: NSObject, ObservableObject, AVAudioRecorderDelegate {
     // MARK: - Initialization
     override private init() {
         super.init()
-        setupAudioSession()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleInterruption),
+            name: AVAudioSession.interruptionNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleRouteChange),
+            name: AVAudioSession.routeChangeNotification,
+            object: nil
+        )
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     // MARK: - Audio Session Management
-    private func setupAudioSession() {
+    private func activateAudioSession(category: AVAudioSession.Category, mode: AVAudioSession.Mode = .default) {
+        guard !isSessionActive else { return }
+        
+        let session = AVAudioSession.sharedInstance()
+        
+        // First, make sure any existing session is properly deactivated
+        if session.isOtherAudioPlaying {
+            try? session.setActive(false, options: .notifyOthersOnDeactivation)
+        }
+        
+        // Reset the audio session to ensure clean state
+        try? session.setActive(false, options: [])
+        
         do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
-            try session.setActive(true)
+            // Configure the session
+            try session.setCategory(category, mode: mode, options: [.defaultToSpeaker, .allowBluetooth])
+            
+            // Activate with proper options
+            try session.setActive(true, options: [.notifyOthersOnDeactivation])
+            isSessionActive = true
         } catch {
-            print("Failed to setup audio session: \(error)")
+            print("Failed to activate audio session: \(error)")
+            // Reset state even if activation fails
+            isSessionActive = false
         }
     }
     
-    private func configureSessionForRecording() {
-        do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.record, mode: .default)
-            try session.setActive(true)
-        } catch {
-            print("Failed to configure session for recording: \(error)")
+    private func deactivateAudioSession() {
+        guard isSessionActive else { return }
+        
+        let session = AVAudioSession.sharedInstance()
+        
+        // Stop all audio activity first
+        audioPlayer?.stop()
+        audioRecorder?.stop()
+        
+        // Clean up timers
+        progressTimer?.invalidate()
+        recordingTimer?.invalidate()
+        
+        // Attempt deactivation multiple times if needed
+        for attempt in 1...3 {
+            do {
+                // Use proper deactivation options
+                try session.setActive(false, options: [.notifyOthersOnDeactivation])
+                isSessionActive = false
+                break
+            } catch {
+                print("Deactivation attempt \(attempt) failed: \(error)")
+                // Add a small delay before retrying
+                Thread.sleep(forTimeInterval: 0.1)
+            }
         }
-    }
-    
-    private func configureSessionForPlayback() {
-        do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playback, mode: .default)
-            try session.setActive(true)
-        } catch {
-            print("Failed to configure session for playback: \(error)")
+        
+        // If still active after attempts, force reset
+        if isSessionActive {
+            try? session.setActive(false, options: [.notifyOthersOnDeactivation])
+            isSessionActive = false
         }
     }
     
@@ -82,7 +129,7 @@ class AudioManager: NSObject, ObservableObject, AVAudioRecorderDelegate {
             throw AudioManagerError.fileAccessError
         }
         
-        configureSessionForRecording()
+        activateAudioSession(category: .record)
         
         let settings: [String: Any] = [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
@@ -118,8 +165,7 @@ class AudioManager: NSObject, ObservableObject, AVAudioRecorderDelegate {
         isRecording = false
         stopRecordingTimer()
         
-        // Reset audio session
-        setupAudioSession()
+        deactivateAudioSession()
     }
     
     // MARK: - Playback Methods
@@ -131,7 +177,7 @@ class AudioManager: NSObject, ObservableObject, AVAudioRecorderDelegate {
             throw AudioManagerError.fileAccessError
         }
         
-        configureSessionForPlayback()
+        activateAudioSession(category: .playback)
         
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: url)
@@ -153,6 +199,8 @@ class AudioManager: NSObject, ObservableObject, AVAudioRecorderDelegate {
     
     func resumePlayback() {
         guard let player = audioPlayer, !player.isPlaying else { return }
+        
+        activateAudioSession(category: .playback)
         player.play()
         isPlaying = true
         startProgressTimer()
@@ -199,16 +247,62 @@ class AudioManager: NSObject, ObservableObject, AVAudioRecorderDelegate {
         recordingTimer = nil
     }
     
+    // MARK: - Interruption Handling
+    @objc private func handleInterruption(notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
+            return
+        }
+        
+        switch type {
+        case .began:
+            // Stop all audio activity
+            stopPlayback()
+            stopRecording()
+        case .ended:
+            guard let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt else { return }
+            let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
+            
+            if options.contains(.shouldResume) {
+                // Only resume if we were previously active
+                if !isSessionActive {
+                    activateAudioSession(category: .playAndRecord)
+                }
+            }
+        @unknown default:
+            break
+        }
+    }
+    
+    // MARK: - Route Change Handling
+    @objc private func handleRouteChange(notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
+              let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
+            return
+        }
+        
+        switch reason {
+        case .oldDeviceUnavailable:
+            // Handle disconnection by stopping playback/recording
+            stopPlayback()
+            stopRecording()
+        case .newDeviceAvailable:
+            // Reactivate session if needed
+            if !isSessionActive {
+                activateAudioSession(category: .playAndRecord)
+            }
+        default:
+            break
+        }
+    }
+    
     // MARK: - Cleanup
     func cleanup() {
         stopRecording()
         stopPlayback()
-        
-        do {
-            try AVAudioSession.sharedInstance().setActive(false)
-        } catch {
-            print("Failed to deactivate audio session: \(error)")
-        }
+        deactivateAudioSession()
     }
     
     // MARK: - File Management

@@ -6,16 +6,19 @@
 //
 
 import Foundation
+import os.log
 
 class AIAnalyzer {
     static let shared = AIAnalyzer()
     
-    private let apiKey: String
     private let endpoint = "https://api.openai.com/v1/chat/completions"
     
-    init(apiKey: String = ProcessInfo.processInfo.environment["OPENAI_API_KEY"] ?? "") {
-        self.apiKey = apiKey
+    private let apiKey: String
+        
+    init() {
+        self.apiKey = ConfigurationKey.apiKey
     }
+    
     
     func analyzeResponses(_ responses: [String]) async throws -> AIAnalysisResult {
         print("analyzing")
@@ -31,6 +34,8 @@ class AIAnalyzer {
         
         response 3:
         \(responses[2])
+        
+        Respond in exactly the following format; no other text should be provided:
         
         1. feeling: [use a specific adjective to describe the tone or emotion of the response]
         2. description: [explain the feeling in 2-3 short-medium sentences, addressing the user directly in the second person ("your response conveys..."). provide insight into the tone and its possible implications.]
