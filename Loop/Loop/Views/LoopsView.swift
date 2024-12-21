@@ -369,7 +369,6 @@ struct MenuButton: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(MenuButtonStyle())
-        // This is the key modification - preventing tap gesture propagation
         .simultaneousGesture(TapGesture().onEnded { })
     }
 }
