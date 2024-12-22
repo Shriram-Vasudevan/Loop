@@ -1786,26 +1786,34 @@ struct ErrorView: View {
                 .font(.system(size: 32))
                 .foregroundColor(.orange)
             
-            Text(errorMessage)
-                .font(.system(size: 17, weight: .medium))
-                .foregroundColor(textColor)
-                .multilineTextAlignment(.center)
+            VStack(spacing: 8) {
+                Text("Error Occurred")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundColor(textColor)
+                
+                Text(getRawErrorMessage())
+                    .font(.system(size: 14))
+                    .foregroundColor(textColor.opacity(0.7))
+                    .multilineTextAlignment(.center)
+            }
         }
         .padding(24)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
     
-    private var errorMessage: String {
+    private func getRawErrorMessage() -> String {
         switch error {
-        case .aiAnalysisFailed:
-            return "AI analysis unavailable.\nYou can still view your other insights."
-        case .transcriptionFailed:
-            return "Some speech analysis failed.\nShowing available insights."
-        case .analysisFailure:
-            return "Analysis incomplete.\nShowing partial results."
-        default:
-            return "Something went wrong.\nShowing available insights."
+        case .transcriptionFailed(let message):
+            return "Transcription Error: \(message)"
+        case .analysisFailure(let underlyingError):
+            return String(describing: underlyingError)
+        case .aiAnalysisFailed(let apiError):
+            return "API Error: \(apiError)"
+        case .invalidData(let details):
+            return "Data Error: \(details)"
+        case .missingFields(let fields):
+            return "Missing fields: \(fields.joined(separator: ", "))"
         }
     }
 }

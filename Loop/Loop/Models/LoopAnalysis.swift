@@ -101,10 +101,10 @@ struct RangeAnalysis: Codable {
 }
 
 enum AnalysisError: Error {
-    case transcriptionFailed
-    case analysisFailure
-    case aiAnalysisFailed
-    case invalidData
+    case transcriptionFailed(String)
+    case aiAnalysisFailed(String)
+    case analysisFailure(Error)
+    case invalidData(String)
     case missingFields(fields: [String])
 }
 

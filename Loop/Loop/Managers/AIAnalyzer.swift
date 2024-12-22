@@ -75,7 +75,7 @@ class AIAnalyzer {
         let response = try JSONDecoder().decode(OpenAIResponse.self, from: data)
         
         guard let content = response.choices.first?.message.content else {
-            throw AnalysisError.aiAnalysisFailed
+            throw AnalysisError.aiAnalysisFailed("could not get ai message content")
         }
         
         return try parseAIResponse(content)

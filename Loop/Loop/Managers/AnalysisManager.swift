@@ -71,7 +71,12 @@ enum TranscriptionError: Error {
 
 class AudioAnalyzer {
     static let shared = AudioAnalyzer()
-    private let apiKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY"] ?? ""
+    
+    private let apiKey: String
+        
+    init() {
+        self.apiKey = ConfigurationKey.apiKey
+    }
     
     func transcribeAudio(url: URL) async throws -> String {
         print("Starting transcription process...")
@@ -99,13 +104,11 @@ class AudioAnalyzer {
         
         guard authStatus == .authorized else {
             print("Speech recognition not authorized: \(authStatus)")
-            throw AnalysisError.transcriptionFailed
+            throw AnalysisError.transcriptionFailed("Speech recognition not authorized: \(authStatus)")
         }
         
-        let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
-        guard let recognizer = recognizer else {
-            print("Failed to create recognizer")
-            throw AnalysisError.transcriptionFailed
+        guard let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US")) else {
+            throw AnalysisError.transcriptionFailed("Failed to create speech recognizer - device may not support en-US locale")
         }
         
         let request = SFSpeechURLRecognitionRequest(url: url)
@@ -116,17 +119,14 @@ class AudioAnalyzer {
         return try await withCheckedThrowingContinuation { continuation in
             let task = recognizer.recognitionTask(with: request) { result, error in
                 if let error = error {
-                    print("Transcription failed with error: \(error)")
-                    continuation.resume(throwing: error)
+                    continuation.resume(throwing: AnalysisError.transcriptionFailed("Speech recognition failed: \(error.localizedDescription)"))
                 } else if let result = result, result.isFinal {
-                    print("Transcription succeeded")
                     continuation.resume(returning: result.bestTranscription.formattedString)
                 }
             }
             
             if task == nil {
-                print("Failed to create recognition task")
-                continuation.resume(throwing: AnalysisError.transcriptionFailed)
+                continuation.resume(throwing: AnalysisError.transcriptionFailed("Failed to create recognition task"))
             }
         }
     }
@@ -135,8 +135,7 @@ class AudioAnalyzer {
         print("Preparing Whisper API request for: \(url)")
         
         guard !apiKey.isEmpty else {
-            print("Missing OpenAI API key")
-            throw AnalysisError.transcriptionFailed
+            throw AnalysisError.transcriptionFailed("Missing OpenAI API key")
         }
         
         // Get audio data
@@ -150,7 +149,7 @@ class AudioAnalyzer {
         
         guard let apiUrl = URL(string: "https://api.openai.com/v1/audio/transcriptions") else {
             print("❌ Failed to create Whisper API URL")
-            throw AnalysisError.transcriptionFailed
+            throw AnalysisError.transcriptionFailed("Failed to create Whisper API URL")
         }
 
         var request = URLRequest(url: apiUrl)
@@ -179,20 +178,23 @@ class AudioAnalyzer {
         print("Sending request to Whisper API...")
         let (data, response) = try await URLSession.shared.data(for: request)
         
-        if let httpResponse = response as? HTTPURLResponse {
-            print("Whisper API response status: \(httpResponse.statusCode)")
-        }
+        if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
+           if let responseString = String(data: data, encoding: .utf8) {
+               throw AnalysisError.transcriptionFailed("Whisper API error: Status \(httpResponse.statusCode), Response: \(responseString)")
+           } else {
+               throw AnalysisError.transcriptionFailed("Whisper API error: Status \(httpResponse.statusCode)")
+           }
+       }
         
         do {
             let result = try JSONDecoder().decode(WhisperResponse.self, from: data)
-            print("Successfully decoded Whisper response")
             return result.text
         } catch {
-            print("Failed to decode Whisper response: \(error)")
             if let responseString = String(data: data, encoding: .utf8) {
-                print("Raw response: \(responseString)")
+                throw AnalysisError.transcriptionFailed("Failed to decode Whisper response: \(error.localizedDescription), Raw response: \(responseString)")
+            } else {
+                throw AnalysisError.transcriptionFailed("Failed to decode Whisper response: \(error.localizedDescription)")
             }
-            throw AnalysisError.transcriptionFailed
         }
     }
     
@@ -334,7 +336,7 @@ class AnalysisManager: ObservableObject {
                 if let analysisError = error as? AnalysisError {
                     self.analysisState = .failed(analysisError)
                 } else {
-                    self.analysisState = .failed(.analysisFailure)
+                    self.analysisState = .failed(.analysisFailure(error))
                 }
             }
         }
@@ -343,7 +345,7 @@ class AnalysisManager: ObservableObject {
     
     func analyzeLoop(_ loop: Loop) async throws -> LoopAnalysis {
         guard let fileURL = loop.data.fileURL else {
-            throw AnalysisError.invalidData
+            throw AnalysisError.invalidData("Loop file URL is nil")
         }
         
         do {
@@ -381,8 +383,10 @@ class AnalysisManager: ObservableObject {
                 metrics: metrics,
                 wordAnalysis: wordAnalysis
             )
+        } catch let error as AnalysisError {
+            throw error
         } catch {
-            throw AnalysisError.invalidData
+            throw AnalysisError.invalidData("Failed to analyze loop: \(error.localizedDescription)")
         }
     }
     
@@ -402,7 +406,7 @@ class AnalysisManager: ObservableObject {
         
         if aiAnalysis == nil {
             DispatchQueue.main.async {
-                self.analysisState = .failed(.aiAnalysisFailed)
+                self.analysisState = .failed(.aiAnalysisFailed("Failed to get AI analysis"))
             }
         }
         
@@ -932,7 +936,8 @@ class AnalysisManager: ObservableObject {
     
     private func handleTimeout() {
         DispatchQueue.main.async {
-            self.analysisError = .analysisFailure
+            self.analysisState = .failed(.analysisFailure(NSError(domain: "LoopAnalysis", code: -1, userInfo: [NSLocalizedDescriptionKey: "Analysis timed out after 30 seconds - AI analysis could not be completed"])))
+            
             if let currentAnalysis = self.currentDailyAnalysis {
                 let fallbackAnalysis = DailyAnalysis(
                     date: currentAnalysis.date,

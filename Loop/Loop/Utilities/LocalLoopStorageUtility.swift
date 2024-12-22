@@ -65,49 +65,51 @@ class LoopLocalStorageUtility {
 
     // Modify addLoop function:
     func addLoop(loop: Loop) async {
-        guard let entity = NSEntityDescription.entity(forEntityName: "LoopEntity", in: context) else {
-            print("Failed to get LoopEntity")
-            return
-        }
-        
-        let loopEntity = NSManagedObject(entity: entity, insertInto: context)
-        
-        if let assetURL = loop.data.fileURL {
-            let fileExtension = loop.isVideo ? "mp4" : "m4a"
-            let fileName = "\(loop.id).\(fileExtension)"
-            let destinationURL = mediaDirectory.appendingPathComponent(fileName)
-            do {
-                if FileManager.default.fileExists(atPath: destinationURL.path) {
-                    try FileManager.default.removeItem(at: destinationURL)
-                }
-                try FileManager.default.copyItem(at: assetURL, to: destinationURL)
-                // Store just the filename instead of full path
-                loopEntity.setValue(fileName, forKey: "filePath")
-            } catch {
-                print("Failed to save media file: \(error.localizedDescription)")
+        await MainActor.run {
+            guard let entity = NSEntityDescription.entity(forEntityName: "LoopEntity", in: context) else {
+                print("Failed to get LoopEntity")
                 return
             }
-        }
-        
-        loopEntity.setValue(loop.id, forKey: "id")
-        loopEntity.setValue(loop.timestamp, forKey: "timestamp")
-        loopEntity.setValue(loop.lastRetrieved, forKey: "lastRetrieved")
-        loopEntity.setValue(loop.promptText, forKey: "promptText")
-        loopEntity.setValue(loop.category, forKey: "category")
-        loopEntity.setValue(loop.mood, forKey: "mood")
-        loopEntity.setValue(loop.freeResponse, forKey: "freeResponse")
-        loopEntity.setValue(loop.isVideo, forKey: "isVideo")
-        loopEntity.setValue(loop.isDailyLoop, forKey: "isDailyLoop")
-        loopEntity.setValue(loop.isFollowUp, forKey: "isFollowUp")
-        
-        do {
-            try context.save()
-            print("Loop saved successfully to local storage")
-        } catch {
-            print("Failed to save loop: \(error.localizedDescription)")
+            
+            let loopEntity = NSManagedObject(entity: entity, insertInto: context)
+            
+            // File operations can be done outside MainActor
+            if let assetURL = loop.data.fileURL {
+                let fileExtension = loop.isVideo ? "mp4" : "m4a"
+                let fileName = "\(loop.id).\(fileExtension)"
+                let destinationURL = mediaDirectory.appendingPathComponent(fileName)
+                do {
+                    if FileManager.default.fileExists(atPath: destinationURL.path) {
+                        try FileManager.default.removeItem(at: destinationURL)
+                    }
+                    try FileManager.default.copyItem(at: assetURL, to: destinationURL)
+                    loopEntity.setValue(fileName, forKey: "filePath")
+                } catch {
+                    print("Failed to save media file: \(error.localizedDescription)")
+                    return
+                }
+            }
+            
+            loopEntity.setValue(loop.id, forKey: "id")
+            loopEntity.setValue(loop.timestamp, forKey: "timestamp")
+            loopEntity.setValue(loop.lastRetrieved, forKey: "lastRetrieved")
+            loopEntity.setValue(loop.promptText, forKey: "promptText")
+            loopEntity.setValue(loop.category, forKey: "category")
+            loopEntity.setValue(loop.mood, forKey: "mood")
+            loopEntity.setValue(loop.freeResponse, forKey: "freeResponse")
+            loopEntity.setValue(loop.isVideo, forKey: "isVideo")
+            loopEntity.setValue(loop.isDailyLoop, forKey: "isDailyLoop")
+            loopEntity.setValue(loop.isFollowUp, forKey: "isFollowUp")
+            
+            do {
+                try context.save()
+                print("Loop saved successfully to local storage")
+            } catch {
+                print("Failed to save loop: \(error.localizedDescription)")
+            }
         }
     }
-
+    
     private func convertToLoop(from entity: NSManagedObject) -> Loop? {
         guard let id = entity.value(forKey: "id") as? String,
                   let fileName = entity.value(forKey: "filePath") as? String,  // Now just getting filename
