@@ -75,6 +75,8 @@
 		99CCFBBE2D121F2400DA8A55 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CCFBBD2D121F2400DA8A55 /* EmptyStateView.swift */; };
 		99CCFBC02D122B0E00DA8A55 /* LoopInsightProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CCFBBF2D122B0E00DA8A55 /* LoopInsightProgressView.swift */; };
 		99CCFBC22D137A2100DA8A55 /* AnalysisState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CCFBC12D137A2100DA8A55 /* AnalysisState.swift */; };
+		99DC91B32D19C112002B9A89 /* LoopCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99DC91B22D19C112002B9A89 /* LoopCard.swift */; };
+		99DC91B52D19C59B002B9A89 /* AudioWaveform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99DC91B42D19C59A002B9A89 /* AudioWaveform.swift */; };
 		99F31CA72D0F2DA300330180 /* RecordFollowUpLoopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CA62D0F2DA300330180 /* RecordFollowUpLoopView.swift */; };
 		99F31CA92D0F31AF00330180 /* FollowUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CA82D0F31AF00330180 /* FollowUp.swift */; };
 		99F31CAB2D0F477500330180 /* Graph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CAA2D0F477500330180 /* Graph.swift */; };
@@ -177,6 +179,8 @@
 		99CCFBBD2D121F2400DA8A55 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		99CCFBBF2D122B0E00DA8A55 /* LoopInsightProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopInsightProgressView.swift; sourceTree = "<group>"; };
 		99CCFBC12D137A2100DA8A55 /* AnalysisState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisState.swift; sourceTree = "<group>"; };
+		99DC91B22D19C112002B9A89 /* LoopCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopCard.swift; sourceTree = "<group>"; };
+		99DC91B42D19C59A002B9A89 /* AudioWaveform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioWaveform.swift; sourceTree = "<group>"; };
 		99F31CA62D0F2DA300330180 /* RecordFollowUpLoopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordFollowUpLoopView.swift; sourceTree = "<group>"; };
 		99F31CA82D0F31AF00330180 /* FollowUp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FollowUp.swift; sourceTree = "<group>"; };
 		99F31CAA2D0F477500330180 /* Graph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Graph.swift; sourceTree = "<group>"; };
@@ -303,6 +307,8 @@
 				99CCFBBB2D10DF4300DA8A55 /* CleanGraphView.swift */,
 				99CCFBBD2D121F2400DA8A55 /* EmptyStateView.swift */,
 				99CCFBBF2D122B0E00DA8A55 /* LoopInsightProgressView.swift */,
+				99DC91B22D19C112002B9A89 /* LoopCard.swift */,
+				99DC91B42D19C59A002B9A89 /* AudioWaveform.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -456,6 +462,7 @@
 				99AC6DD62CDFFAFA00B0D0D6 /* LoopChatView.swift in Sources */,
 				990E4A8E2CB48BB9009F88A0 /* SplashScreen.swift in Sources */,
 				9953BDEA2CF25A7C00348AC3 /* MonthSummary.swift in Sources */,
+				99DC91B32D19C112002B9A89 /* LoopCard.swift in Sources */,
 				9915BAB52CE6AF8D00D3C44B /* DailyCheckinView.swift in Sources */,
 				9953BE0E2D07AD9700348AC3 /* TrendModels.swift in Sources */,
 				99AC6DD82CE0199800B0D0D6 /* FluidParticleBackground.swift in Sources */,
@@ -515,6 +522,7 @@
 				99CCFBBE2D121F2400DA8A55 /* EmptyStateView.swift in Sources */,
 				99F7F6FF2CAF8580009858AC /* Extensions.swift in Sources */,
 				99CCFBBA2D10DBAE00DA8A55 /* StatsManager.swift in Sources */,
+				99DC91B52D19C59B002B9A89 /* AudioWaveform.swift in Sources */,
 				99AC6DD42CDED81100B0D0D6 /* LoopsView.swift in Sources */,
 				990E4A8A2CB47FEE009F88A0 /* LaunchManager.swift in Sources */,
 				990E4A9C2CBDD1BB009F88A0 /* LoopVideoConfirmationView.swift in Sources */,

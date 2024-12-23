@@ -104,9 +104,7 @@ struct WaveformView: View {
         .frame(height: 70)
         .onAppear {
             showBars = true
-            // Calculate total animation duration
             let totalDuration = 0.5 + (Double(waveformData.count) * 0.02)
-            // Call completion after animation
             DispatchQueue.main.asyncAfter(deadline: .now() + totalDuration + 0.5 ) {
                 withAnimation {
                     onAnimationComplete()

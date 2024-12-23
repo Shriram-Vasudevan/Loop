@@ -249,106 +249,6 @@ struct DaySection: View {
     }
 }
 
-struct LoopCard: View {
-    let loop: Loop
-    let action: () -> Void
-    @State private var showDeleteConfirmation = false
-    @State private var isPressed = false
-    
-    // Colors
-    private let accentColor = Color(hex: "A28497")  // Purple
-    private let thematicColor = Color(hex: "84A297") // Green
-    private let followUpColor = Color(hex: "8497A2") // Blue
-    private let textColor = Color(hex: "2C3E50")
-    
-    private var cardAccentColor: Color {
-        if !loop.isDailyLoop && !loop.isFollowUp {
-            return thematicColor
-        } else if loop.isFollowUp {
-            return followUpColor
-        }
-        return accentColor
-    }
-    
-    var body: some View {
-        Button(action: {
-            withAnimation {
-                isPressed = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    isPressed = false
-                    action()
-                }
-            }
-        }) {
-            VStack(spacing: 16) {
-                // Header section
-                HStack(alignment: .center, spacing: 8) {
-                    // Time and badges
-                    HStack(spacing: 8) {
-                        Text(formatTime())
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(cardAccentColor)
-                        
-                        if !loop.isDailyLoop && !loop.isFollowUp {
-                            LoopTypeBadge(text: "thematic", color: thematicColor)
-                        } else if loop.isFollowUp {
-                            LoopTypeBadge(text: "follow up", color: followUpColor)
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    // Menu and waveform
-                    HStack(spacing: 16) {
-                        // Menu button wrapped in a view that prevents tap propagation
-                        MenuButton(
-                            showDeleteConfirmation: $showDeleteConfirmation,
-                            textColor: textColor
-                        )
-                        
-                        WaveformIndicator(color: cardAccentColor)
-                    }
-                }
-                
-                // Prompt text
-                Text(loop.promptText)
-                    .font(.system(size: 16, weight: .light))
-                    .foregroundColor(textColor)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                
-                // Audio waveform
-                HStack {
-                    AudioWaveform(color: cardAccentColor)
-                    Spacer()
-                }
-            }
-            .padding(20)
-            .background(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(.white)
-                    .shadow(color: Color.black.opacity(0.05), radius: 15)
-            )
-        }
-        .buttonStyle(CardButtonStyle(isPressed: isPressed))
-        .alert("Delete Loop", isPresented: $showDeleteConfirmation) {
-            Button("Cancel", role: .cancel) { }
-            Button("Delete", role: .destructive) {
-                Task {
-                    await LoopManager.shared.deleteLoop(withID: loop.id)
-                }
-            }
-        } message: {
-            Text("Are you sure you want to delete this loop? This action cannot be undone.")
-        }
-    }
-    
-    private func formatTime() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        return formatter.string(from: loop.timestamp)
-    }
-}
 
 struct MenuButton: View {
     @Binding var showDeleteConfirmation: Bool
@@ -418,10 +318,9 @@ struct MonthsGridView: View {
     @ObservedObject private var loopManager = LoopManager.shared
     @Binding var selectedMonthId: MonthIdentifier?
     
-    private let columns = [
-        GridItem(.flexible(), spacing: 16),
-        GridItem(.flexible(), spacing: 16)
-    ]
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    private let backgroundColor = Color(hex: "FAFBFC")
     
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -432,10 +331,30 @@ struct MonthsGridView: View {
                     systemImage: "calendar"
                 )
             } else {
-                LazyVGrid(columns: columns, spacing: 16) {
-                    ForEach(loopManager.activeMonths, id: \.self) { monthId in
+                VStack(spacing: 24) {
+                    yearSections
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
+                .padding(.top, 10)
+            }
+        }
+    }
+    
+    private var yearSections: some View {
+        let groupedByYear = Dictionary(grouping: loopManager.activeMonths) { $0.year }
+        return ForEach(groupedByYear.keys.sorted().reversed(), id: \.self) { year in
+            VStack(alignment: .leading, spacing: 8) {
+                Text(String(year))
+                    .font(.system(size: 45))
+                    .fontWeight(.bold)
+                    .foregroundColor(textColor.opacity(0.8))
+                    .padding(.leading, 8)
+                
+                VStack(spacing: 20) {
+                    ForEach(groupedByYear[year]?.sorted(by: { $0.month > $1.month }) ?? [], id: \.self) { monthId in
                         MonthCard(monthId: monthId) {
-                            withAnimation {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                                 selectedMonthId = monthId
                                 Task {
                                     await loopManager.loadMonthData(monthId: monthId)
@@ -444,65 +363,102 @@ struct MonthsGridView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 16)
             }
         }
     }
 }
-
 struct MonthCard: View {
     let monthId: MonthIdentifier
+    let onTap: () -> Void
+    
     @State private var summary: MonthSummary?
-    @State private var backgroundOpacity: Double = 0
+    @State private var isHovered = false
     
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
     
-    let onTap: () -> Void
-    
     var body: some View {
-        ZStack(alignment: .leading) {
-            if let summary = summary {
-                Text("\(summary.totalEntries)")
-                    .font(.system(size: 120, weight: .bold))
-                    .foregroundColor(Color(hex: "F0F0F0"))
-                    .offset(x: 10, y: -5)
-                    .opacity(backgroundOpacity)
-            }
-            
-            VStack(alignment: .leading, spacing: 8) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(monthName)
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(textColor)
-                    
-                    Text(String(monthId.year))
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(textColor.opacity(0.6))
+        Button(action: onTap) {
+            HStack {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Header Section
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(monthName)
+                                .font(.system(size: 28))
+                                .fontWeight(.bold)
+                                .foregroundColor(textColor)
+                            
+                            if let summary = summary {
+                                Text("\(summary.totalEntries) memories")
+                                    .font(.system(size: 18))
+                                    .fontWeight(.medium)
+                                    .foregroundColor(accentColor)
+                            }
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right.circle.fill")
+                            .imageScale(.large)
+                            .fontWeight(.semibold)
+                            .foregroundColor(accentColor)
+
+                    }
                 }
-                
-                if let summary = summary {
-                    Text("\(summary.totalEntries) memories")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(accentColor)
-                }
+                .padding(24)
             }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color.white)
+                    .shadow(color: Color.black.opacity(0.05), radius: 15, x: 0, y: 5)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .strokeBorder(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                accentColor.opacity(0.2),
+                                accentColor.opacity(0.05)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            )
         }
-        .frame(height: 120)
-        .background(
-            RoundedRectangle(cornerRadius: 24)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.05), radius: 12, x: 0, y: 6)
-        )
+        .buttonStyle(PlainButtonStyle())
+        .onHover { isHovered = $0 }
         .task {
             await loadSummary()
         }
-        .onTapGesture {
-            onTap()
+    }
+    
+    private func statView(icon: String, value: Int, label: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .imageScale(.medium)
+                .foregroundColor(accentColor)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(value)")
+                    .font(.system(size: 16))
+                    .fontWeight(.semibold)
+                    .foregroundColor(textColor)
+                
+                Text(label)
+                    .font(.system(size: 14))
+                    .fontWeight(.medium)
+                    .foregroundColor(textColor.opacity(0.6))
+            }
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(accentColor.opacity(0.05))
+        )
     }
     
     private var monthName: String {
@@ -520,9 +476,6 @@ struct MonthCard: View {
     private func loadSummary() async {
         do {
             summary = try await LoopCloudKitUtility.fetchMonthData(monthId: monthId)
-            withAnimation(.easeOut(duration: 0.8)) {
-                backgroundOpacity = 1
-            }
         } catch {
             print("Error loading month summary: \(error)")
         }
@@ -535,40 +488,144 @@ struct MonthDetailView: View {
     let onBack: () -> Void
     @ObservedObject private var loopManager = LoopManager.shared
     @State private var selectedLoop: Loop?
+    @State private var scrollOffset: CGFloat = 0
     
     private let textColor = Color(hex: "2C3E50")
     private let accentColor = Color(hex: "A28497")
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            Button(action: onBack) {
-                HStack(spacing: 8) {
-                    Image(systemName: "chevron.left")
-                    Text("Back")
-                }
-                .foregroundColor(accentColor)
+        ZStack {
+            // Decorative background elements
+            VStack {
+                Circle()
+                    .fill(accentColor.opacity(0.05))
+                    .frame(width: 300, height: 300)
+                    .offset(x: -100, y: -100)
+                    .blur(radius: 60)
+                Spacer()
             }
             
-            if let summary = loopManager.selectedMonthSummary {
-                ScrollView {
-                    VStack(spacing: 24) {
-                        Text(monthTitle)
-                            .font(.system(size: 32, weight: .light))
-                            .foregroundColor(textColor)
-                        
-                        ForEach(groupedLoops(summary.loops), id: \.0) { date, loops in
-                            DaySection(date: date, loops: loops, selectedLoop: $selectedLoop)
-                        }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    headerSection
+                        .padding(.horizontal, 24)
+                        .padding(.top, 16)
+                        .padding(.bottom, 32)
+                    
+                    if let summary = loopManager.selectedMonthSummary {
+                        loopsSection(summary)
+                    } else {
+                        loadingView
                     }
                 }
-            } else {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .overlay(
+                GeometryReader { proxy in
+                    Color.clear.preference(
+                        key: ScrollOffsetPreferenceKey.self,
+                        value: proxy.frame(in: .named("scroll")).minY
+                    )
+                }
+            )
+            .onPreferenceChange(ScrollOffsetPreferenceKey.self) { offset in
+                scrollOffset = offset
+            }
+            .coordinateSpace(name: "scroll")
         }
-        .padding(.horizontal, 24)
+        .navigationBarHidden(true)
         .fullScreenCover(item: $selectedLoop) { loop in
             ViewPastLoopView(loop: loop, isThroughRecordLoopsView: false)
         }
+    }
+    
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Button(action: onBack) {
+                HStack(spacing: 12) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 16, weight: .semibold))
+                    Text("Back")
+                        .font(.system(size: 16, weight: .medium))
+                }
+                .foregroundColor(accentColor)
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(accentColor.opacity(0.1))
+                )
+            }
+            .buttonStyle(SpringyButton())
+            
+            Text(monthTitle)
+                .font(.system(size: 40))
+                .fontWeight(.bold)
+                .foregroundColor(textColor)
+                .opacity(max(0, min(1.0, 1.0 + (scrollOffset / 500))))
+
+        }
+        .background(Color.white.opacity(scrollOffset < 0 ? 1 : 0))
+    }
+    
+    private func monthSummarySection(_ summary: MonthSummary) -> some View {
+        HStack(spacing: 20) {
+            statisticCard(
+                title: "Total Entries",
+                value: "\(summary.loops.count)",
+                icon: "doc.text.fill"
+            )
+            
+            statisticCard(
+                title: "Active Days",
+                value: "\(Set(summary.loops.map { Calendar.current.startOfDay(for: $0.timestamp) }).count)",
+                icon: "calendar"
+            )
+        }
+    }
+    
+    private func statisticCard(title: String, value: String, icon: String) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 18))
+                    .foregroundColor(accentColor)
+                
+                Text(title)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(textColor.opacity(0.6))
+            }
+            
+            Text(value)
+                .font(.system(size: 32, weight: .bold))
+                .foregroundColor(textColor)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.white)
+                .shadow(color: Color.black.opacity(0.05), radius: 15, x: 0, y: 5)
+        )
+    }
+    
+    private func loopsSection(_ summary: MonthSummary) -> some View {
+        VStack(spacing: 32) {
+            ForEach(groupedLoops(summary.loops), id: \.0) { date, loops in
+                DaySection(date: date, loops: loops, selectedLoop: $selectedLoop)
+            }
+        }
+        .padding(.horizontal, 24)
+    }
+    
+    private var loadingView: some View {
+        VStack(spacing: 20) {
+            ProgressView()
+                .scaleEffect(1.5)
+            Text("Loading entries...")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(textColor.opacity(0.6))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.top, 100)
     }
     
     private var monthTitle: String {
@@ -590,7 +647,6 @@ struct MonthDetailView: View {
         return grouped.sorted { $0.key > $1.key }
     }
 }
-
 struct WaveformIndicator: View {
     let color: Color
     @State private var isAnimating = false
@@ -614,27 +670,6 @@ struct WaveformIndicator: View {
     
     private func getHeight(for index: Int) -> CGFloat {
         isAnimating ? [8, 16, 8][index] : 12
-    }
-}
-
-struct AudioWaveform: View {
-    let color: Color
-    @State private var waveformData: [CGFloat] = []
-    
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(0..<40, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 1)
-                    .fill(color.opacity(0.3))
-                    .frame(width: 2, height: waveformData[safe: index] ?? 12)
-            }
-        }
-        .frame(height: 32)
-        .onAppear {
-            waveformData = (0..<40).map { _ in
-                CGFloat.random(in: 4...32)
-            }
-        }
     }
 }
 
@@ -733,6 +768,13 @@ struct SpringyButton: ButtonStyle {
 extension Collection {
     subscript(safe index: Index) -> Element? {
         indices.contains(index) ? self[index] : nil
+    }
+}
+
+struct ScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
 
