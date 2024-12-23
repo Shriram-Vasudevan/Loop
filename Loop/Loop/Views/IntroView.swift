@@ -903,11 +903,13 @@ struct PromptsView: View {
     
     private func completeRecording() {
         if let audioFileURL = audioManager.getRecordedAudioFile() {
-            let loop = loopManager.addLoop(
-                mediaURL: audioFileURL,
-                isVideo: false,
-                prompt: "What made you smile today?", isDailyLoop: true, isFollowUp: false
-            )
+            Task {
+                let loop = await loopManager.addLoop(
+                    mediaURL: audioFileURL,
+                    isVideo: false,
+                    prompt: "What made you smile today?", isDailyLoop: true, isFollowUp: false
+                )
+            }
         }
     }
 

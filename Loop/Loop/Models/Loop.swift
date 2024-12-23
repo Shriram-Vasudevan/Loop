@@ -14,12 +14,13 @@ struct Loop: Hashable, Identifiable {
     var timestamp: Date
     var lastRetrieved: Date?
     var promptText: String
-    var category: String  // Just store as string
-    var mood: String?
+    var category: String
+    var transcript: String?
     var freeResponse: Bool
     var isVideo: Bool
     var isDailyLoop: Bool
     var isFollowUp: Bool
+    var mood: String?
     
     static func from(record: CKRecord) -> Loop? {
         guard let id = record["ID"] as? String,
@@ -37,10 +38,10 @@ struct Loop: Hashable, Identifiable {
             lastRetrieved: record["LastRetrieved"] as? Date,
             promptText: promptText,
             category: record["Category"] as? String ?? "Share Anything", // Default to freeform
-            mood: record["Mood"] as? String,
+            transcript: record["Transcript"] as? String,
             freeResponse: record["FreeResponse"] as? Bool ?? false,
             isVideo: record["IsVideo"] as? Bool ?? false,
-            isDailyLoop: record["IsDailyLoop"] as? Bool ?? false, isFollowUp: record["isFollowUp"] as? Bool ?? false
+            isDailyLoop: record["IsDailyLoop"] as? Bool ?? false, isFollowUp: record["isFollowUp"] as? Bool ?? false, mood: record["Mood"] as? String
         )
     }
 }

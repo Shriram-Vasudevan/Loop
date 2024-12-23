@@ -265,13 +265,15 @@ struct RecordFollowUpLoopView: View {
     
     private func completeRecording() {
         if let audioFileURL = audioManager.getRecordedAudioFile() {
-            let loop = loopManager.addLoop(
-                mediaURL: audioFileURL,
-                isVideo: false,
-                prompt: prompt,
-                isDailyLoop: false, isFollowUp: true
-            )
-            
+            Task {
+                let loop = await loopManager.addLoop(
+                    mediaURL: audioFileURL,
+                    isVideo: false,
+                    prompt: prompt,
+                    isDailyLoop: false, isFollowUp: true
+                )
+                
+            }
             AnalysisManager.shared.markFollowUpComplete()
             
             withAnimation {

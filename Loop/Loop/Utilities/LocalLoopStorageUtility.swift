@@ -27,10 +27,8 @@ class LoopLocalStorageUtility {
     }
     
     private lazy var persistentContainer: NSPersistentContainer = {
-        // Create the container first
         let container = NSPersistentContainer(name: "LoopData")
         
-        // Add persistent store options for migration support
         let options = [
             NSMigratePersistentStoresAutomaticallyOption: true,
             NSInferMappingModelAutomaticallyOption: true
@@ -38,21 +36,12 @@ class LoopLocalStorageUtility {
         
         container.loadPersistentStores { storeDescription, error in
             if let error = error as NSError? {
-                // Better error handling with specific error information
                 print("Persistent store failed to load: \(error.localizedDescription)")
                 print("Detailed error: \(error)")
                 print("Error user info: \(error.userInfo)")
-                
-                // If there's a serious store error, you might want to handle it gracefully
-                // For development, you could delete the store and try again:
-                /*
-                try? FileManager.default.removeItem(at: storeDescription.url!)
-                try? container.loadPersistentStores { /* handle retry */ }
-                */
             }
         }
-        
-        // Configure the context
+
         container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         container.viewContext.automaticallyMergesChangesFromParent = true
         
@@ -63,7 +52,6 @@ class LoopLocalStorageUtility {
         persistentContainer.viewContext
     }
 
-    // Modify addLoop function:
     func addLoop(loop: Loop) async {
         await MainActor.run {
             guard let entity = NSEntityDescription.entity(forEntityName: "LoopEntity", in: context) else {
@@ -73,7 +61,6 @@ class LoopLocalStorageUtility {
             
             let loopEntity = NSManagedObject(entity: entity, insertInto: context)
             
-            // File operations can be done outside MainActor
             if let assetURL = loop.data.fileURL {
                 let fileExtension = loop.isVideo ? "mp4" : "m4a"
                 let fileName = "\(loop.id).\(fileExtension)"
@@ -95,6 +82,7 @@ class LoopLocalStorageUtility {
             loopEntity.setValue(loop.lastRetrieved, forKey: "lastRetrieved")
             loopEntity.setValue(loop.promptText, forKey: "promptText")
             loopEntity.setValue(loop.category, forKey: "category")
+            loopEntity.setValue(loop.transcript, forKey: "transcript")
             loopEntity.setValue(loop.mood, forKey: "mood")
             loopEntity.setValue(loop.freeResponse, forKey: "freeResponse")
             loopEntity.setValue(loop.isVideo, forKey: "isVideo")
@@ -135,11 +123,12 @@ class LoopLocalStorageUtility {
             lastRetrieved: entity.value(forKey: "lastRetrieved") as? Date,
             promptText: promptText,
             category: category,
-            mood: entity.value(forKey: "mood") as? String,
+            transcript: entity.value(forKey: "transcript") as? String,
             freeResponse: entity.value(forKey: "freeResponse") as? Bool ?? false,
             isVideo: entity.value(forKey: "isVideo") as? Bool ?? false,
             isDailyLoop: entity.value(forKey: "isDailyLoop") as? Bool ?? false, 
-            isFollowUp: entity.value(forKey: "isFollowUp") as? Bool ?? false
+            isFollowUp: entity.value(forKey: "isFollowUp") as? Bool ?? false,
+            mood: entity.value(forKey: "mood") as? String
         )
     }
     

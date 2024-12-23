@@ -93,7 +93,6 @@ class AudioAnalyzer {
     }
     
     private func transcribeWithApple(url: URL) async throws -> String {
-        // First request authorization
         let authStatus = try await withCheckedThrowingContinuation { continuation in
             SFSpeechRecognizer.requestAuthorization { status in
                 continuation.resume(returning: status)

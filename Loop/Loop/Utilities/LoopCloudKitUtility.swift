@@ -136,9 +136,10 @@ class LoopCloudKitUtility {
         loopRecord["LastRetrieved"] = loop.lastRetrieved as CKRecordValue?
         loopRecord["Prompt"] = loop.promptText as CKRecordValue
         loopRecord["Category"] = loop.category as CKRecordValue
-        loopRecord["Mood"] = loop.mood as CKRecordValue?
+        loopRecord["Transcript"] = loop.transcript as CKRecordValue?
         loopRecord["FreeResponse"] = loop.freeResponse as CKRecordValue
         loopRecord["IsDailyLoop"] = loop.isDailyLoop as CKRecordValue
+        loopRecord["Mood"] = loop.mood as CKRecordValue?
         
         privateUserDB.save(loopRecord) { record, error in
             if let error = error {

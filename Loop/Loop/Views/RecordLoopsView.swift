@@ -485,13 +485,13 @@ struct RecordLoopsView: View {
     
     private func completeRecording() {
         if let audioFileURL = audioManager.getRecordedAudioFile() {
-            let loop = loopManager.addLoop(
-                mediaURL: audioFileURL,
-                isVideo: false,
-                prompt: loopManager.getCurrentPrompt(), isDailyLoop: true, isFollowUp: false
-            )
-            
             Task {
+                let loop = await loopManager.addLoop(
+                    mediaURL: audioFileURL,
+                    isVideo: false,
+                    prompt: loopManager.getCurrentPrompt(), isDailyLoop: true, isFollowUp: false
+                )
+                
                 do {
                      try await analysisManager.startAnalysis(loop, isPastLoop: false)
                 } catch {

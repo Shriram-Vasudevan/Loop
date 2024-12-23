@@ -700,12 +700,20 @@ class LoopManager: ObservableObject {
 //        })
 //    }
     
-    func addLoop(mediaURL: URL, isVideo: Bool, prompt: String, mood: String? = nil, freeResponse: Bool = false, isDailyLoop: Bool, isFollowUp: Bool) -> Loop {
+    func addLoop(mediaURL: URL, isVideo: Bool, prompt: String, mood: String? = nil, freeResponse: Bool = false, isDailyLoop: Bool, isFollowUp: Bool) async -> Loop {
         let loopID = UUID().uuidString
         let timestamp = Date()
         let ckAsset = CKAsset(fileURL: mediaURL)
-
         let category = getCategoryForPrompt(prompt)?.rawValue ?? "Share Anything"
+        
+        var transcript: String = ""
+        if !isVideo {
+            do {
+                transcript = try await AudioAnalyzer.shared.transcribeAudio(url: mediaURL)
+            } catch {
+                print("Transcription failed: \(error)")
+            }
+        }
 
         let loop = Loop(
             id: loopID,
@@ -714,7 +722,7 @@ class LoopManager: ObservableObject {
             lastRetrieved: timestamp,
             promptText: prompt,
             category: category,
-            mood: mood,
+            transcript: transcript,
             freeResponse: freeResponse,
             isVideo: isVideo,
             isDailyLoop: isDailyLoop,
@@ -722,29 +730,31 @@ class LoopManager: ObservableObject {
         )
 
         // Add the loop to loopsByDate (check for duplicates)
-        let loopDate = Calendar.current.startOfDay(for: timestamp) // Normalize to day
-        if var existingLoops = loopsByDate[loopDate] {
-            if !existingLoops.contains(where: { $0.id == loop.id }) {
-                existingLoops.append(loop)
-                loopsByDate[loopDate] = existingLoops.sorted { $0.timestamp > $1.timestamp }
+        let loopDate = Calendar.current.startOfDay(for: timestamp)
+        await MainActor.run {
+            if var existingLoops = loopsByDate[loopDate] {
+                if !existingLoops.contains(where: { $0.id == loop.id }) {
+                    existingLoops.append(loop)
+                    loopsByDate[loopDate] = existingLoops.sorted { $0.timestamp > $1.timestamp }
+                }
+            } else {
+                loopsByDate[loopDate] = [loop]
             }
-        } else {
-            loopsByDate[loopDate] = [loop]
-        }
 
-        // Ensure the date is in recentDates
-        if !recentDates.contains(loopDate) {
-            recentDates.append(loopDate)
-            recentDates.sort(by: >) // Ensure sorted
+            // Ensure the date is in recentDates
+            if !recentDates.contains(loopDate) {
+                recentDates.append(loopDate)
+                recentDates.sort(by: >)
+            }
         }
 
         // Save based on iCloud backup setting
         if UserDefaults.standard.bool(forKey: "iCloudBackupEnabled") {
-            LoopCloudKitUtility.addLoop(loop: loop)
-        } else {
             Task {
-                await localStorage.addLoop(loop: loop)
+                await LoopCloudKitUtility.addLoop(loop: loop)
             }
+        } else {
+            await localStorage.addLoop(loop: loop)
         }
 
         return loop
@@ -916,7 +926,7 @@ class LoopManager: ObservableObject {
                 "timestamp": loop.timestamp.timeIntervalSince1970,
                 "promptText": loop.promptText,
                 "category": getCategoryForPrompt(loop.promptText)?.rawValue ?? "Share Anything",
-                "mood": loop.mood ?? "",
+                "transcript": loop.transcript ?? "",
                 "freeResponse": loop.freeResponse,
                 "isVideo": loop.isVideo,
                 "assetURLString": loop.data.fileURL?.absoluteString ?? "",

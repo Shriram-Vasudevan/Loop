@@ -142,3 +142,18 @@ extension TrendDirection {
         }
     }
 }
+
+extension Color {
+    func adjustedHue(by amount: Double) -> Color {
+        var hue: CGFloat = 0
+        var saturation: CGFloat = 0
+        var brightness: CGFloat = 0
+        var alpha: CGFloat = 0
+        
+        UIColor(self).getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+        
+        return Color(hue: Double(hue) + amount / 360, saturation: Double(saturation), brightness: Double(brightness))
+    }
+}
+
+

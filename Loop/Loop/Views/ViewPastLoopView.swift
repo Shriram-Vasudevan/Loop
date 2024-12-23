@@ -18,6 +18,7 @@ struct ViewPastLoopView: View {
     @Environment(\.dismiss) var dismiss
     
     @State private var showInitialPrompt = true
+    @State private var showTranscript = false
     @State private var contentOpacity: CGFloat = 0
     @State private var waveformData: [CGFloat] = Array(repeating: 0, count: 60)
     @State private var showBars = false
@@ -37,6 +38,13 @@ struct ViewPastLoopView: View {
                 mainContentView
                     .safeAreaPadding(.horizontal, 24)
             }
+        }
+        .fullScreenCover(isPresented: $showTranscript) {
+            TranscriptView(
+                transcript: loop.transcript ?? "",
+                accentColor: accentColor,
+                isPresented: $showTranscript
+            )
         }
         .onAppear {
             setupInitialAnimation()
@@ -344,19 +352,6 @@ struct NewFlowingBackground: View {
     }
 }
 
-extension Color {
-    func adjustedHue(by amount: Double) -> Color {
-        var hue: CGFloat = 0
-        var saturation: CGFloat = 0
-        var brightness: CGFloat = 0
-        var alpha: CGFloat = 0
-        
-        UIColor(self).getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
-        
-        return Color(hue: Double(hue) + amount / 360, saturation: Double(saturation), brightness: Double(brightness))
-    }
-}
-
 struct WaveformSection: View {
     let waveformData: [CGFloat]
     let progress: CGFloat
@@ -408,7 +403,91 @@ struct WaveformBar: View {
             )
     }
 }
-//
-//#Preview {
-//    ViewPastLoopView(loop: Loop(id: "vvevwevwe", data: CKAsset(fileURL: URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("sampleFile.dat")), timestamp: Calendar.current.date(from: DateComponents(year: 2024, month: 9, day: 27))!, promptText: "What's a goal you're working towards?", freeResponse: false, isVideo: false, isDailyLoop: false))
-//}
+
+struct TranscriptButton: View {
+    let accentColor: Color
+    @Binding var showTranscript: Bool
+    
+    var body: some View {
+        Button(action: {
+            withAnimation {
+                showTranscript = true
+            }
+        }) {
+            HStack(spacing: 8) {
+                Image(systemName: "doc.text")
+                    .font(.system(size: 16))
+                Text("View Transcript")
+                    .font(.system(size: 16, weight: .medium))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(
+                Capsule()
+                    .fill(accentColor)
+                    .shadow(color: accentColor.opacity(0.3), radius: 8, y: 4)
+            )
+        }
+    }
+}
+
+struct TranscriptView: View {
+    let transcript: String
+    let accentColor: Color
+    @Binding var isPresented: Bool
+    
+    var body: some View {
+        ZStack {
+            Color(hex: "FAFBFC")
+                .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Text("Transcript")
+                        .font(.system(size: 24, weight: .light))
+                        .foregroundColor(Color(hex: "2C3E50"))
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            isPresented = false
+                        }
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(accentColor.opacity(0.8))
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
+                .padding(.bottom, 24)
+                
+                // Transcript content
+                ScrollView {
+                    Text(transcript.isEmpty ? "No transcript available" : transcript)
+                        .font(.system(size: 18, weight: .regular))
+                        .foregroundColor(Color(hex: "2C3E50"))
+                        .lineSpacing(8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(24)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.white)
+                                .shadow(color: Color.black.opacity(0.05), radius: 10, y: 5)
+                        )
+                        .padding(.horizontal, 24)
+                }
+            }
+            .padding(.vertical, 40)
+        }
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+}
+
+
+#Preview {
+    ViewPastLoopView(loop: Loop(id: "vvevwevwe", data: CKAsset(fileURL: URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("sampleFile.dat")), timestamp: Calendar.current.date(from: DateComponents(year: 2024, month: 9, day: 27))!, promptText: "What's a goal you're working towards?", category: "", transcript: "The transcript button uses the same accent color as the rest of the UI, and the transcript view maintains the app's clean, minimalist aesthetic while providing good readability for the transcript text.", freeResponse: false, isVideo: false, isDailyLoop: false, isFollowUp: false), isThroughRecordLoopsView: false)
+}
