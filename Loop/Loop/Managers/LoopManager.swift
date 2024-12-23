@@ -1074,9 +1074,15 @@ class LoopManager: ObservableObject {
     
     func loadActiveMonths() async {
         do {
-            let months = try await LoopCloudKitUtility.fetchActiveMonths()
+            let cloudMonths = try await LoopCloudKitUtility.fetchActiveMonths()
+            let localMonths = try await localStorage.fetchActiveMonths()
+            
+            let cloudMonthsSet = Set(cloudMonths)
+            let localMonthsSet = Set(localMonths)
+            
+            let combinedSet = cloudMonthsSet.union(localMonthsSet)
             await MainActor.run {
-                self.activeMonths = months
+                self.activeMonths = Array(combinedSet)
             }
         } catch {
             print("Error loading active months: \(error)")
@@ -1091,7 +1097,12 @@ class LoopManager: ObservableObject {
         }
         
         do {
-            let selectedMonthSummary = try await LoopCloudKitUtility.fetchMonthData(monthId: monthId)
+            let selectedMonthCloudSummary = try await LoopCloudKitUtility.fetchMonthData(monthId: monthId)
+            let selectedMonthLocalSummary = try await localStorage.fetchMonthData(monthId: monthId)
+            
+            let combinedLoops = Set(selectedMonthCloudSummary.loops + selectedMonthLocalSummary.loops)
+            
+            let selectedMonthSummary = MonthSummary(year: monthId.year, month: monthId.month, totalEntries: selectedMonthCloudSummary.loops.count + selectedMonthLocalSummary.loops.count, completionRate: 0.0, loops: Array(combinedLoops))
             await MainActor.run {
                 self.selectedMonthSummary = selectedMonthSummary
             }

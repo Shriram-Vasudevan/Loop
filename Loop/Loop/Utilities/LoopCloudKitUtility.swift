@@ -16,7 +16,7 @@ class LoopCloudKitUtility {
     
     static private var distinctDaysCache: Int?
     static private var lastCacheUpdate: Date?
-    static private let cacheValidityDuration: TimeInterval = 3600 // 1 hour
+    static private let cacheValidityDuration: TimeInterval = 3600
     
     static func fetchPromptSetIfNeeded() async throws -> PromptSet? {
         let publicDB = container.publicCloudDatabase
@@ -151,7 +151,6 @@ class LoopCloudKitUtility {
     }
 
     static func checkThreeDayRequirement() async throws -> (Bool, Int) {
-        // Check cache first
         if let cached = distinctDaysCache,
            let lastUpdate = lastCacheUpdate,
            Date().timeIntervalSince(lastUpdate) < cacheValidityDuration {
@@ -169,19 +168,15 @@ class LoopCloudKitUtility {
     
     static func fetchDistinctLoopingDays() async throws -> Int {
         let privateDB = container.privateCloudDatabase
-        
-        // Create a query for all loops
+
         let query = CKQuery(recordType: "LoopRecord", predicate: NSPredicate(value: true))
         query.sortDescriptors = [NSSortDescriptor(key: "Timestamp", ascending: false)]
-        
-        // Use calendar for date comparison
+
         let calendar = Calendar.current
         var distinctDates = Set<Date>()
-        
-        // Fetch records
+
         let records = try await privateDB.records(matching: query, inZoneWith: nil)
-        
-        // Process records to find distinct days
+
         for record in records {
             if let timestamp = record["Timestamp"] as? Date {
                 let startOfDay = calendar.startOfDay(for: timestamp)

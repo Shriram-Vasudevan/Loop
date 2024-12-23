@@ -104,6 +104,7 @@ struct ViewPastLoopView: View {
                 .multilineTextAlignment(.center)
                 .foregroundColor(textColor)
                 .padding(.horizontal, 40)
+                .padding(.top, 8)
             
             Text(formattedDate)
                 .font(.system(size: 15, weight: .regular))
@@ -174,15 +175,18 @@ struct ViewPastLoopView: View {
                 
                 Spacer()
                 
-                Text(timeString(from: 23))
+                Text(timeString(from: audioPlayer?.duration ?? 0))
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(textColor.opacity(0.6))
             }
+            
+            // Add transcript button
+            TranscriptButton(accentColor: accentColor, showTranscript: $showTranscript)
+                .padding(.top, 16)
         }
-      //  .padding(.horizontal, 24)
-        .padding(.bottom, 40)
+        .padding(.bottom, 20)
     }
-    
+
     private func setupInitialAnimation() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             withAnimation(.easeOut(duration: 0.5)) {

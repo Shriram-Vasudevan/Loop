@@ -377,10 +377,10 @@ struct RecordLoopsView: View {
                 Image(systemName: "sparkles")
                     .font(.system(size: 32, weight: .thin))
                     .foregroundColor(accentColor)
-                
-                Text("see your insights")
-                    .font(.system(size: 24, weight: .thin))
-                    .foregroundColor(Color.gray)
+//                
+//                Text("see your insights")
+//                    .font(.system(size: 24, weight: .thin))
+//                    .foregroundColor(Color.gray)
             }
             
             Spacer()
