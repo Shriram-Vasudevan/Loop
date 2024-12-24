@@ -77,6 +77,10 @@
 		99CCFBC22D137A2100DA8A55 /* AnalysisState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CCFBC12D137A2100DA8A55 /* AnalysisState.swift */; };
 		99DC91B32D19C112002B9A89 /* LoopCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99DC91B22D19C112002B9A89 /* LoopCard.swift */; };
 		99DC91B52D19C59B002B9A89 /* AudioWaveform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99DC91B42D19C59A002B9A89 /* AudioWaveform.swift */; };
+		99DC91B72D1A258A002B9A89 /* WeeklyAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99DC91B62D1A258A002B9A89 /* WeeklyAnalysis.swift */; };
+		99DC91B92D1A4658002B9A89 /* WeekInReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99DC91B82D1A4658002B9A89 /* WeekInReviewView.swift */; };
+		99DC91BB2D1A50BF002B9A89 /* AudioAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99DC91BA2D1A50BF002B9A89 /* AudioAnalyzer.swift */; };
+		99DC91BD2D1A50E4002B9A89 /* TranscriptionError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99DC91BC2D1A50E4002B9A89 /* TranscriptionError.swift */; };
 		99F31CA72D0F2DA300330180 /* RecordFollowUpLoopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CA62D0F2DA300330180 /* RecordFollowUpLoopView.swift */; };
 		99F31CA92D0F31AF00330180 /* FollowUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CA82D0F31AF00330180 /* FollowUp.swift */; };
 		99F31CAB2D0F477500330180 /* Graph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CAA2D0F477500330180 /* Graph.swift */; };
@@ -181,6 +185,10 @@
 		99CCFBC12D137A2100DA8A55 /* AnalysisState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisState.swift; sourceTree = "<group>"; };
 		99DC91B22D19C112002B9A89 /* LoopCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopCard.swift; sourceTree = "<group>"; };
 		99DC91B42D19C59A002B9A89 /* AudioWaveform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioWaveform.swift; sourceTree = "<group>"; };
+		99DC91B62D1A258A002B9A89 /* WeeklyAnalysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyAnalysis.swift; sourceTree = "<group>"; };
+		99DC91B82D1A4658002B9A89 /* WeekInReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekInReviewView.swift; sourceTree = "<group>"; };
+		99DC91BA2D1A50BF002B9A89 /* AudioAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioAnalyzer.swift; sourceTree = "<group>"; };
+		99DC91BC2D1A50E4002B9A89 /* TranscriptionError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionError.swift; sourceTree = "<group>"; };
 		99F31CA62D0F2DA300330180 /* RecordFollowUpLoopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordFollowUpLoopView.swift; sourceTree = "<group>"; };
 		99F31CA82D0F31AF00330180 /* FollowUp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FollowUp.swift; sourceTree = "<group>"; };
 		99F31CAA2D0F477500330180 /* Graph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Graph.swift; sourceTree = "<group>"; };
@@ -309,6 +317,7 @@
 				99CCFBBF2D122B0E00DA8A55 /* LoopInsightProgressView.swift */,
 				99DC91B22D19C112002B9A89 /* LoopCard.swift */,
 				99DC91B42D19C59A002B9A89 /* AudioWaveform.swift */,
+				99DC91B82D1A4658002B9A89 /* WeekInReviewView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -327,6 +336,7 @@
 				9915BAB82CEC332500D3C44B /* AnalysisManager.swift */,
 				99CCFBB72D10DB9300DA8A55 /* AIAnalyzer.swift */,
 				99CCFBB92D10DBAE00DA8A55 /* StatsManager.swift */,
+				99DC91BA2D1A50BF002B9A89 /* AudioAnalyzer.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -355,6 +365,8 @@
 				99F31CA82D0F31AF00330180 /* FollowUp.swift */,
 				99F31CAA2D0F477500330180 /* Graph.swift */,
 				99CCFBC12D137A2100DA8A55 /* AnalysisState.swift */,
+				99DC91B62D1A258A002B9A89 /* WeeklyAnalysis.swift */,
+				99DC91BC2D1A50E4002B9A89 /* TranscriptionError.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -461,12 +473,14 @@
 				990E4A9E2CBDE063009F88A0 /* ViewPastLoopView.swift in Sources */,
 				99AC6DD62CDFFAFA00B0D0D6 /* LoopChatView.swift in Sources */,
 				990E4A8E2CB48BB9009F88A0 /* SplashScreen.swift in Sources */,
+				99DC91B72D1A258A002B9A89 /* WeeklyAnalysis.swift in Sources */,
 				9953BDEA2CF25A7C00348AC3 /* MonthSummary.swift in Sources */,
 				99DC91B32D19C112002B9A89 /* LoopCard.swift in Sources */,
 				9915BAB52CE6AF8D00D3C44B /* DailyCheckinView.swift in Sources */,
 				9953BE0E2D07AD9700348AC3 /* TrendModels.swift in Sources */,
 				99AC6DD82CE0199800B0D0D6 /* FluidParticleBackground.swift in Sources */,
 				99CCFBBC2D10DF4300DA8A55 /* CleanGraphView.swift in Sources */,
+				99DC91B92D1A4658002B9A89 /* WeekInReviewView.swift in Sources */,
 				99AC6DEA2CE18E9900B0D0D6 /* LoopStreak.swift in Sources */,
 				99F31CAD2D0F5DAF00330180 /* StatsLoadingView.swift in Sources */,
 				9953BDE02CEE623B00348AC3 /* PulsingView.swift in Sources */,
@@ -474,6 +488,7 @@
 				9953BE0C2CFCC0FC00348AC3 /* LoopData.xcdatamodeld in Sources */,
 				9953BDDD2CEE620E00348AC3 /* AnimatedBackground.swift in Sources */,
 				9953BE002CF8EE9B00348AC3 /* MoodCloudKitUtility.swift in Sources */,
+				99DC91BD2D1A50E4002B9A89 /* TranscriptionError.swift in Sources */,
 				99F7F6E92CAC792C009858AC /* NotificationManager.swift in Sources */,
 				9953BE062CFBB30900348AC3 /* ArtisticBackground.swift in Sources */,
 				990E4A962CBDCA51009F88A0 /* VideoRecordingView.swift in Sources */,
@@ -512,6 +527,7 @@
 				9953BE042CFB940500348AC3 /* TabButton.swift in Sources */,
 				9953BDE62CF1832100348AC3 /* ThematicLoopCard.swift in Sources */,
 				9988DB8B2CD9CAEE005628DE /* SharedLoop.swift in Sources */,
+				99DC91BB2D1A50BF002B9A89 /* AudioAnalyzer.swift in Sources */,
 				990E4A942CBDCA24009F88A0 /* VideoManager.swift in Sources */,
 				99A0C8F12CA9EF2400F9281A /* LoopApp.swift in Sources */,
 				9953BE102D07ADC100348AC3 /* LoopComparison.swift in Sources */,

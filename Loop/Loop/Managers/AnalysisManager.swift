@@ -63,157 +63,6 @@ class TextAnalyzer {
     }
 }
 
-enum TranscriptionError: Error {
-    case authorizationFailed
-    case recognizerUnavailable
-    case transcriptionFailed(String)
-}
-
-class AudioAnalyzer {
-    static let shared = AudioAnalyzer()
-    
-    private let apiKey: String
-        
-    init() {
-        self.apiKey = ConfigurationKey.apiKey
-    }
-    
-    func transcribeAudio(url: URL) async throws -> String {
-        print("Starting transcription process...")
-        
-        // Try Apple's speech recognition first
-        do {
-            print("Attempting Apple Speech Recognition...")
-            return try await transcribeWithApple(url: url)
-        } catch {
-            print("Apple Speech Recognition failed with error: \(error)")
-            print("Falling back to Whisper API...")
-            return try await transcribeWithWhisper(url: url)
-        }
-    }
-    
-    private func transcribeWithApple(url: URL) async throws -> String {
-        let authStatus = try await withCheckedThrowingContinuation { continuation in
-            SFSpeechRecognizer.requestAuthorization { status in
-                continuation.resume(returning: status)
-            }
-        }
-        
-        print("Speech recognition authorization status after request: \(authStatus.rawValue)")
-        
-        guard authStatus == .authorized else {
-            print("Speech recognition not authorized: \(authStatus)")
-            throw AnalysisError.transcriptionFailed("Speech recognition not authorized: \(authStatus)")
-        }
-        
-        guard let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US")) else {
-            throw AnalysisError.transcriptionFailed("Failed to create speech recognizer - device may not support en-US locale")
-        }
-        
-        let request = SFSpeechURLRecognitionRequest(url: url)
-        request.shouldReportPartialResults = false
-        
-        print("Starting transcription for audio at: \(url)")
-        
-        return try await withCheckedThrowingContinuation { continuation in
-            let task = recognizer.recognitionTask(with: request) { result, error in
-                if let error = error {
-                    continuation.resume(throwing: AnalysisError.transcriptionFailed("Speech recognition failed: \(error.localizedDescription)"))
-                } else if let result = result, result.isFinal {
-                    continuation.resume(returning: result.bestTranscription.formattedString)
-                }
-            }
-            
-            if task == nil {
-                continuation.resume(throwing: AnalysisError.transcriptionFailed("Failed to create recognition task"))
-            }
-        }
-    }
-    
-    private func transcribeWithWhisper(url: URL) async throws -> String {
-        print("Preparing Whisper API request for: \(url)")
-        
-        guard !apiKey.isEmpty else {
-            throw AnalysisError.transcriptionFailed("Missing OpenAI API key")
-        }
-        
-        // Get audio data
-        print("Reading audio file data...")
-        let audioData = try Data(contentsOf: url)
-        print("Audio data size: \(audioData.count) bytes")
-        
-        // Create form data
-        let boundary = UUID().uuidString
-        print("Creating Whisper API request...")
-        
-        guard let apiUrl = URL(string: "https://api.openai.com/v1/audio/transcriptions") else {
-            print("❌ Failed to create Whisper API URL")
-            throw AnalysisError.transcriptionFailed("Failed to create Whisper API URL")
-        }
-
-        var request = URLRequest(url: apiUrl)
-        
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        
-        print("Creating multipart form data...")
-        var body = Data()
-        // Add model
-        body.append("--\(boundary)\r\n")
-        body.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n")
-        body.append("whisper-1\r\n")
-        
-        // Add audio file
-        body.append("--\(boundary)\r\n")
-        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"audio.m4a\"\r\n")
-        body.append("Content-Type: audio/m4a\r\n\r\n")
-        body.append(audioData)
-        body.append("\r\n")
-        
-        body.append("--\(boundary)--\r\n")
-        request.httpBody = body
-        
-        print("Sending request to Whisper API...")
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
-        if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode != 200 {
-           if let responseString = String(data: data, encoding: .utf8) {
-               throw AnalysisError.transcriptionFailed("Whisper API error: Status \(httpResponse.statusCode), Response: \(responseString)")
-           } else {
-               throw AnalysisError.transcriptionFailed("Whisper API error: Status \(httpResponse.statusCode)")
-           }
-       }
-        
-        do {
-            let result = try JSONDecoder().decode(WhisperResponse.self, from: data)
-            return result.text
-        } catch {
-            if let responseString = String(data: data, encoding: .utf8) {
-                throw AnalysisError.transcriptionFailed("Failed to decode Whisper response: \(error.localizedDescription), Raw response: \(responseString)")
-            } else {
-                throw AnalysisError.transcriptionFailed("Failed to decode Whisper response: \(error.localizedDescription)")
-            }
-        }
-    }
-    
-    func getDuration(url: URL) -> TimeInterval {
-        let asset = AVURLAsset(url: url)
-        return CMTimeGetSeconds(asset.duration)
-    }
-}
-
-struct WhisperResponse: Codable {
-    let text: String
-}
-
-extension Data {
-    mutating func append(_ string: String) {
-        if let data = string.data(using: .utf8) {
-            append(data)
-        }
-    }
-}
 
 class AnalysisManager: ObservableObject {
     static let shared = AnalysisManager()
@@ -256,6 +105,12 @@ class AnalysisManager: ObservableObject {
     
     @Published private(set) var analysisState: AnalysisState = .noLoops
     
+    @Published var weeklyAnalyses: [WeeklyAnalysis] = []
+    @Published var isLoadingWeeklyAnalysis = false
+    
+    private let defaults = UserDefaults.standard
+    private let weeklyAnalysisCacheKey = "WeeklyAnalyses"
+    
     init() {
         if isCacheValidForToday() {
             loadAnalysisCache()
@@ -267,7 +122,6 @@ class AnalysisManager: ObservableObject {
     
     func startAnalysis(_ loop: Loop, isPastLoop: Bool) async {
         if !isPastLoop {
-            // If this is first loop, move to partial state
             if todaysLoops.isEmpty {
                 DispatchQueue.main.async {
                     self.analysisState = .partial(count: 1)
@@ -571,107 +425,159 @@ class AnalysisManager: ObservableObject {
                 .intersection(Set(past.wordAnalysis.uniqueWords)))
         )
     }
-    
     private func isCacheValidForToday() -> Bool {
+        print("\n📅 Checking daily analysis cache validity...")
+        
         guard let cachedData = analysisCache.dictionary(forKey: dailyAnalysisCacheKey),
               let cacheDate = cachedData["cacheDate"] as? Date else {
+            print("❌ No cache date found or invalid cache data")
             return false
         }
-        return Calendar.current.isDateInToday(cacheDate)
+        
+        let isValid = Calendar.current.isDateInToday(cacheDate)
+        print(isValid ? "✅ Cache is valid for today" : "❌ Cache is outdated")
+        print("Cache date: \(cacheDate.formatted())")
+        return isValid
     }
     
     private func saveAnalysisCache() {
-        var analysisData: [String: Any] = [
-            "lastAnalysisDate": Date(),
-            "cacheDate": Date()
-        ]
-        
-        if case .completed(let analysis) = analysisState {
-            if let dailyAnalysisData = try? JSONEncoder().encode(analysis) {
+            print("\n💾 Saving daily analysis cache...")
+            
+            var analysisData: [String: Any] = [
+                "lastAnalysisDate": Date(),
+                "cacheDate": Date()
+            ]
+            
+            // Debug current state
+            print("Current state:")
+            print("- Daily Analysis exists: \(currentDailyAnalysis != nil)")
+            print("- Today's Loops count: \(todaysLoops.count)")
+            print("- Past Loop exists: \(pastLoopAnalysis != nil)")
+            print("- Analysis State: \(analysisState)")
+            
+//            // Only save pastLoopAnalysis if it exists
+//            if let pastLoopAnalysis = self.pastLoopAnalysis {
+//                do {
+//                    let pastLoopData = try JSONEncoder().encode(pastLoopAnalysis)
+//                    analysisData["pastLoopAnalysis"] = pastLoopData.base64EncodedString()
+//                    print("✅ Encoded past loop analysis")
+//                } catch {
+//                    print("❌ Failed to encode past loop analysis: \(error)")
+//                }
+//            } else {
+//                print("ℹ️ No past loop analysis to cache")
+//            }
+            
+            if case .completed(let analysis) = analysisState {
+                if let dailyAnalysisData = try? JSONEncoder().encode(analysis) {
+                    analysisData["dailyAnalysis"] = dailyAnalysisData.base64EncodedString()
+                    print("✅ Encoded completed analysis")
+                }
+            }
+            
+            if let dailyAnalysisData = try? JSONEncoder().encode(currentDailyAnalysis) {
                 analysisData["dailyAnalysis"] = dailyAnalysisData.base64EncodedString()
+                print("✅ Encoded current daily analysis")
+            }
+            
+            if let todaysLoopsData = try? JSONEncoder().encode(todaysLoops) {
+                analysisData["todaysLoops"] = todaysLoopsData.base64EncodedString()
+                print("✅ Encoded today's loops (\(todaysLoops.count) loops)")
+            }
+            
+            if let comparisonData = try? JSONEncoder().encode(loopComparison) {
+                analysisData["loopComparison"] = comparisonData.base64EncodedString()
+                print("✅ Encoded loop comparison")
+            }
+            
+            // Save to UserDefaults
+            analysisCache.set(analysisData, forKey: dailyAnalysisCacheKey)
+            print("✅ Saved all data to cache")
+            
+            // Verify save
+            verifyCache()
+        }
+        
+        private func loadAnalysisCache() {
+            print("\n📂 Loading daily analysis cache...")
+            
+            guard let cachedData = analysisCache.dictionary(forKey: dailyAnalysisCacheKey) else {
+                print("❌ No cached data found")
+                return
+            }
+            
+            let decoder = JSONDecoder()
+            
+            // Load daily analysis
+            if let dailyAnalysisString = cachedData["dailyAnalysis"] as? String,
+               let dailyAnalysisData = Data(base64Encoded: dailyAnalysisString) {
+                do {
+                    let dailyAnalysis = try decoder.decode(DailyAnalysis.self, from: dailyAnalysisData)
+                    self.currentDailyAnalysis = dailyAnalysis
+                    self.analysisState = .completed(dailyAnalysis)
+                    print("✅ Loaded daily analysis from cache")
+                    print("- Analysis date: \(dailyAnalysis.date.formatted())")
+                    print("- Number of loops: \(dailyAnalysis.loops.count)")
+                } catch {
+                    print("❌ Failed to decode daily analysis: \(error)")
+                }
+            }
+            
+            // Load today's loops
+            if let todaysLoopsString = cachedData["todaysLoops"] as? String,
+               let todaysLoopsData = Data(base64Encoded: todaysLoopsString) {
+                do {
+                    let loopAnalyses = try decoder.decode([LoopAnalysis].self, from: todaysLoopsData)
+                    self.todaysLoops = loopAnalyses
+                    print("✅ Loaded today's loops from cache (\(loopAnalyses.count) loops)")
+                } catch {
+                    print("❌ Failed to decode today's loops: \(error)")
+                }
+            }
+            
+//            // Load past loop analysis with proper nil handling
+//            if let pastLoopString = cachedData["pastLoopAnalysis"] as? String,
+//               let pastLoopData = Data(base64Encoded: pastLoopString) {
+//                do {
+//                    let pastAnalysis = try decoder.decode(LoopAnalysis.self, from: pastLoopData)
+//                    self.pastLoopAnalysis = pastAnalysis
+//                    print("✅ Loaded past loop analysis from cache")
+//                    print("- Past loop date: \(pastAnalysis.timestamp.formatted())")
+//                } catch {
+//                    print("⚠️ Failed to decode past loop analysis: \(error)")
+//                    self.pastLoopAnalysis = nil
+//                }
+//            } else {
+//                print("ℹ️ No past loop analysis in cache")
+//                self.pastLoopAnalysis = nil
+//            }
+            
+            print("📊 Cache load complete")
+        }
+        
+        private func verifyCache() {
+            print("\n🔍 Verifying cache contents...")
+            guard let cachedData = analysisCache.dictionary(forKey: dailyAnalysisCacheKey) else {
+                print("❌ No cached data found during verification")
+                return
+            }
+            
+            print("Cache contains keys:")
+            for (key, value) in cachedData {
+                if key == "pastLoopAnalysis" {
+                    print("- pastLoopAnalysis: \(value == nil ? "nil" : "present")")
+                } else {
+                    print("- \(key): \(type(of: value))")
+                }
+            }
+            
+            if let cacheDate = cachedData["cacheDate"] as? Date {
+                print("Cache date: \(cacheDate.formatted())")
             }
         }
-        
-        if let dailyAnalysisData = try? JSONEncoder().encode(currentDailyAnalysis) {
-            analysisData["dailyAnalysis"] = dailyAnalysisData.base64EncodedString()
-        }
-        
-        if let todaysLoopsData = try? JSONEncoder().encode(todaysLoops) {
-            analysisData["todaysLoops"] = todaysLoopsData.base64EncodedString()
-        }
-        
-        if let pastLoopData = try? JSONEncoder().encode(pastLoopAnalysis) {
-            analysisData["pastLoopAnalysis"] = pastLoopData.base64EncodedString()
-        }
-        
-        if let comparisonData = try? JSONEncoder().encode(loopComparison) {
-            analysisData["loopComparison"] = comparisonData.base64EncodedString()
-        }
-        
-        if let allTimeComparisonData = try? JSONEncoder().encode(allTimeComparison) {
-            analysisData["allTimeComparison"] = allTimeComparisonData.base64EncodedString()
-        }
-        
-        if let monthlyComparisonData = try? JSONEncoder().encode(monthlyComparison) {
-            analysisData["monthlyComparison"] = monthlyComparisonData.base64EncodedString()
-        }
-        
-        if let weeklyComparisonData = try? JSONEncoder().encode(weeklyComparison) {
-            analysisData["weeklyComparison"] = weeklyComparisonData.base64EncodedString()
-        }
-        
-        analysisCache.set(analysisData, forKey: dailyAnalysisCacheKey)
-    }
-    
-    private func loadAnalysisCache() {
-        guard let cachedData = analysisCache.dictionary(forKey: dailyAnalysisCacheKey) else {
-            return
-        }
-        
-        if let dailyAnalysisString = cachedData["dailyAnalysis"] as? String,
-           let dailyAnalysisData = Data(base64Encoded: dailyAnalysisString),
-           let dailyAnalysis = try? JSONDecoder().decode(DailyAnalysis.self, from: dailyAnalysisData) {
-            self.currentDailyAnalysis = dailyAnalysis
-        }
-        
-        if let todaysLoopsString = cachedData["todaysLoops"] as? String,
-           let todaysLoopsData = Data(base64Encoded: todaysLoopsString),
-           let loopAnalyses = try? JSONDecoder().decode([LoopAnalysis].self, from: todaysLoopsData) {
-            self.todaysLoops = loopAnalyses
-        }
-        
-        if let pastLoopString = cachedData["pastLoopAnalysis"] as? String,
-           let pastLoopData = Data(base64Encoded: pastLoopString),
-           let pastAnalysis = try? JSONDecoder().decode(LoopAnalysis.self, from: pastLoopData) {
-            self.pastLoopAnalysis = pastAnalysis
-        }
-        
-        if let comparisonString = cachedData["loopComparison"] as? String,
-           let comparisonData = Data(base64Encoded: comparisonString),
-           let comparison = try? JSONDecoder().decode(LoopComparison.self, from: comparisonData) {
-            self.loopComparison = comparison
-        }
-        
-        if let allTimeComparisonString = cachedData["allTimeComparison"] as? String,
-           let allTimeComparisonData = Data(base64Encoded: allTimeComparisonString),
-           let allTimeComparison = try? JSONDecoder().decode(LoopComparison.self, from: allTimeComparisonData) {
-            self.allTimeComparison = allTimeComparison
-        }
-        
-        if let monthlyComparisonString = cachedData["monthlyComparison"] as? String,
-           let monthlyComparisonData = Data(base64Encoded: monthlyComparisonString),
-           let monthlyComparison = try? JSONDecoder().decode(LoopComparison.self, from: monthlyComparisonData) {
-            self.monthlyComparison = monthlyComparison
-        }
-        
-        if let weeklyComparisonString = cachedData["weeklyComparison"] as? String,
-           let weeklyComparisonData = Data(base64Encoded: weeklyComparisonString),
-           let weeklyComparison = try? JSONDecoder().decode(LoopComparison.self, from: weeklyComparisonData) {
-            self.weeklyComparison = weeklyComparison
-        }
-    }
     
     private func resetAnalysisCache() {
+        print("\n🧹 Resetting analysis cache...")
         currentDailyAnalysis = nil
         todaysLoops = []
         pastLoopAnalysis = nil
@@ -682,8 +588,9 @@ class AnalysisManager: ObservableObject {
         analysisCache.removeObject(forKey: dailyAnalysisCacheKey)
         isFollowUpCompletedToday = false
         UserDefaults.standard.removeObject(forKey: "FollowUpCompletedToday")
+        print("✅ Analysis cache reset complete")
     }
-    
+
     func markFollowUpComplete() {
         isFollowUpCompletedToday = true
         UserDefaults.standard.set(true, forKey: "FollowUpCompletedToday")
@@ -951,6 +858,203 @@ class AnalysisManager: ObservableObject {
             }
         }
     }
+    
+    private func getCurrentWeekDateRange() -> (start: Date, end: Date) {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        // Since we're running this on Sunday, get the previous Monday
+        guard let monday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)),
+              let sunday = calendar.date(byAdding: .day, value: 6, to: monday) else {
+            // Fallback just in case - get last 7 days
+            let end = calendar.startOfDay(for: today)
+            let start = calendar.date(byAdding: .day, value: -6, to: end)!
+            return (start, end)
+        }
+        
+        // Get start and end of those days
+        let weekStart = calendar.startOfDay(for: monday)
+        let weekEnd = calendar.date(byAdding: .day, value: 1, to: sunday)!
+        
+        print("📅 Week range: \(weekStart) to \(weekEnd)")
+        return (weekStart, weekEnd)
+    }
+    
+    func performWeeklyAnalysis() async throws -> WeeklyAnalysis {
+        let (weekStart, weekEnd) = getCurrentWeekDateRange()
+        print("Fetching loops from \(weekStart.formatted()) to \(weekEnd.formatted())")
+        
+        let loops = try await LoopManager.shared.fetchLoopsForDateRange(start: weekStart, end: weekEnd)
+  
+        let dailyLoops = loops.filter { $0.isDailyLoop }
+        
+        let loopAnalyses = try await dailyLoops.asyncMap { loop in
+            try await analyzeLoop(loop)
+        }
+        
+        let weeklyMetrics = calculateWeeklyMetrics(loopAnalyses)
+        
+        let aiInsights = try await WeeklyAIAnalyzer.shared.analyzeWeek(loopAnalyses)
+        
+        return WeeklyAnalysis(
+            weekStartDate: weekStart,
+            weekEndDate: weekEnd,
+            loops: loopAnalyses,
+            keyMoments: aiInsights.keyMoments ?? [],
+            themes: aiInsights.themes ?? [],
+            aggregateMetrics: weeklyMetrics,
+            aiInsights: aiInsights
+        )
+    }
+    
+    private func calculateWeeklyMetrics(_ analyses: [LoopAnalysis]) -> WeeklyMetrics {
+        let totalWords = analyses.reduce(0) { $0 + $1.metrics.wordCount }
+        let totalDuration = analyses.reduce(0.0) { $0 + $1.metrics.duration }
+        let averageWPM = analyses.reduce(0.0) { $0 + $1.metrics.wordsPerMinute } / Double(analyses.count)
+        
+        let calendar = Calendar.current
+        let uniqueDays = Set(analyses.map { calendar.startOfDay(for: $0.timestamp) }).count
+        
+        let wpmByDay = Dictionary(grouping: analyses) { analysis in
+            calendar.startOfDay(for: analysis.timestamp)
+        }.mapValues { analyses in
+            analyses.reduce(0.0) { $0 + $1.metrics.wordsPerMinute } / Double(analyses.count)
+        }
+        
+        let totalSelfReferenceCount = analyses.reduce(0) { $0 + $1.metrics.selfReferenceCount }
+        
+        let emotionalJourney = analyses.reduce(into: [Date: String]()) { result, analysis in
+            if let mood = analysis.transcript.extractMood() {
+                result[analysis.timestamp] = mood
+            }
+        }
+        
+        let allWords = analyses.flatMap { $0.wordAnalysis.words }
+        let commonWords = TextAnalyzer.shared.findMostUsedWords(allWords, limit: 10)
+        
+        return WeeklyMetrics(
+            totalWords: totalWords,
+            averageDuration: totalDuration / Double(analyses.count),
+            averageWordsPerMinute: averageWPM,
+            totalUniqueDays: uniqueDays,
+            totalSelfReferenceCount: totalSelfReferenceCount,
+            emotionalJourney: emotionalJourney,
+            commonWords: commonWords,
+            weeklyWPMTrend: wpmByDay
+        )
+    }
+    
+    func loadWeeklyAnalyses() async {
+        await MainActor.run {
+            isLoadingWeeklyAnalysis = true
+        }
+        
+        let cached = getAllCachedAnalyses()
+        weeklyAnalyses = cached
+        
+        let calendar = Calendar.current
+        let lastWeek = calendar.date(byAdding: .weekOfYear, value: -1, to: Date())!
+
+        let haveLastWeek = cached.contains { analysis in
+            calendar.isDate(analysis.weekStartDate, equalTo: lastWeek, toGranularity: .weekOfYear)
+        }
+
+        if !haveLastWeek {
+            do {
+                let analysis = try await getLastWeekAnalysis()
+                cacheAnalysis(analysis)
+                await MainActor.run {
+                    weeklyAnalyses.insert(analysis, at: 0)
+                    weeklyAnalyses.sort { $0.weekStartDate > $1.weekStartDate }
+                }
+            } catch {
+                print("Failed to get last week's analysis: \(error)")
+            }
+        }
+        
+        await MainActor.run {
+            isLoadingWeeklyAnalysis = false
+        }
+    }
+
+    private func getLastWeekAnalysis() async throws -> WeeklyAnalysis {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        let lastWeek = calendar.date(byAdding: .weekOfYear, value: -1, to: now)!
+        guard let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: lastWeek)) else {
+            throw AnalysisError.invalidData("Couldn't get week start date")
+        }
+        
+        let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart)!
+        
+        print("Getting analysis for \(weekStart) to \(weekEnd)")
+        
+        let loops = try await LoopManager.shared.fetchLoopsForDateRange(start: weekStart, end: weekEnd)
+        let dailyLoops = loops.filter { $0.isDailyLoop }
+        
+        guard !dailyLoops.isEmpty else {
+            throw AnalysisError.invalidData("No loops found for last week")
+        }
+        
+        let analyses = try await dailyLoops.asyncMap { loop in
+            try await analyzeLoop(loop)
+        }
+
+        let metrics = calculateWeeklyMetrics(analyses)
+        let aiAnalysis = try await WeeklyAIAnalyzer.shared.analyzeWeek(analyses)
+        
+        return WeeklyAnalysis(
+            weekStartDate: weekStart,
+            weekEndDate: weekEnd,
+            loops: analyses,
+            keyMoments: aiAnalysis.keyMoments ?? [],
+            themes: aiAnalysis.themes ?? [],
+            aggregateMetrics: metrics,
+            aiInsights: aiAnalysis
+        )
+    }
+
+    private func getAllCachedAnalyses() -> [WeeklyAnalysis] {
+        guard let data = UserDefaults.standard.data(forKey: weeklyAnalysisCacheKey),
+              let analyses = try? JSONDecoder().decode([WeeklyAnalysis].self, from: data) else {
+            return []
+        }
+        return analyses.sorted { $0.weekStartDate > $1.weekStartDate }
+    }
+
+    private func cacheAnalysis(_ analysis: WeeklyAnalysis) {
+        var analyses = getAllCachedAnalyses()
+        
+        if let index = analyses.firstIndex(where: {
+            Calendar.current.isDate($0.weekStartDate, equalTo: analysis.weekStartDate, toGranularity: .weekOfYear)
+        }) {
+            analyses.remove(at: index)
+        }
+        
+        analyses.append(analysis)
+        analyses.sort { $0.weekStartDate > $1.weekStartDate }
+        
+        if let encoded = try? JSONEncoder().encode(analyses) {
+            UserDefaults.standard.set(encoded, forKey: weeklyAnalysisCacheKey)
+        }
+    }
+    
+    func getWeekIdentifier(_ analysis: WeeklyAnalysis) -> String {
+        let calendar = Calendar.current
+        let weekNumber = calendar.component(.weekOfYear, from: analysis.weekStartDate)
+        return "Week \(weekNumber) in Review"
+    }
+
+    // Plus a more detailed version for the full header
+    func getDetailedWeekIdentifier(_ analysis: WeeklyAnalysis) -> String {
+        let calendar = Calendar.current
+        let weekNumber = calendar.component(.weekOfYear, from: analysis.weekStartDate)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return "Week \(weekNumber) in Review (\(formatter.string(from: analysis.weekStartDate)) - \(formatter.string(from: analysis.weekEndDate)))"
+    }
+    
 }
     
 

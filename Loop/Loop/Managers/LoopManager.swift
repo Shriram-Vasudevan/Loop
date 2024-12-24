@@ -1158,6 +1158,39 @@ class LoopManager: ObservableObject {
             print("Error deleting loop: \(error)")
         }
     }
+    
+    func fetchLoopsForDateRange(start: Date, end: Date) async throws -> [Loop] {
+        print("🔍 Fetching daily loops between \(start) and \(end)")
+        
+        async let cloudLoops = LoopCloudKitUtility.fetchLoopsInDateRange(start: start, end: end)
+        async let localLoops = localStorage.fetchLoopsInDateRange(start: start, end: end)
+        
+        do {
+            let allLoops = try await cloudLoops + localLoops
+            
+            var uniqueLoopsDict: [String: Loop] = [:]
+            allLoops.forEach { loop in
+                if let existing = uniqueLoopsDict[loop.id] {
+                    let existingRetrieved = existing.lastRetrieved ?? .distantPast
+                    let newRetrieved = loop.lastRetrieved ?? .distantPast
+                    if newRetrieved > existingRetrieved {
+                        uniqueLoopsDict[loop.id] = loop
+                    }
+                } else {
+                    uniqueLoopsDict[loop.id] = loop
+                }
+            }
+            
+            let sortedLoops = uniqueLoopsDict.values.sorted { $0.timestamp > $1.timestamp }
+            print("🎯 Returning \(sortedLoops.count) unique daily loops")
+            return sortedLoops
+            
+        } catch {
+            print("❌ Error fetching loops: \(error)")
+            throw error
+        }
+    }
+
 }
 
 enum MemoryBankStatus {

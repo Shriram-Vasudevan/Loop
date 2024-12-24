@@ -336,7 +336,7 @@ struct MonthsGridView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 32)
-                .padding(.top, 10)
+                .padding(.top, 20)
             }
         }
     }

@@ -591,4 +591,19 @@ class LoopLocalStorageUtility {
         context.delete(entityToDelete)
         try context.save()
     }
+    
+    func fetchLoopsInDateRange(start: Date, end: Date) async throws -> [Loop] {
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "LoopEntity")
+        fetchRequest.predicate = NSPredicate(
+            format: "timestamp >= %@ AND timestamp <= %@ AND isDailyLoop == true",
+            start as NSDate,
+            end as NSDate
+        )
+        
+        let results = try context.fetch(fetchRequest)
+        let loops = results.compactMap { convertToLoop(from: $0) }
+        
+        print("💾 Found \(loops.count) daily loops in Local Storage")
+        return loops
+    }
 }

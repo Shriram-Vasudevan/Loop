@@ -156,4 +156,30 @@ extension Color {
     }
 }
 
+extension Sequence {
+    func asyncMap<T>(_ transform: (Element) async throws -> T) async throws -> [T] {
+        var values = [T]()
+        for element in self {
+            try await values.append(transform(element))
+        }
+        return values
+    }
+}
 
+extension String {
+    func extractMood() -> String? {
+        let lowercased = self.lowercased()
+        let happyIndicators = ["happy", "joy", "excited", "great", "wonderful"]
+        let sadIndicators = ["sad", "down", "depressed", "upset", "frustrated"]
+        let neutralIndicators = ["okay", "fine", "normal", "neutral"]
+        
+        if happyIndicators.contains(where: lowercased.contains) {
+            return "Positive"
+        } else if sadIndicators.contains(where: lowercased.contains) {
+            return "Negative"
+        } else if neutralIndicators.contains(where: lowercased.contains) {
+            return "Neutral"
+        }
+        return nil
+    }
+}

@@ -241,7 +241,7 @@ struct RecordThematicLoopPromptsView: View {
     private var quietSpaceView: some View {
         VStack(spacing: 24) {
             Text("find a quiet space")
-                .font(.system(size: 36, weight: .thin))
+                .font(.system(size: 36, weight: .ultraLight))
                 .foregroundColor(textColor)
                 .multilineTextAlignment(.center)
             

@@ -667,6 +667,28 @@ class LoopCloudKitUtility {
         try await privateDB.deleteRecord(withID: record.recordID)
     }
     
+    static func fetchLoopsInDateRange(start: Date, end: Date) async throws -> [Loop] {
+        let privateDB = container.privateCloudDatabase
+        
+        let predicate = NSPredicate(
+            format: "Timestamp >= %@ AND Timestamp <= %@ AND IsDailyLoop == true",
+            start as NSDate,
+            end as NSDate
+        )
+        
+        let query = CKQuery(recordType: "LoopRecord", predicate: predicate)
+        query.sortDescriptors = [NSSortDescriptor(key: "Timestamp", ascending: false)]
+        
+        let (matchResults, _) = try await privateDB.records(matching: query)
+        let loops = matchResults.compactMap { result -> Loop? in
+            guard let record = try? result.1.get() else { return nil }
+            return Loop.from(record: record)
+        }
+        
+        print("📱 Found \(loops.count) daily loops in CloudKit")
+        return loops
+    }
+    
 }
 enum FetchResult {
     case success(Loop)

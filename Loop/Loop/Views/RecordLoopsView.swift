@@ -129,7 +129,7 @@ struct RecordLoopsView: View {
     private var promptArea: some View {
         VStack(spacing: isRecording ? 20 : 44) {
             Text(loopManager.getCurrentPrompt())
-                .font(.system(size: 44, weight: .ultraLight))
+                .font(.system(size: 28, weight: .medium))
                 .foregroundColor(textColor)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -296,7 +296,7 @@ struct RecordLoopsView: View {
                     .transition(.opacity)
             }  else if userDaysThresholdNotMet {
                 Text("loop for three days to get memories")
-                    .font(.system(size: 44, weight: .ultraLight))
+                    .font(.system(size: 28, weight: .medium))
                     .foregroundColor(textColor)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
@@ -407,7 +407,7 @@ struct RecordLoopsView: View {
     private var welcomeView: some View {
         VStack(spacing: 24) {
             Text("it's time to loop")
-                .font(.system(size: 36, weight: .thin))
+                .font(.system(size: 36, weight: .ultraLight))
                 .foregroundColor(textColor)
                 .multilineTextAlignment(.center)
             
@@ -426,7 +426,7 @@ struct RecordLoopsView: View {
     private var quietSpaceView: some View {
         VStack(spacing: 24) {
             Text("find a quiet space")
-                .font(.system(size: 36, weight: .thin))
+                .font(.system(size: 36, weight: .ultraLight))
                 .foregroundColor(textColor)
                 .multilineTextAlignment(.center)
             

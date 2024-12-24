@@ -55,8 +55,11 @@ struct InsightsView: View {
                             TodayInsightsContent(analysisManager: analysisManager, selectedFollowUp: $selectedFollowUp)
                                 .opacity(animateCards ? 1 : 0)
                                 .offset(y: animateCards ? 0 : 20)
-                        } else {
+                        } else if selectedTab  == "trends" {
                             TrendsInsightsView(analysisManager: analysisManager)
+                        }
+                        else {
+                            
                         }
                     }
                     .padding(.horizontal, 24)
@@ -86,6 +89,11 @@ struct InsightsView: View {
             Button("trends") {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                     selectedTab = "trends"
+                }
+            }
+            Button("week in review") {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    selectedTab = "week in review"
                 }
             }
         } label: {
