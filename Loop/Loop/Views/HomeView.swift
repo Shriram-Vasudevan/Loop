@@ -34,11 +34,11 @@ struct HomeView: View {
     
     var body: some View {
         ZStack {
-            // Keep your original FlowingBackground
-            FlowingBackground(color: accentColor)
-                .opacity(backgroundOpacity)
-                .ignoresSafeArea()
-            
+//            // Keep your original FlowingBackground
+//            FlowingBackground(color: accentColor)
+//                .opacity(backgroundOpacity)
+//                .ignoresSafeArea()
+//            
             ScrollView {
                 VStack(spacing: 32) {
                     // Welcome header with subtle animation
@@ -310,6 +310,27 @@ struct DynamicBackground: View {
                 }
             }
         }
+    }
+    
+    func formatDate() -> String {
+        let dayNumber = Calendar.current.component(.day, from: Date())
+        
+        let formatString = "MMMM d"
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = formatString
+        var formattedDate = dateFormatter.string(from: Date())
+        
+        var suffix: String
+        switch dayNumber {
+            case 1, 21, 31: suffix = "st"
+            case 2, 22: suffix = "nd"
+            case 3, 23: suffix = "rd"
+            default: suffix = "th"
+        }
+        
+        formattedDate.append(suffix)
+        
+        return formattedDate
     }
 }
 

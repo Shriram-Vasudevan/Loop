@@ -16,7 +16,7 @@ struct AudioWaveform: View {
             ForEach(0..<40, id: \.self) { index in
                 RoundedRectangle(cornerRadius: 1)
                     .fill(color.opacity(0.3))
-                    .frame(width: 2, height: waveformData[safe: index] ?? 12)
+                    .frame(width: 2, height: waveformData[index] ?? 12)
             }
         }
         .frame(height: 32)
