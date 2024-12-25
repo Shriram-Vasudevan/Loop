@@ -127,7 +127,7 @@ struct RecordLoopsView: View {
     }
     
     private var promptArea: some View {
-        VStack(spacing: isRecording ? 20 : 44) {
+        VStack(spacing: isRecording ? 20 : 20) {
             Text(loopManager.getCurrentPrompt())
                 .font(.system(size: 28, weight: .medium))
                 .foregroundColor(textColor)

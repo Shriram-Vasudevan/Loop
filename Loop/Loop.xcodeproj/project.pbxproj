@@ -81,6 +81,12 @@
 		99DC91B92D1A4658002B9A89 /* WeekInReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99DC91B82D1A4658002B9A89 /* WeekInReviewView.swift */; };
 		99DC91BB2D1A50BF002B9A89 /* AudioAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99DC91BA2D1A50BF002B9A89 /* AudioAnalyzer.swift */; };
 		99DC91BD2D1A50E4002B9A89 /* TranscriptionError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99DC91BC2D1A50E4002B9A89 /* TranscriptionError.swift */; };
+		99DC91C72D1BAB05002B9A89 /* PPNeueMontreal-Medium.otf in Resources */ = {isa = PBXBuildFile; fileRef = 99DC91C12D1BAB04002B9A89 /* PPNeueMontreal-Medium.otf */; };
+		99DC91C82D1BAB05002B9A89 /* PPNeueMontreal-Book.otf in Resources */ = {isa = PBXBuildFile; fileRef = 99DC91C22D1BAB04002B9A89 /* PPNeueMontreal-Book.otf */; };
+		99DC91C92D1BAB05002B9A89 /* PPNeueMontreal-SemiBolditalic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 99DC91C32D1BAB05002B9A89 /* PPNeueMontreal-SemiBolditalic.otf */; };
+		99DC91CA2D1BAB05002B9A89 /* PPNeueMontreal-Thin.otf in Resources */ = {isa = PBXBuildFile; fileRef = 99DC91C42D1BAB05002B9A89 /* PPNeueMontreal-Thin.otf */; };
+		99DC91CB2D1BAB05002B9A89 /* PPNeueMontreal-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 99DC91C52D1BAB05002B9A89 /* PPNeueMontreal-Italic.otf */; };
+		99DC91CC2D1BAB05002B9A89 /* PPNeueMontreal-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 99DC91C62D1BAB05002B9A89 /* PPNeueMontreal-Bold.otf */; };
 		99F31CA72D0F2DA300330180 /* RecordFollowUpLoopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CA62D0F2DA300330180 /* RecordFollowUpLoopView.swift */; };
 		99F31CA92D0F31AF00330180 /* FollowUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CA82D0F31AF00330180 /* FollowUp.swift */; };
 		99F31CAB2D0F477500330180 /* Graph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CAA2D0F477500330180 /* Graph.swift */; };
@@ -189,6 +195,13 @@
 		99DC91B82D1A4658002B9A89 /* WeekInReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekInReviewView.swift; sourceTree = "<group>"; };
 		99DC91BA2D1A50BF002B9A89 /* AudioAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioAnalyzer.swift; sourceTree = "<group>"; };
 		99DC91BC2D1A50E4002B9A89 /* TranscriptionError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionError.swift; sourceTree = "<group>"; };
+		99DC91C12D1BAB04002B9A89 /* PPNeueMontreal-Medium.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PPNeueMontreal-Medium.otf"; sourceTree = "<group>"; };
+		99DC91C22D1BAB04002B9A89 /* PPNeueMontreal-Book.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PPNeueMontreal-Book.otf"; sourceTree = "<group>"; };
+		99DC91C32D1BAB05002B9A89 /* PPNeueMontreal-SemiBolditalic.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PPNeueMontreal-SemiBolditalic.otf"; sourceTree = "<group>"; };
+		99DC91C42D1BAB05002B9A89 /* PPNeueMontreal-Thin.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PPNeueMontreal-Thin.otf"; sourceTree = "<group>"; };
+		99DC91C52D1BAB05002B9A89 /* PPNeueMontreal-Italic.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PPNeueMontreal-Italic.otf"; sourceTree = "<group>"; };
+		99DC91C62D1BAB05002B9A89 /* PPNeueMontreal-Bold.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PPNeueMontreal-Bold.otf"; sourceTree = "<group>"; };
+		99DC91CD2D1BAB11002B9A89 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		99F31CA62D0F2DA300330180 /* RecordFollowUpLoopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordFollowUpLoopView.swift; sourceTree = "<group>"; };
 		99F31CA82D0F31AF00330180 /* FollowUp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FollowUp.swift; sourceTree = "<group>"; };
 		99F31CAA2D0F477500330180 /* Graph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Graph.swift; sourceTree = "<group>"; };
@@ -246,6 +259,8 @@
 		99A0C8EF2CA9EF2400F9281A /* Loop */ = {
 			isa = PBXGroup;
 			children = (
+				99DC91CD2D1BAB11002B9A89 /* Info.plist */,
+				99DC91C02D1BA9BF002B9A89 /* Fonts */,
 				9953BE092CFCC0A900348AC3 /* CoreData */,
 				99A0C9022CA9F5F700F9281A /* Utilities */,
 				99A0C9012CA9F5CA00F9281A /* Loop.entitlements */,
@@ -382,6 +397,19 @@
 			path = Utilities;
 			sourceTree = "<group>";
 		};
+		99DC91C02D1BA9BF002B9A89 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				99DC91C62D1BAB05002B9A89 /* PPNeueMontreal-Bold.otf */,
+				99DC91C22D1BAB04002B9A89 /* PPNeueMontreal-Book.otf */,
+				99DC91C52D1BAB05002B9A89 /* PPNeueMontreal-Italic.otf */,
+				99DC91C12D1BAB04002B9A89 /* PPNeueMontreal-Medium.otf */,
+				99DC91C32D1BAB05002B9A89 /* PPNeueMontreal-SemiBolditalic.otf */,
+				99DC91C42D1BAB05002B9A89 /* PPNeueMontreal-Thin.otf */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -447,8 +475,14 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				99DC91C72D1BAB05002B9A89 /* PPNeueMontreal-Medium.otf in Resources */,
+				99DC91CA2D1BAB05002B9A89 /* PPNeueMontreal-Thin.otf in Resources */,
+				99DC91CB2D1BAB05002B9A89 /* PPNeueMontreal-Italic.otf in Resources */,
+				99DC91CC2D1BAB05002B9A89 /* PPNeueMontreal-Bold.otf in Resources */,
+				99DC91C82D1BAB05002B9A89 /* PPNeueMontreal-Book.otf in Resources */,
 				99A0C8F82CA9EF2600F9281A /* Preview Assets.xcassets in Resources */,
 				99A0C8F52CA9EF2600F9281A /* Assets.xcassets in Resources */,
+				99DC91C92D1BAB05002B9A89 /* PPNeueMontreal-SemiBolditalic.otf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -685,6 +719,7 @@
 				DEVELOPMENT_TEAM = NDZ2DG6484;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Loop/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Required to record video loops";
 				INFOPLIST_KEY_NSContactsUsageDescription = "To See Users using loop";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "So that you can Loop!";
@@ -721,6 +756,7 @@
 				DEVELOPMENT_TEAM = NDZ2DG6484;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Loop/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Required to record video loops";
 				INFOPLIST_KEY_NSContactsUsageDescription = "To See Users using loop";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "So that you can Loop!";
