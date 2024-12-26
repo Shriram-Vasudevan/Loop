@@ -34,10 +34,9 @@ struct HomeView: View {
     
     var body: some View {
         ZStack {
-//            // Keep your original FlowingBackground
-//            FlowingBackground(color: accentColor)
-//                .opacity(backgroundOpacity)
-//                .ignoresSafeArea()
+            FlowingBackground(color: accentColor)
+                .opacity(backgroundOpacity)
+                .ignoresSafeArea()
 //            
             ScrollView {
                 VStack(spacing: 32) {
@@ -391,13 +390,20 @@ struct ThematicPromptCard: View {
             }
             .frame(width: 160, height: 220)
             .background(
-                WavyBackground()
-                    .foregroundColor(surfaceColor)
-                    .rotation3DEffect(
-                        .degrees(isEven ? 0 : 180),
-                        axis: (x: 1, y: 0, z: 0)
-                    )
-                    .cornerRadius(10)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(.white)
+                    
+                    WavyBackground()
+                        .foregroundColor(surfaceColor)
+                        .offset(y: isEven ? 25 : -25)
+                        .rotation3DEffect(
+                            .degrees(isEven ? 0 : 180),
+                            axis: (x: 1, y: 0, z: 0)
+                        )
+    //
+                        .cornerRadius(10)
+                }
             )
 //            .overlay(
 //                RoundedRectangle(cornerRadius: 20)
@@ -409,10 +415,6 @@ struct ThematicPromptCard: View {
     @ViewBuilder
     private func contentLayout(height: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Theme icon
-//            themeIcon
-//                .frame(width: 40, height: 40)
-//            
             VStack(alignment: .leading, spacing: 8) {
                 Text(prompt.name)
                     .font(.system(size: 20, weight: .medium))

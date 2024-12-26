@@ -59,6 +59,8 @@ struct LoopCard: View {
                             .foregroundColor(textColor.opacity(0.5))
                             .frame(width: 32, height: 32)
                     }
+                    .buttonStyle(PlainButtonStyle())
+                    .highPriorityGesture(TapGesture())
                 }
                 
                 HStack(spacing: 16) {
@@ -72,16 +74,15 @@ struct LoopCard: View {
             .padding(20)
             .background(
                 ZStack {
-                    RoundedRectangle(cornerRadius: 2)
+                    RoundedRectangle(cornerRadius: 10)
                         .fill(Color.white)
                     
-                    WavyBackground()
-                        .foregroundColor(surfaceColor)
-                        .opacity(0.5)
+                    DecorativeBackground()
+                        .cornerRadius(10)
                 }
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 2)
+                RoundedRectangle(cornerRadius: 10)
                     .stroke(accentColor.opacity(0.08), lineWidth: 0.5)
             )
         }
@@ -153,6 +154,41 @@ struct WaveformPreview: View {
                     .fill(color.opacity(0.6))
                     .frame(width: 1, height: CGFloat([12, 16, 20, 24, 20, 16, 12, 8][index]))
             }
+        }
+    }
+}
+
+
+struct DecorativeBackground: View {
+    var body: some View {
+        Canvas { context, size in
+            let width = size.width * 0.3
+            let height = size.height * 0.5
+            
+            var path = Path(roundedRect: CGRect(
+                x: size.width - width - 20,
+                y: size.height - height,
+                width: width,
+                height: height
+            ), cornerRadius: 20)
+            context.fill(path, with: .color(Color(hex: "A28497").opacity(0.03)))
+            
+            path = Path(roundedRect: CGRect(
+                x: size.width - width + 20,
+                y: size.height - height - 20,
+                width: width,
+                height: height
+            ), cornerRadius: 20)
+            context.fill(path, with: .color(Color(hex: "A28497").opacity(0.03)))
+            
+
+            path = Path(roundedRect: CGRect(
+                x: size.width - width/2,
+                y: size.height - height/2,
+                width: width/2,
+                height: height/2
+            ), cornerRadius: 15)
+            context.fill(path, with: .color(Color(hex: "A28497").opacity(0.02)))
         }
     }
 }

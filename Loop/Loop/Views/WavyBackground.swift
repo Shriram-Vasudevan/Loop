@@ -8,28 +8,61 @@
 import SwiftUI
 
 struct WavyBackground: View {
-    @State private var waveOffset: CGFloat = 0
-    
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                LinearGradient(gradient: Gradient(colors: [Color.white, Color(white: 0.98)]),
-                               startPoint: .top,
-                               endPoint: .bottom)
-                    .edgesIgnoringSafeArea(.all)
+        TimelineView(.animation(minimumInterval: 1/30)) { timeline in
+            Canvas { context, size in
+                let timeOffset = timeline.date.timeIntervalSinceReferenceDate
+                
+                let backgroundGradient = Gradient(colors: [.white, Color(white: 0.98)])
+                context.fill(
+                    Path(CGRect(origin: .zero, size: size)),
+                    with: .linearGradient(
+                        backgroundGradient,
+                        startPoint: CGPoint(x: size.width/2, y: 0),
+                        endPoint: CGPoint(x: size.width/2, y: size.height)
+                    )
+                )
+       
+                let waveConfigs: [(amplitude: Double, frequency: Double, opacity: Double)] = [
+                    (20, 1.5, 0.6),
+                    (40, 1.2, 0.4),
+                    (10, 2.0, 0.3)
+                ]
+                
+                for (index, config) in waveConfigs.enumerated() {
+                    let phase = timeOffset.remainder(dividingBy: 10) / 10 * .pi * 2
+                    let phaseOffset = Double(index) * 20
+                    
+                    var path = Path()
+                    let width = size.width
+                    let height = size.height
+                    let midHeight = height / 2
+                    
+                    let steps = Int(width / 4)
+                    let dx = width / CGFloat(steps)
+                    
+                    path.move(to: CGPoint(x: 0, y: height))
+                    path.addLine(to: CGPoint(x: 0, y: midHeight))
+                    
+                    for step in 0...steps {
+                        let x = CGFloat(step) * dx
+                        let relativeX = x / width
+                        let y = sin(relativeX * .pi * config.frequency + phase + phaseOffset/30) * config.amplitude + midHeight
+                        path.addLine(to: CGPoint(x: x, y: y))
+                    }
+                    
+                    path.addLine(to: CGPoint(x: width, y: height))
+                    path.closeSubpath()
 
-                OptimizedWaveLayer(phase: waveOffset, amplitude: 20, frequency: 1.5, color: Color(white: 0.9).opacity(0.6), size: geometry.size)
-                OptimizedWaveLayer(phase: waveOffset + 20, amplitude: 40, frequency: 1.2, color: Color(white: 0.85).opacity(0.4), size: geometry.size)
-                OptimizedWaveLayer(phase: waveOffset + 60, amplitude: 10, frequency: 2.0, color: Color(white: 0.8).opacity(0.3), size: geometry.size)
-            }
-            .onAppear {
-                withAnimation(Animation.easeInOut(duration: 5).repeatForever(autoreverses: true)) {
-                    waveOffset = 30
+                    context.opacity = config.opacity
+                    context.fill(
+                        path,
+                        with: .color(Color(white: 0.9 - Double(index) * 0.05))
+                    )
                 }
             }
-            .drawingGroup()
-            
         }
+        .edgesIgnoringSafeArea(.all)
     }
 }
 
@@ -63,25 +96,18 @@ struct OptimizedWaveLayer: View {
     }
 }
 
-
-
-
-// A simple Identifiable particle model
 struct Particle: Identifiable {
     let id: Int
     var isActive = false
-    
-    // Generate random size for the particle
+
     var size: CGFloat {
         CGFloat.random(in: 4...8)
     }
     
-    // Randomize x position within the screen
     func xPosition(in size: CGSize) -> CGFloat {
         CGFloat.random(in: 0...size.width)
     }
     
-    // Randomize y position within the screen
     func yPosition(in size: CGSize) -> CGFloat {
         CGFloat.random(in: 0...size.height)
     }
