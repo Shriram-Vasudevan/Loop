@@ -326,10 +326,11 @@ struct MonthCard: View {
                     WavyBackground()
                         .foregroundColor(surfaceColor)
                         .opacity(0.5)
+                        .cornerRadius(10)
                 }
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 2)
+                RoundedRectangle(cornerRadius: 10)
                     .stroke(accentColor.opacity(0.08), lineWidth: 0.5)
             )
         }

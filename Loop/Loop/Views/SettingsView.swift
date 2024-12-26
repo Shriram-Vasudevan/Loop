@@ -8,7 +8,6 @@
 import SwiftUI
 import Foundation
 import Darwin
-
 struct SettingsView: View {
     @StateObject private var notificationManager = NotificationManager.shared
     @AppStorage("iCloudBackupEnabled") private var isCloudBackupEnabled = false
@@ -19,68 +18,87 @@ struct SettingsView: View {
     @State private var showTimeSelector = false
     @State private var showNameEditor = false
     @State private var userName: String
+    @State private var animateContent = false
     
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
-    private let backgroundColor = Color(hex: "FAFBFC")
-    private let surfaceColor = Color(hex: "F8F5F7")
-    private let version = "1.0.0"
-    private let build = "42"
     
     init() {
-        // Load name from UserDefaults
         let savedName = UserDefaults.standard.string(forKey: "userName") ?? "Set your name"
         _userName = State(initialValue: savedName)
         
-        // Load reminder time from UserDefaults
         let savedTime = UserDefaults.standard.object(forKey: "reminderTime") as? Date
         let defaultTime = Calendar.current.date(from: DateComponents(hour: 21, minute: 0)) ?? Date()
         _reminderTime = State(initialValue: savedTime ?? defaultTime)
     }
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                backgroundColor.ignoresSafeArea()
-                
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 24) {
-                        profileCard
-                        preferencesCard
-                        supportCard
-                        aboutCard
-                        logoutButton
+        ZStack {
+//            FlowingBackground(color: accentColor)
+//                .opacity(0.2)
+//                .ignoresSafeArea()
+            
+            Color(hex: "F5F5F5")
+                .ignoresSafeArea(.all)
+            
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 40) {
+                    VStack (spacing: 30)
+                    {
+                        header
+                            .padding(.top, 40)
+                        
+                        profileSection
+                        
                     }
-                    .padding(20)
+                    preferencesSection
+                    
+                    supportSection
+
+                    accountSection
+                    
+                    Spacer(minLength: 60)
                 }
+                .padding(.horizontal, 24)
             }
-            .navigationTitle("Settings")
-            .sheet(isPresented: $showTimeSelector) {
-                reminderPicker
+  
+            
+        }
+        // Change back to using the sheet modifier
+        .sheet(isPresented: $showTimeSelector) {
+            TimePickerSheet(selectedTime: $reminderTime) { newTime in
+                UserDefaults.standard.set(newTime, forKey: "reminderTime")
+                NotificationManager.shared.saveAndScheduleReminder(at: newTime)
             }
-            .sheet(isPresented: $showingContactView) {
-                ContactView()
-            }
-            .sheet(item: $selectedWebView) { webViewData in
-                NavigationView {
-                    WebView(url: webViewData.url)
-                        .navigationTitle(webViewData.title)
-                        .navigationBarTitleDisplayMode(.inline)
-                        .toolbar {
-                            Button("Done") { selectedWebView = nil }
-                        }
-                }
-            }
-            .sheet(isPresented: $showNameEditor) {
-                nameEditorView
+            .presentationDetents([.fraction(0.7)])
+        }
+        .sheet(isPresented: $showingContactView) { ContactView() }
+        .sheet(item: $selectedWebView) { webViewData in
+            webView(for: webViewData)
+        }
+        .sheet(isPresented: $showNameEditor) { nameEditorView }
+    }
+    
+    private var header: some View {
+        HStack {
+            Text("Settings")
+                .font(.custom("PPNeueMontreal-Medium", size: 36))
+                .foregroundColor(textColor)
+            Spacer()
+        }
+        .opacity(animateContent ? 1 : 0)
+        .offset(y: animateContent ? 0 : 20)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.8)) {
+                animateContent = true
             }
         }
     }
     
-    private var profileCard: some View {
-        Button(action: { showNameEditor = true }) {
-            VStack(alignment: .leading, spacing: 20) {
-                HStack(spacing: 16) {
+    private var profileSection: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            Button(action: { showNameEditor = true }) {
+                HStack(spacing: 20) {
                     Circle()
                         .fill(accentColor.opacity(0.1))
                         .frame(width: 64, height: 64)
@@ -92,291 +110,493 @@ struct SettingsView: View {
                     
                     VStack(alignment: .leading, spacing: 4) {
                         Text(userName)
-                            .font(.system(size: 20, weight: .semibold))
+                            .font(.custom("PPNeueMontreal-Medium", size: 22))
                             .foregroundColor(textColor)
                         
-                        Text("Edit Profile")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(accentColor)
+                        Text("tap to edit")
+                            .font(.system(size: 15))
+                            .foregroundColor(textColor.opacity(0.5))
+                    }
+                    
+                    Spacer()
+                }
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(.white)
+        )
+    }
+    
+    private var preferencesSection: some View {
+        VStack(alignment: .leading, spacing: 32) {
+            sectionTitle("Preferences")
+            
+            VStack(spacing: 32) {
+                // Notifications Toggle
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Daily Reminders")
+                                .font(.custom("PPNeueMontreal-Medium", size: 17))
+                                .foregroundColor(textColor)
+                        }
+                        
+                        Spacer()
+                        
+                        MinimalToggle(isOn: Binding(
+                            get: { notificationManager.isNotificationsEnabled },
+                            set: { _ in
+                                notificationManager.toggleNotifications(enabled: !notificationManager.isNotificationsEnabled)
+                            }
+                        ))
+                    }
+                    
+                    if notificationManager.isNotificationsEnabled {
+                        Button(action: { showTimeSelector = true }) {
+                            HStack(spacing: 8) {
+                                Text(NotificationManager.shared.formatReminderTime(reminderTime))
+                                    .font(.system(size: 15))
+                                    .foregroundColor(textColor.opacity(0.5))
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(textColor.opacity(0.3))
+                            }
+                        }
+                    }
+                }
+                
+                // iCloud Backup Toggle
+                HStack {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("iCloud Backup")
+                            .font(.custom("PPNeueMontreal-Medium", size: 17))
+                            .foregroundColor(textColor)
+                        
+                        Text("Sync your journal across devices")
+                            .font(.system(size: 15))
+                            .foregroundColor(textColor.opacity(0.5))
                     }
                     
                     Spacer()
                     
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(textColor.opacity(0.3))
+                    MinimalToggle(isOn: $isCloudBackupEnabled)
                 }
             }
-            .padding(20)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
         }
     }
     
-    private var nameEditorView: some View {
+    private var supportSection: some View {
+        VStack(alignment: .leading, spacing: 32) {
+            sectionTitle("Support")
+            
+            VStack(spacing: 32) {
+                supportLink("Contact Us", icon: "envelope.fill") {
+                    showingContactView = true
+                }
+                
+                
+                
+                supportLink("Privacy Policy", icon: "lock.fill") {
+                    selectedWebView = WebViewData(
+                        title: "Privacy Policy",
+                        url: URL(string: "https://loopapp.com/privacy")!
+                    )
+                }
+                
+                supportLink("Terms of Service", icon: "doc.text.fill") {
+                    selectedWebView = WebViewData(
+                        title: "Terms of Service",
+                        url: URL(string: "https://loopapp.com/terms")!
+                    )
+                }
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(.white)
+        )
+    }
+    
+    private var accountSection: some View {
+        VStack(alignment: .leading, spacing: 32) {
+            sectionTitle("Account")
+            
+            VStack(spacing: 24) {
+                Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")")
+                    .font(.system(size: 15))
+                    .foregroundColor(textColor.opacity(0.5))
+                
+                Button(action: { showingLogoutAlert = true }) {
+                    Text("Log Out")
+                        .font(.custom("PPNeueMontreal-Medium", size: 17))
+                        .foregroundColor(.red.opacity(0.8))
+                }
+                .alert("Log Out", isPresented: $showingLogoutAlert) {
+                    Button("Cancel", role: .cancel) { }
+                    Button("Log Out", role: .destructive) { }
+                }
+            }
+        }
+    }
+    
+    private func sectionTitle(_ title: String) -> some View {
+        Text(title.uppercased())
+            .font(.system(size: 13, weight: .medium))
+            .foregroundColor(textColor.opacity(0.5))
+            .tracking(1.5)
+    }
+    
+    private func supportLink(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(accentColor)
+                
+                Text(title)
+                    .font(.custom("PPNeueMontreal-Medium", size: 17))
+                    .foregroundColor(textColor)
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14))
+                    .foregroundColor(textColor.opacity(0.3))
+            }
+        }
+    }
+}
+
+struct MinimalToggle: View {
+    @Binding var isOn: Bool
+    
+    private let accentColor = Color(hex: "A28497")
+    
+    var body: some View {
+        Button(action: { isOn.toggle() }) {
+            Circle()
+                .stroke(isOn ? accentColor : Color.gray.opacity(0.3), lineWidth: 1.5)
+                .frame(width: 24, height: 24)
+                .overlay(
+                    Circle()
+                        .fill(isOn ? accentColor : Color.clear)
+                        .frame(width: 16, height: 16)
+                )
+        }
+    }
+}
+
+extension SettingsView {
+    var reminderPicker: some View {
         NavigationView {
             ZStack {
-                backgroundColor.ignoresSafeArea()
-                
-                VStack(spacing: 20) {
-                    TextField("Your Name", text: $userName)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .font(.system(size: 17))
-                        .padding()
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .padding(.horizontal)
+                Color.white.ignoresSafeArea()
                     
+                VStack(spacing: 32) {
+                    DatePicker("", selection: $reminderTime, displayedComponents: .hourAndMinute)
+                        .datePickerStyle(.wheel)
+                        .labelsHidden()
+                        
+                    Button(action: {
+                        UserDefaults.standard.set(reminderTime, forKey: "reminderTime")
+                        NotificationManager.shared.saveAndScheduleReminder(at: reminderTime)
+                        showTimeSelector = false
+                    }) {
+                        Text("Set Time")
+                            .font(.custom("PPNeueMontreal-Medium", size: 17))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(accentColor)
+                    }
+                    .padding(.horizontal, 24)
+                }
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") { showTimeSelector = false }
+                }
+            }
+        }
+    }
+    var nameEditorView: some View {
+        NavigationView {
+            ZStack {
+                Color.white.ignoresSafeArea()
+                
+                VStack(spacing: 32) {
+                    Text("What should we call you?")
+                        .font(.custom("PPNeueMontreal-Medium", size: 22))
+                        .foregroundColor(textColor)
+                        .padding(.top, 40)
+                    
+                    TextField("Your Name", text: $userName)
+                        .font(.custom("PPNeueMontreal-Medium", size: 34))
+                        .foregroundColor(textColor)
+                        .multilineTextAlignment(.center)
+                        .textFieldStyle(.plain)
+                    
+                    Spacer()
+                }
+                .padding(24)
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { showNameEditor = false }) {
+                        Text("Cancel")
+                            .font(.system(size: 17))
+                            .foregroundColor(textColor)
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
                         UserDefaults.standard.set(userName, forKey: "userName")
                         showNameEditor = false
                     }) {
                         Text("Save")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(accentColor)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    .padding(.horizontal)
-                    
-                    Spacer()
-                }
-                .padding(.top, 20)
-            }
-            .navigationTitle("Edit Name")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        showNameEditor = false
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(accentColor)
                     }
                 }
             }
         }
     }
     
-    private var preferencesCard: some View {
-        VStack(spacing: 1) {
-            settingRow(title: "Notifications", icon: "bell.fill", hasToggle: true, isOn: notificationManager.isNotificationsEnabled) {
-                notificationManager.toggleNotifications(enabled: !notificationManager.isNotificationsEnabled)
-            }
-            
-            if notificationManager.isNotificationsEnabled {
-                settingRow(title: "Reminder Time", icon: "clock.fill", subtitle: NotificationManager.shared.formatReminderTime(reminderTime)) {
-                    showTimeSelector = true
-                }
-            }
-            
-            settingRow(title: "iCloud Backup", icon: "icloud.fill", hasToggle: true, isOn: isCloudBackupEnabled) {
-                isCloudBackupEnabled.toggle()
-            }
-        }
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
-    }
-    
-    private var supportCard: some View {
-        VStack(spacing: 1) {
-            settingRow(title: "Contact Support", icon: "envelope.fill") {
-                showingContactView = true
-            }
-            
-            settingRow(title: "Privacy Policy", icon: "lock.fill") {
-                selectedWebView = WebViewData(
-                    title: "Privacy Policy",
-                    url: URL(string: "https://loopapp.com/privacy")!
-                )
-            }
-            
-            settingRow(title: "Terms of Service", icon: "doc.text.fill") {
-                selectedWebView = WebViewData(
-                    title: "Terms of Service",
-                    url: URL(string: "https://loopapp.com/terms")!
-                )
-            }
-        }
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
-    }
-    
-    private var aboutCard: some View {
-        VStack(spacing: 1) {
-            settingRow(title: "Version", icon: "info.circle.fill", subtitle: "\(version) (\(build))")
-        }
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
-    }
-    
-    private var logoutButton: some View {
-        Button(action: { showingLogoutAlert = true }) {
-            HStack {
-                Spacer()
-                Text("Log Out")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.red.opacity(0.8))
-                Spacer()
-            }
-            .padding(.vertical, 16)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
-        }
-        .alert("Log Out", isPresented: $showingLogoutAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Log Out", role: .destructive) { }
-        } message: {
-            Text("Are you sure you want to log out?")
-        }
-    }
-    
-    private var reminderPicker: some View {
+    func webView(for webViewData: WebViewData) -> some View {
         NavigationView {
-            VStack {
-                DatePicker("Select Time", selection: $reminderTime, displayedComponents: .hourAndMinute)
-                    .datePickerStyle(.wheel)
-                    .labelsHidden()
-                    .padding()
+            ZStack {
+                Color.white.ignoresSafeArea()
                 
-                Button(action: {
-                    UserDefaults.standard.set(reminderTime, forKey: "reminderTime")
-                    NotificationManager.shared.saveAndScheduleReminder(at: reminderTime)
-                    showTimeSelector = false
-                }) {
-                    Text("Set Reminder")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(accentColor)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .padding()
+                WebView(url: webViewData.url)
             }
-            .navigationTitle("Set Daily Reminder")
             .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle(webViewData.title)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        showTimeSelector = false
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { selectedWebView = nil }) {
+                        Text("Done")
+                            .font(.system(size: 17))
+                            .foregroundColor(textColor)
                     }
                 }
             }
         }
     }
     
-    private func settingRow(
-        title: String,
-        icon: String,
-        subtitle: String? = nil,
-        hasToggle: Bool = false,
-        isOn: Bool = false,
-        action: (() -> Void)? = nil
-    ) -> some View {
-        Button(action: { action?() }) {
-            HStack(spacing: 16) {
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(accentColor)
-                    .frame(width: 24)
-                
-                Text(title)
-                    .font(.system(size: 16))
-                    .foregroundColor(textColor)
-                
-                Spacer()
-                
-                if hasToggle {
-                    Toggle("", isOn: Binding(
-                        get: { isOn },
-                        set: { _ in action?() }
-                    ))
-                    .tint(accentColor)
-                } else if let subtitle = subtitle {
-                    Text(subtitle)
-                        .font(.system(size: 16))
-                        .foregroundColor(textColor.opacity(0.6))
-                } else {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(textColor.opacity(0.3))
-                }
-            }
-            .padding(.vertical, 16)
-            .padding(.horizontal, 20)
-            .background(Color.white)
-        }
-        .buttonStyle(PlainButtonStyle())
+    private func timeFormatted(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return formatter.string(from: date).lowercased()
     }
 }
 
 struct ContactView: View {
     @Environment(\.dismiss) private var dismiss
     
-    let contactMethods = [
-        (title: "Email", value: "support@loopapp.com", icon: "envelope.fill", url: "mailto:support@loopapp.com"),
-        (title: "Phone", value: "+1 (555) 123-4567", icon: "phone.fill", url: "tel:+15551234567")
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    private let contactMethods = [
+        ContactMethod(
+            title: "Send us an email",
+            description: "support@loopapp.com",
+            icon: "envelope.fill",
+            url: "mailto:support@loopapp.com"
+        ),
+        ContactMethod(
+            title: "Call us",
+            description: "+1 (555) 123-4567",
+            icon: "phone.fill",
+            url: "tel:+15551234567"
+        )
     ]
     
     var body: some View {
         NavigationView {
             ZStack {
-                Color(hex: "FAFBFC").ignoresSafeArea()
+                Color.white.ignoresSafeArea()
                 
-                VStack(spacing: 16) {
-                    ForEach(contactMethods, id: \.title) { method in
-                        Button(action: {
-                            if let url = URL(string: method.url) {
-                                UIApplication.shared.open(url)
-                            }
-                        }) {
-                            HStack(spacing: 16) {
-                                Image(systemName: method.icon)
-                                    .font(.system(size: 20))
-                                    .foregroundColor(Color(hex: "A28497"))
-                                    .frame(width: 24)
-                                
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(method.title)
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(Color(hex: "2C3E50"))
-                                    Text(method.value)
-                                        .font(.system(size: 16))
-                                        .foregroundColor(Color(hex: "2C3E50"))
+                VStack(alignment: .leading, spacing: 40) {
+                    Text("How can we help?")
+                        .font(.custom("PPNeueMontreal-Medium", size: 28))
+                        .foregroundColor(textColor)
+                        .padding(.top, 20)
+                    
+                    VStack(spacing: 32) {
+                        ForEach(contactMethods) { method in
+                            Button(action: {
+                                if let url = URL(string: method.url) {
+                                    UIApplication.shared.open(url)
                                 }
-                                
-                                Spacer()
-                                
-                                Image(systemName: "arrow.up.forward")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(Color(hex: "A28497"))
+                            }) {
+                                HStack(spacing: 20) {
+                                    Image(systemName: method.icon)
+                                        .font(.system(size: 20))
+                                        .foregroundColor(accentColor)
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(method.title)
+                                            .font(.custom("PPNeueMontreal-Medium", size: 17))
+                                            .foregroundColor(textColor)
+                                        
+                                        Text(method.description)
+                                            .font(.system(size: 15))
+                                            .foregroundColor(textColor.opacity(0.5))
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "arrow.up.right")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(textColor.opacity(0.3))
+                                }
                             }
-                            .padding()
-                            .background(Color.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
                         }
                     }
                     
                     Spacer()
                 }
-                .padding(20)
+                .padding(24)
             }
-            .navigationTitle("Contact Us")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { dismiss() }) {
+                        Text("Done")
+                            .font(.system(size: 17))
+                            .foregroundColor(textColor)
+                    }
                 }
             }
         }
     }
 }
+
+struct TimePickerSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var selectedTime: Date
+    let onSave: (Date) -> Void
+    
+    @State private var opacity = 0.0
+    @State private var sheetOffset: CGFloat = 1000
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        ZStack {
+            // Main Sheet
+            VStack(spacing: 0) {
+                // Top Section with Time Display
+                VStack(spacing: 12) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 38, height: 4)
+                        .padding(.top, 12)
+                    
+                    Text("daily reminder")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(textColor.opacity(0.6))
+                        .tracking(1.2)
+                        .padding(.top, 8)
+                    
+                    Text(timeFormatted(selectedTime))
+                        .font(.custom("PPNeueMontreal-Medium", size: 58))
+                        .foregroundColor(textColor)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 160)
+                .background(
+                    RoundedRectangle(cornerRadius: 32)
+                        .fill(Color.white)
+                        .shadow(color: Color.black.opacity(0.05), radius: 20, y: 10)
+                )
+                .padding(.horizontal, 20)
+                
+                // Custom Picker Area
+                DatePicker("", selection: $selectedTime, displayedComponents: .hourAndMinute)
+                    .datePickerStyle(.wheel)
+                    .labelsHidden()
+                    .padding(.top, 40)
+                    .colorMultiply(accentColor.opacity(0.8))
+                
+                // Action Buttons
+                HStack(spacing: 16) {
+                    Button(action: hideSheet) {
+                        Text("Cancel")
+                            .font(.system(size: 17))
+                            .foregroundColor(textColor)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(Color.white)
+                            .cornerRadius(18)
+                    }
+                    
+                    Button(action: {
+                        onSave(selectedTime)
+                        hideSheet()
+                    }) {
+                        Text("Set Time")
+                            .font(.custom("PPNeueMontreal-Medium", size: 17))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(accentColor)
+                            .cornerRadius(18)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 24)
+            }
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 32)
+                    .fill(Color(hex: "FAFBFC"))
+            )
+        }
+    }
+    
+    private func timeFormatted(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return formatter.string(from: date).lowercased()
+    }
+    
+    private func showSheet() {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            opacity = 1
+            sheetOffset = 280
+        }
+    }
+    
+    private func hideSheet() {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            opacity = 0
+            sheetOffset = 1000
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            dismiss()
+        }
+    }
+}
+
+
+struct ContactMethod: Identifiable {
+    let id = UUID()
+    let title: String
+    let description: String
+    let icon: String
+    let url: String
+}
+
 
 #Preview {
     SettingsView()
