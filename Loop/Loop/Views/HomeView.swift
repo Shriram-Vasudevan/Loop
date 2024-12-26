@@ -396,11 +396,11 @@ struct ThematicPromptCard: View {
                     
                     WavyBackground()
                         .foregroundColor(surfaceColor)
-                        .offset(y: isEven ? 25 : -25)
                         .rotation3DEffect(
                             .degrees(isEven ? 0 : 180),
                             axis: (x: 1, y: 0, z: 0)
                         )
+                        .offset(y: isEven ? 25 : -25)
     //
                         .cornerRadius(10)
                 }
