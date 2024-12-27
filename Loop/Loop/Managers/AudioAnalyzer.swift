@@ -19,15 +19,14 @@ class AudioAnalyzer {
     
     func transcribeAudio(url: URL) async throws -> String {
         print("Starting transcription process...")
-        
-        // Try Apple's speech recognition first
+
         do {
-            print("Attempting Apple Speech Recognition...")
-            return try await transcribeWithApple(url: url)
-        } catch {
-            print("Apple Speech Recognition failed with error: \(error)")
             print("Falling back to Whisper API...")
             return try await transcribeWithWhisper(url: url)
+        } catch {
+            print("Whisper Speech Recognition failed with error: \(error)")
+            print("Attempting Apple Speech Recognition...")
+            return try await transcribeWithApple(url: url)
         }
     }
     

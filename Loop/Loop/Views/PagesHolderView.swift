@@ -23,7 +23,7 @@ struct PagesHolderView: View {
                     // Main content
                     switch pageType {
                     case .home:
-                        HomeView()
+                        HomeView(pageType: $pageType)
                     case .journal:
                         LoopsView()
                     case .settings:

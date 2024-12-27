@@ -179,12 +179,12 @@ class LoopLocalStorageUtility {
         forPrompts prompts: [String],
         minDaysAgo: Int,
         maxDaysAgo: Int,
-        preferGeneralPrompts: Bool,
-        category: PromptCategory? = nil
+        categoryFrequencies: [PromptCategory: Double]
     ) async throws -> Loop? {
         let calendar = Calendar.current
         let now = Date()
         
+        // Calculate date range based on days ago parameters
         guard let minDate = calendar.date(byAdding: .day, value: -maxDaysAgo, to: now),
               let maxDate = calendar.date(byAdding: .day, value: -minDaysAgo, to: now) else {
             throw NSError(domain: "DateCalculationError", code: -1)
@@ -200,127 +200,124 @@ class LoopLocalStorageUtility {
         )
         
         let results = try context.fetch(fetchRequest)
-        print("📊 Found \(results.count) total loops in date range")
+        print("📊 Found \(results.count) loops in specified time window")
         
         let loops = results.compactMap { convertToLoop(from: $0) }
-        print("🎯 Successfully converted \(loops.count) records to Loops")
         
         if !loops.isEmpty {
             let scoredLoops = loops.map { loop -> (Loop, Double) in
                 let score = calculateLoopScore(
                     loop: loop,
                     prompts: prompts,
-                    category: category,
-                    preferGeneralPrompts: preferGeneralPrompts,
+                    categoryFrequencies: categoryFrequencies,
                     now: now
                 )
                 return (loop, score)
-            }.sorted { $0.1 > $1.1 }
-            
-            print("⭐️ Top scoring loops:")
-            scoredLoops.prefix(3).forEach { loop, score in
-                print("   Score: \(score) - Prompt: \(loop.promptText)")
             }
             
-            if let bestMatch = scoredLoops.first, bestMatch.1 >= 0.3 {
-                // Update lastRetrieved after finding the best match
-                try updateLastRetrieved(for: bestMatch.0)
+            print("⭐️ Top scoring loops in this time window:")
+            scoredLoops.sorted { $0.1 > $1.1 }
+                .prefix(3)
+                .forEach { loop, score in
+                    print("   Score: \(score) - Prompt: \(loop.promptText) - Date: \(loop.timestamp.formatted())")
+                }
+            
+            // Get highest scoring loop that meets threshold
+            if let bestMatch = scoredLoops.max(by: { $0.1 < $1.1 }), bestMatch.1 > 0.3 {
                 return bestMatch.0
             }
         }
         
-        print("❌ No loops found in date range")
+        print("❌ No suitable loops found in this time window")
         return nil
     }
-
+    
     private func calculateLoopScore(
         loop: Loop,
         prompts: [String],
-        category: PromptCategory?,
-        preferGeneralPrompts: Bool,
+        categoryFrequencies: [PromptCategory: Double],
         now: Date
     ) -> Double {
-        var score: Double = 0
+        var score: Double = 0.0
         let calendar = Calendar.current
-        
-        let loopPrompt = LoopManager.shared.promptGroups.values
-            .flatMap({ $0 })
-            .first(where: { $0.text == loop.promptText })
-        
+
         if prompts.contains(loop.promptText) {
             score += 0.6
-            print("📝 Exact prompt match: +0.6")
+            print("💾 Local - Exact prompt match: +0.6")
         }
-        
-        if let category = category,
-           let promptCategory = loopPrompt?.category,
-           promptCategory == category {
-            score += 0.3
-            print("📂 Category match: +0.3")
-        }
-        
-        if let lastRetrieved = loop.lastRetrieved {
-            let daysAgo = calendar.dateComponents([.day], from: lastRetrieved, to: now).day ?? 0
-            if daysAgo < 30 {  // Penalty for recently retrieved loops
-                let penalty = Double(30 - daysAgo) / 100.0  // Max penalty of 0.3 for very recent retrievals
-                score -= penalty
-                print("⏱️ Recent retrieval penalty: -\(penalty)")
+
+        if let loopCategory = PromptCategory(rawValue: loop.category) {
+            if loopCategory == .freeform {
+                score -= 0.1
+                print("💾 Local - Share Anything penalty: -0.1")
+            } else {
+                for (category, frequency) in categoryFrequencies {
+                    if category == loopCategory {
+                        let categoryBoost = 0.3 * frequency
+                        score += categoryBoost
+                        print("💾 Local - Category frequency boost (\(category)): +\(categoryBoost)")
+                    }
+                }
             }
         }
         
+        // 3. Time-based Scoring
         let monthsAgo = Double(calendar.dateComponents([.month], from: loop.timestamp, to: now).month ?? 0)
         
-        if monthsAgo >= 3 && monthsAgo <= 6 {
-            score += 0.2
-            print("📅 Ideal time range (3-6 months): +0.2")
-        } else if monthsAgo >= 1 && monthsAgo <= 3 {
-            score += 0.15
-            print("📅 Good time range (1-3 months): +0.15")
-        } else if monthsAgo >= 6 && monthsAgo <= 12 {
-            score += 0.1
-            print("📅 Acceptable time range (6-12 months): +0.1")
-        }
-        
+        // Anniversary bonus (0.0 - 0.4)
         let dayOfMonth = calendar.component(.day, from: loop.timestamp)
         let currentDay = calendar.component(.day, from: now)
         if dayOfMonth == currentDay {
             if [3, 6, 9, 12].contains(monthsAgo) {
-                score += 0.2
-                print("🎉 Significant anniversary: +0.2")
+                score += 0.4
+                print("💾 Local - Significant anniversary: +0.4")
             } else {
-                score += 0.1
-                print("📆 Monthly anniversary: +0.1")
+                score += 0.2
+                print("💾 Local - Monthly anniversary: +0.2")
             }
         }
         
-        print("🎯 Final score for '\(loop.promptText)': \(score)")
-        return min(score, 1.0)
-    }
-    
-    private func processAndScoreLoops(
-        localResults: [NSManagedObject],
-        prompts: [String],
-        category: PromptCategory?,
-        preferGeneralPrompts: Bool,
-        now: Date
-    ) async throws -> [(Loop, Double)] {
-        var scoredLoops: [(Loop, Double)] = []
-        
-        for result in localResults {
-            guard let loop = convertToLoop(from: result) else { continue }
-            let score = calculateLoopScore(
-                loop: loop,
-                prompts: prompts,
-                category: category,
-                preferGeneralPrompts: preferGeneralPrompts,
-                now: now
-            )
-            scoredLoops.append((loop, score))
+        // Age appropriateness (0.0 - 0.2)
+        if monthsAgo >= 3 && monthsAgo <= 6 {
+            score += 0.2
+            print("💾 Local - Ideal time range (3-6 months): +0.2")
+        } else if monthsAgo >= 1 && monthsAgo <= 3 {
+            score += 0.1
+            print("💾 Local - Good time range (1-3 months): +0.1")
+        } else if monthsAgo >= 6 && monthsAgo <= 12 {
+            score += 0.05
+            print("💾 Local - Acceptable time range (6-12 months): +0.05")
         }
         
-        return scoredLoops.sorted { $0.1 > $1.1 }
+        // 4. Recent Retrieval Penalties (-0.8 - 0.0)
+        if let lastRetrieved = loop.lastRetrieved {
+            let daysAgo = calendar.dateComponents([.day], from: lastRetrieved, to: now).day ?? 0
+            var penalty: Double = 0.0
+            
+            switch daysAgo {
+            case 0...7:     // Severe penalty for very recent retrievals
+                penalty = 0.8
+            case 8...14:    // Strong penalty
+                penalty = 0.6
+            case 15...30:   // Moderate penalty
+                penalty = 0.4
+            case 31...60:   // Light penalty
+                penalty = 0.2
+            default:
+                penalty = 0.0
+            }
+            
+            if penalty > 0 {
+                score -= penalty
+                print("💾 Local - Recent retrieval penalty: -\(penalty)")
+            }
+        }
+        
+        let finalScore = max(0.0, min(1.0, score))
+        print("💾 Local - Final score for '\(loop.promptText)' from \(loop.timestamp.formatted()): \(finalScore)")
+        return finalScore
     }
-    
+
     func updateLastRetrieved(for loop: Loop) throws {
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "LoopEntity")
         fetchRequest.predicate = NSPredicate(format: "id == %@", loop.id)
@@ -329,55 +326,6 @@ class LoopLocalStorageUtility {
             entity.setValue(Date(), forKey: "lastRetrieved")
             try context.save()
         }
-    }
-    
-    private func checkForLocalAnniversaryMatches(
-        prompts: [String],
-        category: PromptCategory?,
-        now: Date
-    ) async throws -> Loop? {
-        let calendar = Calendar.current
-        let currentDay = calendar.component(.day, from: now)
-        
-        // Check 3, 6, 9, and 12 month anniversaries
-        for monthsAgo in [3, 6, 9, 12] {
-            guard let targetDate = calendar.date(byAdding: .month, value: -monthsAgo, to: now) else { continue }
-            
-            let startOfDay = calendar.startOfDay(for: targetDate)
-            let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
-            
-            let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "LoopEntity")
-            var predicates: [NSPredicate] = [
-                NSPredicate(
-                    format: "timestamp >= %@ AND timestamp < %@",
-                    startOfDay as NSDate,
-                    endOfDay as NSDate
-                )
-            ]
-            
-            if let category = category {
-                predicates.append(NSPredicate(format: "category == %@", category.rawValue))
-            }
-            
-            fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
-            
-            let results = try context.fetch(fetchRequest)
-            
-            let scoredLoops = try await processAndScoreLoops(
-                localResults: results,
-                prompts: prompts,
-                category: category,
-                preferGeneralPrompts: false,
-                now: now
-            )
-            
-            if let bestMatch = scoredLoops.first, bestMatch.1 >= 0.5 {
-                try updateLastRetrieved(for: bestMatch.0)
-                return bestMatch.0
-            }
-        }
-        
-        return nil
     }
     
     func calculateStreak() async throws -> LoopingStreak {

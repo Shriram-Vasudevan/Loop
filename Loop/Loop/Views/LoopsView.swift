@@ -43,8 +43,10 @@ struct LoopsView: View {
             withAnimation(.easeIn(duration: 1.2)) {
                 backgroundOpacity = 0.2
             }
-            Task {
-                await loopManager.loadActiveMonths()
+            withAnimation {
+                Task {
+                    await loopManager.loadActiveMonths()
+                }
             }
         }
         .fullScreenCover(item: $selectedLoop) { loop in
@@ -235,7 +237,7 @@ struct MonthsGridView: View {
                     }
                 }
                 .padding(.horizontal, 24)
-                .padding(.vertical, 20)
+                .padding(.vertical, 5)
             }
         }
         .scrollContentBackground(.hidden)
@@ -259,7 +261,7 @@ struct YearSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             Text(String(year))
-                .font(.custom("PPNeueMontreal-Medium", size: 37))
+                .font(.custom("PPNeueMontreal-Medium", size: 42))
                 .foregroundColor(textColor)
             
             LazyVGrid(columns: [
@@ -329,6 +331,7 @@ struct MonthCard: View {
                         .cornerRadius(10)
                 }
             )
+            .cornerRadius(10)
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
                     .stroke(accentColor.opacity(0.08), lineWidth: 0.5)
@@ -380,7 +383,7 @@ struct MonthDetailView: View {
             VStack(spacing: 0) {
                 headerSection
                     .padding(.horizontal, 24)
-                    .padding(.top, 20)
+                    .padding(.top, 5)
                 
                 if let summary = loopManager.selectedMonthSummary {
                     VStack(spacing: 32) {
@@ -494,7 +497,7 @@ struct MonthDetailView: View {
         components.year = monthId.year
         components.month = monthId.month
         if let date = Calendar.current.date(from: components) {
-            return dateFormatter.string(from: date).lowercased()
+            return dateFormatter.string(from: date)
         }
         return ""
     }

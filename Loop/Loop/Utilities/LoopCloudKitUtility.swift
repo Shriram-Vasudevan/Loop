@@ -189,27 +189,23 @@ class LoopCloudKitUtility {
         return distinctDates.count
     }
     
-    // In LoopCloudKitUtility
     static func fetchPastLoop(
         forPrompts prompts: [String],
         minDaysAgo: Int,
         maxDaysAgo: Int,
-        preferGeneralPrompts: Bool,
-        category: PromptCategory? = nil
+        categoryFrequencies: [PromptCategory: Double]
     ) async throws -> Loop? {
         let privateDB = container.privateCloudDatabase
         let calendar = Calendar.current
         let now = Date()
-        
-        // Calculate date range
+    
         guard let minDate = calendar.date(byAdding: .day, value: -maxDaysAgo, to: now),
               let maxDate = calendar.date(byAdding: .day, value: -minDaysAgo, to: now) else {
             throw NSError(domain: "DateCalculationError", code: -1)
         }
         
-        print("🔍 Searching for loops between \(minDate) and \(maxDate)")
+        print("🔍 Searching cloud storage between \(minDate) and \(maxDate)")
         
-        // First, just try to get ANY loops in the date range
         let datePredicate = NSPredicate(
             format: "Timestamp >= %@ AND Timestamp <= %@",
             minDate as NSDate,
@@ -217,199 +213,124 @@ class LoopCloudKitUtility {
         )
         
         let query = CKQuery(recordType: "LoopRecord", predicate: datePredicate)
-        query.sortDescriptors = [NSSortDescriptor(key: "Timestamp", ascending: false)]
         
         let (matchResults, _) = try await privateDB.records(matching: query)
+        print("📊 Found \(matchResults.count) loops in specified time window")
         
-        print("📊 Found \(matchResults.count) total loops in date range")
-        
-        // Convert results to Loops
         let loops = matchResults.compactMap { result -> Loop? in
             guard let record = try? result.1.get() else { return nil }
             return Loop.from(record: record)
         }
         
-        print("🎯 Successfully converted \(loops.count) records to Loops")
-        
-        // If we have loops, then apply filters
         if !loops.isEmpty {
-            // Score and sort loops
             let scoredLoops = loops.map { loop -> (Loop, Double) in
                 let score = calculateLoopScore(
                     loop: loop,
                     prompts: prompts,
-                    category: category,
-                    preferGeneralPrompts: preferGeneralPrompts,
+                    categoryFrequencies: categoryFrequencies,
                     now: now
                 )
                 return (loop, score)
-            }.sorted { $0.1 > $1.1 }
-            
-            print("⭐️ Top scoring loops:")
-            scoredLoops.prefix(3).forEach { loop, score in
-                print("   Score: \(score) - Prompt: \(loop.promptText)")
             }
             
-
-            if let bestMatch = scoredLoops.first {
-                print("📈 Selected best matching loop - Score: \(bestMatch.1) - Prompt: \(bestMatch.0.promptText)")
-                try await updateLastRetrieved(for: bestMatch.0)
+            print("⭐️ Top scoring loops in this time window:")
+            scoredLoops.sorted { $0.1 > $1.1 }
+                .prefix(3)
+                .forEach { loop, score in
+                    print("   Score: \(score) - Prompt: \(loop.promptText) - Date: \(loop.timestamp.formatted())")
+                }
+            
+            if let bestMatch = scoredLoops.max(by: { $0.1 < $1.1 }), bestMatch.1 > 0.3 {
                 return bestMatch.0
             }
         }
         
-        print("❌ No loops found in date range")
+        print("❌ No suitable loops found in this time window")
         return nil
     }
     
-    private static func calculateLoopScore(
+    static private func calculateLoopScore(
         loop: Loop,
         prompts: [String],
-        category: PromptCategory?,
-        preferGeneralPrompts: Bool,
+        categoryFrequencies: [PromptCategory: Double],
         now: Date
     ) -> Double {
-        var score: Double = 0
+        var score: Double = 0.0
         let calendar = Calendar.current
         
-        // Cache prompt lookup
-        let loopPrompt = LoopManager.shared.promptGroups.values
-            .flatMap({ $0 })
-            .first(where: { $0.text == loop.promptText })
-        
-        // 1. Exact Prompt Match (0.6)
+        // 1. Prompt and Category Matching (0.0 - 0.6)
         if prompts.contains(loop.promptText) {
-            score += 0.6  // Increased from 0.4
-            print("📝 Exact prompt match: +0.6")
+            score += 0.6
+            print("☁️ Cloud - Exact prompt match: +0.6")
         }
         
-        // 2. Category Match (0.3)
-        if let category = category,
-           let promptCategory = loopPrompt?.category,
-           promptCategory == category {
-            score += 0.3
-            print("📂 Category match: +0.3")
-        }
-        
-        // 3. Last Retrieved Penalty
-        if let lastRetrieved = loop.lastRetrieved {
-            let daysAgo = calendar.dateComponents([.day], from: lastRetrieved, to: now).day ?? 0
-            if daysAgo < 30 {  // Penalty for recently retrieved loops
-                let penalty = Double(30 - daysAgo) / 100.0  // Max penalty of 0.3 for very recent retrievals
-                score -= penalty
-                print("⏱️ Recent retrieval penalty: -\(penalty)")
+        // 2. Category Scoring
+        if let loopCategory = PromptCategory(rawValue: loop.category) {
+            if loopCategory == .freeform {
+                score -= 0.1
+                print("☁️ Cloud - Share Anything penalty: -0.1")
+            } else {
+                // Apply frequency-based category boost
+                for (category, frequency) in categoryFrequencies {
+                    if category == loopCategory {
+                        let categoryBoost = 0.3 * frequency
+                        score += categoryBoost
+                        print("☁️ Cloud - Category frequency boost (\(category)): +\(categoryBoost)")
+                    }
+                }
             }
         }
         
-        // 4. Time Relevance
+        // 3. Time-based Scoring (same as before)
         let monthsAgo = Double(calendar.dateComponents([.month], from: loop.timestamp, to: now).month ?? 0)
         
-        if monthsAgo >= 3 && monthsAgo <= 6 {
-            score += 0.2
-            print("📅 Ideal time range (3-6 months): +0.2")
-        } else if monthsAgo >= 1 && monthsAgo <= 3 {
-            score += 0.15
-            print("📅 Good time range (1-3 months): +0.15")
-        } else if monthsAgo >= 6 && monthsAgo <= 12 {
-            score += 0.1
-            print("📅 Acceptable time range (6-12 months): +0.1")
-        }
-        
-        // 5. Anniversary bonus
+        // Anniversary bonuses
         let dayOfMonth = calendar.component(.day, from: loop.timestamp)
         let currentDay = calendar.component(.day, from: now)
         if dayOfMonth == currentDay {
             if [3, 6, 9, 12].contains(monthsAgo) {
-                score += 0.3
-                print("🎉 Significant anniversary: +0.2")
+                score += 0.4
+                print("☁️ Cloud - Significant anniversary: +0.4")
             } else {
-                score += 0.15
-                print("📆 Monthly anniversary: +0.1")
+                score += 0.2
+                print("☁️ Cloud - Monthly anniversary: +0.2")
             }
         }
         
-        print("🎯 Final score for '\(loop.promptText)': \(score)")
-        return min(score, 1.0)
-    }
-
-    private static func processAndScoreLoops(
-        records: [CKRecord],
-        prompts: [String],
-        category: PromptCategory?,
-        preferGeneralPrompts: Bool,
-        now: Date
-    ) async throws -> [(Loop, Double)] {
-        var scoredLoops: [(Loop, Double)] = []
-        
-        for record in records {
-            guard let loop = Loop.from(record: record) else { continue }
-            let score = calculateLoopScore(
-                loop: loop,
-                prompts: prompts,
-                category: category,
-                preferGeneralPrompts: preferGeneralPrompts,
-                now: now
-            )
-            scoredLoops.append((loop, score))
+        // Age appropriateness
+        if monthsAgo >= 3 && monthsAgo <= 6 {
+            score += 0.2
+            print("☁️ Cloud - Ideal time range (3-6 months): +0.2")
+        } else if monthsAgo >= 1 && monthsAgo <= 3 {
+            score += 0.1
+            print("☁️ Cloud - Good time range (1-3 months): +0.1")
+        } else if monthsAgo >= 6 && monthsAgo <= 12 {
+            score += 0.05
+            print("☁️ Cloud - Acceptable time range (6-12 months): +0.05")
         }
         
-        return scoredLoops.sorted { $0.1 > $1.1 }
-    }
-
-    private static func checkForAnniversaryMatches(
-        prompts: [String],
-        category: PromptCategory?,
-        now: Date,
-        in database: CKDatabase
-    ) async throws -> Loop? {
-        let calendar = Calendar.current
-        let currentDay = calendar.component(.day, from: now)
-        let currentMonth = calendar.component(.month, from: now)
-        
-        // Check 3, 6, 9, and 12 month anniversaries
-        for monthsAgo in [3, 6, 9, 12] {
-            guard let targetDate = calendar.date(byAdding: .month, value: -monthsAgo, to: now) else { continue }
+        // 4. Recent Retrieval Penalties
+        if let lastRetrieved = loop.lastRetrieved {
+            let daysAgo = calendar.dateComponents([.day], from: lastRetrieved, to: now).day ?? 0
+            var penalty: Double = 0.0
             
-            // Only look at dates with same day of month
-            let startOfDay = calendar.startOfDay(for: targetDate)
-            let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
-            
-            let datePredicate = NSPredicate(
-                format: "Timestamp >= %@ AND Timestamp < %@",
-                startOfDay as NSDate,
-                endOfDay as NSDate
-            )
-            
-            var predicates: [NSPredicate] = [datePredicate]
-            
-            // Add category predicate if specified
-            if let category = category {
-                predicates.append(NSPredicate(format: "Category == %@", category.rawValue))
+            switch daysAgo {
+            case 0...7:     penalty = 0.8
+            case 8...14:    penalty = 0.6
+            case 15...30:   penalty = 0.4
+            case 31...60:   penalty = 0.2
+            default:        penalty = 0.0
             }
             
-            let query = CKQuery(
-                recordType: "LoopRecord",
-                predicate: NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
-            )
-            
-            let records = try await database.records(matching: query, inZoneWith: nil)
-            
-            // Process and score anniversary matches
-            let scoredLoops = try await processAndScoreLoops(
-                records: records,
-                prompts: prompts,
-                category: category,
-                preferGeneralPrompts: false, // Not relevant for anniversary matches
-                now: now
-            )
-            
-            // Return first match above threshold with anniversary bonus
-            if let bestMatch = scoredLoops.first, bestMatch.1 >= 0.5 { // Higher threshold for anniversary matches
-                return bestMatch.0
+            if penalty > 0 {
+                score -= penalty
+                print("☁️ Cloud - Recent retrieval penalty: -\(penalty)")
             }
         }
         
-        return nil
+        let finalScore = max(0.0, min(1.0, score))
+        print("☁️ Cloud - Final score for '\(loop.promptText)': \(finalScore)")
+        return finalScore
     }
 
     static func updateLastRetrieved(for loop: Loop) async throws {

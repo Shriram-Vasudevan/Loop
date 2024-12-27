@@ -83,6 +83,7 @@ class LoopManager: ObservableObject {
         return userDefaults.bool(forKey: "iCloudBackupEnabled")
     }
     
+    @AppStorage("hasRemovedUnlockReminder") var hasRemovedUnlockReminder: Bool = false
     
     init() {
         Task {
@@ -330,7 +331,7 @@ class LoopManager: ObservableObject {
         do {
             let prompts = try await LoopCloudKitUtility.fetchThematicPrompts()
             await MainActor.run {
-                self.thematicPrompts = prompts
+                self.thematicPrompts = prompts.shuffled()
             }
         } catch {
             print("Error loading thematic prompts: \(error)")
@@ -341,7 +342,6 @@ class LoopManager: ObservableObject {
         guard let selectedId = selectedThematicPromptId,
               let selectedTheme = thematicPrompts.first(where: { $0.id == selectedId }),
               selectedTheme.prompts.count >= 3 else {
-            // If no theme selected or not enough prompts, revert to normal prompts
             selectRandomPrompts()
             return
         }
@@ -438,7 +438,7 @@ class LoopManager: ObservableObject {
         }
     }
     
-    private func fetchDistinctLoopingDays() async throws -> Int {
+    func fetchDistinctLoopingDays() async throws -> Int {
         let cloudCount = try await LoopCloudKitUtility.fetchDistinctLoopingDays()
         let localCount = try await localStorage.fetchDistinctLoopingDays()
         
@@ -463,7 +463,18 @@ class LoopManager: ObservableObject {
         print("\n🔍 Starting getPastLoopForComparison")
         print("📝 Input prompts:", recordedPrompts)
         
-        // Check minimum history requirement first
+        // Get prompt categories and calculate frequencies
+        let promptCategories = recordedPrompts.compactMap { promptText -> PromptCategory? in
+            return getCategoryForPrompt(promptText)
+        }
+        
+        // Calculate category frequencies for scoring
+        let categoryFrequencies = Dictionary(grouping: promptCategories, by: { $0 })
+            .mapValues { Double($0.count) / Double(promptCategories.count) }
+        
+        print("📊 Category frequencies:", categoryFrequencies)
+        
+        // Check minimum history requirement
         let userDays = try await fetchDistinctLoopingDays()
         print("📅 User has \(userDays) days of history")
         
@@ -472,154 +483,79 @@ class LoopManager: ObservableObject {
             return nil
         }
         
-        // Get prompt objects to determine categories
-        let promptObjects = recordedPrompts.compactMap { promptText in
-            promptGroups.values
-                .flatMap { $0 }
-                .first { $0.text == promptText }
-        }
-        
-        print("🎯 Found \(promptObjects.count) matching prompt objects")
-        
         // Determine storage preference
         let preferredStorage = try await determinePreferredStorage()
         print("💾 Using \(preferredStorage) storage first")
         
-        // Try each prompt
-        for prompt in promptObjects {
-            print("\n📋 Trying prompt: \(prompt.text)")
-            print("📂 Category: \(prompt.category.rawValue)")
-            print("🔄 Daily prompt: \(prompt.isDailyPrompt)")
-            
-            // Try preferred storage
-            if let loop = try await fetchFromStorage(
-                storage: preferredStorage,
-                prompts: recordedPrompts,
-                category: prompt.category,
-                isDailyPrompt: prompt.isDailyPrompt
-            ) {
-                print("✅ Found matching loop in \(preferredStorage) storage")
-                
-                // Update lastRetrieved based on storage type
-                if preferredStorage == .cloud {
-                    try? await LoopCloudKitUtility.updateLastRetrieved(for: loop)
-                } else {
-                    try? localStorage.updateLastRetrieved(for: loop)
-                }
-                
-                self.pastLoop = loop
-                print("returning loop")
-                return loop
-            }
-            
-            print("⚠️ No match in \(preferredStorage) storage, trying alternate")
-            
-            // Try alternate storage
-            let alternateStorage: StorageSystem = preferredStorage == .cloud ? .local : .cloud
-            if let loop = try await fetchFromStorage(
-                storage: alternateStorage,
-                prompts: recordedPrompts,
-                category: prompt.category,
-                isDailyPrompt: prompt.isDailyPrompt
-            ) {
-                print("✅ Found matching loop in \(alternateStorage) storage")
-                
-                // Update lastRetrieved based on storage type
-                if alternateStorage == .cloud {
-                    try await LoopCloudKitUtility.updateLastRetrieved(for: loop)
-                } else {
-                    try await localStorage.updateLastRetrieved(for: loop)
-                }
-                
-                self.pastLoop = loop
-                return loop
-            }
-        }
-        
-        print("\n⚡️ No matches found with category filters, trying one last time without filters")
-        
-        // Final attempt without category filters
-        let finalLoop: Loop?
-        
-        if let firstTry = try await fetchFromStorage(
+        // Try preferred storage first
+        if let loop = try await fetchFromStorage(
             storage: preferredStorage,
             prompts: recordedPrompts,
-            category: nil,
-            isDailyPrompt: nil
+            promptCategories: categoryFrequencies
         ) {
-            print("✅ Found unfiltered match in \(preferredStorage) storage")
-            finalLoop = firstTry
-        } else {
-            let alternateStorage: StorageSystem = preferredStorage == .cloud ? .local : .cloud
-            let altLoop = try await fetchFromStorage(
-                storage: alternateStorage,
-                prompts: recordedPrompts,
-                category: nil,
-                isDailyPrompt: nil
-            )
-            if altLoop != nil {
-                print("✅ Found unfiltered match in \(alternateStorage) storage")
-            }
-            finalLoop = altLoop
+            print("✅ Found matching loop in \(preferredStorage) storage")
+            self.pastLoop = loop
+            return loop
         }
         
-        if let finalLoop = finalLoop {
-            // Update lastRetrieved
-            if preferredStorage == .cloud {
-                try await LoopCloudKitUtility.updateLastRetrieved(for: finalLoop)
-            } else {
-                try await localStorage.updateLastRetrieved(for: finalLoop)
-            }
-        } else {
-            print("❌ No matching loops found in any storage")
+        // Try alternate storage
+        let alternateStorage: StorageSystem = preferredStorage == .cloud ? .local : .cloud
+        if let loop = try await fetchFromStorage(
+            storage: alternateStorage,
+            prompts: recordedPrompts,
+            promptCategories: categoryFrequencies
+        ) {
+            print("✅ Found matching loop in \(alternateStorage) storage")
+            self.pastLoop = loop
+            return loop
         }
         
-        self.pastLoop = finalLoop
-        return finalLoop
+        print("❌ No matching loops found in either storage")
+        return nil
     }
+
 
     private func fetchFromStorage(
         storage: StorageSystem,
         prompts: [String],
-        category: PromptCategory?,
-        isDailyPrompt: Bool?
+        promptCategories: [PromptCategory: Double]
     ) async throws -> Loop? {
         print("\n🔎 Fetching from \(storage) storage")
-        print("⏰ Time windows: \(isDailyPrompt == true ? "Daily prompt windows" : "General prompt windows")")
-        
-        // Define time windows based on prompt type
-        let timeWindows: [(min: Int, max: Int)] = isDailyPrompt == true ?
-            [(14, 45), (3, 14)] :  // Daily prompts
-            [(30, 90), (14, 30), (7, 14), (1, 7)]  // General prompts
-        
+
+        // Define time windows to search in order of preference
+        let timeWindows: [(min: Int, max: Int)] = [
+            (30, 90),   // 1-3 months ago
+            (14, 30),   // 2-4 weeks ago
+            (7, 14),    // 1-2 weeks ago
+            (3, 7)      // 3-7 days ago
+        ]
+
         // Try each time window
         for window in timeWindows {
             print("📅 Trying window: \(window.min)-\(window.max) days ago")
-            
+
             let loop = try await (storage == .cloud ?
                 // Use CloudKit utility
                 LoopCloudKitUtility.fetchPastLoop(
                     forPrompts: prompts,
                     minDaysAgo: window.min,
                     maxDaysAgo: window.max,
-                    preferGeneralPrompts: isDailyPrompt == false,
-                    category: category
+                    categoryFrequencies: promptCategories
                 ) :
                 // Use local storage utility
                 localStorage.fetchPastLoop(
                     forPrompts: prompts,
                     minDaysAgo: window.min,
                     maxDaysAgo: window.max,
-                    preferGeneralPrompts: isDailyPrompt == false,
-                    category: category
+                    categoryFrequencies: promptCategories
                 ))
-            
+
             if let loop = loop {
                 print("✅ Found matching loop from \(window.min)-\(window.max) days ago")
                 return loop
             }
         }
-        
+
         print("❌ No matches found in any time window")
         return nil
     }
@@ -643,16 +579,15 @@ class LoopManager: ObservableObject {
     }
     
     func moveToNextPrompt() {
-        guard currentPromptIndex < dailyPrompts.count - 1 else {
-            completeAllPrompts()
-            return
+        if currentPromptIndex < dailyPrompts.count - 1 {
+            currentPromptIndex += 1
+            retryAttemptsLeft = 1
+            saveCachedState()
+        } else {
+            hasCompletedToday = true
+            saveCachedState()
         }
-        
-        currentPromptIndex += 1
-        retryAttemptsLeft = 1
-        saveCachedState()
     }
-    
     private func completeAllPrompts() {
         print("all prompts completed")
         hasCompletedToday = true
@@ -701,6 +636,9 @@ class LoopManager: ObservableObject {
 //    }
     
     func addLoop(mediaURL: URL, isVideo: Bool, prompt: String, mood: String? = nil, freeResponse: Bool = false, isDailyLoop: Bool, isFollowUp: Bool) async -> Loop {
+        print("Adding loop with prompt: \(prompt), currentPromptIndex: \(currentPromptIndex)")
+        print("Current dailyPrompts array: \(dailyPrompts)")
+        
         let loopID = UUID().uuidString
         let timestamp = Date()
         let ckAsset = CKAsset(fileURL: mediaURL)
@@ -939,115 +877,6 @@ class LoopManager: ObservableObject {
         }
     }
     
-//    private func savePastLoops() {
-//        
-//        let cachedLoops = pastLoops.map { loop -> [String: Any] in
-//            return [
-//                "id": loop.id,
-//                "timestamp": loop.timestamp.timeIntervalSince1970,
-//                "promptText": loop.promptText,
-//                "category": getCategoryForPrompt(loop.promptText)?.rawValue ?? "Share Anything",
-//                "mood": loop.mood ?? "",
-//                "freeResponse": loop.freeResponse,
-//                "isVideo": loop.isVideo,
-//                "assetURLString": loop.data.fileURL?.absoluteString ?? "",
-//                "cacheDate": Date().timeIntervalSince1970
-//            ]
-//        }
-//        
-//        if JSONSerialization.isValidJSONObject(cachedLoops) {
-//            UserDefaults.standard.set(cachedLoops, forKey: pastLoopsKey)
-//        }
-//    }
-        
-//    private func loadCachedLoops() {
-//        if let queuedData = UserDefaults.standard.array(forKey: queuedLoopsKey) as? [[String: Any]] {
-//            let today = Calendar.current.startOfDay(for: Date())
-//            
-//            queuedLoops = queuedData.compactMap { data -> Loop? in
-//                let cacheDate = Date(timeIntervalSince1970: data["cacheDate"] as? Double ?? 0)
-//                guard Calendar.current.isDate(cacheDate, inSameDayAs: today),
-//                      let id = data["id"] as? String,
-//                      let timestampDouble = data["timestamp"] as? Double,
-//                      let promptText = data["promptText"] as? String,
-//                      let category = data["category"] as? String,
-//                      let freeResponse = data["freeResponse"] as? Bool,
-//                      let isVideo = data["isVideo"] as? Bool else {
-//                    return nil
-//                }
-//                
-//                let timestamp = Date(timeIntervalSince1970: timestampDouble)
-//                let mood = (data["mood"] as? String)?.nilIfEmpty
-//                let assetURLString = data["assetURLString"] as? String
-//                
-//                let asset: CKAsset
-//                if let urlString = assetURLString,
-//                   let url = URL(string: urlString) {
-//                    asset = CKAsset(fileURL: url)
-//                } else {
-//                    let tempURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
-//                    try? Data().write(to: tempURL)
-//                    asset = CKAsset(fileURL: tempURL)
-//                }
-//                
-//                return Loop(
-//                    id: id,
-//                    data: asset,
-//                    timestamp: timestamp,
-//                    lastRetrieved: nil,
-//                    promptText: promptText, category: category,
-//                    mood: mood,
-//                    freeResponse: freeResponse,
-//                    isVideo: isVideo, 
-//                    isDailyLoop: true
-//                )
-//            }
-//        }
-//        
-//        if let pastData = UserDefaults.standard.array(forKey: pastLoopsKey) as? [[String: Any]] {
-//            let today = Calendar.current.startOfDay(for: Date())
-//            
-//            pastLoops = pastData.compactMap { data -> Loop? in
-//                let cacheDate = Date(timeIntervalSince1970: data["cacheDate"] as? Double ?? 0)
-//                guard Calendar.current.isDate(cacheDate, inSameDayAs: today),
-//                      let id = data["id"] as? String,
-//                      let timestampDouble = data["timestamp"] as? Double,
-//                      let promptText = data["promptText"] as? String,
-//                      let category = data["category"] as? String,
-//                      let freeResponse = data["freeResponse"] as? Bool,
-//                      let isVideo = data["isVideo"] as? Bool else {
-//                    return nil
-//                }
-//                
-//                let timestamp = Date(timeIntervalSince1970: timestampDouble)
-//                let mood = (data["mood"] as? String)?.nilIfEmpty
-//                let assetURLString = data["assetURLString"] as? String
-//                
-//                let asset: CKAsset
-//                if let urlString = assetURLString,
-//                   let url = URL(string: urlString) {
-//                    asset = CKAsset(fileURL: url)
-//                } else {
-//                    let tempURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
-//                    try? Data().write(to: tempURL)
-//                    asset = CKAsset(fileURL: tempURL)
-//                }
-//                
-//                return Loop(
-//                    id: id,
-//                    data: asset,
-//                    timestamp: timestamp,
-//                    lastRetrieved: nil,
-//                    promptText: promptText, category: category,
-//                    mood: mood,
-//                    freeResponse: freeResponse,
-//                    isVideo: isVideo,
-//                    isDailyLoop: true
-//                )
-//            }
-//        }
-//    }
-//    
     func saveCachedState() {
        UserDefaults.standard.set(dailyPrompts, forKey: promptCacheKey)
        UserDefaults.standard.set(currentPromptIndex, forKey: promptIndexKey)
@@ -1190,7 +1019,11 @@ class LoopManager: ObservableObject {
             throw error
         }
     }
-
+    
+    func dismissUnlockReminder() {
+        hasRemovedUnlockReminder = true
+    }
+    
 }
 
 enum MemoryBankStatus {

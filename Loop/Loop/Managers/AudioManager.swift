@@ -19,7 +19,6 @@ enum AudioManagerError: Error {
 class AudioManager: NSObject, ObservableObject, AVAudioRecorderDelegate {
     static let shared = AudioManager()
     
-    // MARK: - Properties
     private var audioRecorder: AVAudioRecorder?
     private var audioPlayer: AVAudioPlayer?
     private var audioFilename: URL?

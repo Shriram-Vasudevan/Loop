@@ -9,6 +9,8 @@
 import SwiftUI
 
 struct HomeView: View {
+    @Binding var pageType: PageType
+    
     @ObservedObject var loopManager = LoopManager.shared
     @State private var showingRecordLoopsView = false
     @State private var showPastLoopSheet = false
@@ -17,7 +19,11 @@ struct HomeView: View {
     @State private var scrollOffset: CGFloat = 0
     @State private var backgroundOpacity: Double = 0.2
     
-
+    @State var navigateToAllThemesView: Bool = false
+    
+    @State private var showUnlockReminder = true
+    @State private var distinctDays: Int = 0
+    
     // Maintain existing color scheme
     let accentColor = Color(hex: "A28497")
     let backgroundColor = Color(hex: "FAFBFC")
@@ -52,15 +58,20 @@ struct HomeView: View {
 //                        )
 //                        .padding(.horizontal, 24)
                     
-                    // Main recording interface - using original logic
                     recordingInterface
                         .padding(.horizontal, 24)
-                    
-                    // Thematic prompts section
+
                     thematicPromptsSection
                         .padding(.horizontal, 24)
                     
-                    // Past loop showcase
+                    DayRatingSlider()
+                        .padding(.horizontal, 24)
+                        .padding(.top, 6)
+                    
+                    notificationsSection
+                    
+                   
+                    
                     if let pastLoop = loopManager.pastLoop {
                         pastLoopSection(pastLoop)
                             .padding(.horizontal, 24)
@@ -78,6 +89,10 @@ struct HomeView: View {
                 Task {
                     await loopManager.loadThematicPrompts()
                 }
+                
+                Task {
+                    await fetchDistinctLoopingDays()
+                }
             }
         }
         .fullScreenCover(item: $selectedLoop) { loop in
@@ -89,6 +104,9 @@ struct HomeView: View {
         .fullScreenCover(item: $thematicPrompt) { prompt in
             RecordThematicLoopPromptsView(prompt: prompt)
         }
+        .navigationDestination(isPresented: $navigateToAllThemesView) {
+            AllThemesView()
+        }
     }
     
     // MARK: - Header Section
@@ -99,7 +117,7 @@ struct HomeView: View {
 //                        .font(.system(size: 35, weight: .medium))
 //                        .foregroundColor(textColor)
                 
-                Text("December 24th")
+                Text(formatDate())
                     .font(.custom("PPNeueMontreal-Medium", size: 37))
 
                 
@@ -134,79 +152,89 @@ struct HomeView: View {
 //                }
         }
     }
- 
+    
     private var recordingInterface: some View {
         Button(action: { showingRecordLoopsView = true }) {
-            VStack(spacing: 24) {
-                // Top section with subtle paper texture feel
-                VStack(spacing: 16) {
-                    if !loopManager.hasCompletedToday && !loopManager.dailyPrompts.isEmpty {
-                        // Entry number indicator with a handwritten feel
-                        Text("entry \(loopManager.currentPromptIndex + 1) of 3")
-                            .font(.system(size: 14, weight: .light))
-                            .foregroundColor(accentColor.opacity(0.7))
-                            .padding(.top, 8)
-                        
-                        // Prompt text styled like handwritten journal prompts
-                        Text(loopManager.getCurrentPrompt())
-                            .font(.system(size: 26, weight: .light))
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(textColor)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 12)
-                        
-                        // Subtle separator line
-                        Rectangle()
-                            .fill(accentColor.opacity(0.1))
-                            .frame(width: 60, height: 1)
-                        
-                        // Record indicator that feels like a journal annotation
-                        HStack(spacing: 6) {
-                            // Minimalist waveform
-                            HStack(spacing: 3) {
-                                ForEach(0..<5) { index in
-                                    RoundedRectangle(cornerRadius: 0.5)
-                                        .fill(accentColor.opacity(0.5))
-                                        .frame(width: 1, height: CGFloat([12, 16, 20, 16, 12][index]))
-                                }
-                            }
+            VStack(spacing: 48) {
+                if !loopManager.hasCompletedToday && !loopManager.dailyPrompts.isEmpty {
+                    VStack(alignment: .leading, spacing: 40) {
+                        // Title and prompt
+                        VStack(alignment: .center, spacing: 8) {
+                            Text("TODAY'S REFLECTION")
+                                .font(.system(size: 13, weight: .medium))
+                                .tracking(1.5)
+                                .foregroundColor(textColor.opacity(0.5))
                             
-                            Text("tap to record")
-                                .font(.system(size: 14, weight: .light))
-                                .foregroundColor(accentColor)
+                            Text(loopManager.getCurrentPrompt())
+                                .font(.system(size: 23, weight: .medium))
+                                .tracking(1.5)
+                                .foregroundColor(textColor)
                         }
-                        .padding(.vertical, 8)
-                    } else {
+                        
+                        // Progress dots
+                        HStack(spacing: 24) {
+                            ForEach(0..<3, id: \.self) { index in
+                                Circle()
+                                    .fill(index == loopManager.currentPromptIndex ? accentColor : accentColor.opacity(0.15))
+                                    .frame(width: 8, height: 8)
+                            }
+                        }
+                    }
+                } else {
+                    // Completed state
+                    VStack(alignment: .leading, spacing: 16) {
                         Text("complete for today")
                             .font(.system(size: 24, weight: .light))
                             .foregroundColor(textColor)
-                            .padding(.vertical, 40)
+                        
+                        Text("RETURN TOMORROW")
+                            .font(.system(size: 13, weight: .medium))
+                            .tracking(1.5)
+                            .foregroundColor(accentColor.opacity(0.5))
                     }
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 2) // Very subtle rounding
-                        .fill(Color.white)
-                        .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 2)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 2)
-                        .stroke(accentColor.opacity(0.08), lineWidth: 0.5)
-                )
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(32)
+            .background(
+                ZStack(alignment: .bottomTrailing) {
+                    Color.white
+                    Image(systemName: "quote.closing")
+                        .font(.system(size: 160))
+                        .foregroundColor(accentColor.opacity(0.035))
+                        .rotationEffect(.degrees(8))
+                        .padding(.trailing, -20)
+                        .padding(.bottom, -20)
+                }
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 2)
         }
     }
+    
     // MARK: - Thematic Section
     private var thematicPromptsSection: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("themes")
-                .font(.system(size: 24, weight: .regular))
-                .foregroundColor(textColor)
+            HStack {
+                Text("themes")
+                    .font(.system(size: 24, weight: .regular))
+                    .foregroundColor(textColor)
+                
+                Spacer()
+                
+                Button(action: {
+                    navigateToAllThemesView = true
+                }, label: {
+                    Text("SEE MORE")
+                        .font(.system(size: 11, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(textColor.opacity(0.5))
+                })
+            }
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
-                    ForEach(Array(loopManager.thematicPrompts.enumerated()), id: \.element.id) { index, prompt in
+                    ForEach(Array(loopManager.thematicPrompts.prefix(3).enumerated()), id: \.element.id) { index, prompt in
                         ThematicPromptCard(prompt: prompt, accentColor: accentColor, isEven: index % 2 == 0) {
                             thematicPrompt = prompt
                         }
@@ -216,6 +244,101 @@ struct HomeView: View {
             .scrollContentBackground(.hidden)
             .background(Color.clear)
         }
+    }
+    
+    private var notificationsSection: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("more")
+                .font(.system(size: 24, weight: .regular))
+                .foregroundColor(textColor)
+            
+            VStack(spacing: 4) {
+                if !loopManager.hasRemovedUnlockReminder {
+                    // Unlock Past Loops Notification
+                    HStack {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 12))
+                                
+                                Text("PAST REFLECTIONS")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .tracking(1.5)
+                            }
+                            .foregroundColor(accentColor.opacity(0.6))
+                            
+                            Text("Complete 3 days of Loop to unlock your reflection archive")
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(textColor)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        
+                        Spacer()
+                        
+                        Button {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                loopManager.dismissUnlockReminder()
+                            }
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 12))
+                                .foregroundColor(accentColor.opacity(0.6))
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 28)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.white)
+                            .shadow(color: Color.black.opacity(0.03), radius: 15, x: 0, y: 4)
+                    )
+                }
+                
+                // Insights Notification
+                HStack {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "chart.line.uptrend.xyaxis")
+                                .font(.system(size: 12))
+                            
+                            Text("WEEKLY INSIGHTS")
+                                .font(.system(size: 11, weight: .medium))
+                                .tracking(1.5)
+                        }
+                        .foregroundColor(accentColor.opacity(0.6))
+                        
+                        Text("Track your weekly reflection patterns and growth")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(textColor)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    
+                    Spacer()
+                    
+                    Text("VIEW")
+                        .font(.system(size: 11, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(accentColor)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            Capsule()
+                                .fill(accentColor.opacity(0.08))
+                        )
+                        .onTapGesture {
+                            self.pageType = .insights
+                        }
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 28)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.white)
+                        .shadow(color: Color.black.opacity(0.03), radius: 15, x: 0, y: 4)
+                )
+            }
+        }
+        .padding(.horizontal, 24)
     }
     
     // MARK: - Past Loop Section
@@ -228,6 +351,38 @@ struct HomeView: View {
             PastLoopCard(loop: loop, accentColor: accentColor) {
                 selectedLoop = loop
             }
+        }
+    }
+    
+    func formatDate() -> String {
+        let dayNumber = Calendar.current.component(.day, from: Date())
+        
+        let formatString = "MMMM d"
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = formatString
+        var formattedDate = dateFormatter.string(from: Date())
+        
+        var suffix: String
+        switch dayNumber {
+            case 1, 21, 31: suffix = "st"
+            case 2, 22: suffix = "nd"
+            case 3, 23: suffix = "rd"
+            default: suffix = "th"
+        }
+        
+        formattedDate.append(suffix)
+        
+        return formattedDate
+    }
+    
+    private func fetchDistinctLoopingDays() async {
+        do {
+            let dates = try await loopManager.fetchDistinctLoopingDays()
+            await MainActor.run {
+                distinctDays = dates
+            }
+        } catch {
+            print("Failed to fetch distinct days: \(error)")
         }
     }
 }
@@ -309,27 +464,6 @@ struct DynamicBackground: View {
                 }
             }
         }
-    }
-    
-    func formatDate() -> String {
-        let dayNumber = Calendar.current.component(.day, from: Date())
-        
-        let formatString = "MMMM d"
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = formatString
-        var formattedDate = dateFormatter.string(from: Date())
-        
-        var suffix: String
-        switch dayNumber {
-            case 1, 21, 31: suffix = "st"
-            case 2, 22: suffix = "nd"
-            case 3, 23: suffix = "rd"
-            default: suffix = "th"
-        }
-        
-        formattedDate.append(suffix)
-        
-        return formattedDate
     }
 }
 
@@ -509,6 +643,98 @@ struct PastLoopCard: View {
     }
 }
 
+struct RecordingInterface: View {
+    let prompt: String
+    let currentIndex: Int
+    let totalPrompts: Int
+    let accentColor: Color
+    let textColor: Color
+    let isCompleted: Bool
+    let onTap: () -> Void
+    
+    private var safeCurrentIndex: Int {
+        max(0, min(currentIndex, totalPrompts - 1))
+    }
+    
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 32) {
+                if !isCompleted {
+                    VStack(alignment: .leading, spacing: 40) {
+                        // Header with minimal styling
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("TODAY'S REFLECTION")
+                                .font(.system(size: 13, weight: .medium))
+                                .tracking(1.5)
+                                .foregroundColor(textColor.opacity(0.5))
+                            
+                            Text(prompt)
+                                .font(.system(size: 26, weight: .light))
+                                .foregroundColor(textColor)
+                                .lineSpacing(8)
+                        }
+                        
+                        // Safe progress indicator
+                        if totalPrompts > 0 {
+                            HStack(spacing: 24) {
+                                ForEach(0..<totalPrompts, id: \.self) { index in
+                                    Circle()
+                                        .fill(index == safeCurrentIndex ? accentColor : accentColor.opacity(0.15))
+                                        .frame(width: 8, height: 8)
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Completed state with minimal design
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("complete for today")
+                            .font(.system(size: 24, weight: .light))
+                            .foregroundColor(textColor)
+                        
+                        Text("RETURN TOMORROW")
+                            .font(.system(size: 13, weight: .medium))
+                            .tracking(1.5)
+                            .foregroundColor(accentColor.opacity(0.5))
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(32)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white)
+                    .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 2)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct WavyOverlay: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let width = rect.width
+        let height = rect.height
+        
+        path.move(to: CGPoint(x: 0, y: 0.8 * height))
+        
+        // First wave
+        path.addCurve(
+            to: CGPoint(x: width, y: 0.4 * height),
+            control1: CGPoint(x: width * 0.4, y: 0.5 * height),
+            control2: CGPoint(x: width * 0.6, y: 0.7 * height)
+        )
+        
+        // Complete the shape
+        path.addLine(to: CGPoint(x: width, y: height))
+        path.addLine(to: CGPoint(x: 0, y: height))
+        path.closeSubpath()
+        
+        return path
+    }
+}
+
 #Preview {
-    HomeView()
+    HomeView(pageType: .constant(.home))
 }

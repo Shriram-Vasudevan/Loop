@@ -63,6 +63,14 @@ struct LoopCard: View {
                     .highPriorityGesture(TapGesture())
                 }
                 
+                if let transcript = loop.transcript {
+                    Text(transcript)
+                        .font(.system(size: 13, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(textColor.opacity(0.5))
+                        .lineLimit(2)
+                }
+                
                 HStack(spacing: 16) {
                     LoopTypeIndicator(loop: loop)
                     

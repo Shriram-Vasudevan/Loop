@@ -484,83 +484,96 @@ struct RecordLoopsView: View {
     }
     
     private func completeRecording() {
-        if let audioFileURL = audioManager.getRecordedAudioFile() {
+        guard let audioFileURL = audioManager.getRecordedAudioFile() else { return }
+        
+        Task {
+            // 1. Save current recording
+            let loop = await loopManager.addLoop(
+                mediaURL: audioFileURL,
+                isVideo: false,
+                prompt: loopManager.getCurrentPrompt(),
+                isDailyLoop: true,
+                isFollowUp: false
+            )
+            
+            // Start analysis in background
             Task {
-                let loop = await loopManager.addLoop(
-                    mediaURL: audioFileURL,
-                    isVideo: false,
-                    prompt: loopManager.getCurrentPrompt(), isDailyLoop: true, isFollowUp: false
-                )
-                
-                do {
-                     try await analysisManager.startAnalysis(loop, isPastLoop: false)
-                } catch {
-                    print("Analysis error: \(error)")
+                try? await analysisManager.startAnalysis(loop, isPastLoop: false)
+            }
+            
+            // 2. If it's the last prompt, handle memory logic
+            if loopManager.isLastPrompt() {
+                await handleLastPromptMemory()
+            } else {
+                // 3. If not last prompt, just move to next
+                await MainActor.run {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        loopManager.moveToNextPrompt()
+                        isPostRecording = false
+                    }
                 }
             }
+        }
+    }
 
-            if loopManager.isLastPrompt() {
-                allPrompts = loopManager.dailyPrompts
-                
-                withAnimation {
-                    isShowingMemory = true
-                    isLoadingMemory = true
-                }
-                
-                Task {
-                    guard let userDays = try? await LoopCloudKitUtility.fetchDistinctLoopingDays() else {
+    private func handleLastPromptMemory() async {
+        // Store prompts for memory comparison
+        let allPrompts = loopManager.dailyPrompts
+        
+        await MainActor.run {
+            withAnimation {
+                isShowingMemory = true
+                isLoadingMemory = true
+            }
+        }
+        
+        do {
+            // Check if user meets minimum days requirement
+            let userDays = try await loopManager.fetchDistinctLoopingDays()
+            
+            if userDays < 3 {
+                await MainActor.run {
+                    withAnimation {
                         userDaysThresholdNotMet = true
-                        return
                     }
                     
-                    if userDays < 3 {
-                        await MainActor.run {
-                            withAnimation {
-                                userDaysThresholdNotMet = true
-                            }
-                            
-                            // Use DispatchQueue with a completion handler
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                    loopManager.hasCompletedToday = true
-                                    loopManager.saveCachedState()
-                                    isShowingMemory = false
-                                }
-                            }
-                        }
-                        return
+                    // Wait 2 seconds then complete
+                    Task {
+                        try? await Task.sleep(nanoseconds: 2_000_000_000)
+                        await completeLastPrompt()
                     }
-                    
-                    if let pastLoop = try? await loopManager.getPastLoopForComparison(
-                        recordedPrompts: allPrompts
-                    ) {
-                        await MainActor.run {
-                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                print("got the past loop")
-                                self.pastLoop = pastLoop
-                                isShowingMemory = true
-                                isPostRecording = false
-                                isLoadingMemory = false
-                            }
-                            audioManager.cleanup()
-                        }
-                    } else {
-                        await MainActor.run {
-                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                loopManager.hasCompletedToday = true
-                                loopManager.saveCachedState()
-                                isShowingMemory = false
-                            }
-                            audioManager.cleanup()
-                        }
+                }
+                return
+            }
+            
+            // Try to get a past loop
+            if let pastLoop = try await loopManager.getPastLoopForComparison(recordedPrompts: allPrompts) {
+                await MainActor.run {
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                        self.pastLoop = pastLoop
+                        isPostRecording = false
+                        isLoadingMemory = false
                     }
+                    audioManager.cleanup()
                 }
             } else {
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                    loopManager.moveToNextPrompt()
-                    isPostRecording = false
-                }
+                // No memory found - complete the process
+                await completeLastPrompt()
             }
+        } catch {
+            print("Error in memory handling: \(error)")
+            await completeLastPrompt()
+        }
+    }
+
+    private func completeLastPrompt() async {
+        await MainActor.run {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                loopManager.hasCompletedToday = true
+                loopManager.saveCachedState()
+                isShowingMemory = false
+            }
+            audioManager.cleanup()
         }
     }
     

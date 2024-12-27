@@ -48,9 +48,10 @@ struct SettingsView: View {
                         header
                             .padding(.top, 40)
                         
-                        profileSection
+//                        profileSection
                         
                     }
+                    
                     preferencesSection
                     
                     supportSection
@@ -130,11 +131,10 @@ struct SettingsView: View {
     }
     
     private var preferencesSection: some View {
-        VStack(alignment: .leading, spacing: 32) {
+        VStack(alignment: .leading, spacing: 16) {
             sectionTitle("Preferences")
             
             VStack(spacing: 32) {
-                // Notifications Toggle
                 VStack(alignment: .leading, spacing: 16) {
                     HStack {
                         VStack(alignment: .leading, spacing: 6) {
@@ -167,8 +167,7 @@ struct SettingsView: View {
                         }
                     }
                 }
-                
-                // iCloud Backup Toggle
+
                 HStack {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("iCloud Backup")
@@ -185,11 +184,16 @@ struct SettingsView: View {
                     MinimalToggle(isOn: $isCloudBackupEnabled)
                 }
             }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(.white)
+            )
         }
     }
     
     private var supportSection: some View {
-        VStack(alignment: .leading, spacing: 32) {
+        VStack(alignment: .leading, spacing: 16) {
             sectionTitle("Support")
             
             VStack(spacing: 32) {
@@ -213,12 +217,12 @@ struct SettingsView: View {
                     )
                 }
             }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(.white)
+            )
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(.white)
-        )
     }
     
     private var accountSection: some View {

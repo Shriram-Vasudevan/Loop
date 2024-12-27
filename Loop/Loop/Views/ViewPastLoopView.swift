@@ -27,33 +27,35 @@ struct ViewPastLoopView: View {
     
     @State var isThroughRecordLoopsView: Bool
     var body: some View {
-        ZStack {
-            if !isThroughRecordLoopsView {
-                Color(hex: "FAFBFC").ignoresSafeArea()
+        NavigationStack {
+            ZStack {
+                if !isThroughRecordLoopsView {
+                    Color(hex: "FAFBFC").ignoresSafeArea()
+                }
+                
+                if showInitialPrompt {
+                    initialPromptView
+                } else {
+                    mainContentView
+                        .safeAreaPadding(.horizontal, 24)
+                }
             }
-            
-            if showInitialPrompt {
-                initialPromptView
-            } else {
-                mainContentView
-                    .safeAreaPadding(.horizontal, 24)
+            .navigationDestination(isPresented: $showTranscript) {
+                TranscriptView(
+                    prompt: loop.promptText, transcript: loop.transcript ?? "",
+                    accentColor: accentColor,
+                    isPresented: $showTranscript
+                )
             }
-        }
-        .fullScreenCover(isPresented: $showTranscript) {
-            TranscriptView(
-                transcript: loop.transcript ?? "",
-                accentColor: accentColor,
-                isPresented: $showTranscript
-            )
-        }
-        .onAppear {
-            setupInitialAnimation()
-            if let audioURL = loop.data.fileURL {
-                setupAudioPlayer(url: audioURL)
+            .onAppear {
+                setupInitialAnimation()
+                if let audioURL = loop.data.fileURL {
+                    setupAudioPlayer(url: audioURL)
+                }
             }
-        }
-        .onDisappear {
-            stopAudioPlayback()
+            .onDisappear {
+                stopAudioPlayback()
+            }
         }
     }
     
@@ -437,57 +439,81 @@ struct TranscriptButton: View {
 }
 
 struct TranscriptView: View {
+    let prompt: String
     let transcript: String
     let accentColor: Color
+    let textColor = Color(hex: "2C3E50")
+    
     @Binding var isPresented: Bool
+    @Environment(\.dismiss) var dismiss
     
     var body: some View {
         ZStack {
-            Color(hex: "FAFBFC")
+            // Background
+            Color(hex: "F8F9FA")
                 .ignoresSafeArea()
+            
+            VStack {
+                Spacer()
+                
+                Image(systemName: "quote.opening")
+                    .font(.system(size: 200))
+                    .foregroundColor(Color(hex: "E9ECEF"))
+                    .offset(x: 0, y: -150)
+                    .opacity(0.6)
+            }
             
             VStack(spacing: 0) {
                 // Header
                 HStack {
-                    Text("Transcript")
-                        .font(.system(size: 24, weight: .light))
-                        .foregroundColor(Color(hex: "2C3E50"))
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(textColor)
+                    }
                     
                     Spacer()
                     
-                    Button(action: {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                            isPresented = false
-                        }
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(accentColor.opacity(0.8))
-                    }
+                    Text("TRANSCRIPT")
+                        .font(.system(size: 14, weight: .semibold))
+                        .tracking(2)
+                        .foregroundColor(textColor.opacity(0.5))
+                    
+                    Spacer()
+                    
+                    // Empty view for symmetry
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 18))
+                        .opacity(0)
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 16)
-                .padding(.bottom, 24)
+                .padding(.vertical, 20)
                 
-                // Transcript content
+                // Content
                 ScrollView {
-                    Text(transcript.isEmpty ? "No transcript available" : transcript)
-                        .font(.system(size: 18, weight: .regular))
-                        .foregroundColor(Color(hex: "2C3E50"))
-                        .lineSpacing(8)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(24)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.white)
-                                .shadow(color: Color.black.opacity(0.05), radius: 10, y: 5)
-                        )
-                        .padding(.horizontal, 24)
+                    VStack(alignment: .leading, spacing: 32) {
+                        // Prompt
+                        Text(prompt)
+                            .font(.system(size: 31, weight: .bold))
+                            .foregroundColor(textColor)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 15)
+                        
+                        // Transcript
+                        Text(transcript)
+                            .font(.system(size: 18, weight: .regular))
+                            .foregroundColor(textColor.opacity(0.8))
+                            .lineSpacing(8)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 20)
+                    .padding(.bottom, 40)
                 }
             }
-            .padding(.vertical, 40)
         }
-        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .navigationBarBackButtonHidden()
     }
 }
 

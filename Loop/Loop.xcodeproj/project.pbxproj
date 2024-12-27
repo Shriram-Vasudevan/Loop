@@ -55,6 +55,9 @@
 		9988DB952CDA7F92005628DE /* FriendRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB942CDA7F92005628DE /* FriendRequest.swift */; };
 		9988DB972CDA8508005628DE /* AddFriends.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB962CDA8508005628DE /* AddFriends.swift */; };
 		9988DBAE2CDD25C8005628DE /* PastLoopCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DBAD2CDD25C7005628DE /* PastLoopCard.swift */; };
+		999DAC662D1DB54A00A6626B /* AllThemesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999DAC652D1DB54A00A6626B /* AllThemesView.swift */; };
+		999DAC702D1E236900A6626B /* DayRating.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999DAC6F2D1E236900A6626B /* DayRating.swift */; };
+		999DAC722D1E239400A6626B /* DayRatingSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999DAC712D1E239400A6626B /* DayRatingSlider.swift */; };
 		99A0C8F12CA9EF2400F9281A /* LoopApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C8F02CA9EF2400F9281A /* LoopApp.swift */; };
 		99A0C8F32CA9EF2400F9281A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C8F22CA9EF2400F9281A /* ContentView.swift */; };
 		99A0C8F52CA9EF2600F9281A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 99A0C8F42CA9EF2600F9281A /* Assets.xcassets */; };
@@ -167,6 +170,9 @@
 		9988DB942CDA7F92005628DE /* FriendRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendRequest.swift; sourceTree = "<group>"; };
 		9988DB962CDA8508005628DE /* AddFriends.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddFriends.swift; sourceTree = "<group>"; };
 		9988DBAD2CDD25C7005628DE /* PastLoopCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PastLoopCard.swift; sourceTree = "<group>"; };
+		999DAC652D1DB54A00A6626B /* AllThemesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllThemesView.swift; sourceTree = "<group>"; };
+		999DAC6F2D1E236900A6626B /* DayRating.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayRating.swift; sourceTree = "<group>"; };
+		999DAC712D1E239400A6626B /* DayRatingSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayRatingSlider.swift; sourceTree = "<group>"; };
 		99A0C8ED2CA9EF2400F9281A /* Loop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Loop.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		99A0C8F02CA9EF2400F9281A /* LoopApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopApp.swift; sourceTree = "<group>"; };
 		99A0C8F22CA9EF2400F9281A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -333,6 +339,8 @@
 				99DC91B22D19C112002B9A89 /* LoopCard.swift */,
 				99DC91B42D19C59A002B9A89 /* AudioWaveform.swift */,
 				99DC91B82D1A4658002B9A89 /* WeekInReviewView.swift */,
+				999DAC652D1DB54A00A6626B /* AllThemesView.swift */,
+				999DAC712D1E239400A6626B /* DayRatingSlider.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -382,6 +390,7 @@
 				99CCFBC12D137A2100DA8A55 /* AnalysisState.swift */,
 				99DC91B62D1A258A002B9A89 /* WeeklyAnalysis.swift */,
 				99DC91BC2D1A50E4002B9A89 /* TranscriptionError.swift */,
+				999DAC6F2D1E236900A6626B /* DayRating.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -505,6 +514,7 @@
 				9953BE142D0CF79200348AC3 /* AppPromoVid.swift in Sources */,
 				990E4AA42CC0A7CD009F88A0 /* InsightModels.swift in Sources */,
 				990E4A9E2CBDE063009F88A0 /* ViewPastLoopView.swift in Sources */,
+				999DAC722D1E239400A6626B /* DayRatingSlider.swift in Sources */,
 				99AC6DD62CDFFAFA00B0D0D6 /* LoopChatView.swift in Sources */,
 				990E4A8E2CB48BB9009F88A0 /* SplashScreen.swift in Sources */,
 				99DC91B72D1A258A002B9A89 /* WeeklyAnalysis.swift in Sources */,
@@ -550,6 +560,7 @@
 				9988DB8D2CDA77C8005628DE /* PrivateUserRecord.swift in Sources */,
 				9988DB852CD9BFAC005628DE /* FriendsView.swift in Sources */,
 				99F7F6E52CAC77E7009858AC /* IntroView.swift in Sources */,
+				999DAC702D1E236900A6626B /* DayRating.swift in Sources */,
 				9988DB912CDA792F005628DE /* FriendsManager.swift in Sources */,
 				9953BDFA2CF4253000348AC3 /* PurposeCard.swift in Sources */,
 				990E4A862CB30EB8009F88A0 /* LoopAudioConfirmationView.swift in Sources */,
@@ -577,6 +588,7 @@
 				990E4A8A2CB47FEE009F88A0 /* LaunchManager.swift in Sources */,
 				990E4A9C2CBDD1BB009F88A0 /* LoopVideoConfirmationView.swift in Sources */,
 				990E4A9A2CBDD091009F88A0 /* VideoRecordButton.swift in Sources */,
+				999DAC662D1DB54A00A6626B /* AllThemesView.swift in Sources */,
 				9953BDF22CF3A02400348AC3 /* PromptSet.swift in Sources */,
 				99F31CA92D0F31AF00330180 /* FollowUp.swift in Sources */,
 				990E4A842CB30EAB009F88A0 /* ThankYouView.swift in Sources */,
