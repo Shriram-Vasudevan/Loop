@@ -517,6 +517,13 @@ struct RecordLoopsView: View {
     }
 
     private func handleMemoryOrNextPrompt(loop: Loop) async {
+        defer {
+            // Ensure any UI cleanup is on the main thread
+            Task { @MainActor in
+                audioManager.cleanup()
+            }
+        }
+
         do {
             if loopManager.isLastPrompt() {
                 let userDays = try await loopManager.fetchDistinctLoopingDays()
@@ -552,11 +559,6 @@ struct RecordLoopsView: View {
             }
         } catch {
             print("Error in memory handling: \(error)")
-        } finally {
-            // Ensure any UI cleanup is on the main thread
-            await MainActor.run {
-                audioManager.cleanup()
-            }
         }
     }
 
