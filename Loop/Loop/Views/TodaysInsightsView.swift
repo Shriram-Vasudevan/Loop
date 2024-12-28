@@ -59,7 +59,7 @@ struct TodaysInsightsView: View {
                     }
                 }
                 .padding(.horizontal, 24)
-                .padding(.vertical, 16)
+                .padding(.bottom, 16)
             }
         }
         .fullScreenCover(item: $selectedFollowUp) { followUp in

@@ -83,9 +83,7 @@ struct InsightsView: View {
         if selectedTab == "today" {
             TodaysInsightsView(analysisManager: analysisManager)
         } else {
-            Text("Trends Placeholder")
-                .foregroundColor(textColor.opacity(0.5))
-                .padding()
+            TrendsView()
         }
     }
 }
