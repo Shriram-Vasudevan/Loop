@@ -58,6 +58,9 @@
 		999DAC662D1DB54A00A6626B /* AllThemesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999DAC652D1DB54A00A6626B /* AllThemesView.swift */; };
 		999DAC702D1E236900A6626B /* DayRating.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999DAC6F2D1E236900A6626B /* DayRating.swift */; };
 		999DAC722D1E239400A6626B /* DayRatingSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999DAC712D1E239400A6626B /* DayRatingSlider.swift */; };
+		999DAC762D1F4E9800A6626B /* AIAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999DAC752D1F4E9800A6626B /* AIAnalysis.swift */; };
+		999DAC782D1FA82100A6626B /* TodaysInsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999DAC772D1FA82000A6626B /* TodaysInsightsView.swift */; };
+		999DAC7A2D1FA87600A6626B /* AnalysisManagerPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999DAC792D1FA87600A6626B /* AnalysisManagerPreview.swift */; };
 		99A0C8F12CA9EF2400F9281A /* LoopApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C8F02CA9EF2400F9281A /* LoopApp.swift */; };
 		99A0C8F32CA9EF2400F9281A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C8F22CA9EF2400F9281A /* ContentView.swift */; };
 		99A0C8F52CA9EF2600F9281A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 99A0C8F42CA9EF2600F9281A /* Assets.xcassets */; };
@@ -173,6 +176,9 @@
 		999DAC652D1DB54A00A6626B /* AllThemesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllThemesView.swift; sourceTree = "<group>"; };
 		999DAC6F2D1E236900A6626B /* DayRating.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayRating.swift; sourceTree = "<group>"; };
 		999DAC712D1E239400A6626B /* DayRatingSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayRatingSlider.swift; sourceTree = "<group>"; };
+		999DAC752D1F4E9800A6626B /* AIAnalysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIAnalysis.swift; sourceTree = "<group>"; };
+		999DAC772D1FA82000A6626B /* TodaysInsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodaysInsightsView.swift; sourceTree = "<group>"; };
+		999DAC792D1FA87600A6626B /* AnalysisManagerPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisManagerPreview.swift; sourceTree = "<group>"; };
 		99A0C8ED2CA9EF2400F9281A /* Loop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Loop.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		99A0C8F02CA9EF2400F9281A /* LoopApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopApp.swift; sourceTree = "<group>"; };
 		99A0C8F22CA9EF2400F9281A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -280,6 +286,7 @@
 				99A0C8F42CA9EF2600F9281A /* Assets.xcassets */,
 				99A0C8F62CA9EF2600F9281A /* Preview Content */,
 				99F8F68B2D16FF9400F9C8D0 /* Configuration.swift */,
+				999DAC792D1FA87600A6626B /* AnalysisManagerPreview.swift */,
 			);
 			path = Loop;
 			sourceTree = "<group>";
@@ -300,6 +307,7 @@
 				99F7F6E62CAC77F4009858AC /* HomeView.swift */,
 				99AC6DD32CDED81100B0D0D6 /* LoopsView.swift */,
 				990E4A912CB48CEF009F88A0 /* InsightsView.swift */,
+				999DAC772D1FA82000A6626B /* TodaysInsightsView.swift */,
 				99AC6DDB2CE0226500B0D0D6 /* SettingsView.swift */,
 				99F7F6EC2CAC796E009858AC /* RecordLoopView.swift */,
 				99AC6DD52CDFFAFA00B0D0D6 /* LoopChatView.swift */,
@@ -383,14 +391,15 @@
 				9953BDFB2CF8105200348AC3 /* SettingsModels.swift */,
 				9953BE072CFCB92600348AC3 /* StoragePreference.swift */,
 				9953BE0D2D07AD9700348AC3 /* TrendModels.swift */,
-				9953BE0F2D07ADC100348AC3 /* LoopComparison.swift */,
 				9953BE112D07ADE400348AC3 /* LoopAnalysis.swift */,
+				9953BE0F2D07ADC100348AC3 /* LoopComparison.swift */,
 				99F31CA82D0F31AF00330180 /* FollowUp.swift */,
 				99F31CAA2D0F477500330180 /* Graph.swift */,
 				99CCFBC12D137A2100DA8A55 /* AnalysisState.swift */,
 				99DC91B62D1A258A002B9A89 /* WeeklyAnalysis.swift */,
 				99DC91BC2D1A50E4002B9A89 /* TranscriptionError.swift */,
 				999DAC6F2D1E236900A6626B /* DayRating.swift */,
+				999DAC752D1F4E9800A6626B /* AIAnalysis.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -516,6 +525,7 @@
 				990E4A9E2CBDE063009F88A0 /* ViewPastLoopView.swift in Sources */,
 				999DAC722D1E239400A6626B /* DayRatingSlider.swift in Sources */,
 				99AC6DD62CDFFAFA00B0D0D6 /* LoopChatView.swift in Sources */,
+				999DAC782D1FA82100A6626B /* TodaysInsightsView.swift in Sources */,
 				990E4A8E2CB48BB9009F88A0 /* SplashScreen.swift in Sources */,
 				99DC91B72D1A258A002B9A89 /* WeeklyAnalysis.swift in Sources */,
 				9953BDEA2CF25A7C00348AC3 /* MonthSummary.swift in Sources */,
@@ -541,8 +551,10 @@
 				9953BE082CFCB92600348AC3 /* StoragePreference.swift in Sources */,
 				990E4A8C2CB48BAF009F88A0 /* PagesHolderView.swift in Sources */,
 				99F31CAB2D0F477500330180 /* Graph.swift in Sources */,
+				999DAC7A2D1FA87600A6626B /* AnalysisManagerPreview.swift in Sources */,
 				9988DBAE2CDD25C8005628DE /* PastLoopCard.swift in Sources */,
 				99AC6DDC2CE0226500B0D0D6 /* SettingsView.swift in Sources */,
+				999DAC762D1F4E9800A6626B /* AIAnalysis.swift in Sources */,
 				99F7F6FD2CAF814B009858AC /* RecordLoopsView.swift in Sources */,
 				9988DB952CDA7F92005628DE /* FriendRequest.swift in Sources */,
 				99F7F6F52CAC7DB4009858AC /* LoopManager.swift in Sources */,

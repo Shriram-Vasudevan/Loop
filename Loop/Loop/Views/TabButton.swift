@@ -7,26 +7,21 @@
 
 import SwiftUI
 
-struct TabButton: View {
+struct InsightsTabButton: View {
     let title: String
     let isSelected: Bool
     let action: () -> Void
     
+    private let textColor = Color(hex: "2C3E50")
     private let accentColor = Color(hex: "A28497")
     
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 16, weight: .light))
-                .foregroundColor(isSelected ? .white : accentColor)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
-                .background(
-                    Capsule()
-                        .fill(isSelected ? accentColor : accentColor.opacity(0.1))
-                )
-                .contentShape(Rectangle())
+                .font(.system(size: 11, weight: .medium))
+                .tracking(1.5)
+                .foregroundColor(isSelected ? textColor : textColor.opacity(0.5))
+                .padding(.bottom, 12)
         }
-        .buttonStyle(.plain)
     }
 }

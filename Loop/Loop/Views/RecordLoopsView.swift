@@ -486,8 +486,9 @@ struct RecordLoopsView: View {
     private func completeRecording() {
         guard let audioFileURL = audioManager.getRecordedAudioFile() else { return }
         
+        // Save the recording and proceed with UI updates immediately
         Task {
-            // 1. Save current recording
+            // Save the recording to the loopManager
             let loop = await loopManager.addLoop(
                 mediaURL: audioFileURL,
                 isVideo: false,
@@ -496,86 +497,69 @@ struct RecordLoopsView: View {
                 isFollowUp: false
             )
             
-            // Start analysis in background
-            Task {
-                try? await analysisManager.startAnalysis(loop, isPastLoop: false)
+            // Perform analysis and memory fetching in the background
+            Task.detached(priority: .background) {
+                await analysisManager.startAnalysis(loop)
+                await handleMemoryOrNextPrompt(loop: loop)
             }
             
-            // 2. If it's the last prompt, handle memory logic
-            if loopManager.isLastPrompt() {
-                await handleLastPromptMemory()
-            } else {
-                // 3. If not last prompt, just move to next
-                await MainActor.run {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        loopManager.moveToNextPrompt()
-                        isPostRecording = false
-                    }
+            // Immediate UI update to transition
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                if loopManager.isLastPrompt() {
+                    isPostRecording = false
+                    isShowingMemory = true
+                } else {
+                    loopManager.moveToNextPrompt()
+                    isPostRecording = false
                 }
             }
         }
     }
 
-    private func handleLastPromptMemory() async {
-        // Store prompts for memory comparison
-        let allPrompts = loopManager.dailyPrompts
-        
-        await MainActor.run {
-            withAnimation {
-                isShowingMemory = true
-                isLoadingMemory = true
-            }
-        }
-        
+    private func handleMemoryOrNextPrompt(loop: Loop) async {
         do {
-            // Check if user meets minimum days requirement
-            let userDays = try await loopManager.fetchDistinctLoopingDays()
-            
-            if userDays < 3 {
-                await MainActor.run {
-                    withAnimation {
-                        userDaysThresholdNotMet = true
+            if loopManager.isLastPrompt() {
+                let userDays = try await loopManager.fetchDistinctLoopingDays()
+                
+                if userDays < 3 {
+                    // Notify user to loop for 3 days to unlock memories
+                    await MainActor.run {
+                        withAnimation {
+                            userDaysThresholdNotMet = true
+                            loopManager.hasCompletedToday = true
+                            isShowingMemory = true
+                        }
                     }
-                    
-                    // Wait 2 seconds then complete
-                    Task {
-                        try? await Task.sleep(nanoseconds: 2_000_000_000)
-                        await completeLastPrompt()
+                } else if let pastLoop = try? await loopManager.getPastLoopForComparison(recordedPrompts: loopManager.dailyPrompts) {
+                    // Display past memory
+                    await MainActor.run {
+                        withAnimation {
+                            self.pastLoop = pastLoop
+                            isShowingMemory = true
+                            isPostRecording = false
+                            isLoadingMemory = false
+                        }
+                    }
+                } else {
+                    // No past memory found
+                    await MainActor.run {
+                        withAnimation {
+                            loopManager.hasCompletedToday = true
+                            isShowingMemory = false
+                        }
                     }
                 }
-                return
-            }
-            
-            // Try to get a past loop
-            if let pastLoop = try await loopManager.getPastLoopForComparison(recordedPrompts: allPrompts) {
-                await MainActor.run {
-                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                        self.pastLoop = pastLoop
-                        isPostRecording = false
-                        isLoadingMemory = false
-                    }
-                    audioManager.cleanup()
-                }
-            } else {
-                // No memory found - complete the process
-                await completeLastPrompt()
             }
         } catch {
             print("Error in memory handling: \(error)")
-            await completeLastPrompt()
+        } finally {
+            // Ensure any UI cleanup is on the main thread
+            await MainActor.run {
+                audioManager.cleanup()
+            }
         }
     }
 
-    private func completeLastPrompt() async {
-        await MainActor.run {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                loopManager.hasCompletedToday = true
-                loopManager.saveCachedState()
-                isShowingMemory = false
-            }
-            audioManager.cleanup()
-        }
-    }
     
     private func retryRecording() {
         if loopManager.retryAttemptsLeft > 0 {

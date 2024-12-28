@@ -19,13 +19,10 @@ struct DailyStats: Identifiable {
     var averageDuration: Double
     var averageWordCount: Double
     var averageUniqueWordCount: Double
-    var averageSelfReferences: Double
     var vocabularyDiversityRatio: Double
-    var averageWordLength: Double
     var loopCount: Int16
     var lastUpdated: Date?
     
-    // To match Loop pattern of having an ID
     var id: String {
         return date?.description ?? UUID().uuidString
     }
@@ -38,9 +35,7 @@ struct AllTimeStats: Identifiable {
    var averageDuration: Double
    var averageWordCount: Double
    var averageUniqueWordCount: Double
-   var averageSelfReferences: Double
    var vocabularyDiversityRatio: Double
-   var averageWordLength: Double
    var lastUpdated: Date?
    
    var id: String {
@@ -54,9 +49,7 @@ struct MonthlyStats: Identifiable {
    var averageDuration: Double
    var averageWordCount: Double
    var averageUniqueWordCount: Double
-   var averageSelfReferences: Double
    var vocabularyDiversityRatio: Double
-   var averageWordLength: Double
    var lastUpdated: Date?
    var month: Int16
    var year: Int16
@@ -72,9 +65,7 @@ struct WeeklyStats: Identifiable {
    var averageDuration: Double
    var averageWordCount: Double
    var averageUniqueWordCount: Double
-   var averageSelfReferences: Double
    var vocabularyDiversityRatio: Double
-   var averageWordLength: Double
    var lastUpdated: Date?
    var weekNumber: Int16
    var year: Int16
@@ -89,7 +80,6 @@ protocol StatsProtocol {
     var averageDuration: Double { get }
     var averageWordCount: Double { get }
     var averageUniqueWordCount: Double { get }
-    var averageSelfReferences: Double { get }
     var vocabularyDiversityRatio: Double { get }
 }
 

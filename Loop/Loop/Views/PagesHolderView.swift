@@ -29,7 +29,7 @@ struct PagesHolderView: View {
                     case .settings:
                         SettingsView()
                     case .insights:
-                        InsightsView()
+                       InsightsView()
                     }
                     
                     // Bottom bar with proper padding

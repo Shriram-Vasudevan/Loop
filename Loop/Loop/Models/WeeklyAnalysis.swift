@@ -41,9 +41,7 @@ struct WeeklyMetrics: Codable {
     let averageDuration: TimeInterval
     let averageWordsPerMinute: Double
     let totalUniqueDays: Int
-    let totalSelfReferenceCount: Int
     let emotionalJourney: [Date: String]
-    let commonWords: [WordCount]
     let weeklyWPMTrend: [Date: Double]
 }
 

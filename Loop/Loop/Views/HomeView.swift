@@ -24,6 +24,10 @@ struct HomeView: View {
     @State private var showUnlockReminder = true
     @State private var distinctDays: Int = 0
     
+    var displayedPrompts: [ThematicPrompt] {
+        Array(loopManager.thematicPrompts.prefix(3))
+    }
+
     // Maintain existing color scheme
     let accentColor = Color(hex: "A28497")
     let backgroundColor = Color(hex: "FAFBFC")
@@ -43,7 +47,7 @@ struct HomeView: View {
             FlowingBackground(color: accentColor)
                 .opacity(backgroundOpacity)
                 .ignoresSafeArea()
-//            
+//
             ScrollView {
                 VStack(spacing: 32) {
                     // Welcome header with subtle animation
@@ -201,7 +205,7 @@ struct HomeView: View {
                     Color.white
                     Image(systemName: "quote.closing")
                         .font(.system(size: 160))
-                        .foregroundColor(accentColor.opacity(0.035))
+                        .foregroundColor(accentColor.opacity(0.05))
                         .rotationEffect(.degrees(8))
                         .padding(.trailing, -20)
                         .padding(.bottom, -20)
@@ -234,7 +238,7 @@ struct HomeView: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
-                    ForEach(Array(loopManager.thematicPrompts.prefix(3).enumerated()), id: \.element.id) { index, prompt in
+                    ForEach(Array(displayedPrompts.enumerated()), id: \.element.id) { index, prompt in
                         ThematicPromptCard(prompt: prompt, accentColor: accentColor, isEven: index % 2 == 0) {
                             thematicPrompt = prompt
                         }
@@ -529,7 +533,7 @@ struct ThematicPromptCard: View {
                         .fill(.white)
                     
                     WavyBackground()
-                        .foregroundColor(surfaceColor)
+//                        .foregroundColor(accentColor)
                         .rotation3DEffect(
                             .degrees(isEven ? 0 : 180),
                             axis: (x: 1, y: 0, z: 0)

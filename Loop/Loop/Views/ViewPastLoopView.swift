@@ -182,9 +182,11 @@ struct ViewPastLoopView: View {
                     .foregroundColor(textColor.opacity(0.6))
             }
             
-            // Add transcript button
-            TranscriptButton(accentColor: accentColor, showTranscript: $showTranscript)
-                .padding(.top, 16)
+            if !isThroughRecordLoopsView {
+                // Add transcript button
+                TranscriptButton(accentColor: accentColor, showTranscript: $showTranscript)
+                    .padding(.top, 16)
+            }
         }
         .padding(.bottom, 20)
     }

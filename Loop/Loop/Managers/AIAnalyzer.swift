@@ -20,45 +20,67 @@ class AIAnalyzer {
     }
     
     
-    func analyzeResponses(_ responses: [String]) async throws -> AIAnalysisResult {
-        print("analyzing")
+    func analyzeResponses(_ responses: [(question: String, answer: String)]) async throws -> AIAnalysisResult {
+        // Format the responses for the prompt
+        let formattedResponses = responses.enumerated().map { index, response in
+            """
+            Question \(index + 1): \(response.question)
+            Response \(index + 1): \(response.answer)
+            """
+        }.joined(separator: "\n\n")
         
         let prompt = """
-        analyze these 3 responses as a whole (not each individually):
-        
-        response 1:
-        \(responses[0])
-        
-        response 2:
-        \(responses[1])
-        
-        response 3:
-        \(responses[2])
-        
-        Respond in exactly the following format; no other text should be provided:
-        
-        1. feeling: [use a specific adjective to describe the tone or emotion of the response]
-        2. description: [explain the feeling in 2-3 short-medium sentences, addressing the user directly in the second person ("your response conveys..."). provide insight into the tone and its possible implications.]
-        3. tense: [past/present/future]
-        4. description: [in 1 sentence (under 15 words), explain how the tense influences the response's tone, focus, or narrative perspective.]
-        5. self-references: [count the number of "I/me/my" to measure self-focus]
-        6. action-reflection: [provide a clear and balanced ratio like 50/50, 40/60, or 60/40. avoid extremes like 70/30 unless strongly justified]
-        7. description: [in 1 short sentence (under 15 words), explain if the response leans toward actions (doing things) or reflections (thinking about them) and why that balance matters.]
-        8. solution-focus: [provide a balanced ratio like 50/50, 40/60, or 60/40, showing how much of the response focuses on problems vs solutions. avoid extreme ratios unless strongly justified]
-        9. description: [in 1 short sentence (under 15 words), explain whether the response emphasizes solving problems or dwelling on them, and how this focus affects its tone or direction.]
-        10. follow-up: [generate a thoughtful and specific question related to the feeling described in 1. avoid mentioning personal details directly but instead generalize the idea to encourage broader reflection (e.g., if the response mentions liking a specific person, ask about what they value in people overall).]
+        Analyze these three responses as a cohesive whole, considering both questions and answers.
+        Provide a single unified analysis that captures overall patterns and themes:
+
+        \(formattedResponses)
+
+        Provide analysis in exactly the following format:
+
+        1. Emotion:
+        - primary: [single dominant emotion across all responses]
+        - intensity: [1-10 scale for overall emotional intensity]
+        - tone: [overall tone in 1-2 words]
+        - description: [2 sentences explaining the overall emotional state and progression without referencing specific personal details]
+
+        2. Time Focus:
+        - orientation: [past/present/future/mixed]
+        - description: [2 sentences about the overall time orientation and its significance to the responses]
+
+        3. Self-Reference Analysis:
+        - frequency: [high/moderate/low]
+        - pattern: [how self-references are used - e.g., reflective, action-oriented, observational]
+        - description: [2 sentences about what the self-reference pattern reveals about perspective and focus]
+
+        4. Significant Phrases:
+        - insights: [up to 2 most meaningful insight quotes from any response, or "none" if none present]
+        - reflections: [up to 2 most meaningful reflection quotes from any response, or "none" if none present]
+        - decisions: [up to 2 most meaningful commitment/choice quotes from any response, or "none" if none present]
+        - description: [2 sentences about what these patterns reveal about the overall thought process]
+
+        5. Follow-up:
+        - question: [single thoughtful follow-up question based on all responses]
+        - context: [1 sentence on why this question is relevant to the overall themes]
+        - focus: [what aspect of self-reflection this targets]
+
+        Important rules:
+        - Analyze the responses together, not individually
+        - Look for patterns and themes across all three responses
+        - Never reference specific people, places, or events
+        - Keep insights general and pattern-focused
+        - If no phrases fit a category, use "none" instead of forcing matches
+        - Follow-up question should relate to overall themes, not specific details
         """
         
-        
         let requestBody: [String: Any] = [
-            "model": "gpt-4o-mini",
+            "model": "gpt-4",
             "messages": [
-                ["role": "system", "content": "You are an analyzer that responds in the exact format requested, no additional text."],
+                ["role": "system", "content": "You are an expert at analyzing personal reflections and providing insights while maintaining appropriate boundaries. You focus on patterns and themes across multiple responses."],
                 ["role": "user", "content": prompt]
             ],
-            "temperature": 0.3,
-            "max_tokens": 1000,
-            "top_p": 0.1,
+            "temperature": 0.4,
+            "top_p": 0.9,
+            "max_tokens": 1200,
             "frequency_penalty": 0.0,
             "presence_penalty": 0.0
         ]
@@ -70,40 +92,18 @@ class AIAnalyzer {
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         
         let (data, _) = try await URLSession.shared.data(for: request)
-        
-        print("ai response \(data)")
         let response = try JSONDecoder().decode(OpenAIResponse.self, from: data)
         
         guard let content = response.choices.first?.message.content else {
-            throw AnalysisError.aiAnalysisFailed("could not get ai message content")
+            throw AnalysisError.aiAnalysisFailed("No content in response")
         }
         
         return try parseAIResponse(content)
     }
     
     private func parseAIResponse(_ response: String) throws -> AIAnalysisResult {
-        let lines = response.components(separatedBy: .newlines)
-        var feeling: String?
-        var feelingDescription: String?
-        var tense: String?
-        var tenseDescription: String?
-        var selfReferenceCount: Int?
-        var followUp: String?
-        var actionReflectionRatio: String?
-        var actionReflectionDescription: String?
-        var solutionFocus: String?
-        var solutionFocusDescription: String?
-
-        print("Raw AI Response:")
-        print(response)
-        
-        var currentSection = ""
-        
-        for (index, line) in lines.enumerated() {
-            print("Processing line \(index): \(line)")
+            let lines = response.components(separatedBy: .newlines)
             
-            let lowercasedLine = line.lowercased().trimmingCharacters(in: .whitespaces)
-
             func extractContent(from line: String, prefix: String) -> String {
                 if let range = line.range(of: prefix, options: .caseInsensitive) {
                     return String(line[range.upperBound...]).trimmingCharacters(in: .whitespaces)
@@ -111,80 +111,152 @@ class AIAnalyzer {
                 return line.trimmingCharacters(in: .whitespaces)
             }
             
-            switch true {
-            case lowercasedLine.contains("1. feeling"):
-                currentSection = "feeling"
-                feeling = extractContent(from: line, prefix: "1. feeling:")
-            case lowercasedLine.contains("2. description") && currentSection == "feeling":
-                feelingDescription = extractContent(from: line, prefix: "2. description:")
-            case lowercasedLine.contains("3. tense"):
-                currentSection = "tense"
-                tense = extractContent(from: line, prefix: "3. tense:")
-            case lowercasedLine.contains("4. description") && currentSection == "tense":
-                tenseDescription = extractContent(from: line, prefix: "4. description:")
-            case lowercasedLine.contains("5. self-references"):
-                let countString = extractContent(from: line, prefix: "5. self-references:")
-                selfReferenceCount = Int(countString.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()) ?? 0
-            case lowercasedLine.contains("6. action-reflection"):
-                currentSection = "action"
-                actionReflectionRatio = extractContent(from: line, prefix: "6. action-reflection:")
-            case lowercasedLine.contains("7. description") && currentSection == "action":
-                actionReflectionDescription = extractContent(from: line, prefix: "7. description:")
-            case lowercasedLine.contains("8. solution-focus"):
-                currentSection = "solution"
-                solutionFocus = extractContent(from: line, prefix: "8. solution-focus:")
-            case lowercasedLine.contains("9. description") && currentSection == "solution":
-                solutionFocusDescription = extractContent(from: line, prefix: "9. description:")
-            case lowercasedLine.contains("10. follow-up"):
-                followUp = extractContent(from: line, prefix: "10. follow-up:")
-            default:
-                print("Unhandled line: \(line)")
-                continue
+            func parsePhrases(_ content: String) -> [String] {
+                if content.lowercased() == "none" {
+                    return []
+                }
+                return content.components(separatedBy: ", ")
+                    .map { $0.trimmingCharacters(in: .whitespaces) }
+                    .filter { !$0.isEmpty }
             }
+            
+            var emotion: EmotionAnalysis?
+            var timeFocus: TimeFocus?
+            var selfReference: SelfReferenceAnalysis?
+            var phrases: SignificantPhrases?
+            var followUp: FollowUp?
+            
+            var currentSection = ""
+            var tempEmotionData: [String: String] = [:]
+            var tempTimeData: [String: String] = [:]
+            var tempSelfRefData: [String: String] = [:]
+            var tempPhrasesData: [String: String] = [:]
+            var tempFollowUpData: [String: String] = [:]
+            
+            for line in lines {
+                let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+                
+                switch true {
+                case trimmedLine.starts(with: "1. Emotion:"):
+                    currentSection = "emotion"
+                case trimmedLine.starts(with: "2. Time Focus:"):
+                    currentSection = "time"
+                case trimmedLine.starts(with: "3. Self-Reference Analysis:"):
+                    currentSection = "selfref"
+                case trimmedLine.starts(with: "4. Significant Phrases:"):
+                    currentSection = "phrases"
+                case trimmedLine.starts(with: "5. Follow-up:"):
+                    currentSection = "followup"
+                case trimmedLine.starts(with: "-"):
+                    let content = extractContent(from: trimmedLine, prefix: "-")
+                    if let colonIndex = content.firstIndex(of: ":") {
+                        let key = String(content[..<colonIndex]).trimmingCharacters(in: .whitespaces)
+                        let value = String(content[content.index(after: colonIndex)...]).trimmingCharacters(in: .whitespaces)
+                        
+                        switch currentSection {
+                        case "emotion":
+                            tempEmotionData[key] = value
+                        case "time":
+                            tempTimeData[key] = value
+                        case "selfref":
+                            tempSelfRefData[key] = value
+                        case "phrases":
+                            tempPhrasesData[key] = value
+                        case "followup":
+                            tempFollowUpData[key] = value
+                        default:
+                            break
+                        }
+                    }
+                default:
+                    break
+                }
+            }
+            
+            // Parse Emotion Analysis
+            if let primary = tempEmotionData["primary"],
+               let intensityStr = tempEmotionData["intensity"],
+               let intensity = Int(intensityStr.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()),
+               let tone = tempEmotionData["tone"],
+               let description = tempEmotionData["description"] {
+                emotion = EmotionAnalysis(
+                    primary: primary,
+                    intensity: intensity,
+                    tone: tone,
+                    description: description
+                )
+            }
+            
+            // Parse Time Focus
+            if let orientationStr = tempTimeData["orientation"],
+               let description = tempTimeData["description"] {
+                let orientation = TimeOrientation(rawValue: orientationStr.lowercased()) ?? .mixed
+                timeFocus = TimeFocus(
+                    orientation: orientation,
+                    description: description
+                )
+            }
+            
+            // Parse Self Reference Analysis
+            if let frequency = tempSelfRefData["frequency"],
+               let pattern = tempSelfRefData["pattern"],
+               let description = tempSelfRefData["description"] {
+                selfReference = SelfReferenceAnalysis(
+                    frequency: frequency,
+                    pattern: pattern,
+                    description: description
+                )
+            }
+            
+            // Parse Significant Phrases
+            if let insights = tempPhrasesData["insights"],
+               let reflections = tempPhrasesData["reflections"],
+               let decisions = tempPhrasesData["decisions"],
+               let description = tempPhrasesData["description"] {
+                phrases = SignificantPhrases(
+                    insightPhrases: parsePhrases(insights),
+                    reflectionPhrases: parsePhrases(reflections),
+                    decisionPhrases: parsePhrases(decisions),
+                    description: description
+                )
+            }
+            
+            // Parse Follow Up
+            if let question = tempFollowUpData["question"],
+               let context = tempFollowUpData["context"],
+               let focus = tempFollowUpData["focus"] {
+                followUp = FollowUp(
+                    question: question,
+                    context: context,
+                    focus: focus
+                )
+            }
+            
+            // Validate all required components are present
+            guard let emotion = emotion,
+                  let timeFocus = timeFocus,
+                  let selfReference = selfReference,
+                  let phrases = phrases,
+                  let followUp = followUp else {
+                let missingFields = [
+                    emotion == nil ? "emotion" : nil,
+                    timeFocus == nil ? "timeFocus" : nil,
+                    selfReference == nil ? "selfReference" : nil,
+                    phrases == nil ? "phrases" : nil,
+                    followUp == nil ? "followUp" : nil
+                ].compactMap { $0 }
+                
+                throw AnalysisError.missingFields(fields: missingFields)
+            }
+            
+            return AIAnalysisResult(
+                emotion: emotion,
+                timeFocus: timeFocus,
+                selfReference: selfReference,
+                phrases: phrases,
+                followUp: followUp
+            )
         }
-
-        print("Parsed values:")
-        print("Feeling: \(feeling ?? "nil")")
-        print("Feeling Description: \(feelingDescription ?? "nil")")
-        print("Tense: \(tense ?? "nil")")
-        print("Tense Description: \(tenseDescription ?? "nil")")
-        print("Self Reference Count: \(selfReferenceCount ?? -1)")
-        print("Action Reflection Ratio: \(actionReflectionRatio ?? "nil")")
-        print("Action Reflection Description: \(actionReflectionDescription ?? "nil")")
-        print("Solution Focus: \(solutionFocus ?? "nil")")
-        print("Solution Focus Description: \(solutionFocusDescription ?? "nil")")
-        print("Follow Up: \(followUp ?? "nil")")
-        
-        var missingFields: [String] = []
-
-        if feeling == nil { missingFields.append("feeling") }
-        if feelingDescription == nil { missingFields.append("feelingDescription") }
-        if tense == nil { missingFields.append("tense") }
-        if tenseDescription == nil { missingFields.append("tenseDescription") }
-        if selfReferenceCount == nil { missingFields.append("selfReferenceCount") }
-        if actionReflectionRatio == nil { missingFields.append("actionReflectionRatio") }
-        if actionReflectionDescription == nil { missingFields.append("actionReflectionDescription") }
-        if solutionFocus == nil { missingFields.append("solutionFocus") }
-        if solutionFocusDescription == nil { missingFields.append("solutionFocusDescription") }
-        if followUp == nil { missingFields.append("followUp") }
-
-        if !missingFields.isEmpty {
-            throw AnalysisError.missingFields(fields: missingFields)
-        }
-        
-        return AIAnalysisResult(
-            feeling: feeling!,
-            feelingDescription: feelingDescription!,
-            tense: tense!,
-            tenseDescription: tenseDescription!,
-            selfReferenceCount: selfReferenceCount!,
-            followUp: followUp!,
-            actionReflectionRatio: actionReflectionRatio!,
-            actionReflectionDescription: actionReflectionDescription!,
-            solutionFocus: solutionFocus!,
-            solutionFocusDescription: solutionFocusDescription!
-        )
-    }
 }
 
 class WeeklyAIAnalyzer {

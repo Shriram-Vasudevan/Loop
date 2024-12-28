@@ -9,21 +9,11 @@ import Foundation
 
 struct LoopComparison: Codable {
     let date: Date
-    let pastLoopDate: Date
-    
+    let pastDate: Date
     let durationComparison: MetricComparison
-    
     let wpmComparison: MetricComparison
     let wordCountComparison: MetricComparison
-    
-    let uniqueWordComparison: MetricComparison
     let vocabularyDiversityComparison: MetricComparison
-    let averageWordLengthComparison: MetricComparison
-    
-    let selfReferenceComparison: MetricComparison
-    
-    let similarityScore: Double
-    let commonWords: [String]
 }
 
 

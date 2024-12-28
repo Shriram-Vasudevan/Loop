@@ -178,60 +178,72 @@ class LoopLocalStorageUtility {
     func fetchPastLoop(
         forPrompts prompts: [String],
         minDaysAgo: Int,
-        maxDaysAgo: Int,
+        maxDaysAgo: Int?,
         categoryFrequencies: [PromptCategory: Double]
     ) async throws -> Loop? {
         let calendar = Calendar.current
         let now = Date()
         
-        // Calculate date range based on days ago parameters
-        guard let minDate = calendar.date(byAdding: .day, value: -maxDaysAgo, to: now),
+        // Handle optional maxDaysAgo
+        let maxDaysAgoValue = maxDaysAgo ?? Int.max
+
+        // Calculate the date range
+        guard let minDate = calendar.date(byAdding: .day, value: -maxDaysAgoValue, to: now),
               let maxDate = calendar.date(byAdding: .day, value: -minDaysAgo, to: now) else {
             throw NSError(domain: "DateCalculationError", code: -1)
         }
-        
+
         print("🔍 Searching local storage between \(minDate) and \(maxDate)")
         
+        // Query for loops in the date range
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "LoopEntity")
         fetchRequest.predicate = NSPredicate(
             format: "timestamp >= %@ AND timestamp <= %@",
             minDate as NSDate,
             maxDate as NSDate
         )
+        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)] // Newest first
         
+        // Fetch the records
         let results = try context.fetch(fetchRequest)
-        print("📊 Found \(results.count) loops in specified time window")
+        print("📊 Found \(results.count) loops in the specified time window")
         
+        // Convert records to Loop objects
         let loops = results.compactMap { convertToLoop(from: $0) }
         
-        if !loops.isEmpty {
-            let scoredLoops = loops.map { loop -> (Loop, Double) in
-                let score = calculateLoopScore(
-                    loop: loop,
-                    prompts: prompts,
-                    categoryFrequencies: categoryFrequencies,
-                    now: now
-                )
-                return (loop, score)
+        if loops.isEmpty {
+            print("❌ No loops found in local storage")
+            return nil
+        }
+
+        // Score the loops
+        let scoredLoops = loops.map { loop -> (Loop, Double) in
+            let score = calculateLoopScore(
+                loop: loop,
+                prompts: prompts,
+                categoryFrequencies: categoryFrequencies,
+                now: now
+            )
+            return (loop, score)
+        }
+
+        // Log top-scoring loops
+        print("⭐️ Top scoring loops in this time window:")
+        scoredLoops.sorted { $0.1 > $1.1 }
+            .prefix(3)
+            .forEach { loop, score in
+                print("   Score: \(score) - Prompt: \(loop.promptText) - Date: \(loop.timestamp.formatted())")
             }
-            
-            print("⭐️ Top scoring loops in this time window:")
-            scoredLoops.sorted { $0.1 > $1.1 }
-                .prefix(3)
-                .forEach { loop, score in
-                    print("   Score: \(score) - Prompt: \(loop.promptText) - Date: \(loop.timestamp.formatted())")
-                }
-            
-            // Get highest scoring loop that meets threshold
-            if let bestMatch = scoredLoops.max(by: { $0.1 < $1.1 }), bestMatch.1 > 0.3 {
-                return bestMatch.0
-            }
+
+        // Return the best match above the threshold
+        if let bestMatch = scoredLoops.max(by: { $0.1 < $1.1 }), bestMatch.1 > 0.3 {
+            return bestMatch.0
         }
         
-        print("❌ No suitable loops found in this time window")
+        print("❌ No suitable loops found in local storage")
         return nil
     }
-    
+
     private func calculateLoopScore(
         loop: Loop,
         prompts: [String],
@@ -241,11 +253,13 @@ class LoopLocalStorageUtility {
         var score: Double = 0.0
         let calendar = Calendar.current
 
+        // Prompt match bonus
         if prompts.contains(loop.promptText) {
             score += 0.6
             print("💾 Local - Exact prompt match: +0.6")
         }
 
+        // Category frequency boost
         if let loopCategory = PromptCategory(rawValue: loop.category) {
             if loopCategory == .freeform {
                 score -= 0.1
@@ -260,11 +274,9 @@ class LoopLocalStorageUtility {
                 }
             }
         }
-        
-        // 3. Time-based Scoring
+
+        // Anniversary bonus
         let monthsAgo = Double(calendar.dateComponents([.month], from: loop.timestamp, to: now).month ?? 0)
-        
-        // Anniversary bonus (0.0 - 0.4)
         let dayOfMonth = calendar.component(.day, from: loop.timestamp)
         let currentDay = calendar.component(.day, from: now)
         if dayOfMonth == currentDay {
@@ -276,8 +288,8 @@ class LoopLocalStorageUtility {
                 print("💾 Local - Monthly anniversary: +0.2")
             }
         }
-        
-        // Age appropriateness (0.0 - 0.2)
+
+        // Time range bonus
         if monthsAgo >= 3 && monthsAgo <= 6 {
             score += 0.2
             print("💾 Local - Ideal time range (3-6 months): +0.2")
@@ -288,23 +300,18 @@ class LoopLocalStorageUtility {
             score += 0.05
             print("💾 Local - Acceptable time range (6-12 months): +0.05")
         }
-        
-        // 4. Recent Retrieval Penalties (-0.8 - 0.0)
+
+        // Last retrieved penalty
         if let lastRetrieved = loop.lastRetrieved {
             let daysAgo = calendar.dateComponents([.day], from: lastRetrieved, to: now).day ?? 0
             var penalty: Double = 0.0
             
             switch daysAgo {
-            case 0...7:     // Severe penalty for very recent retrievals
-                penalty = 0.8
-            case 8...14:    // Strong penalty
-                penalty = 0.6
-            case 15...30:   // Moderate penalty
-                penalty = 0.4
-            case 31...60:   // Light penalty
-                penalty = 0.2
-            default:
-                penalty = 0.0
+            case 0...7:     penalty = 0.8
+            case 8...14:    penalty = 0.6
+            case 15...30:   penalty = 0.4
+            case 31...60:   penalty = 0.2
+            default:        penalty = 0.0
             }
             
             if penalty > 0 {
@@ -312,11 +319,10 @@ class LoopLocalStorageUtility {
                 print("💾 Local - Recent retrieval penalty: -\(penalty)")
             }
         }
-        
-        let finalScore = max(0.0, min(1.0, score))
-        print("💾 Local - Final score for '\(loop.promptText)' from \(loop.timestamp.formatted()): \(finalScore)")
-        return finalScore
+
+        return max(0.0, min(1.0, score))
     }
+
 
     func updateLastRetrieved(for loop: Loop) throws {
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "LoopEntity")

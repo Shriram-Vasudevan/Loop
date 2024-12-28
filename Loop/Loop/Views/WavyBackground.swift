@@ -13,7 +13,8 @@ struct WavyBackground: View {
             Canvas { context, size in
                 let timeOffset = timeline.date.timeIntervalSinceReferenceDate
                 
-                let backgroundGradient = Gradient(colors: [.white, Color(white: 0.98)])
+                // Create gradient from white to a very light shade of A28497
+                let backgroundGradient = Gradient(colors: [.white, Color(hex: "A28497").opacity(0.05)])
                 context.fill(
                     Path(CGRect(origin: .zero, size: size)),
                     with: .linearGradient(
@@ -55,9 +56,10 @@ struct WavyBackground: View {
                     path.closeSubpath()
 
                     context.opacity = config.opacity
+                    // Use progressively darker shades of A28497 for each wave
                     context.fill(
                         path,
-                        with: .color(Color(white: 0.9 - Double(index) * 0.05))
+                        with: .color(Color(hex: "A28497").opacity(0.8 - Double(index) * 0.2))
                     )
                 }
             }
@@ -65,6 +67,8 @@ struct WavyBackground: View {
         .edgesIgnoringSafeArea(.all)
     }
 }
+
+
 
 struct OptimizedWaveLayer: View {
     let phase: CGFloat
