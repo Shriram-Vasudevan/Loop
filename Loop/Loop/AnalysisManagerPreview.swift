@@ -12,9 +12,13 @@ import SwiftUI
 extension AnalysisManager {
     static var preview: AnalysisManager {
         let manager = AnalysisManager()
+        
+        // Use a fixed date for previews to ensure consistency
+        let fixedDate = Calendar.current.date(from: DateComponents(year: 2024, month: 12, day: 27))!
+        
         let mockLoopAnalysis = LoopAnalysis(
-            id: "1",
-            timestamp: Date(),
+            id: UUID().uuidString, // Use UUID for unique IDs
+            timestamp: fixedDate,
             promptText: "What's on your mind today?",
             category: "Daily Reflection",
             transcript: "Today has been quite productive...",
@@ -57,8 +61,12 @@ extension AnalysisManager {
         )
         
         let mockDailyAnalysis = DailyAnalysis(
-            date: Date(),
-            loops: [mockLoopAnalysis, mockLoopAnalysis, mockLoopAnalysis],
+            date: fixedDate,
+            loops: [
+                mockLoopAnalysis,
+                mockLoopAnalysis.copy(withNewId: UUID().uuidString),
+                mockLoopAnalysis.copy(withNewId: UUID().uuidString)
+            ],
             aggregateMetrics: AggregateMetrics(
                 averageDuration: 155,
                 averageWordCount: 145.0,
@@ -72,7 +80,20 @@ extension AnalysisManager {
         return manager
     }
 }
-#endif
+
+extension LoopAnalysis {
+    func copy(withNewId newId: String) -> LoopAnalysis {
+        LoopAnalysis(
+            id: newId,
+            timestamp: self.timestamp,
+            promptText: self.promptText,
+            category: self.category,
+            transcript: self.transcript,
+            metrics: self.metrics
+        )
+    }
+}
+
 
 // Preview modifier
 struct PreviewAnalysisManager: ViewModifier {
@@ -89,3 +110,5 @@ extension View {
         modifier(PreviewAnalysisManager(manager: .preview))
     }
 }
+
+#endif

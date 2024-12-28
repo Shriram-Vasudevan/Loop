@@ -7,19 +7,19 @@
 
 import Foundation
 
-struct LoopComparison: Codable {
-    let date: Date
-    let pastDate: Date
-    let durationComparison: MetricComparison
-    let wpmComparison: MetricComparison
-    let wordCountComparison: MetricComparison
-    let vocabularyDiversityComparison: MetricComparison
-}
-
-
-enum ComparisonDirection: String, Codable {
-    case increase
-    case decrease
-    case same
-}
-
+//struct LoopComparison: Codable {
+//    let date: Date
+//    let pastDate: Date
+//    let durationComparison: MetricComparison
+//    let wpmComparison: MetricComparison
+//    let wordCountComparison: MetricComparison
+//    let vocabularyDiversityComparison: MetricComparison
+//}
+//
+//
+//enum ComparisonDirection: String, Codable {
+//    case increase
+//    case decrease
+//    case same
+//}
+//

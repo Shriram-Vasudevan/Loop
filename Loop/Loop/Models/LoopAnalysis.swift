@@ -45,13 +45,13 @@ enum AnalysisError: Error {
     case invalidData(String)
     case missingFields(fields: [String])
 }
-
-struct MetricComparison: Codable {
-    let direction: ComparisonDirection
-    let percentageChange: Double
-    
-    
-}
+//
+//struct MetricComparison: Codable {
+//    let direction: ComparisonDirection
+//    let percentageChange: Double
+//    
+//    
+//}
 
 extension LoopMetrics {
     static let fallback = LoopMetrics(

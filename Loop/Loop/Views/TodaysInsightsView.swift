@@ -38,15 +38,14 @@ struct TodaysInsightsView: View {
                                 .onTapGesture {
                                     selectedFollowUp = analysis.followUp
                                 }
-                            
                         }
                         
-                        PatternsView(analysis: analysis)
+                        QuotesGallery(phrases: analysis.phrases)
+    
+
                         
-    //                    // Quote gallery
-    //                    QuoteGallery(phrases: analysis.phrases)
-    //                        .padding(.horizontal, -16)
-    //
+                        
+                        PatternsView(analysis: analysis)
                         
                     }
                     
@@ -56,7 +55,6 @@ struct TodaysInsightsView: View {
                     }
                     
                     if let loops = analysisManager.currentDailyAnalysis?.loops {
-                        // Individual loops
                         LoopsTimeline(loops: loops)
                     }
                 }
@@ -102,41 +100,121 @@ struct ThemeSection: View {
     }
 }
 
-struct QuoteGallery: View {
+struct QuotesGallery: View {
     let phrases: SignificantPhrases
     private let textColor = Color(hex: "2C3E50")
     private let accentColor = Color(hex: "A28497")
     private let secondaryAccent = Color(hex: "84A297")
     
+    private struct CategoryQuotes {
+        let icon: String
+        let label: String
+        let quotes: [String]
+        let color: Color
+    }
+    
+    private var categorizedQuotes: [CategoryQuotes] {
+        [
+            CategoryQuotes(
+                icon: "lightbulb.circle.fill",
+                label: "INSIGHTS",
+                quotes: phrases.insightPhrases,
+                color: accentColor
+            ),
+            CategoryQuotes(
+                icon: "circle.fill",
+                label: "REFLECTIONS",
+                quotes: phrases.reflectionPhrases,
+                color: secondaryAccent
+            ),
+            CategoryQuotes(
+                icon: "arrow.right.circle.fill",
+                label: "DECISIONS",
+                quotes: phrases.decisionPhrases,
+                color: accentColor.opacity(0.8)
+            )
+        ].filter { !$0.quotes.isEmpty }
+    }
+    
+    @ViewBuilder
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 16) {
-                ForEach(phrases.insightPhrases, id: \.self) { quote in
-                    QuoteCard(quote: quote, color: accentColor)
-                }
+        if !categorizedQuotes.isEmpty {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("memorable moments")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(textColor)
                 
-                ForEach(phrases.reflectionPhrases, id: \.self) { quote in
-                    QuoteCard(quote: quote, color: secondaryAccent)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 16) {
+                        ForEach(categorizedQuotes, id: \.label) { category in
+                            QuoteCategoryCard(
+                                icon: category.icon,
+                                label: category.label,
+                                quotes: category.quotes,
+                                color: category.color
+                            )
+                        }
+                    }
+
                 }
             }
-            .padding(.horizontal, 24)
         }
     }
 }
 
-struct QuoteCard: View {
-    let quote: String
+struct QuoteCategoryCard: View {
+    let icon: String
+    let label: String
+    let quotes: [String]
     let color: Color
+    
     private let textColor = Color(hex: "2C3E50")
+    private let standardHeight: CGFloat = 130
     
     var body: some View {
-        Text("\"\(quote)\"")
-            .font(.system(size: 16))
-            .foregroundColor(textColor)
-            .frame(width: 260)
-            .padding(20)
-            .background(color.opacity(0.1))
-            .cornerRadius(12)
+        VStack(spacing: 0) {
+            // Header
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .foregroundColor(color)
+                
+                Text(label)
+                    .font(.system(size: 11, weight: .medium))
+                    .tracking(1.5)
+                    .foregroundColor(textColor.opacity(0.5))
+                
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
+            
+            // Quotes
+            ScrollView(.vertical, showsIndicators: true) {
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(quotes, id: \.self) { quote in
+                        Text("\"\(quote)\"")
+                            .font(.system(size: 15))
+                            .foregroundColor(textColor.opacity(0.8))
+                            .lineSpacing(6)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
+            }
+        }
+        .frame(width: 300, height: standardHeight)
+        .background(
+            Color.white
+                .cornerRadius(16)
+                .shadow(color: Color.black.opacity(0.03), radius: 10, x: 0, y: 4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(color.opacity(0.1), lineWidth: 1)
+                )
+        )
     }
 }
 
@@ -148,9 +226,14 @@ struct PatternsView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("patterns & focus")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(textColor)
+            HStack {
+                Text("perspective")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(textColor)
+                
+                
+                Spacer()
+            }
             
             HStack(spacing: 24) {
                 VStack(alignment: .leading, spacing: 12) {
@@ -192,6 +275,7 @@ struct PatternsView: View {
                 }
             }
             .padding(24)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.white.cornerRadius(16))
             
 //            Text(analysis.timeFocus.description)
@@ -215,62 +299,132 @@ struct MetricsGallery: View {
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(textColor)
             
-            HStack(spacing: 16) {
-                MetricRing(
+            VStack(spacing: 12) {
+                MetricCard(
                     value: metrics.averageWPM,
-                    maxValue: 200,
-                    label: "wpm",
+                    label: "average speaking pace",
+                    description: paceDescription(wpm: metrics.averageWPM),
+                    valueFormat: "%.0f",
+                    unit: "wpm",
                     color: accentColor
                 )
                 
-                MetricRing(
-                    value: metrics.averageDuration/60,
-                    maxValue: 5,
-                    label: "minutes",
+                MetricCard(
+                    value: metrics.averageDuration,
+                    label: "average duration",
+                    description: durationDescription(seconds: metrics.averageDuration),
+                    valueFormat: "%.0f",
+                    unit: "sec",
                     color: secondaryAccent
                 )
                 
-                MetricRing(
-                    value: metrics.vocabularyDiversity * 100,
-                    maxValue: 100,
-                    label: "vocabulary",
+                MetricCard(
+                    value: metrics.averageWordCount,
+                    label: "average expression length",
+                    description: wordCountDescription(count: metrics.averageWordCount),
+                    valueFormat: "%.0f",
+                    unit: "words",
                     color: accentColor.opacity(0.8)
                 )
             }
-            .padding(24)
+            .padding(20)
             .background(Color.white.cornerRadius(16))
+        }
+    }
+    
+    private func paceDescription(wpm: Double) -> String {
+        switch wpm {
+        case ..<80:
+            return "Taking time to carefully consider each thought"
+        case 80..<100:
+            return "Speaking at a measured, reflective pace"
+        case 100..<130:
+            return "Natural conversational rhythm"
+        default:
+            return "Quick, energetic expression of ideas"
+        }
+    }
+    
+    private func durationDescription(seconds: Double) -> String {
+        switch seconds {
+        case ..<10:
+            return "Brief, focused thoughts"
+        case 10..<20:
+            return "Concise reflection style"
+        case 20..<25:
+            return "Balanced expression length"
+        default:
+            return "Taking time to fully explore thoughts"
+        }
+    }
+    
+    private func wordCountDescription(count: Double) -> String {
+        switch count {
+        case ..<20:
+            return "Direct and precise expression"
+        case 20..<35:
+            return "Clear, focused reflection"
+        case 35..<50:
+            return "Detailed exploration of thoughts"
+        default:
+            return "Rich, expansive expression style"
         }
     }
 }
 
-struct MetricRing: View {
+struct MetricCard: View {
     let value: Double
-    let maxValue: Double
     let label: String
+    let description: String
+    let valueFormat: String
+    let unit: String
     let color: Color
+    
     private let textColor = Color(hex: "2C3E50")
     
     var body: some View {
-        VStack(spacing: 8) {
-            ZStack {
-                Circle()
-                    .stroke(color.opacity(0.1), lineWidth: 8)
-                
-                Circle()
-                    .trim(from: 0, to: CGFloat(value / maxValue))
-                    .stroke(color, style: StrokeStyle(lineWidth: 8, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                
-                Text(String(format: "%.0f", value))
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(textColor)
+        VStack(spacing: 0) {
+            // Header with label
+            HStack {
+                Text(label)
+                    .font(.system(size: 11, weight: .medium))
+                    .textCase(.uppercase)
+                    .foregroundColor(textColor.opacity(0.5))
+                    .tracking(0.5)
+                Spacer()
             }
-            .frame(width: 80, height: 80)
+            .padding(.bottom, 8)
             
-            Text(label)
-                .font(.system(size: 12))
-                .foregroundColor(textColor.opacity(0.6))
+            // Value and unit
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(String(format: valueFormat, value))
+                    .font(.system(size: 22, weight: .medium))
+                Text(unit)
+                    .font(.system(size: 12))
+                    .foregroundColor(textColor.opacity(0.6))
+                Spacer()
+            }
+            .padding(.bottom, 8)
+            
+            // Description
+            HStack {
+                Text(description)
+                    .font(.system(size: 13))
+                    .foregroundColor(textColor.opacity(0.7))
+                    .fixedSize(horizontal: false, vertical: true)
+                
+                Spacer()
+            }
         }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(color.opacity(0.1), lineWidth: 1)
+                )
+        )
     }
 }
 
@@ -281,10 +435,14 @@ struct LoopsTimeline: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("daily loops")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(textColor)
-            
+            HStack {
+                Text("daily loops")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(textColor)
+                
+                
+                Spacer()
+            }
             VStack(spacing: 24) {
                 ForEach(loops) { loop in
                     LoopTimelineItem(loop: loop)
@@ -301,13 +459,12 @@ struct LoopTimelineItem: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            // Timeline element
             VStack(spacing: 0) {
                 Circle()
                     .fill(accentColor)
                     .frame(width: 12, height: 12)
                 
-                if loop.id != "lastLoop" {  // Add proper condition
+                if loop.id != "lastLoop" {
                     Rectangle()
                         .fill(accentColor.opacity(0.2))
                         .frame(width: 2)
@@ -331,7 +488,6 @@ struct LoopTimelineItem: View {
                 }
             }
         }
-        .padding(.leading, 4)
     }
     
     private func formatTime(_ date: Date) -> String {

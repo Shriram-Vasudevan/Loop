@@ -25,7 +25,9 @@ struct HomeView: View {
     @State private var distinctDays: Int = 0
     
     var displayedPrompts: [ThematicPrompt] {
-        Array(loopManager.thematicPrompts.prefix(3))
+        Array(loopManager.thematicPrompts.sorted(by: { a, b in
+            a.id > b.id
+        }))
     }
 
     // Maintain existing color scheme
@@ -238,7 +240,7 @@ struct HomeView: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
-                    ForEach(Array(displayedPrompts.enumerated()), id: \.element.id) { index, prompt in
+                    ForEach(Array(displayedPrompts.prefix(3).enumerated()), id: \.element.id) { index, prompt in
                         ThematicPromptCard(prompt: prompt, accentColor: accentColor, isEven: index % 2 == 0) {
                             thematicPrompt = prompt
                         }

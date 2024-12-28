@@ -8,13 +8,11 @@
 import SwiftUI
 
 struct AnimatedBackground: View {
-    // Using TimelineView for smooth animations
     var body: some View {
         TimelineView(.animation(minimumInterval: 1/30)) { timeline in
             Canvas { context, size in
                 let timeOffset = timeline.date.timeIntervalSinceReferenceDate
                 
-                // Draw three waves with different properties
                 for i in 0..<3 {
                     let frequency = Double(i + 1) * 0.5
                     let amplitude = 100 - Double(i) * 20
@@ -25,8 +23,8 @@ struct AnimatedBackground: View {
                     let height = size.height
                     let midHeight = height / 2
                     
-                    // Optimize point calculation by reducing sample points
-                    let steps = Int(width / 4) // Reduce number of points
+
+                    let steps = Int(width / 4)
                     let dx = width / CGFloat(steps)
                     
                     path.move(to: CGPoint(x: 0, y: height))

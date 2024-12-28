@@ -15,9 +15,7 @@ import CoreData
 
 class AnalysisManager: ObservableObject {
     static let shared = AnalysisManager()
-    
-    private let statsManager = StatsManager.shared
-    
+
     @Published var currentDailyAnalysis: DailyAnalysis?
     @Published var todaysLoops: [LoopAnalysis] = []
     
@@ -30,10 +28,6 @@ class AnalysisManager: ObservableObject {
     private let dailyAnalysisCacheKey = "DailyAnalysisCache"
     private let loopAnalysisCacheKey = "LoopAnalysisCache"
     private let lastAnalysisCacheDateKey = "LastAnalysisCacheDate"
-    
-    @Published private(set) var currentWeekStats: [DailyStats] = []
-    @Published private(set) var currentMonthWeeklyStats: [WeeklyStats] = []
-    @Published private(set) var currentYearMonthlyStats: [MonthlyStats] = []
     
     @Published private(set) var isLoadingWeekStats = false
     @Published private(set) var isLoadingMonthStats = false
@@ -168,8 +162,8 @@ class AnalysisManager: ObservableObject {
                 self.analysisState = .completed(dailyAnalysis)
             }
             
-            saveDailyStats()
-            statsManager.updateStats(with: dailyAnalysis)
+            saveDailyAIAnalysis(aiAnalysis)
+            QuantitativeTrendsManager.shared.saveDailyStats(dailyAnalysis)
         } catch {
             await MainActor.run {
                 self.analysisState = .failed(.aiAnalysisFailed("AI analysis failed: \(error.localizedDescription)"))
@@ -299,227 +293,6 @@ class AnalysisManager: ObservableObject {
     }
 
     
-    func saveDailyStats() {
-        print("Starting to save daily stats")
-        guard let analysis = currentDailyAnalysis else {
-            print("No current daily analysis to save")
-            return
-        }
-        
-        guard let entity = NSEntityDescription.entity(forEntityName: "DailyStatsEntity", in: context) else {
-            print("Failed to get DailyStatsEntity")
-            return
-        }
-        
-        let statsEntity = NSManagedObject(entity: entity, insertInto: context)
-        print("Created new stats entity")
-        
-        let calendar = Calendar.current
-        let components = calendar.dateComponents([.year, .month, .weekOfYear, .weekday], from: analysis.date)
-        
-        statsEntity.setValue(analysis.date, forKey: "date")
-        statsEntity.setValue(Int16(components.year ?? 0), forKey: "year")
-        statsEntity.setValue(Int16(components.month ?? 0), forKey: "month")
-        statsEntity.setValue(Int16(components.weekOfYear ?? 0), forKey: "weekOfYear")
-        statsEntity.setValue(Int16(components.weekday ?? 0), forKey: "weekday")
-        
-        statsEntity.setValue(analysis.aggregateMetrics.averageWPM, forKey: "averageWPM")
-        statsEntity.setValue(analysis.aggregateMetrics.averageDuration, forKey: "averageDuration")
-        statsEntity.setValue(analysis.aggregateMetrics.averageWordCount, forKey: "averageWordCount")
-
-        statsEntity.setValue(Int16(analysis.loops.count), forKey: "loopCount")
-        statsEntity.setValue(Date(), forKey: "lastUpdated")
-        
-        print("Set all values on stats entity")
-        print("Date being saved: \(analysis.date)")
-        print("Average WPM being saved: \(analysis.aggregateMetrics.averageWPM)")
-        
-        do {
-            try context.save()
-            print("Successfully saved daily stats to Core Data")
-            
-            let request = NSFetchRequest<NSManagedObject>(entityName: "DailyStatsEntity")
-            let results = try context.fetch(request)
-            print("After save, found \(results.count) total entries in DailyStatsEntity")
-        } catch {
-            print("Failed to save daily stats: \(error)")
-        }
-    }
-    
-    func fetchCurrentWeekStats() async {
-        isLoadingWeekStats = true
-        defer { isLoadingWeekStats = false }
-        
-        let calendar = Calendar.current
-        let components = calendar.dateComponents([.weekOfYear, .year], from: Date())
-        
-        guard let week = components.weekOfYear,
-              let year = components.year else {
-            print("❌ Failed to get current week components")
-            return
-        }
-        
-        print("\n🔍 Fetching stats for Week \(week) of \(year)")
-        
-        let request = NSFetchRequest<NSManagedObject>(entityName: "DailyStatsEntity")
-        request.predicate = NSPredicate(format: "weekOfYear == %d AND year == %d", week, year)
-        request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
-        
-        do {
-            let results = try context.fetch(request)
-            print("📊 Found \(results.count) entries for current week")
-               
-            results.forEach { entity in
-                if let date = entity.value(forKey: "date") as? Date {
-                    let weekNum = calendar.component(.weekOfYear, from: date)
-                    print("Entry date: \(date), Week: \(weekNum)")
-                }
-            }
-            
-            currentWeekStats = results.compactMap { convertToDailyStats(from: $0) }
-            print("📈 Converted \(currentWeekStats.count) entries to DailyStats")
-            
-        } catch {
-            print("❌ Error fetching daily stats: \(error)")
-            currentWeekStats = []
-        }
-    }
-
-    func fetchCurrentMonthWeeklyStats() async {
-        isLoadingMonthStats = true
-        defer { isLoadingMonthStats = false }
-        
-        let calendar = Calendar.current
-        let today = Date()
-        guard let year = calendar.dateComponents([.year], from: today).year,
-              let monthStart = calendar.date(from: DateComponents(year: year, month: calendar.component(.month, from: today))),
-              let monthEnd = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: monthStart),
-              let firstWeek = calendar.dateComponents([.weekOfYear], from: monthStart).weekOfYear,
-              let lastWeek = calendar.dateComponents([.weekOfYear], from: monthEnd).weekOfYear else {
-            print("❌ Error calculating date components for weekly stats")
-            currentMonthWeeklyStats = []
-            return
-        }
-        
-        print("📅 Fetching weekly stats for:")
-        print("Year: \(year)")
-        print("First Week of Month: \(firstWeek)")
-        print("Last Week of Month: \(lastWeek)")
-        print("Month Start: \(monthStart)")
-        print("Month End: \(monthEnd)")
-        
-        let request = NSFetchRequest<NSManagedObject>(entityName: "WeeklyStatsEntity")
-        request.predicate = NSPredicate(format: "year == %d AND weekNumber >= %d AND weekNumber <= %d",
-                                      year, firstWeek, lastWeek)
-        
-        print("🔍 Query predicate: year == \(year) AND weekNumber >= \(firstWeek) AND weekNumber <= \(lastWeek)")
-        
-        do {
-            let results = try context.fetch(request)
-            print("\n📊 Weekly stats query results:")
-            print("Found \(results.count) entries")
-
-            results.forEach { entity in
-                let weekNum = entity.value(forKey: "weekNumber") as? Int16 ?? -1
-                let yearVal = entity.value(forKey: "year") as? Int16 ?? -1
-                print("Entry - Week: \(weekNum), Year: \(yearVal)")
-            }
-            
-            currentMonthWeeklyStats = results.compactMap { convertToWeeklyStats(from: $0) }
-            print("✅ Converted \(currentMonthWeeklyStats.count) entries")
-        } catch {
-            print("❌ Error fetching weekly stats: \(error)")
-            currentMonthWeeklyStats = []
-        }
-    }
-    
-    func fetchCurrentYearMonthlyStats() async {
-       isLoadingYearStats = true
-       defer { isLoadingYearStats = false }
-       
-       let calendar = Calendar.current
-       guard let year = calendar.dateComponents([.year], from: Date()).year else {
-           print("Error getting current year")
-           currentYearMonthlyStats = []
-           return
-       }
-       
-       let request = NSFetchRequest<NSManagedObject>(entityName: "MonthlyStatsEntity")
-       request.predicate = NSPredicate(format: "year == %d", year)
-       request.sortDescriptors = [NSSortDescriptor(key: "month", ascending: true)]
-       
-       do {
-           let results = try context.fetch(request)
-           print("\nFetching monthly stats:")
-           print("Found \(results.count) entries")
-           currentYearMonthlyStats = results.compactMap { convertToMonthlyStats(from: $0) }
-           print("Converted \(currentYearMonthlyStats.count) entries")
-       } catch {
-           print("Error fetching monthly stats: \(error)")
-           currentYearMonthlyStats = []
-       }
-    }
-    
-    private func convertToDailyStats(from entity: NSManagedObject) -> DailyStats? {
-        guard let date = entity.value(forKey: "date") as? Date else {
-            return nil
-        }
-        
-        return DailyStats(
-            date: date,
-            year: entity.value(forKey: "year") as? Int16 ?? 0,
-            month: entity.value(forKey: "month") as? Int16 ?? 0,
-            weekOfYear: entity.value(forKey: "weekOfYear") as? Int16 ?? 0,
-            weekday: entity.value(forKey: "weekday") as? Int16 ?? 0,
-            averageWPM: entity.value(forKey: "averageWPM") as? Double ?? 0,
-            averageDuration: entity.value(forKey: "averageDuration") as? Double ?? 0,
-            averageWordCount: entity.value(forKey: "averageWordCount") as? Double ?? 0,
-            averageUniqueWordCount: entity.value(forKey: "averageUniqueWordCount") as? Double ?? 0,
-            vocabularyDiversityRatio: entity.value(forKey: "vocabularyDiversityRatio") as? Double ?? 0,
-            loopCount: entity.value(forKey: "loopCount") as? Int16 ?? 0,
-            lastUpdated: entity.value(forKey: "lastUpdated") as? Date
-        )
-    }
-    
-    private func convertToMonthlyStats(from entity: NSManagedObject) -> MonthlyStats? {
-       guard let month = entity.value(forKey: "month") as? Int16,
-             let year = entity.value(forKey: "year") as? Int16,
-             let dataPointCount = entity.value(forKey: "dataPointCount") as? Int64 else {
-           return nil
-       }
-       
-       return MonthlyStats(
-           dataPointCount: dataPointCount,
-           averageWPM: entity.value(forKey: "averageWPM") as? Double ?? 0,
-           averageDuration: entity.value(forKey: "averageDuration") as? Double ?? 0,
-           averageWordCount: entity.value(forKey: "averageWordCount") as? Double ?? 0,
-           averageUniqueWordCount: entity.value(forKey: "averageUniqueWordCount") as? Double ?? 0,
-           vocabularyDiversityRatio: entity.value(forKey: "vocabularyDiversityRatio") as? Double ?? 0,
-           lastUpdated: entity.value(forKey: "lastUpdated") as? Date,
-           month: month,
-           year: year
-       )
-    }
-
-    private func convertToWeeklyStats(from entity: NSManagedObject) -> WeeklyStats? {
-       guard let weekNumber = entity.value(forKey: "weekNumber") as? Int16,
-             let year = entity.value(forKey: "year") as? Int16,
-             let dataPointCount = entity.value(forKey: "dataPointCount") as? Int64 else {
-           return nil
-       }
-       
-       return WeeklyStats(
-           dataPointCount: dataPointCount,
-           averageWPM: entity.value(forKey: "averageWPM") as? Double ?? 0,
-           averageDuration: entity.value(forKey: "averageDuration") as? Double ?? 0,
-           averageWordCount: entity.value(forKey: "averageWordCount") as? Double ?? 0,
-           averageUniqueWordCount: entity.value(forKey: "averageUniqueWordCount") as? Double ?? 0,
-           vocabularyDiversityRatio: entity.value(forKey: "vocabularyDiversityRatio") as? Double ?? 0,
-           lastUpdated: entity.value(forKey: "lastUpdated") as? Date,
-           weekNumber: weekNumber,
-           year: year
-       )
-    }
     
     private func getCurrentWeekDateRange() -> (start: Date, end: Date) {
         let calendar = Calendar.current
@@ -694,6 +467,11 @@ class AnalysisManager: ObservableObject {
             UserDefaults.standard.set(encoded, forKey: weeklyAnalysisCacheKey)
         }
     }
+    
+    func saveDailyAIAnalysis(_ analysis: AIAnalysisResult) {
+        AITrendsManager.shared.saveDailyAnalysis(analysis, date: Date())
+    }
+        
     
     func getWeekIdentifier(_ analysis: WeeklyAnalysis) -> String {
         let calendar = Calendar.current

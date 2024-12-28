@@ -21,9 +21,8 @@ struct InsightsView: View {
     
     var body: some View {
         ZStack {
-            Color("F5F5F5")
+            Color(hex: "F5F5F5")
                 .ignoresSafeArea()
-            
             VStack(spacing: 0) {
                 headerView
                     .padding(.top, 45)
