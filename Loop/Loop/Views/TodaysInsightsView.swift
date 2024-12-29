@@ -40,13 +40,11 @@ struct TodaysInsightsView: View {
                                 }
                         }
                         
-                        QuotesGallery(phrases: analysis.phrases)
-    
-
-                        
-                        
                         PatternsView(analysis: analysis)
                         
+                        
+                     //   QuotesGallery(phrases: analysis.phrases)
+    
                     }
                     
                     if let metrics = analysisManager.currentDailyAnalysis?.aggregateMetrics {

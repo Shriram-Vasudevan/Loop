@@ -287,51 +287,68 @@ struct RecordLoopsView: View {
         
     private var memoryPlaybackView: some View {
         VStack(spacing: 32) {
-            if isLoadingMemory && !userDaysThresholdNotMet {
-                Text("loading from your past")
-                    .font(.system(size: 24, weight: .ultraLight))
-                    .foregroundColor(textColor)
-                
-                LoadingWaveform(accentColor: accentColor)
-                    .transition(.opacity)
-            }  else if userDaysThresholdNotMet {
-                Text("loop for three days to get memories")
-                    .font(.system(size: 28, weight: .medium))
-                    .foregroundColor(textColor)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .transition(.opacity)
-                    .animation(.easeInOut, value: userDaysThresholdNotMet)
-            } else if let pastLoop = pastLoop {
-                ViewPastLoopView(loop: pastLoop, isThroughRecordLoopsView: true)
-                    .transition(.opacity.combined(with: .move(edge: .trailing)))
-                    .padding(.top)
-                 
-                Button(action: {
-                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                        isShowingMemory = false
-                        loopManager.moveToNextPrompt()
-                    }
-                }) {
-                    HStack(spacing: 8) {
-                        Text("continue")
-                            .font(.system(size: 18, weight: .light))
-                            .disabled(true)
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 16, weight: .light))
-                    }
-                    .frame(height: 56)
-                    .frame(maxWidth: .infinity)
-                    .background(accentColor)
-                    .foregroundColor(.white)
-                    .cornerRadius(28)
-                    .shadow(color: accentColor.opacity(0.2), radius: 10, y: 5)
-                    .padding(.horizontal, 32)
+            Group {
+                if isLoadingMemory && !userDaysThresholdNotMet {
+                    loadingView
+                } else if userDaysThresholdNotMet {
+                    thresholdNotMetView
+                } else if let pastLoop = pastLoop {
+                    pastLoopContent(pastLoop)
                 }
             }
-        
+            .transition(.opacity.combined(with: .move(edge: .trailing)))
         }
         .padding(.bottom, 40)
+    }
+
+    private var loadingView: some View {
+        VStack(spacing: 24) {
+            Text("loading from your past")
+                .font(.system(size: 24, weight: .ultraLight))
+                .foregroundColor(textColor)
+            
+            LoadingWaveform(accentColor: accentColor)
+        }
+    }
+
+    private var thresholdNotMetView: some View {
+        Text("loop for three days to get memories")
+            .font(.system(size: 28, weight: .medium))
+            .foregroundColor(textColor)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func pastLoopContent(_ loop: Loop) -> some View {
+        VStack(spacing: 24) {
+            MemoryPlaybackView(loop: loop)
+                .padding(.top)
+            
+            continueButton
+        }
+    }
+
+    private var continueButton: some View {
+        Button(action: {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                isShowingMemory = false
+                loopManager.moveToNextPrompt()
+            }
+        }) {
+            HStack(spacing: 8) {
+                Text("continue")
+                    .font(.system(size: 18, weight: .light))
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 16, weight: .light))
+            }
+            .frame(height: 56)
+            .frame(maxWidth: .infinity)
+            .background(accentColor)
+            .foregroundColor(.white)
+            .cornerRadius(28)
+            .shadow(color: accentColor.opacity(0.2), radius: 10, y: 5)
+            .padding(.horizontal, 32)
+        }
     }
         
     private var memoryMessageView: some View {
@@ -485,10 +502,8 @@ struct RecordLoopsView: View {
     
     private func completeRecording() {
         guard let audioFileURL = audioManager.getRecordedAudioFile() else { return }
-        
-        // Save the recording and proceed with UI updates immediately
+
         Task {
-            // Save the recording to the loopManager
             let loop = await loopManager.addLoop(
                 mediaURL: audioFileURL,
                 isVideo: false,
@@ -497,58 +512,60 @@ struct RecordLoopsView: View {
                 isFollowUp: false
             )
             
-            // Perform analysis and memory fetching in the background
-            Task.detached(priority: .background) {
-                await analysisManager.startAnalysis(loop)
-                await handleMemoryOrNextPrompt(loop: loop)
+            await analysisManager.startAnalysis(loop.0, transcript: loop.1)
+        }
+        
+        if loopManager.isLastPrompt() {
+            allPrompts = loopManager.dailyPrompts
+            
+            withAnimation {
+                isShowingMemory = true
+                isLoadingMemory = true
             }
             
-            // Immediate UI update to transition
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                if loopManager.isLastPrompt() {
-                    isPostRecording = false
-                    isShowingMemory = true
-                } else {
-                    loopManager.moveToNextPrompt()
-                    isPostRecording = false
-                }
-            }
-        }
-    }
-
-    private func handleMemoryOrNextPrompt(loop: Loop) async {
-        defer {
-            // Ensure any UI cleanup is on the main thread
-            Task { @MainActor in
-                audioManager.cleanup()
-            }
-        }
-
-        do {
-            if loopManager.isLastPrompt() {
-                let userDays = try await loopManager.fetchDistinctLoopingDays()
-                
-                if userDays < 3 {
-                    // Notify user to loop for 3 days to unlock memories
-                    await MainActor.run {
-                        withAnimation {
-                            userDaysThresholdNotMet = true
-                            loopManager.hasCompletedToday = true
-                            isShowingMemory = true
+            Task {
+                do {
+                    let userDays = try await LoopCloudKitUtility.fetchDistinctLoopingDays()
+                    
+                    if userDays < 3 {
+                        await MainActor.run {
+                            withAnimation {
+                                userDaysThresholdNotMet = true
+                            }
+                            
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                    loopManager.hasCompletedToday = true
+                                    loopManager.saveCachedState()
+                                    isShowingMemory = false
+                                }
+                            }
+                        }
+                        return
+                    }
+                    
+                    if let pastLoop = try? await loopManager.getPastLoopForComparison(recordedPrompts: allPrompts) {
+                        await MainActor.run {
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                self.pastLoop = pastLoop
+                                isShowingMemory = true
+                                isPostRecording = false
+                                isLoadingMemory = false
+                            }
+                            audioManager.cleanup()
+                        }
+                    } else {
+                        await MainActor.run {
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                loopManager.hasCompletedToday = true
+                                loopManager.saveCachedState()
+                                isShowingMemory = false
+                            }
+                            audioManager.cleanup()
                         }
                     }
-                } else if let pastLoop = try? await loopManager.getPastLoopForComparison(recordedPrompts: loopManager.dailyPrompts) {
-                    // Display past memory
-                    await MainActor.run {
-                        withAnimation {
-                            self.pastLoop = pastLoop
-                            isShowingMemory = true
-                            isPostRecording = false
-                            isLoadingMemory = false
-                        }
-                    }
-                } else {
-                    // No past memory found
+                } catch {
+                    print("Error in memory handling: \(error)")
                     await MainActor.run {
                         withAnimation {
                             loopManager.hasCompletedToday = true
@@ -557,11 +574,13 @@ struct RecordLoopsView: View {
                     }
                 }
             }
-        } catch {
-            print("Error in memory handling: \(error)")
+        } else {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                loopManager.moveToNextPrompt()
+                isPostRecording = false
+            }
         }
     }
-
     
     private func retryRecording() {
         if loopManager.retryAttemptsLeft > 0 {

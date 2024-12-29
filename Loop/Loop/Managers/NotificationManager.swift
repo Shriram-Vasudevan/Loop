@@ -18,6 +18,7 @@ class NotificationManager: ObservableObject {
     private let reminderTimeKey = "LoopReminderTime"
     private let reminderEnabledKey = "LoopReminderEnabled"
     private let notificationIdentifier = "LoopDailyReminder"
+    private let promptNotificationIdentifier = "LoopPromptReminder"
     private let defaults = UserDefaults.standard
     
     private init() {
@@ -97,35 +98,62 @@ class NotificationManager: ObservableObject {
     }
     
     func scheduleDailyReminder(at time: Date) {
-        let center = UNUserNotificationCenter.current()
-        
-        let content = UNMutableNotificationContent()
-        content.title = "Time to Loop"
-        content.body = "Don't forget to reflect and capture your thoughts!"
-        content.sound = UNNotificationSound.default
-        content.badge = 1
-        
-        let calendar = Calendar.current
-        var dateComponents = calendar.dateComponents([.hour, .minute], from: time)
-        dateComponents.second = 0
-        
-        let trigger = UNCalendarNotificationTrigger(
-            dateMatching: dateComponents,
-            repeats: true
-        )
-        
-        let request = UNNotificationRequest(
-            identifier: notificationIdentifier,
-            content: content,
-            trigger: trigger
-        )
-        
-        center.add(request) { error in
-            if let error = error {
-                print("Error scheduling reminder: \(error.localizedDescription)")
+            let center = UNUserNotificationCenter.current()
+            
+            // Schedule the user's custom reminder
+            let content = UNMutableNotificationContent()
+            content.title = "Time to Loop"
+            content.body = "Don't forget to reflect and capture your thoughts!"
+            content.sound = UNNotificationSound.default
+            content.badge = 1
+            
+            let calendar = Calendar.current
+            var dateComponents = calendar.dateComponents([.hour, .minute], from: time)
+            dateComponents.second = 0
+            
+            let trigger = UNCalendarNotificationTrigger(
+                dateMatching: dateComponents,
+                repeats: true
+            )
+            
+            let request = UNNotificationRequest(
+                identifier: notificationIdentifier,
+                content: content,
+                trigger: trigger
+            )
+            
+            center.add(request) { error in
+                if let error = error {
+                    print("Error scheduling reminder: \(error.localizedDescription)")
+                }
+            }
+            
+            let promptContent = UNMutableNotificationContent()
+            promptContent.title = "✨ New Prompts Available!"
+            promptContent.body = "Fresh questions are ready for today's reflection 📝"
+            promptContent.sound = UNNotificationSound.default
+            
+            var promptComponents = DateComponents()
+            promptComponents.hour = 8
+            promptComponents.minute = 0
+            
+            let promptTrigger = UNCalendarNotificationTrigger(
+                dateMatching: promptComponents,
+                repeats: true
+            )
+            
+            let promptRequest = UNNotificationRequest(
+                identifier: promptNotificationIdentifier,
+                content: promptContent,
+                trigger: promptTrigger
+            )
+            
+            center.add(promptRequest) { error in
+                if let error = error {
+                    print("Error scheduling prompt reminder: \(error.localizedDescription)")
+                }
             }
         }
-    }
     
     func rescheduleRemindersIfNeeded() {
         if isNotificationsEnabled,

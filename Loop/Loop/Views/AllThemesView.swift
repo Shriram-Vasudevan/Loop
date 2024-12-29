@@ -53,7 +53,9 @@ struct AllThemesView: View {
 
                 ScrollView {
                     LazyVGrid(columns: columns, spacing: 16) {
-                        ForEach(Array(loopManager.thematicPrompts.enumerated()), id: \.element.id) { index, prompt in
+                        ForEach(Array(loopManager.thematicPrompts.sorted(by: { a, b in
+                            a.id > b.id
+                        }).enumerated()), id: \.element.id) { index, prompt in
                             ThematicPromptCard(
                                 prompt: prompt,
                                 accentColor: accentColor,

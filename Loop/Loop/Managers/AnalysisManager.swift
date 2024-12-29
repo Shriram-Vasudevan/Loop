@@ -70,38 +70,59 @@ class AnalysisManager: ObservableObject {
         }
     }
     
-    func startAnalysis(_ loop: Loop) async {
+    func startAnalysis(_ loop: Loop, transcript: String) async {
+        print("📝 Starting analysis for loop: \(loop.id)")
+        
         do {
-            let analysis = try await analyzeLoop(loop)
+            let analysis = try await analyzeLoop(loop, transcript: transcript)
+            print("✅ Successfully analyzed loop: \(loop.id)")
             
             await MainActor.run {
+                print("📊 Adding analysis to todaysLoops array")
                 todaysLoops.append(analysis)
                 
                 if todaysLoops.count < 3 {
+                    print("⏳ Partial analysis state: \(todaysLoops.count)/3 loops analyzed")
                     analysisState = .partial(count: todaysLoops.count)
                 } else if todaysLoops.count == 3 {
+                    print("🎯 All 3 loops collected, initiating complete analysis")
                     Task {
                         await performCompleteAnalysis()
                     }
                 }
             }
         } catch {
+            print("❌ Analysis failed for loop \(loop.id): \(error.localizedDescription)")
             await MainActor.run {
                 analysisState = .failed(.analysisFailure(error))
             }
         }
     }
-   
-    func analyzeLoop(_ loop: Loop) async throws -> LoopAnalysis {
+       
+    func analyzeLoop(_ loop: Loop, transcript: String? = nil) async throws -> LoopAnalysis {
+        print("🔍 Beginning individual loop analysis for: \(loop.id)")
+        
         guard let fileURL = loop.data.fileURL else {
+            print("❌ Invalid data: Loop file URL is nil for loop \(loop.id)")
             throw AnalysisError.invalidData("Loop file URL is nil")
         }
         
         do {
-            let transcript = try await audioAnalyzer.transcribeAudio(url: fileURL)
-            let duration = audioAnalyzer.getDuration(url: fileURL)
+            print("🎙 Starting audio transcription for: \(fileURL.lastPathComponent)")
             
-            let words = transcript.components(separatedBy: .whitespacesAndNewlines)
+            var transcriptActual = ""
+            if let transcript = transcript {
+                transcriptActual = transcript
+            } else {
+                transcriptActual = try await audioAnalyzer.transcribeAudio(url: fileURL)
+            }
+            print("📝 Successfully transcribed audio for loop \(loop.id)")
+            
+            let duration = audioAnalyzer.getDuration(url: fileURL)
+            print("⏱ Audio duration: \(duration) seconds")
+            
+            print("📊 Processing transcript text for metrics calculation")
+            let words = transcriptActual.components(separatedBy: .whitespacesAndNewlines)
                 .filter { !$0.isEmpty }
                 .map { $0.trimmingCharacters(in: .punctuationCharacters) }
                 .filter { !$0.isEmpty }
@@ -109,6 +130,14 @@ class AnalysisManager: ObservableObject {
             let uniqueWords = Set(words)
             let wpm = Double(words.count) / (duration / 60.0)
             let vocabularyDiversity = Double(uniqueWords.count) / Double(words.count)
+            
+            print("""
+                📊 Metrics calculated:
+                - Word count: \(words.count)
+                - Unique words: \(uniqueWords.count)
+                - WPM: \(wpm)
+                - Vocabulary diversity: \(vocabularyDiversity)
+                """)
             
             let metrics = LoopMetrics(
                 duration: duration,
@@ -118,38 +147,47 @@ class AnalysisManager: ObservableObject {
                 vocabularyDiversity: vocabularyDiversity
             )
             
+            let category = LoopManager.shared.getCategoryForPrompt(loop.promptText)?.rawValue ?? "Share Anything"
+            print("🏷 Loop \(loop.id) categorized as: \(category)")
+            
             return LoopAnalysis(
                 id: loop.id,
                 timestamp: loop.timestamp,
                 promptText: loop.promptText,
-                category: LoopManager.shared.getCategoryForPrompt(loop.promptText)?.rawValue ?? "Share Anything",
-                transcript: transcript,
+                category: category,
+                transcript: transcriptActual,
                 metrics: metrics
             )
         } catch let error as AnalysisError {
+            print("❌ AnalysisError encountered: \(error)")
             throw error
         } catch {
+            print("❌ Unexpected error during loop analysis: \(error.localizedDescription)")
             throw AnalysisError.invalidData("Failed to analyze loop: \(error.localizedDescription)")
         }
     }
-    
+
     private func performCompleteAnalysis() async {
+        print("🎯 Starting complete analysis of all loops")
+        
         await MainActor.run {
             analysisState = .analyzing
         }
         
         do {
+            print("🔄 Preparing response pairs for AI analysis")
             let responsePairs = todaysLoops.map { loop in
                 (question: loop.promptText, answer: loop.transcript)
             }
             
-            // Get AI analysis
+            print("🤖 Initiating AI analysis for \(responsePairs.count) response pairs")
             let aiAnalysis = try await AIAnalyzer.shared.analyzeResponses(responsePairs)
+            print("✅ AI analysis completed successfully")
             
-            // Calculate aggregate metrics
+            print("📊 Calculating aggregate metrics")
             let aggregateMetrics = calculateAggregateMetrics(todaysLoops)
             
-            // Create daily analysis
+            print("📋 Creating daily analysis")
             let dailyAnalysis = DailyAnalysis(
                 date: Date(),
                 loops: todaysLoops,
@@ -158,13 +196,17 @@ class AnalysisManager: ObservableObject {
             )
             
             await MainActor.run {
+                print("🔄 Updating UI with completed analysis")
                 self.currentDailyAnalysis = dailyAnalysis
                 self.analysisState = .completed(dailyAnalysis)
             }
             
+            print("💾 Saving analysis results")
             saveDailyAIAnalysis(aiAnalysis)
             QuantitativeTrendsManager.shared.saveDailyStats(dailyAnalysis)
+            print("✨ Complete analysis workflow finished successfully")
         } catch {
+            print("❌ Complete analysis failed: \(error.localizedDescription)")
             await MainActor.run {
                 self.analysisState = .failed(.aiAnalysisFailed("AI analysis failed: \(error.localizedDescription)"))
             }

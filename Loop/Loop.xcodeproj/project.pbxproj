@@ -69,6 +69,9 @@
 		999DAC862D20994400A6626B /* TrendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999DAC852D20994400A6626B /* TrendsView.swift */; };
 		999DAC882D209AA100A6626B /* TrendGraph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999DAC872D209AA100A6626B /* TrendGraph.swift */; };
 		999DAC8A2D20AD3700A6626B /* TrendsLoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999DAC892D20AD3700A6626B /* TrendsLoadingView.swift */; };
+		999DAC8C2D20F4C500A6626B /* MemoryPlaybackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999DAC8B2D20F4C500A6626B /* MemoryPlaybackView.swift */; };
+		999DAC8E2D2107D000A6626B /* RecordFeaturedLoopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999DAC8D2D2107D000A6626B /* RecordFeaturedLoopView.swift */; };
+		999DAC902D210A5000A6626B /* FeaturedPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999DAC8F2D210A5000A6626B /* FeaturedPrompt.swift */; };
 		99A0C8F12CA9EF2400F9281A /* LoopApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C8F02CA9EF2400F9281A /* LoopApp.swift */; };
 		99A0C8F32CA9EF2400F9281A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C8F22CA9EF2400F9281A /* ContentView.swift */; };
 		99A0C8F52CA9EF2600F9281A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 99A0C8F42CA9EF2600F9281A /* Assets.xcassets */; };
@@ -194,6 +197,9 @@
 		999DAC852D20994400A6626B /* TrendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsView.swift; sourceTree = "<group>"; };
 		999DAC872D209AA100A6626B /* TrendGraph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendGraph.swift; sourceTree = "<group>"; };
 		999DAC892D20AD3700A6626B /* TrendsLoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsLoadingView.swift; sourceTree = "<group>"; };
+		999DAC8B2D20F4C500A6626B /* MemoryPlaybackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryPlaybackView.swift; sourceTree = "<group>"; };
+		999DAC8D2D2107D000A6626B /* RecordFeaturedLoopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordFeaturedLoopView.swift; sourceTree = "<group>"; };
+		999DAC8F2D210A5000A6626B /* FeaturedPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeaturedPrompt.swift; sourceTree = "<group>"; };
 		99A0C8ED2CA9EF2400F9281A /* Loop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Loop.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		99A0C8F02CA9EF2400F9281A /* LoopApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopApp.swift; sourceTree = "<group>"; };
 		99A0C8F22CA9EF2400F9281A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -333,6 +339,7 @@
 				99F7F6FC2CAF814B009858AC /* RecordLoopsView.swift */,
 				9953BDF72CF4101E00348AC3 /* RecordThematicLoopPromptsView.swift */,
 				99F31CA62D0F2DA300330180 /* RecordFollowUpLoopView.swift */,
+				999DAC8D2D2107D000A6626B /* RecordFeaturedLoopView.swift */,
 				990E4A832CB30EAB009F88A0 /* ThankYouView.swift */,
 				990E4A852CB30EB8009F88A0 /* LoopAudioConfirmationView.swift */,
 				990E4A872CB30EC0009F88A0 /* WavyBackground.swift */,
@@ -366,6 +373,7 @@
 				999DAC652D1DB54A00A6626B /* AllThemesView.swift */,
 				999DAC712D1E239400A6626B /* DayRatingSlider.swift */,
 				999DAC892D20AD3700A6626B /* TrendsLoadingView.swift */,
+				999DAC8B2D20F4C500A6626B /* MemoryPlaybackView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -421,6 +429,7 @@
 				999DAC7B2D20757600A6626B /* DailyAIAnalysis.swift */,
 				999DAC812D208A1A00A6626B /* FrequencyModels.swift */,
 				999DAC832D208B1F00A6626B /* MetricComparison.swift */,
+				999DAC8F2D210A5000A6626B /* FeaturedPrompt.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -548,6 +557,7 @@
 				99AC6DD62CDFFAFA00B0D0D6 /* LoopChatView.swift in Sources */,
 				999DAC882D209AA100A6626B /* TrendGraph.swift in Sources */,
 				999DAC782D1FA82100A6626B /* TodaysInsightsView.swift in Sources */,
+				999DAC8C2D20F4C500A6626B /* MemoryPlaybackView.swift in Sources */,
 				990E4A8E2CB48BB9009F88A0 /* SplashScreen.swift in Sources */,
 				99DC91B72D1A258A002B9A89 /* WeeklyAnalysis.swift in Sources */,
 				9953BDEA2CF25A7C00348AC3 /* MonthSummary.swift in Sources */,
@@ -580,6 +590,7 @@
 				99AC6DDC2CE0226500B0D0D6 /* SettingsView.swift in Sources */,
 				999DAC762D1F4E9800A6626B /* AIAnalysis.swift in Sources */,
 				99F7F6FD2CAF814B009858AC /* RecordLoopsView.swift in Sources */,
+				999DAC902D210A5000A6626B /* FeaturedPrompt.swift in Sources */,
 				9988DB952CDA7F92005628DE /* FriendRequest.swift in Sources */,
 				99F7F6F52CAC7DB4009858AC /* LoopManager.swift in Sources */,
 				99A0C8F32CA9EF2400F9281A /* ContentView.swift in Sources */,
@@ -599,6 +610,7 @@
 				999DAC7E2D20761400A6626B /* AITrendAnalysisManager.swift in Sources */,
 				999DAC702D1E236900A6626B /* DayRating.swift in Sources */,
 				9988DB912CDA792F005628DE /* FriendsManager.swift in Sources */,
+				999DAC8E2D2107D000A6626B /* RecordFeaturedLoopView.swift in Sources */,
 				9953BDFA2CF4253000348AC3 /* PurposeCard.swift in Sources */,
 				990E4A862CB30EB8009F88A0 /* LoopAudioConfirmationView.swift in Sources */,
 				999DAC842D208B1F00A6626B /* MetricComparison.swift in Sources */,

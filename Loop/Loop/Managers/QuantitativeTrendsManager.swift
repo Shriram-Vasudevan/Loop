@@ -201,16 +201,19 @@ class QuantitativeTrendsManager: ObservableObject {
     
     func fetchCurrentMonthStats() async {
         let calendar = Calendar.current
-        let components = calendar.dateComponents([.year, .month], from: Date())
-        
-        guard let year = components.year,
-              let month = components.month else {
+        let today = Date()
+        guard let firstDayOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: today)),
+              let firstWeek = calendar.dateComponents([.weekOfYear], from: firstDayOfMonth).weekOfYear,
+              let lastDayOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: firstDayOfMonth),
+              let lastWeek = calendar.dateComponents([.weekOfYear], from: lastDayOfMonth).weekOfYear,
+              let year = calendar.dateComponents([.year], from: today).year else {
             await MainActor.run { self.monthlyStats = nil }
             return
         }
         
         let request = NSFetchRequest<NSManagedObject>(entityName: "WeeklyStatsEntity")
-        request.predicate = NSPredicate(format: "year == %d AND month == %d", year, month)
+        request.predicate = NSPredicate(format: "year == %d AND weekNumber >= %d AND weekNumber <= %d",
+                                      year, firstWeek, lastWeek)
         request.sortDescriptors = [NSSortDescriptor(key: "weekNumber", ascending: true)]
         
         do {

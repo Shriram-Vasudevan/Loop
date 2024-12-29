@@ -38,6 +38,8 @@ class LoopManager: ObservableObject {
     @Published var distinctDays: Int = 0
     @Published var isCheckingDistinctDays: Bool = false
     
+    @Published private(set) var featuredReflections: [Prompt] = []
+    
     private let container = CKContainer(identifier: "iCloud.LoopContainer")
     private let localStorage = LoopLocalStorageUtility.shared
     
@@ -148,6 +150,12 @@ class LoopManager: ObservableObject {
                 let newPromptSet = newPromptSet.getPromptGroups()
                 await MainActor.run {
                     self.promptGroups = newPromptSet
+                    
+                    self.featuredReflections = (self.promptGroups[.extraPrompts] ?? [])
+                        .shuffled()
+                        .map { $0 }
+                    
+                    print("featured reflectins: \(featuredReflections)")
                 }
             } else {
                 loadCachedPrompts()
@@ -175,6 +183,10 @@ class LoopManager: ObservableObject {
         DispatchQueue.main.sync {
             self.promptGroups = promptGroups
             print(promptGroups)
+            
+            self.featuredReflections = (self.promptGroups[.extraPrompts] ?? [])
+                .shuffled()
+                .map { $0 }
         }
     }
 
@@ -627,7 +639,7 @@ class LoopManager: ObservableObject {
 //        })
 //    }
     
-    func addLoop(mediaURL: URL, isVideo: Bool, prompt: String, mood: String? = nil, freeResponse: Bool = false, isDailyLoop: Bool, isFollowUp: Bool) async -> Loop {
+    func addLoop(mediaURL: URL, isVideo: Bool, prompt: String, mood: String? = nil, freeResponse: Bool = false, isDailyLoop: Bool, isFollowUp: Bool) async -> (Loop, String) {
         print("Adding loop with prompt: \(prompt), currentPromptIndex: \(currentPromptIndex)")
         print("Current dailyPrompts array: \(dailyPrompts)")
         
@@ -687,7 +699,7 @@ class LoopManager: ObservableObject {
             await localStorage.addLoop(loop: loop)
         }
 
-        return loop
+        return (loop, transcript)
     }
 
 

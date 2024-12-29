@@ -21,7 +21,7 @@ struct RecordFollowUpLoopView: View {
     @State private var backgroundOpacity: Double = 0
     @State private var messageOpacity: Double = 0
 
-    @State var retryAttempts = 1 
+    @State var retryAttempts = 100
     
     let accentColor = Color(hex: "A28497")
     let secondaryColor = Color(hex: "B7A284")
@@ -208,9 +208,9 @@ struct RecordFollowUpLoopView: View {
                     .font(.system(size: 32, weight: .thin))
                     .foregroundColor(accentColor)
                 
-                Text("see you tomorrow")
-                    .font(.system(size: 24, weight: .thin))
-                    .foregroundColor(Color.gray)
+//                Text("see you tomorrow")
+//                    .font(.system(size: 24, weight: .thin))
+//                    .foregroundColor(Color.gray)
             }
             
             Spacer()
