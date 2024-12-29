@@ -30,30 +30,81 @@ struct TodaysInsightsView: View {
             
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 32) {
-                    if let analysis = analysisManager.currentDailyAnalysis?.aiAnalysis {
-                        VStack (spacing: 16) {
-                            ThemeSection(analysis: analysis)
-                            
-                            FollowUpView(followUp: analysis.followUp)
-                                .onTapGesture {
-                                    selectedFollowUp = analysis.followUp
-                                }
+                    switch analysisManager.analysisState {
+                    case .noLoops:
+                        ProgressStateView(
+                            icon: "mic.circle.fill",
+                            title: "Complete Your Daily Reflection",
+                            description: "Record all three of your daily loops to get insights",
+                            progress: 0,
+                            accentColor: accentColor,
+                            textColor: textColor
+                        )
+                        
+                    case .partial(let count):
+                        ProgressStateView(
+                            icon: "waveform.circle.fill",
+                            title: "Recording in Progress",
+                            description: "Complete \(3 - count) more loops to see your insights",
+                            progress: Float(count) / 3.0,
+                            accentColor: accentColor,
+                            textColor: textColor
+                        )
+                        
+                    case .analyzing:
+                        ProgressStateView(
+                            icon: "sparkles.circle.fill",
+                            title: "Analyzing Your Reflections",
+                            description: "Creating personalized insights from your loops",
+                            isLoading: true,
+                            accentColor: accentColor,
+                            textColor: textColor
+                        )
+                        
+                    case .completed(let analysis):
+                        if let analysis = analysis.aiAnalysis {
+                            VStack(spacing: 16) {
+                                ThemeSection(analysis: analysis)
+                                FollowUpView(followUp: analysis.followUp)
+                                    .onTapGesture {
+                                        selectedFollowUp = analysis.followUp
+                                    }
+                            }
+                            PatternsView(analysis: analysis)
                         }
                         
-                        PatternsView(analysis: analysis)
+                        if let metrics = analysisManager.currentDailyAnalysis?.aggregateMetrics {
+                            MetricsGallery(metrics: metrics)
+                        }
                         
+                        if let loops = analysisManager.currentDailyAnalysis?.loops {
+                            LoopsTimeline(loops: loops)
+                        }
                         
-                     //   QuotesGallery(phrases: analysis.phrases)
-    
-                    }
-                    
-                    if let metrics = analysisManager.currentDailyAnalysis?.aggregateMetrics {
-
-                        MetricsGallery(metrics: metrics)
-                    }
-                    
-                    if let loops = analysisManager.currentDailyAnalysis?.loops {
-                        LoopsTimeline(loops: loops)
+                    case .failed(let error):
+                        ErrorStateView(
+                            error: error,
+                            accentColor: accentColor,
+                            textColor: textColor
+                        )
+                    case .transcribing:
+                        ProgressStateView(
+                            icon: "sparkles.circle.fill",
+                            title: "Transcribing your responses",
+                            description: "Creating personalized insights from your loops",
+                            isLoading: true,
+                            accentColor: accentColor,
+                            textColor: textColor
+                        )
+                    case .analyzing_ai:
+                        ProgressStateView(
+                            icon: "sparkles.circle.fill",
+                            title: "Performing AI Analysis",
+                            description: "Creating personalized insights from your loops",
+                            isLoading: true,
+                            accentColor: accentColor,
+                            textColor: textColor
+                        )
                     }
                 }
                 .padding(.horizontal, 24)

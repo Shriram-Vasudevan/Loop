@@ -72,6 +72,7 @@
 		999DAC8C2D20F4C500A6626B /* MemoryPlaybackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999DAC8B2D20F4C500A6626B /* MemoryPlaybackView.swift */; };
 		999DAC8E2D2107D000A6626B /* RecordFeaturedLoopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999DAC8D2D2107D000A6626B /* RecordFeaturedLoopView.swift */; };
 		999DAC902D210A5000A6626B /* FeaturedPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999DAC8F2D210A5000A6626B /* FeaturedPrompt.swift */; };
+		999DAC922D21D2A200A6626B /* AnalysisStateLoadingViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 999DAC912D21D2A200A6626B /* AnalysisStateLoadingViews.swift */; };
 		99A0C8F12CA9EF2400F9281A /* LoopApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C8F02CA9EF2400F9281A /* LoopApp.swift */; };
 		99A0C8F32CA9EF2400F9281A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0C8F22CA9EF2400F9281A /* ContentView.swift */; };
 		99A0C8F52CA9EF2600F9281A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 99A0C8F42CA9EF2600F9281A /* Assets.xcassets */; };
@@ -200,6 +201,7 @@
 		999DAC8B2D20F4C500A6626B /* MemoryPlaybackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryPlaybackView.swift; sourceTree = "<group>"; };
 		999DAC8D2D2107D000A6626B /* RecordFeaturedLoopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordFeaturedLoopView.swift; sourceTree = "<group>"; };
 		999DAC8F2D210A5000A6626B /* FeaturedPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeaturedPrompt.swift; sourceTree = "<group>"; };
+		999DAC912D21D2A200A6626B /* AnalysisStateLoadingViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisStateLoadingViews.swift; sourceTree = "<group>"; };
 		99A0C8ED2CA9EF2400F9281A /* Loop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Loop.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		99A0C8F02CA9EF2400F9281A /* LoopApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopApp.swift; sourceTree = "<group>"; };
 		99A0C8F22CA9EF2400F9281A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -374,6 +376,7 @@
 				999DAC712D1E239400A6626B /* DayRatingSlider.swift */,
 				999DAC892D20AD3700A6626B /* TrendsLoadingView.swift */,
 				999DAC8B2D20F4C500A6626B /* MemoryPlaybackView.swift */,
+				999DAC912D21D2A200A6626B /* AnalysisStateLoadingViews.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -547,6 +550,7 @@
 				99CCFBC22D137A2100DA8A55 /* AnalysisState.swift in Sources */,
 				9915BAB92CEC332500D3C44B /* AnalysisManager.swift in Sources */,
 				9953BDFE2CF810AB00348AC3 /* WebView.swift in Sources */,
+				999DAC922D21D2A200A6626B /* AnalysisStateLoadingViews.swift in Sources */,
 				99AC6DDA2CE01A3E00B0D0D6 /* SendLoopOverlay.swift in Sources */,
 				99AC6DE82CE1235400B0D0D6 /* LoopLogoView.swift in Sources */,
 				9953BE022CFABA4400348AC3 /* LocalLoopStorageUtility.swift in Sources */,
