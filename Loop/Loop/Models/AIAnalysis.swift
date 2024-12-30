@@ -26,8 +26,7 @@ struct TimeFocus: Codable {
     let description: String
 }
 
-struct SelfReferenceAnalysis: Codable {
-    let frequency: String // "high", "moderate", "low"
+struct FocusAnalysis: Codable {
     let pattern: String  // How self-references are used (e.g., "reflective", "action-oriented")
     let description: String // What this reveals about self-focus
 }
@@ -49,7 +48,7 @@ struct FollowUp: Codable, Identifiable {
 struct AIAnalysisResult: Codable {
     let emotion: EmotionAnalysis
     let timeFocus: TimeFocus
-    let selfReference: SelfReferenceAnalysis
+    let focus: FocusAnalysis
     let phrases: SignificantPhrases
     let followUp: FollowUp
 }

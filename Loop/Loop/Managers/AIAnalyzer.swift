@@ -31,7 +31,7 @@ class AIAnalyzer {
         
         let prompt = """
         Analyze these three responses as a cohesive whole, considering both questions and answers.
-        Provide a single unified analysis that captures overall patterns and themes:
+        Provide a single unified analysis that captures overall patterns and themes. Avoid vague/innopropriate descriptors (e.g Happy, Sad, Depressed) Address the user in the second person (e.g. "your responses"):
 
         \(formattedResponses)
 
@@ -47,10 +47,9 @@ class AIAnalyzer {
         - orientation: [past/present/future/mixed]
         - description: [2 sentences about the overall time orientation and its significance to the responses]
 
-        3. Self-Reference Analysis:
-        - frequency: [high/moderate/low]
-        - pattern: [how self-references are used - e.g., reflective, action-oriented, observational]
-        - description: [2 sentences about what the self-reference pattern reveals about perspective and focus]
+        3. Focus Analysis:
+        - pattern: [the focus of the responses - e.g., reflective, action-oriented, observational]
+        - description: [1 sentence about why you chose this pattern]
 
         4. Significant Phrases:
         - insights: [up to 2 most meaningful insight quotes from any response, or "none" if none present]
@@ -60,7 +59,7 @@ class AIAnalyzer {
 
         5. Follow-up:
         - question: [single thoughtful follow-up question based on all responses]
-        - context: [1 sentence on why this question is relevant to the overall themes]
+        - context: [1 brief sentence on why this question is relevant to the overall themes]
         - focus: [what aspect of self-reflection this targets]
 
         Important rules:
@@ -122,14 +121,14 @@ class AIAnalyzer {
             
             var emotion: EmotionAnalysis?
             var timeFocus: TimeFocus?
-            var selfReference: SelfReferenceAnalysis?
+            var focus: FocusAnalysis?
             var phrases: SignificantPhrases?
             var followUp: FollowUp?
             
             var currentSection = ""
             var tempEmotionData: [String: String] = [:]
             var tempTimeData: [String: String] = [:]
-            var tempSelfRefData: [String: String] = [:]
+            var focusData: [String: String] = [:]
             var tempPhrasesData: [String: String] = [:]
             var tempFollowUpData: [String: String] = [:]
             
@@ -141,8 +140,8 @@ class AIAnalyzer {
                     currentSection = "emotion"
                 case trimmedLine.starts(with: "2. Time Focus:"):
                     currentSection = "time"
-                case trimmedLine.starts(with: "3. Self-Reference Analysis:"):
-                    currentSection = "selfref"
+                case trimmedLine.starts(with: "3. Focus Analysis:"):
+                    currentSection = "focus"
                 case trimmedLine.starts(with: "4. Significant Phrases:"):
                     currentSection = "phrases"
                 case trimmedLine.starts(with: "5. Follow-up:"):
@@ -158,8 +157,8 @@ class AIAnalyzer {
                             tempEmotionData[key] = value
                         case "time":
                             tempTimeData[key] = value
-                        case "selfref":
-                            tempSelfRefData[key] = value
+                        case "focus":
+                            focusData[key] = value
                         case "phrases":
                             tempPhrasesData[key] = value
                         case "followup":
@@ -197,12 +196,10 @@ class AIAnalyzer {
                 )
             }
             
-            // Parse Self Reference Analysis
-            if let frequency = tempSelfRefData["frequency"],
-               let pattern = tempSelfRefData["pattern"],
-               let description = tempSelfRefData["description"] {
-                selfReference = SelfReferenceAnalysis(
-                    frequency: frequency,
+            // Parse Focus Analysis
+            if let pattern = focusData["pattern"],
+               let description = focusData["description"] {
+                focus = FocusAnalysis(
                     pattern: pattern,
                     description: description
                 )
@@ -235,13 +232,13 @@ class AIAnalyzer {
             // Validate all required components are present
             guard let emotion = emotion,
                   let timeFocus = timeFocus,
-                  let selfReference = selfReference,
+                  let focus = focus,
                   let phrases = phrases,
                   let followUp = followUp else {
                 let missingFields = [
                     emotion == nil ? "emotion" : nil,
                     timeFocus == nil ? "timeFocus" : nil,
-                    selfReference == nil ? "selfReference" : nil,
+                    focus == nil ? "focus" : nil,
                     phrases == nil ? "phrases" : nil,
                     followUp == nil ? "followUp" : nil
                 ].compactMap { $0 }
@@ -252,7 +249,7 @@ class AIAnalyzer {
             return AIAnalysisResult(
                 emotion: emotion,
                 timeFocus: timeFocus,
-                selfReference: selfReference,
+                focus: focus,
                 phrases: phrases,
                 followUp: followUp
             )

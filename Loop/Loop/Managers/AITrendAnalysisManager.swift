@@ -58,7 +58,7 @@ class AITrendsManager: ObservableObject {
             // Set values
             entity.setValue(date, forKey: "date")
             entity.setValue(aiAnalysis.emotion.primary, forKey: "feeling")
-            entity.setValue(aiAnalysis.selfReference.pattern, forKey: "focus")
+            entity.setValue(aiAnalysis.focus.pattern, forKey: "focus")
             entity.setValue(aiAnalysis.timeFocus.description, forKey: "time")
             
             try context.save()

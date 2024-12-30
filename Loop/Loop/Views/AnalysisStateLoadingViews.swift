@@ -61,7 +61,7 @@ struct ProgressStateView: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color.white)
         )
-        .padding(.top, 32)
+        .padding(.top, 12)
     }
 }
 

@@ -318,7 +318,7 @@ struct PatternsView: View {
                             .foregroundColor(textColor.opacity(0.5))
                     }
                     
-                    Text(analysis.selfReference.pattern)
+                    Text(analysis.focus.pattern)
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(textColor)
                 }

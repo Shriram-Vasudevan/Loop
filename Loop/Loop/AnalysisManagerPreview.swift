@@ -42,8 +42,7 @@ extension AnalysisManager {
                 orientation: .future,
                 description: "Strong emphasis on future planning while maintaining present awareness."
             ),
-            selfReference: SelfReferenceAnalysis(
-                frequency: "moderate",
+            focus: FocusAnalysis(
                 pattern: "Growth-Oriented",
                 description: "Balanced self-reflection focusing on learning and development."
             ),

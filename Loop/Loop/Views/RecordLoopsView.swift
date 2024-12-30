@@ -502,12 +502,15 @@ struct RecordLoopsView: View {
     
     private func completeRecording() {
         guard let audioFileURL = audioManager.getRecordedAudioFile() else { return }
-
+        
+        let currentPromptIndex = loopManager.currentPromptIndex
+        let prompts = loopManager.dailyPrompts
+        
         Task {
             let loop = await loopManager.addLoop(
                 mediaURL: audioFileURL,
                 isVideo: false,
-                prompt: loopManager.getCurrentPrompt(),
+                prompt: prompts[currentPromptIndex],
                 isDailyLoop: true,
                 isFollowUp: false
             )

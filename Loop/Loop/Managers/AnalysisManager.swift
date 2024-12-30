@@ -204,6 +204,7 @@ class AnalysisManager: ObservableObject {
             print("💾 Saving analysis results")
             saveDailyAIAnalysis(aiAnalysis)
             QuantitativeTrendsManager.shared.saveDailyStats(dailyAnalysis)
+            saveAnalysisCache()
             print("✨ Complete analysis workflow finished successfully")
         } catch {
             print("❌ Complete analysis failed: \(error.localizedDescription)")

@@ -53,7 +53,7 @@ struct SplashScreen: View {
                     .frame(height: 40)
                 
                 // Text content
-                VStack(spacing: 12) {
+                VStack(spacing: 8) {
                     Text("loop")
                         .font(.custom("PPNeueMontreal-Medium", size: 44))
                         .foregroundColor(textColor)
