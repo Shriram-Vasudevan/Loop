@@ -536,6 +536,8 @@ struct LoopTimelineItem: View {
                     MetricPill(value: String(format: "%.0f", loop.metrics.wordCount), unit: "words")
                 }
             }
+            
+            Spacer()
         }
     }
     

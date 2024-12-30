@@ -55,11 +55,12 @@ class AITrendsManager: ObservableObject {
                 entity = NSManagedObject(entity: entityDescription, insertInto: context)
             }
             
+            print("the focus pattern \(aiAnalysis.focus.pattern)")
             // Set values
             entity.setValue(date, forKey: "date")
             entity.setValue(aiAnalysis.emotion.primary, forKey: "feeling")
             entity.setValue(aiAnalysis.focus.pattern, forKey: "focus")
-            entity.setValue(aiAnalysis.timeFocus.description, forKey: "time")
+            entity.setValue(aiAnalysis.timeFocus.orientation.rawValue, forKey: "time")
             
             try context.save()
             print("✅ Successfully saved AI analysis")
@@ -178,7 +179,6 @@ class AITrendsManager: ObservableObject {
         
         let totalCount = analyses.count
         
-        // Count frequencies (case insensitive)
         for analysis in analyses {
             let emotion = analysis.feeling.lowercased()
             let focus = analysis.focus.lowercased()

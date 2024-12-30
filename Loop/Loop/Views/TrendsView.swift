@@ -5,10 +5,10 @@
 //  Created by Shriram Vasudevan on 12/28/24.
 //
 
+
 import SwiftUI
 
 import SwiftUI
-import Charts
 
 struct TrendsView: View {
     @ObservedObject var quantTrendsManager = QuantitativeTrendsManager.shared
@@ -18,61 +18,65 @@ struct TrendsView: View {
     @State private var selectedMetric: MetricType = .wpm
     @State private var selectedTimeframe: Timeframe = .week
     @State private var isLoading = true
-    @State private var showMetricPicker = false
     @State private var showTimeframePicker = false
+    @State private var dropdownOffset: CGFloat = -50
+    @State private var dropdownOpacity: Double = 0
     
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
     private let backgroundColor = Color(hex: "F5F5F5")
     
-    enum MetricType: String, CaseIterable {
+    enum MetricType: String, CaseIterable, Identifiable {
         case wpm = "Speaking Pace"
         case duration = "Duration"
         case wordCount = "Word Count"
         case vocabulary = "Vocabulary"
+        
+        var id: String { rawValue }
+        
+        var description: String {
+            switch self {
+            case .wpm: return "Your natural speaking rhythm"
+            case .duration: return "Time spent in reflection"
+            case .wordCount: return "Depth of expression"
+            case .vocabulary: return "Richness of language"
+            }
+        }
     }
     
     enum Timeframe: String, CaseIterable {
-        case week = "Week"
-        case month = "Month"
-        case year = "Year"
+        case week = "This Week"
+        case month = "This Month"
+        case year = "This Year"
     }
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 32) {
-                // Header Section
+            VStack(spacing: 4) {
                 headerSection
-                    .padding(.top, 16)
+                    .padding(.top, 4)
                     .padding(.horizontal, 24)
                 
                 if isLoading {
                     loadingView
                 } else {
-                    VStack(spacing: 32) {
-                        // Main Trend Graph Card
-                        trendGraphSection
+                    VStack(spacing: 40) {
+                        TrendGraphCard(
+                            selectedMetric: $selectedMetric,
+                            timeframe: $selectedTimeframe,
+                            quantTrendsManager: quantTrendsManager
+                        )
                         
-                        // Comparison Section
-                        if let dailyAnalysis = analysisManager.currentDailyAnalysis {
-                            comparisonSection(dailyAnalysis)
+                        if let frequencies = getFrequencies() {
+                            insightsSection(frequencies)
                                 .padding(.horizontal, 24)
                         }
-                        
-                        // Insights Section
-                        insightsSection
-                            .padding(.horizontal, 24)
                     }
                 }
             }
             .padding(.bottom, 32)
         }
         .background(backgroundColor)
-        .onChange(of: selectedTimeframe) { _ in
-            Task {
-                await refreshData()
-            }
-        }
         .onAppear {
             Task {
                 await refreshData()
@@ -81,209 +85,84 @@ struct TrendsView: View {
     }
     
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("PERFORMANCE")
-                .font(.system(size: 13, weight: .medium))
-                .tracking(1.5)
-                .foregroundColor(textColor.opacity(0.6))
+        HStack(spacing: 24) {
+            timeframeSelector
             
-            HStack {
-                Button(action: {
-                    withAnimation(.spring()) {
-                        showMetricPicker.toggle()
-                    }
-                }) {
-                    Text(selectedMetric.rawValue)
-                        .font(.system(size: 28, weight: .medium))
-                        .foregroundColor(textColor)
-                }
-                
-                Spacer()
-                
-                timeframeButton
-            }
+            Spacer()
         }
-        .overlay(
-            Group {
-                if showMetricPicker {
-                    metricPickerOverlay
-                }
-            }
-        )
     }
     
-    private var timeframeButton: some View {
-        Button(action: {
-            withAnimation(.spring()) {
-                showTimeframePicker.toggle()
-            }
-        }) {
-            HStack(spacing: 8) {
-                Text(selectedTimeframe.rawValue)
-                    .font(.system(size: 15, weight: .medium))
-                
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 12, weight: .medium))
-                    .rotationEffect(.degrees(showTimeframePicker ? 180 : 0))
-            }
-            .foregroundColor(accentColor)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(
-                Capsule()
-                    .fill(accentColor.opacity(0.08))
-            )
-        }
-        .overlay(
-            Group {
-                if showTimeframePicker {
-                    timeframePickerOverlay
-                }
-            }
-        )
-    }
-    
-    private var metricPickerOverlay: some View {
-        VStack(spacing: 0) {
-            ForEach(MetricType.allCases, id: \.self) { metric in
-                Button(action: {
-                    withAnimation {
-                        selectedMetric = metric
-                        showMetricPicker = false
-                    }
-                }) {
-                    HStack {
-                        Text(metric.rawValue)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(selectedMetric == metric ? accentColor : textColor)
-                        
-                        Spacer()
-                        
-                        if selectedMetric == metric {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(accentColor)
-                        }
-                    }
-                    .padding(.vertical, 16)
-                    .padding(.horizontal, 20)
-                    .background(selectedMetric == metric ? accentColor.opacity(0.08) : Color.clear)
-                }
-            }
-        }
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.1), radius: 20, x: 0, y: 10)
-        )
-        .offset(y: 80)
-        .zIndex(1)
-    }
-    
-    private var timeframePickerOverlay: some View {
-        VStack(spacing: 0) {
+    private var timeframeSelector: some View {
+        Menu {
             ForEach(Timeframe.allCases, id: \.self) { timeframe in
                 Button(action: {
                     withAnimation {
                         selectedTimeframe = timeframe
-                        showTimeframePicker = false
+                        Task {
+                            await refreshData()
+                        }
                     }
                 }) {
                     HStack {
                         Text(timeframe.rawValue)
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(selectedTimeframe == timeframe ? accentColor : textColor)
-                        
-                        Spacer()
-                        
                         if selectedTimeframe == timeframe {
                             Image(systemName: "checkmark")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(accentColor)
                         }
                     }
-                    .padding(.vertical, 12)
-                    .padding(.horizontal, 16)
-                    .background(selectedTimeframe == timeframe ? accentColor.opacity(0.08) : Color.clear)
                 }
             }
-        }
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.1), radius: 15, x: 0, y: 8)
-        )
-        .offset(y: 50)
-        .zIndex(1)
-    }
-    
-    private var trendGraphSection: some View {
-        TrendGraphCard(
-            selectedMetric: $selectedMetric,
-            timeframe: $selectedTimeframe,
-            quantTrendsManager: quantTrendsManager
-        )
-        .padding(.horizontal, 24)
-    }
-    
-    private var loadingView: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.2)
-                .tint(accentColor)
-            
-            Text("Loading your insights...")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(textColor.opacity(0.7))
-        }
-        .frame(height: 200)
-    }
-    
-    private func comparisonSection(_ analysis: DailyAnalysis) -> some View {
-        let comparisons = quantTrendsManager.compareWithToday(analysis)
-        if let comparison = comparisons.first(where: { $0.metric == selectedMetric.rawValue }) {
-            return AnyView(
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("COMPARISON")
-                        .font(.system(size: 13, weight: .medium))
-                        .tracking(1.5)
-                        .foregroundColor(textColor.opacity(0.6))
-                    
-                    Text(comparison.trend)
-                        .font(.system(size: 16, weight: .regular))
-                        .foregroundColor(textColor)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .padding(24)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color.white)
-                        .shadow(color: Color.black.opacity(0.05), radius: 15, x: 0, y: 4)
-                )
+        } label: {
+            HStack(spacing: 8) {
+                Text(selectedTimeframe.rawValue)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(textColor)
+                
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(accentColor)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+            .background(
+                Capsule()
+                    .fill(accentColor.opacity(0.1))
             )
-        } else {
-            return AnyView(EmptyView())
         }
     }
     
-    private var insightsSection: some View {
-        VStack(spacing: 24) {
-            if let frequencies = getFrequencies() {
-                EmotionsInsightCard(frequencies: frequencies)
-                FocusInsightCard(frequencies: frequencies)
+    
+    private func insightsSection(_ frequencies: AITrendsManager.TimeframeFrequencies) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("reflection patterns")
+                .font(.custom("PPNeueMontreal-Medium", size: 28))
+                .foregroundColor(textColor)
+                .padding(.bottom, 8)
+            
+            VStack(spacing: 24) {
+                EmotionalInsightCard(frequencies: frequencies)
+                FocusAreaCard(frequencies: frequencies)
                 TimeOrientationCard(frequencies: frequencies)
             }
         }
     }
     
+    private var loadingView: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+                .tint(accentColor)
+            
+            Text("processing reflections...")
+                .font(.system(size: 15))
+                .foregroundColor(textColor.opacity(0.7))
+        }
+        .frame(height: 200)
+    }
+    
     private func getFrequencies() -> AITrendsManager.TimeframeFrequencies? {
         switch selectedTimeframe {
-        case .week:
-            return aiTrendsManager.getWeeklyFrequencies()
-        case .month:
-            return aiTrendsManager.getMonthlyFrequencies()
-        case .year:
-            return aiTrendsManager.getYearlyFrequencies()
+        case .week: return aiTrendsManager.getWeeklyFrequencies()
+        case .month: return aiTrendsManager.getMonthlyFrequencies()
+        case .year: return aiTrendsManager.getYearlyFrequencies()
         }
     }
     
@@ -304,190 +183,123 @@ struct TrendsView: View {
     }
 }
 
-struct EmotionsInsightCard: View {
+struct EmotionalInsightCard: View {
     let frequencies: AITrendsManager.TimeframeFrequencies
-    
     private let textColor = Color(hex: "2C3E50")
     private let accentColor = Color(hex: "A28497")
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("EMOTIONS")
-                .font(.system(size: 13, weight: .medium))
-                .tracking(1.5)
-                .foregroundColor(textColor.opacity(0.6))
+        VStack(alignment: .leading, spacing: 8) {
+            // Header
+            VStack(alignment: .leading, spacing: 6) {
+                Text("EMOTIONAL LANDSCAPE")
+                    .font(.system(size: 13, weight: .medium))
+                    .tracking(1.5)
+                    .foregroundColor(textColor.opacity(0.5))
+                
+                Text("Your most frequent themes")
+                    .font(.system(size: 15))
+                    .foregroundColor(textColor.opacity(0.6))
+            }
             
-            VStack(spacing: 16) {
+            // Wave Design
+            ZStack {
+                WavePattern()
+                    .stroke(accentColor.opacity(0.1), lineWidth: 1)
+                    .frame(height: 40)
+                    .offset(x: 4, y: 2)
+            }
+            
+            // Emotions list
+            VStack(alignment: .leading, spacing: 16) {
                 ForEach(frequencies.topEmotions.prefix(3), id: \.value) { emotion in
-                    HStack {
+                    HStack(alignment: .center) {
                         Text(emotion.value.capitalized)
-                            .font(.system(size: 16, weight: .medium))
+                            .font(.system(size: 17, weight: .medium))
                             .foregroundColor(textColor)
                         
                         Spacer()
                         
-                        Text("\(Int(emotion.percentage))%")
-                            .font(.system(size: 15))
-                            .foregroundColor(textColor.opacity(0.7))
+                        Text("\(emotion.count)")
+                            .font(.system(size: 15, weight: .medium))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(accentColor.opacity(0.1))
+                            )
+                            .foregroundColor(accentColor)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(emotion == frequencies.topEmotions.first ?
-                                 accentColor.opacity(0.1) : Color.clear)
-                    )
                 }
             }
         }
         .padding(24)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.05), radius: 15, x: 0, y: 4)
-        )
+        .background(Color.white)
+        .cornerRadius(10)
     }
 }
 
-struct FocusInsightCard: View {
+struct FocusAreaCard: View {
     let frequencies: AITrendsManager.TimeframeFrequencies
-    
     private let textColor = Color(hex: "2C3E50")
     private let accentColor = Color(hex: "A28497")
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("FOCUS")
-                .font(.system(size: 13, weight: .medium))
-                .tracking(1.5)
-                .foregroundColor(textColor.opacity(0.6))
+        VStack(alignment: .leading, spacing: 24) {
+            HStack(spacing: 16) {
+                Image(systemName: "target")
+                    .font(.system(size: 20))
+                    .foregroundColor(accentColor)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("FOCUS AREAS")
+                        .font(.system(size: 13, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(textColor.opacity(0.6))
+                    
+                    Text("Key themes you've been reflecting on")
+                        .font(.system(size: 14))
+                        .foregroundColor(textColor.opacity(0.6))
+                }
+            }
             
-            if let topFocus = frequencies.topFocuses.first {
-                HStack {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(topFocus.value.capitalized)
-                            .font(.system(size: 24, weight: .medium))
-                            .foregroundColor(textColor)
+            HStack(spacing: 20) {
+                ForEach(frequencies.topFocuses.prefix(3), id: \.value) { focus in
+                    VStack(spacing: 12) {
+                        Circle()
+                            .strokeBorder(accentColor.opacity(0.3), lineWidth: 1.5)
+                            .background(Circle().fill(accentColor.opacity(0.1)))
+                            .frame(width: 44, height: 44)
+                            .overlay(
+                                Image(systemName: getFocusIcon(for: focus.value))
+                                    .font(.system(size: 20))
+                                    .foregroundColor(accentColor)
+                            )
                         
-                        Text("\(Int(topFocus.percentage))% of reflections")
+                        Text(focus.value.capitalized)
                             .font(.system(size: 15))
-                            .foregroundColor(textColor.opacity(0.7))
+                            .foregroundColor(textColor)
+                            .multilineTextAlignment(.center)
                     }
-                    
-                    Spacer()
-                    
-                    CircularProgressView(
-                        progress: topFocus.percentage / 100,
-                        color: accentColor
-                    )
-                    .frame(width: 60, height: 60)
+                    .frame(maxWidth: .infinity)
                 }
             }
         }
-        .padding(24)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.05), radius: 15, x: 0, y: 4)
-        )
-    }
-}
-
-struct CircularProgressView: View {
-    let progress: Double
-    let color: Color
-    
-    var body: some View {
-        ZStack {
-            Circle()
-                .stroke(
-                    color.opacity(0.2),
-                    lineWidth: 8
-                )
-            
-            Circle()
-                .trim(from: 0, to: progress)
-                .stroke(
-                    color,
-                    style: StrokeStyle(
-                        lineWidth: 8,
-                        lineCap: .round
-                    )
-                )
-                .rotationEffect(.degrees(-90))
-                .animation(.easeOut, value: progress)
-            
-            Text("\(Int(progress * 100))%")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(color)
-        }
-    }
-}
-
-struct InsufficientDataView: View {
-    let timeframe: TrendsView.Timeframe
-    let accentColor: Color
-    let textColor: Color
-    
-    var body: some View {
-        VStack(spacing: 24) {
-            WavyPattern()
-                .fill(accentColor.opacity(0.1))
-                .frame(height: 60)
-            
-            VStack(spacing: 12) {
-                Text("NO DATA")
-                    .font(.system(size: 13, weight: .medium))
-                    .tracking(1.5)
-                    .foregroundColor(textColor.opacity(0.6))
-                
-                Text(getMessage())
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(textColor)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .frame(height: 200)
         .padding(24)
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .cornerRadius(16)
     }
     
-    private func getMessage() -> String {
-        switch timeframe {
-        case .month:
-            return "Complete 5 days of reflection\nto unlock monthly insights"
-                    case .year:
-                        return "Complete 40 days of reflection\nto see yearly patterns"
-                    case .week:
-                        return "Start reflecting to see\nyour weekly progress"
-                    }
-                }
-            }
-
-struct WavyPattern: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let width = rect.width
-        let height = rect.height
-        let midHeight = height / 2
-        let waveHeight = height * 0.25
-        
-        path.move(to: CGPoint(x: 0, y: midHeight))
-        
-        // Create a smooth, continuous wave pattern
-        for x in stride(from: 0, through: width, by: 1) {
-            let relativeX = x / width
-            let y = midHeight + sin(relativeX * .pi * 4) * waveHeight
-            
-            if x == 0 {
-                path.move(to: CGPoint(x: x, y: y))
-            } else {
-                path.addLine(to: CGPoint(x: x, y: y))
-            }
+    private func getFocusIcon(for focus: String) -> String {
+        switch focus.lowercased() {
+        case "work", "career": return "briefcase.fill"
+        case "relationships", "family": return "heart.circle.fill"
+        case "health", "wellness": return "heart.text.square.fill"
+        case "personal growth": return "leaf.fill"
+        case "creativity": return "paintbrush.fill"
+        case "learning": return "book.fill"
+        default: return "star.fill"
         }
-        
-        return path
     }
 }
 
@@ -497,40 +309,101 @@ struct TimeOrientationCard: View {
     private let accentColor = Color(hex: "A28497")
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("TIME ORIENTATION")
-                .font(.system(size: 13, weight: .medium))
-                .tracking(1.5)
-                .foregroundColor(textColor.opacity(0.6))
+        VStack(alignment: .leading, spacing: 24) {
+            HStack(spacing: 16) {
+                Image(systemName: "clock")
+                    .font(.system(size: 20))
+                    .foregroundColor(accentColor)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("TEMPORAL FOCUS")
+                        .font(.system(size: 13, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(textColor.opacity(0.6))
+                    
+                    Text("Where your thoughts are oriented in time")
+                        .font(.system(size: 14))
+                        .foregroundColor(textColor.opacity(0.6))
+                }
+            }
             
-            if let topTime = frequencies.topTimeOrientations.first {
-                HStack {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(topTime.value.capitalized)
-                            .font(.system(size: 24, weight: .medium))
+            HStack(spacing: 16) {
+                if let orientation = frequencies.topTimeOrientations.first {
+                    Circle()
+                        .strokeBorder(accentColor.opacity(0.3), lineWidth: 1.5)
+                        .background(Circle().fill(accentColor.opacity(0.1)))
+                        .frame(width: 36, height: 36)
+                        .overlay(
+                            Image(systemName: getTimeIcon(for: orientation.value))
+                                .font(.system(size: 16))
+                                .foregroundColor(accentColor)
+                        )
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(orientation.value.capitalized)
+                            .font(.system(size: 16, weight: .medium))
                             .foregroundColor(textColor)
                         
-                        Text("\(Int(topTime.percentage))% of reflections")
-                            .font(.system(size: 15))
-                            .foregroundColor(textColor.opacity(0.7))
+                        Text(getTimeDescription(for: orientation.value))
+                            .font(.system(size: 14))
+                            .foregroundColor(textColor.opacity(0.6))
+                            .lineLimit(1)
                     }
                     
                     Spacer()
-                    
-                    CircularProgressView(
-                        progress: topTime.percentage / 100,
-                        color: accentColor
-                    )
-                    .frame(width: 60, height: 60)
                 }
             }
         }
         .padding(24)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.05), radius: 15, x: 0, y: 4)
-        )
+        .background(Color.white)
+        .cornerRadius(16)
+    }
+    
+    private func getTimeIcon(for time: String) -> String {
+        switch time.lowercased() {
+        case "past": return "arrow.counterclockwise"
+        case "present": return "sun.max.fill"
+        case "future": return "arrow.forward"
+        default: return "clock.fill"
+        }
+    }
+    
+    private func getTimeDescription(for time: String) -> String {
+        switch time.lowercased() {
+        case "past": return "Reflecting on previous experiences"
+        case "present": return "Focused on the current moment"
+        case "future": return "Looking ahead to what's coming"
+        default: return "Temporal orientation"
+        }
+    }
+}
+
+struct TimeframeOption: View {
+    let timeframe: TrendsView.Timeframe
+    let isSelected: Bool
+    let action: () -> Void
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Text(timeframe.rawValue)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(isSelected ? accentColor : textColor)
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(accentColor)
+                }
+            }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 20)
+        }
     }
 }
 

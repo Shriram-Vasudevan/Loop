@@ -528,7 +528,7 @@ struct RecordLoopsView: View {
             
             Task {
                 do {
-                    let userDays = try await LoopCloudKitUtility.fetchDistinctLoopingDays()
+                    let userDays = try await loopManager.fetchDistinctLoopingDays()
                     
                     if userDays < 3 {
                         await MainActor.run {

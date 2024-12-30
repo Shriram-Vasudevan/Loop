@@ -13,6 +13,7 @@ struct SettingsView: View {
     @AppStorage("iCloudBackupEnabled") private var isCloudBackupEnabled = false
     @State private var showingLogoutAlert = false
     @State private var showingContactView = false
+    @State private var showingReviewPrompt = false
     @State private var selectedWebView: WebViewData?
     @State private var reminderTime: Date
     @State private var showTimeSelector = false
@@ -34,38 +35,29 @@ struct SettingsView: View {
     
     var body: some View {
         ZStack {
-//            FlowingBackground(color: accentColor)
-//                .opacity(0.2)
-//                .ignoresSafeArea()
-            
             Color(hex: "F5F5F5")
                 .ignoresSafeArea(.all)
             
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 40) {
-                    VStack (spacing: 30)
-                    {
+                    VStack(spacing: 30) {
                         header
                             .padding(.top, 40)
-                        
-//                        profileSection
-                        
                     }
                     
                     preferencesSection
                     
+                    socialSection
+                    
                     supportSection
-
+                    
                     accountSection
                     
                     Spacer(minLength: 60)
                 }
                 .padding(.horizontal, 24)
             }
-  
-            
         }
-        // Change back to using the sheet modifier
         .sheet(isPresented: $showTimeSelector) {
             TimePickerSheet(selectedTime: $reminderTime) { newTime in
                 UserDefaults.standard.set(newTime, forKey: "reminderTime")
@@ -78,7 +70,16 @@ struct SettingsView: View {
             webView(for: webViewData)
         }
         .sheet(isPresented: $showNameEditor) { nameEditorView }
+        .alert("Leave a Review", isPresented: $showingReviewPrompt) {
+            Button("Not Now", role: .cancel) { }
+            Button("Review on App Store") {
+                if let writeReviewURL = URL(string: "https://apps.apple.com/app/idXXXXXXXXXX?action=write-review") {
+                    UIApplication.shared.open(writeReviewURL)
+                }
+            }
+        }
     }
+    
     
     private var header: some View {
         HStack {
@@ -243,6 +244,78 @@ struct SettingsView: View {
                     Button("Cancel", role: .cancel) { }
                     Button("Log Out", role: .destructive) { }
                 }
+            }
+        }
+    }
+    
+    
+    private var socialSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionTitle("Social")
+            
+            VStack(spacing: 32) {
+                Button(action: {
+                    showingReviewPrompt = true
+                }) {
+                    HStack(spacing: 16) {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(accentColor)
+                        
+                        Text("Leave a Review")
+                            .font(.custom("PPNeueMontreal-Medium", size: 17))
+                            .foregroundColor(textColor)
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14))
+                            .foregroundColor(textColor.opacity(0.3))
+                    }
+                }
+                
+                socialLink("Follow us on Instagram", icon: "insta") {
+                    if let url = URL(string: "https://instagram.com/loopapp") {
+                        UIApplication.shared.open(url)
+                    }
+                }
+                
+                socialLink("Follow us on TikTok", icon: "tiktok") {
+                    if let url = URL(string: "https://tiktok.com/@loopapp") {
+                        UIApplication.shared.open(url)
+                    }
+                }
+                
+                socialLink("Visit our Website", icon: "globe") {
+                    if let url = URL(string: "https://loopapp.com") {
+                        UIApplication.shared.open(url)
+                    }
+                }
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(.white)
+            )
+        }
+    }
+    
+    private func socialLink(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                Image(icon == "globe" ? "globe" : icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(accentColor)
+                
+                Text(title)
+                    .font(.custom("PPNeueMontreal-Medium", size: 17))
+                    .foregroundColor(textColor)
+                
+                Spacer()
+                
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 14))
+                    .foregroundColor(textColor.opacity(0.3))
             }
         }
     }

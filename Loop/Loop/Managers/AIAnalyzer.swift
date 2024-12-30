@@ -30,45 +30,34 @@ class AIAnalyzer {
         }.joined(separator: "\n\n")
         
         let prompt = """
-        Analyze these three responses as a cohesive whole, considering both questions and answers.
-        Provide a single unified analysis that captures overall patterns and themes. Avoid vague/innopropriate descriptors (e.g Happy, Sad, Depressed) Address the user in the second person (e.g. "your responses"):
+        Analyze these three responses as a unified whole. Provide a cohesive analysis focusing on consistent patterns across all responses. Address the user in second person ("your responses"):
 
         \(formattedResponses)
 
-        Provide analysis in exactly the following format:
-
         1. Emotion:
-        - primary: [single dominant emotion across all responses]
-        - intensity: [1-10 scale for overall emotional intensity]
-        - tone: [overall tone in 1-2 words]
-        - description: [2 sentences explaining the overall emotional state and progression without referencing specific personal details]
+        - primary: [single dominant emotion - e.g., frustrated, hopeful, concerned]
+        - intensity: [1-10 scale]
+        - tone: [how emotion is expressed - e.g., reserved, direct, candid]
+        - description: [1 sentence showing how this sentiment appears across responses]
 
         2. Time Focus:
         - orientation: [past/present/future/mixed]
-        - description: [2 sentences about the overall time orientation and its significance to the responses]
+        - description: [1 sentence about how time perspective shapes responses]
 
         3. Focus Analysis:
-        - pattern: [the focus of the responses - e.g., reflective, action-oriented, observational]
-        - description: [1 sentence about why you chose this pattern]
+        - pattern: [how user processes information - e.g., analytical, practical, experiential]
+        - description: [1 sentence demonstrating this pattern]
 
         4. Significant Phrases:
-        - insights: [up to 2 most meaningful insight quotes from any response, or "none" if none present]
-        - reflections: [up to 2 most meaningful reflection quotes from any response, or "none" if none present]
-        - decisions: [up to 2 most meaningful commitment/choice quotes from any response, or "none" if none present]
-        - description: [2 sentences about what these patterns reveal about the overall thought process]
+        - insights: [1-2 quotes showing key realizations]
+        - reflections: [1-2 quotes showing self-awareness]
+        - decisions: [1-2 quotes showing choices/commitments]
+        - description: [1 sentence connecting these elements]
 
         5. Follow-up:
-        - question: [single thoughtful follow-up question based on all responses]
-        - context: [1 brief sentence on why this question is relevant to the overall themes]
-        - focus: [what aspect of self-reflection this targets]
-
-        Important rules:
-        - Analyze the responses together, not individually
-        - Look for patterns and themes across all three responses
-        - Never reference specific people, places, or events
-        - Keep insights general and pattern-focused
-        - If no phrases fit a category, use "none" instead of forcing matches
-        - Follow-up question should relate to overall themes, not specific details
+        - question: [short single follow-up question targeting main pattern]
+        - context: [1 shore phrase explaining relevance]
+        - focus: [specific aspect being explored]
         """
         
         let requestBody: [String: Any] = [
@@ -79,7 +68,7 @@ class AIAnalyzer {
             ],
             "temperature": 0.4,
             "top_p": 0.9,
-            "max_tokens": 1200,
+            "max_tokens": 900,
             "frequency_penalty": 0.0,
             "presence_penalty": 0.0
         ]

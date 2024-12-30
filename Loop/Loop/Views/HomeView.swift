@@ -73,10 +73,10 @@ struct HomeView: View {
                     
                     featuredReflectionsSection
                         .padding(.horizontal, 24)
-                    
-                    DayRatingSlider()
-                        .padding(.horizontal, 24)
-                        .padding(.top, 6)
+//                    
+//                    DayRatingSlider()
+//                        .padding(.horizontal, 24)
+//                        .padding(.top, 6)
                     
                     notificationsSection
                     

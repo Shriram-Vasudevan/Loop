@@ -27,8 +27,8 @@ struct TimeFocus: Codable {
 }
 
 struct FocusAnalysis: Codable {
-    let pattern: String  // How self-references are used (e.g., "reflective", "action-oriented")
-    let description: String // What this reveals about self-focus
+    let pattern: String
+    let description: String 
 }
 
 struct SignificantPhrases: Codable {

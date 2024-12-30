@@ -124,10 +124,13 @@ class LoopManager: ObservableObject {
     func calculateDistinctLoopingDays() async {
         do {
             isCheckingDistinctDays = true
-            let cloudCheck = try await LoopCloudKitUtility.checkThreeDayRequirement()
-            let localCheckCount = try await localStorage.fetchDistinctLoopingDays() // Correct local call
+            let cloudCheck = try await LoopCloudKitUtility.fetchDistinctLoopingDays()
+            let localCheckCount = try await localStorage.fetchDistinctLoopingDays()
             
-            let distinctDays = cloudCheck.1 + localCheckCount
+            print("cloud check \(cloudCheck)")
+            print("localCheckCount \(localCheckCount)")
+            let distinctDays = cloudCheck + localCheckCount
+            print("distinct days \(distinctDays)")
             self.distinctDays = distinctDays
             isCheckingDistinctDays = false
         } catch {
