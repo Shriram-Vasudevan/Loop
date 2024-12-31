@@ -24,4 +24,5 @@ struct SpeakingHighlight {
         let seconds = Int(duration)
         return "\(seconds)s"
     }
+    
 }

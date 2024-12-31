@@ -39,7 +39,7 @@ struct WordCountPatternCard: View {
                             Text("with")
                                 .font(.system(size: 20))
                                 .foregroundColor(textColor.opacity(0.7))
-                            Text("\(highlight.wordCount) words")
+                            Text("\(Int(highlight.wordCount)) words")
                                 .font(.system(size: 20, weight: .medium))
                         }
                         .foregroundColor(textColor)
