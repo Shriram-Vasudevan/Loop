@@ -45,8 +45,8 @@ class AIAnalyzer {
         - description: [1 sentence about how time perspective shapes responses]
 
         3. Focus Analysis:
-        - pattern: [how user processes information - e.g., analytical, practical, experiential]
-        - description: [1 sentence demonstrating this pattern]
+        - pattern: [how user processes information - e.g., analytical, practical, experiential, action-focused]
+        - description: [1 short sentence demonstrating this pattern]
 
         4. Significant Phrases:
         - insights: [1-2 quotes showing key realizations]

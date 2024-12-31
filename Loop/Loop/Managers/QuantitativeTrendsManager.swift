@@ -384,24 +384,23 @@ class QuantitativeTrendsManager: ObservableObject {
         
         return comparisons
     }
-    
-    // Helper methods remain the same
-    private func getAverageWPM(from stats: [DailyStats]?) -> Double? {
+
+    func getAverageWPM(from stats: [DailyStats]?) -> Double? {
         guard let stats = stats, !stats.isEmpty else { return nil }
         return stats.reduce(0.0) { $0 + $1.averageWPM } / Double(stats.count)
     }
     
-    private func getAverageDuration(from stats: [DailyStats]?) -> Double? {
+    func getAverageDuration(from stats: [DailyStats]?) -> Double? {
         guard let stats = stats, !stats.isEmpty else { return nil }
         return stats.reduce(0.0) { $0 + $1.averageDuration } / Double(stats.count)
     }
     
-    private func getAverageWordCount(from stats: [DailyStats]?) -> Double? {
+    func getAverageWordCount(from stats: [DailyStats]?) -> Double? {
         guard let stats = stats, !stats.isEmpty else { return nil }
         return stats.reduce(0.0) { $0 + $1.averageWordCount } / Double(stats.count)
     }
     
-    private func getAverageVocabDiversity(from stats: [DailyStats]?) -> Double? {
+    func getAverageVocabDiversity(from stats: [DailyStats]?) -> Double? {
         guard let stats = stats, !stats.isEmpty else { return nil }
         return stats.reduce(0.0) { $0 + $1.vocabularyDiversityRatio } / Double(stats.count)
     }
@@ -411,4 +410,53 @@ class QuantitativeTrendsManager: ObservableObject {
         return compareWithToday(analysis).filter { $0.isSignificant }
     }
 
+}
+
+
+extension QuantitativeTrendsManager {
+    func getFastestSpeakingDay() -> SpeakingHighlight? {
+        guard let weeklyStats = weeklyStats else { return nil }
+        guard let maxWPMEntry = weeklyStats.max(by: { $0.averageWPM < $1.averageWPM }), let date = maxWPMEntry.date else { return nil }
+        
+        
+        guard let emotion = AITrendsManager.shared.getEmotionForDate(maxWPMEntry.date ?? Date(timeIntervalSince1970: .pi)) else { return nil }
+        
+        return SpeakingHighlight(
+            date: date,
+            wpm: maxWPMEntry.averageWPM,
+            emotion: emotion,
+            wordCount: maxWPMEntry.averageWordCount,
+            duration: maxWPMEntry.averageDuration
+        )
+    }
+    
+    func getLongestDurationDay() -> SpeakingHighlight? {
+        guard let weeklyStats = weeklyStats else { return nil }
+        guard let maxDurationEntry = weeklyStats.max(by: { $0.averageDuration < $1.averageDuration }), let date = maxDurationEntry.date else { return nil }
+        
+        guard let emotion = AITrendsManager.shared.getEmotionForDate(maxDurationEntry.date ?? Date(timeIntervalSince1970: .pi)) else { return nil }
+        
+        return SpeakingHighlight(
+            date: date,
+            wpm: maxDurationEntry.averageWPM,
+            emotion: emotion,
+            wordCount: maxDurationEntry.averageWordCount,
+            duration: maxDurationEntry.averageDuration
+        )
+    }
+    
+    func getMostWordsDay() -> SpeakingHighlight? {
+        guard let weeklyStats = weeklyStats else { return nil }
+        guard let maxWordsEntry = weeklyStats.max(by: { $0.averageWordCount < $1.averageWordCount }), let date = maxWordsEntry.date else { return nil }
+        
+        guard let emotion = AITrendsManager.shared.getEmotionForDate(maxWordsEntry.date ?? Date(timeIntervalSince1970: .pi)) else { return nil }
+        
+        return SpeakingHighlight(
+            date: date,
+            wpm: maxWordsEntry.averageWPM,
+            emotion: emotion,
+            wordCount: maxWordsEntry.averageWordCount,
+            duration: maxWordsEntry.averageDuration
+        )
+    }
 }

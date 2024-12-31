@@ -100,15 +100,38 @@ struct TrendGraphCard: View {
     }
     
     private var graphSection: some View {
-        VStack(alignment: .leading, spacing: 32) {
-            GraphView(
-                data: getData(),
-                labels: getLabels(),
-                selectedPointIndex: $selectedPointIndex,
-                animate: animateGraph,
-                metricType: selectedMetric
-            )
-            .frame(height: 240)
+        let dataCount = getData().count
+        
+        return VStack(alignment: .leading, spacing: 32) {
+            ZStack {
+                if dataCount < 2 {
+                    // Placeholder graph with example data increasing from Sunday to Saturday
+                    GraphView(
+                        data: [118, 123, 115, 120, 117, 125, 118],
+                        labels: getLabels(),
+                        selectedPointIndex: $selectedPointIndex,  // We don't want interaction with placeholder
+                        animate: animateGraph,
+                        metricType: selectedMetric
+                    )
+                    .blur(radius: 3)
+                    .opacity(0.3)
+                    
+                    Text("LOOP FOR 2 DAYS THIS WEEK TO GET TRENDS")
+                        .multilineTextAlignment(.center)
+                        .font(.system(size: 13, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(textColor.opacity(0.5))
+                } else {
+                    GraphView(
+                        data: getData(),
+                        labels: getLabels(),
+                        selectedPointIndex: $selectedPointIndex,
+                        animate: animateGraph,
+                        metricType: selectedMetric
+                    )
+                }
+            }
+            .frame(height: 180)
             
             HStack(spacing: 0) {
                 ForEach(getLabels(), id: \.self) { label in
@@ -552,14 +575,14 @@ extension QuantitativeTrendsManager {
         
         // Weekly Stats
         manager.weeklyStats = [
-            DailyStats(date: Date(), year: 2024, month: 12, weekOfYear: 52, weekday: 1,
-                      averageWPM: 120, averageDuration: 45, averageWordCount: 200,
-                      averageUniqueWordCount: 150, vocabularyDiversityRatio: 0.75,
-                      loopCount: 3, lastUpdated: Date()),
-            DailyStats(date: Date().addingTimeInterval(-86400), year: 2024, month: 12,
-                      weekOfYear: 52, weekday: 2, averageWPM: 115, averageDuration: 42,
-                      averageWordCount: 190, averageUniqueWordCount: 140,
-                      vocabularyDiversityRatio: 0.73, loopCount: 3, lastUpdated: Date()),
+//            DailyStats(date: Date(), year: 2024, month: 12, weekOfYear: 52, weekday: 1,
+//                      averageWPM: 120, averageDuration: 45, averageWordCount: 200,
+//                      averageUniqueWordCount: 150, vocabularyDiversityRatio: 0.75,
+//                      loopCount: 3, lastUpdated: Date()),
+//            DailyStats(date: Date().addingTimeInterval(-86400), year: 2024, month: 12,
+//                      weekOfYear: 52, weekday: 2, averageWPM: 115, averageDuration: 42,
+//                      averageWordCount: 190, averageUniqueWordCount: 140,
+//                      vocabularyDiversityRatio: 0.73, loopCount: 3, lastUpdated: Date()),
             DailyStats(date: Date().addingTimeInterval(-172800), year: 2024, month: 12,
                       weekOfYear: 52, weekday: 3, averageWPM: 125, averageDuration: 48,
                       averageWordCount: 210, averageUniqueWordCount: 160,

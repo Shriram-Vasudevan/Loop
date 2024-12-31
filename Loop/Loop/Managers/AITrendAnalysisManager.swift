@@ -244,4 +244,45 @@ class AITrendsManager: ObservableObject {
     func getMostCommonTimeOrientation(timeframe: TimeframeFrequencies) -> FrequencyResult? {
         timeframe.topTimeOrientations.first
     }
+    
+    func getEmotionForDate(_ date: Date) -> String? {
+        let calendar = Calendar.current
+        
+        // First try weekly analyses
+        if let weeklyEmotion = weeklyAnalyses?.first(where: { calendar.isDate($0.date, inSameDayAs: date) })?.feeling {
+            return weeklyEmotion
+        }
+        
+        // Then try monthly analyses
+        if let monthlyEmotion = monthlyAnalyses?.first(where: { calendar.isDate($0.date, inSameDayAs: date) })?.feeling {
+            return monthlyEmotion
+        }
+        
+        // Finally try yearly analyses
+        if let yearlyEmotion = yearlyAnalyses?.first(where: { calendar.isDate($0.date, inSameDayAs: date) })?.feeling {
+            return yearlyEmotion
+        }
+        
+        // If no emotion found
+        return nil
+    }
+    
+    // Helper method to fetch emotion directly from Core Data if needed
+    private func fetchEmotionFromCoreData(for date: Date) -> String? {
+        let request = NSFetchRequest<NSManagedObject>(entityName: "DailyAIAnalysisEntity")
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date)
+        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+        
+        request.predicate = NSPredicate(format: "date >= %@ AND date < %@", startOfDay as NSDate, endOfDay as NSDate)
+        request.fetchLimit = 1
+        
+        do {
+            let result = try context.fetch(request)
+            return result.first?.value(forKey: "feeling") as? String
+        } catch {
+            print("❌ Error fetching emotion for date: \(error)")
+            return nil
+        }
+    }
 }

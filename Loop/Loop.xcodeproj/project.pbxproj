@@ -25,6 +25,11 @@
 		9915BAB52CE6AF8D00D3C44B /* DailyCheckinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB42CE6AF8D00D3C44B /* DailyCheckinView.swift */; };
 		9915BAB72CE6AF9E00D3C44B /* DailyCheckinManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB62CE6AF9E00D3C44B /* DailyCheckinManager.swift */; };
 		9915BAB92CEC332500D3C44B /* AnalysisManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB82CEC332500D3C44B /* AnalysisManager.swift */; };
+		9935CED22D23969600AF0C16 /* SpeakingHighlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CED12D23969600AF0C16 /* SpeakingHighlight.swift */; };
+		9935CED42D23982200AF0C16 /* SpeakingPatternCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CED32D23982200AF0C16 /* SpeakingPatternCard.swift */; };
+		9935CED62D239F3400AF0C16 /* AbstractCardBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CED52D239F3400AF0C16 /* AbstractCardBackground.swift */; };
+		9935CED82D23A0A500AF0C16 /* DurationPatternCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CED72D23A0A500AF0C16 /* DurationPatternCard.swift */; };
+		9935CEDA2D23A0C200AF0C16 /* WordCountPatternCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CED92D23A0C200AF0C16 /* WordCountPatternCard.swift */; };
 		9953BDDD2CEE620E00348AC3 /* AnimatedBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDDC2CEE620E00348AC3 /* AnimatedBackground.swift */; };
 		9953BDE02CEE623B00348AC3 /* PulsingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDDF2CEE623B00348AC3 /* PulsingView.swift */; };
 		9953BDE42CF17A5F00348AC3 /* LoadingWaveform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDE32CF17A5F00348AC3 /* LoadingWaveform.swift */; };
@@ -154,6 +159,11 @@
 		9915BAB42CE6AF8D00D3C44B /* DailyCheckinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckinView.swift; sourceTree = "<group>"; };
 		9915BAB62CE6AF9E00D3C44B /* DailyCheckinManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckinManager.swift; sourceTree = "<group>"; };
 		9915BAB82CEC332500D3C44B /* AnalysisManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisManager.swift; sourceTree = "<group>"; };
+		9935CED12D23969600AF0C16 /* SpeakingHighlight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakingHighlight.swift; sourceTree = "<group>"; };
+		9935CED32D23982200AF0C16 /* SpeakingPatternCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakingPatternCard.swift; sourceTree = "<group>"; };
+		9935CED52D239F3400AF0C16 /* AbstractCardBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AbstractCardBackground.swift; sourceTree = "<group>"; };
+		9935CED72D23A0A500AF0C16 /* DurationPatternCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DurationPatternCard.swift; sourceTree = "<group>"; };
+		9935CED92D23A0C200AF0C16 /* WordCountPatternCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCountPatternCard.swift; sourceTree = "<group>"; };
 		9953BDDC2CEE620E00348AC3 /* AnimatedBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedBackground.swift; sourceTree = "<group>"; };
 		9953BDDF2CEE623B00348AC3 /* PulsingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulsingView.swift; sourceTree = "<group>"; };
 		9953BDE32CF17A5F00348AC3 /* LoadingWaveform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingWaveform.swift; sourceTree = "<group>"; };
@@ -377,6 +387,10 @@
 				999DAC892D20AD3700A6626B /* TrendsLoadingView.swift */,
 				999DAC8B2D20F4C500A6626B /* MemoryPlaybackView.swift */,
 				999DAC912D21D2A200A6626B /* AnalysisStateLoadingViews.swift */,
+				9935CED32D23982200AF0C16 /* SpeakingPatternCard.swift */,
+				9935CED52D239F3400AF0C16 /* AbstractCardBackground.swift */,
+				9935CED72D23A0A500AF0C16 /* DurationPatternCard.swift */,
+				9935CED92D23A0C200AF0C16 /* WordCountPatternCard.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -433,6 +447,7 @@
 				999DAC812D208A1A00A6626B /* FrequencyModels.swift */,
 				999DAC832D208B1F00A6626B /* MetricComparison.swift */,
 				999DAC8F2D210A5000A6626B /* FeaturedPrompt.swift */,
+				9935CED12D23969600AF0C16 /* SpeakingHighlight.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -549,6 +564,7 @@
 				99AC6DDE2CE03CC600B0D0D6 /* AudioBulletJournal.swift in Sources */,
 				99CCFBC22D137A2100DA8A55 /* AnalysisState.swift in Sources */,
 				9915BAB92CEC332500D3C44B /* AnalysisManager.swift in Sources */,
+				9935CED62D239F3400AF0C16 /* AbstractCardBackground.swift in Sources */,
 				9953BDFE2CF810AB00348AC3 /* WebView.swift in Sources */,
 				999DAC922D21D2A200A6626B /* AnalysisStateLoadingViews.swift in Sources */,
 				99AC6DDA2CE01A3E00B0D0D6 /* SendLoopOverlay.swift in Sources */,
@@ -561,6 +577,7 @@
 				99AC6DD62CDFFAFA00B0D0D6 /* LoopChatView.swift in Sources */,
 				999DAC882D209AA100A6626B /* TrendGraph.swift in Sources */,
 				999DAC782D1FA82100A6626B /* TodaysInsightsView.swift in Sources */,
+				9935CED82D23A0A500AF0C16 /* DurationPatternCard.swift in Sources */,
 				999DAC8C2D20F4C500A6626B /* MemoryPlaybackView.swift in Sources */,
 				990E4A8E2CB48BB9009F88A0 /* SplashScreen.swift in Sources */,
 				99DC91B72D1A258A002B9A89 /* WeeklyAnalysis.swift in Sources */,
@@ -583,6 +600,7 @@
 				99F7F6E92CAC792C009858AC /* NotificationManager.swift in Sources */,
 				9953BE062CFBB30900348AC3 /* ArtisticBackground.swift in Sources */,
 				990E4A962CBDCA51009F88A0 /* VideoRecordingView.swift in Sources */,
+				9935CED42D23982200AF0C16 /* SpeakingPatternCard.swift in Sources */,
 				990E4A902CB48BDD009F88A0 /* PageType.swift in Sources */,
 				999DAC802D2078C400A6626B /* QuantitativeTrendsManager.swift in Sources */,
 				99F7F6EB2CAC7935009858AC /* AudioManager.swift in Sources */,
@@ -628,6 +646,7 @@
 				9953BDE62CF1832100348AC3 /* ThematicLoopCard.swift in Sources */,
 				9988DB8B2CD9CAEE005628DE /* SharedLoop.swift in Sources */,
 				99DC91BB2D1A50BF002B9A89 /* AudioAnalyzer.swift in Sources */,
+				9935CED22D23969600AF0C16 /* SpeakingHighlight.swift in Sources */,
 				990E4A942CBDCA24009F88A0 /* VideoManager.swift in Sources */,
 				99A0C8F12CA9EF2400F9281A /* LoopApp.swift in Sources */,
 				9953BE102D07ADC100348AC3 /* LoopComparison.swift in Sources */,
@@ -638,6 +657,7 @@
 				99CCFBBE2D121F2400DA8A55 /* EmptyStateView.swift in Sources */,
 				99F7F6FF2CAF8580009858AC /* Extensions.swift in Sources */,
 				99DC91B52D19C59B002B9A89 /* AudioWaveform.swift in Sources */,
+				9935CEDA2D23A0C200AF0C16 /* WordCountPatternCard.swift in Sources */,
 				99AC6DD42CDED81100B0D0D6 /* LoopsView.swift in Sources */,
 				990E4A8A2CB47FEE009F88A0 /* LaunchManager.swift in Sources */,
 				990E4A9C2CBDD1BB009F88A0 /* LoopVideoConfirmationView.swift in Sources */,
