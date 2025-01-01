@@ -30,6 +30,8 @@
 		9935CED62D239F3400AF0C16 /* AbstractCardBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CED52D239F3400AF0C16 /* AbstractCardBackground.swift */; };
 		9935CED82D23A0A500AF0C16 /* DurationPatternCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CED72D23A0A500AF0C16 /* DurationPatternCard.swift */; };
 		9935CEDA2D23A0C200AF0C16 /* WordCountPatternCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CED92D23A0C200AF0C16 /* WordCountPatternCard.swift */; };
+		9935CEDC2D24576F00AF0C16 /* TimeLapseDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CEDB2D24576F00AF0C16 /* TimeLapseDemoView.swift */; };
+		9935CEDE2D24DC8400AF0C16 /* ReflectionSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CEDD2D24DC8400AF0C16 /* ReflectionSelectionView.swift */; };
 		9953BDDD2CEE620E00348AC3 /* AnimatedBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDDC2CEE620E00348AC3 /* AnimatedBackground.swift */; };
 		9953BDE02CEE623B00348AC3 /* PulsingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDDF2CEE623B00348AC3 /* PulsingView.swift */; };
 		9953BDE42CF17A5F00348AC3 /* LoadingWaveform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDE32CF17A5F00348AC3 /* LoadingWaveform.swift */; };
@@ -164,6 +166,8 @@
 		9935CED52D239F3400AF0C16 /* AbstractCardBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AbstractCardBackground.swift; sourceTree = "<group>"; };
 		9935CED72D23A0A500AF0C16 /* DurationPatternCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DurationPatternCard.swift; sourceTree = "<group>"; };
 		9935CED92D23A0C200AF0C16 /* WordCountPatternCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCountPatternCard.swift; sourceTree = "<group>"; };
+		9935CEDB2D24576F00AF0C16 /* TimeLapseDemoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeLapseDemoView.swift; sourceTree = "<group>"; };
+		9935CEDD2D24DC8400AF0C16 /* ReflectionSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectionSelectionView.swift; sourceTree = "<group>"; };
 		9953BDDC2CEE620E00348AC3 /* AnimatedBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedBackground.swift; sourceTree = "<group>"; };
 		9953BDDF2CEE623B00348AC3 /* PulsingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulsingView.swift; sourceTree = "<group>"; };
 		9953BDE32CF17A5F00348AC3 /* LoadingWaveform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingWaveform.swift; sourceTree = "<group>"; };
@@ -336,6 +340,7 @@
 			children = (
 				990E4A8B2CB48BAF009F88A0 /* PagesHolderView.swift */,
 				99F7F6E42CAC77E7009858AC /* IntroView.swift */,
+				990E4A9D2CBDE063009F88A0 /* ViewPastLoopView.swift */,
 				99F7F6E62CAC77F4009858AC /* HomeView.swift */,
 				99AC6DD32CDED81100B0D0D6 /* LoopsView.swift */,
 				990E4A912CB48CEF009F88A0 /* InsightsView.swift */,
@@ -359,7 +364,6 @@
 				990E4A952CBDCA51009F88A0 /* VideoRecordingView.swift */,
 				990E4A992CBDD091009F88A0 /* VideoRecordButton.swift */,
 				990E4A9B2CBDD1BB009F88A0 /* LoopVideoConfirmationView.swift */,
-				990E4A9D2CBDE063009F88A0 /* ViewPastLoopView.swift */,
 				9988DBAD2CDD25C7005628DE /* PastLoopCard.swift */,
 				99AC6DD72CE0199800B0D0D6 /* FluidParticleBackground.swift */,
 				99AC6DDD2CE03CC600B0D0D6 /* AudioBulletJournal.swift */,
@@ -391,6 +395,8 @@
 				9935CED52D239F3400AF0C16 /* AbstractCardBackground.swift */,
 				9935CED72D23A0A500AF0C16 /* DurationPatternCard.swift */,
 				9935CED92D23A0C200AF0C16 /* WordCountPatternCard.swift */,
+				9935CEDB2D24576F00AF0C16 /* TimeLapseDemoView.swift */,
+				9935CEDD2D24DC8400AF0C16 /* ReflectionSelectionView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -563,6 +569,7 @@
 				9953BE122D07ADE400348AC3 /* LoopAnalysis.swift in Sources */,
 				99AC6DDE2CE03CC600B0D0D6 /* AudioBulletJournal.swift in Sources */,
 				99CCFBC22D137A2100DA8A55 /* AnalysisState.swift in Sources */,
+				9935CEDE2D24DC8400AF0C16 /* ReflectionSelectionView.swift in Sources */,
 				9915BAB92CEC332500D3C44B /* AnalysisManager.swift in Sources */,
 				9935CED62D239F3400AF0C16 /* AbstractCardBackground.swift in Sources */,
 				9953BDFE2CF810AB00348AC3 /* WebView.swift in Sources */,
@@ -613,6 +620,7 @@
 				999DAC762D1F4E9800A6626B /* AIAnalysis.swift in Sources */,
 				99F7F6FD2CAF814B009858AC /* RecordLoopsView.swift in Sources */,
 				999DAC902D210A5000A6626B /* FeaturedPrompt.swift in Sources */,
+				9935CEDC2D24576F00AF0C16 /* TimeLapseDemoView.swift in Sources */,
 				9988DB952CDA7F92005628DE /* FriendRequest.swift in Sources */,
 				99F7F6F52CAC7DB4009858AC /* LoopManager.swift in Sources */,
 				99A0C8F32CA9EF2400F9281A /* ContentView.swift in Sources */,

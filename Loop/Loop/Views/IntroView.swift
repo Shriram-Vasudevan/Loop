@@ -24,7 +24,6 @@ struct OnboardingView: View {
     @State private var backgroundOpacity = 0.0
     @State private var waveformData: [CGFloat] = Array(repeating: 0, count: 60)
     @State private var showWaveform = false
-    @State private var isPlaying = false
     @State private var progress: CGFloat = 0.3
     @State private var showInitialPrompt = true
     @State private var contentOpacity: CGFloat = 0
@@ -52,181 +51,88 @@ struct OnboardingView: View {
         "track journey"
     ]
         
-        var body: some View {
-            ZStack {
-                AnimatedBackground()
-                    .ignoresSafeArea(.all)
-                TabView(selection: $currentStep) {
-                    welcomeView
-                        .tag(0)
-                    PromptsView {
-                           withAnimation {
-                               currentStep = 2
-                           }
-                       }
-                       .tag(1)
-                        .tag(1)
-                    pastLoopView
-                        .tag(2)
+    var body: some View {
+        ZStack {
+            AnimatedBackground()
+                .ignoresSafeArea(.all)
+            TabView(selection: $currentStep) {
+                welcomeView
+                    .tag(0)
+                OnboardingAnimationView(tabViewStep: $currentStep)
+                    .tag(1)
                     insightsView
-                        .tag(3)
-                    purposeView
-                        .tag(4)
+                        .tag(2)
                     storageView
-                        .tag(5)
+                        .tag(3)
                     setupView
-                        .tag(6)
-                }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: currentStep)
+                        .tag(4)
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .animation(.spring(response: 0.6, dampingFraction: 0.8), value: currentStep)
+            
+            if showStorageInfo {
+                StorageInfoOverlay(isShowing: $showStorageInfo)
+            }
+        }
+        .preferredColorScheme(.light)
+    }
+        
+    private var welcomeView: some View {
+        ZStack {
+            VStack {
+                Spacer()
                 
-                if showStorageInfo {
-                    StorageInfoOverlay(isShowing: $showStorageInfo)
-                }
-            }
-            .preferredColorScheme(.light)
-        }
-        
-        private var welcomeView: some View {
-            ZStack {
-                VStack {
-                    Spacer()
-                    
-                    VStack(spacing: 5) {
-                        Text("welcome to loop")
-                            .font(.system(size: 38, weight: .ultraLight))
-                            .foregroundColor(textColor)
-                            .opacity(fadeInOpacity)
-                        
-                        Text("start micro-journaling today")
-                            .font(.system(size: 20, weight: .light))
-                            .foregroundColor(textColor.opacity(0.6))
-                            .opacity(fadeInOpacity)
-                    }
-                    
-                    Spacer()
-                    
-                    OnboardingButton(text: "begin", icon: "arrow.right") {
-                        withAnimation {
-                            currentStep = 1
-                        }
-                    }
-                    .padding(.bottom, 48)
-                    .opacity(fadeInOpacity)
-                }
-                .onAppear {
-                    withAnimation(.easeOut(duration: 3)) {
-                        fadeInOpacity = 1
-                    }
-                }
-            }
-        }
-        
-        private var pastLoopView: some View {
-            ZStack {
-                VStack(spacing: 0) {
-                    Text("complete the loop")
-                        .font(.system(size: 20, weight: .light))
-                        .foregroundColor(textColor.opacity(0.6))
-                        .padding(.top, 32)
-                        .padding(.bottom, 40)
-                    
-                    Text("what made you smile today?")
-                        .font(.system(size: 24, weight: .light))
-                        .multilineTextAlignment(.center)
+                VStack(spacing: 5) {
+                    Text("welcome to loop")
+                        .font(.system(size: 38, weight: .ultraLight))
                         .foregroundColor(textColor)
-                        .padding(.horizontal, 40)
-                        .padding(.bottom, 8)
+                        .opacity(fadeInOpacity)
                     
-                    Text("September 24, 2024")
-                        .font(.system(size: 15, weight: .regular))
-                        .foregroundColor(textColor.opacity(0.6))
-                        .padding(.bottom, 20)
-                    
-                    Spacer()
-                    
-                    WaveformSection(
-                        waveformData: waveformData,
-                        progress: 0.3,
-                        showBars: true,
-                        accentColor: accentColor
-                    )
-                    .safeAreaPadding(.horizontal, 24)
-                    
-                    Spacer()
-                    
-                    TimeSlider(progress: $progress,
-                              duration: 30 ?? 0,
-                              accentColor: accentColor,
-                              onEditingChanged: { editing in
-                        if !editing {
-                            //
-                        }
-                    })
-                    .safeAreaPadding(.horizontal, 24)
-                    
-                    HStack {
-                        Text("0:05")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(textColor.opacity(0.6))
-                        
-                        Spacer()
-                        
-                        Circle()
-                            .fill(accentColor)
-                            .frame(width: 64, height: 64)
-                            .shadow(color: accentColor.opacity(0.3), radius: 10, y: 5)
-                            .overlay(
-                                Image(systemName: "play.fill")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.white)
-                                    .offset(x: 2)
-                            )
-                        
-                        Spacer()
-                        
-                        Text("0:30")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(textColor.opacity(0.6))
-                    }
-                    .allowsHitTesting(false)
-                    .safeAreaPadding(.horizontal, 24)
-                    
-                    OnboardingButton(text: "continue", icon: "arrow.right") {
-                        withAnimation {
-                            currentStep = 3
-                        }
-                    }
-                    .padding(.vertical, 48)
-                }
-                .onAppear {
-                    generateWaveform()
-                }
-                
-            }
-        }
-        
-        private var insightsView: some View {
-            ZStack {
-                VStack(spacing: 0) {
-                    Text("dive deeper into your reflections")
+                    Text("start micro-journaling today")
                         .font(.system(size: 20, weight: .light))
                         .foregroundColor(textColor.opacity(0.6))
-                        .padding(.top, 32)
-                        .padding(.bottom, 12)
-                    
-                    OnboardingInsightsView()
-                    
-                    OnboardingButton(text: "continue", icon: "arrow.right") {
-                        withAnimation {
-                            currentStep = 4
-                        }
+                        .opacity(fadeInOpacity)
+                }
+                
+                Spacer()
+                
+                OnboardingButton(text: "begin", icon: "arrow.right") {
+                    withAnimation {
+                        currentStep = 1
                     }
-                    .padding(.vertical, 32)
-
+                }
+                .padding(.bottom, 48)
+                .opacity(fadeInOpacity)
+            }
+            .onAppear {
+                withAnimation(.easeOut(duration: 3)) {
+                    fadeInOpacity = 1
                 }
             }
         }
+    }
+    
+    private var insightsView: some View {
+        ZStack {
+            VStack(spacing: 0) {
+                Text("dive deeper into your reflections")
+                    .font(.system(size: 20, weight: .light))
+                    .foregroundColor(textColor.opacity(0.6))
+                    .padding(.top, 32)
+                    .padding(.bottom, 12)
+                
+                OnboardingInsightsView()
+                
+                OnboardingButton(text: "continue", icon: "arrow.right") {
+                    withAnimation {
+                        currentStep = 4
+                    }
+                }
+                .padding(.vertical, 32)
+
+            }
+        }
+    }
         
     private var purposeView: some View {
         VStack(spacing: 0) {
@@ -302,6 +208,13 @@ struct OnboardingView: View {
     private var storageView: some View {
         ZStack {
             VStack(spacing: 16) {
+                
+                Text("PRIVACY")
+                    .font(.system(size: 14, weight: .medium))
+                    .tracking(1.5)
+                    .foregroundColor(textColor.opacity(0.6))
+                    .padding(.top, 32)
+                
                 Spacer()
                 
                 CloudAnimation()
@@ -582,42 +495,6 @@ struct OnboardingView: View {
         }
     }
     
-    struct OnboardingButton: View {
-        let text: String
-        let icon: String
-        let action: () -> Void
-        
-        var body: some View {
-            Button(action: action) {
-                HStack(spacing: 12) {
-                    Text(text)
-                        .font(.system(size: 18, weight: .light))
-                    Image(systemName: icon)
-                        .font(.system(size: 16, weight: .light))
-                }
-                .frame(height: 56)
-                .frame(maxWidth: .infinity)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color(hex: "A28497"),
-                            Color(hex: "A28497").opacity(0.9)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .foregroundColor(.white)
-                .cornerRadius(28)
-                .shadow(color: Color(hex: "A28497").opacity(0.15), radius: 12, y: 6)
-                .padding(.horizontal, 32)
-            }
-            .buttonStyle(ScaleButtonStyle())
-        }
-    }
-    
-    
-    
     private func saveUserPreferences() {
         UserDefaults.standard.set(userName, forKey: "userName")
         UserDefaults.standard.set(reminderTime, forKey: "reminderTime")
@@ -704,103 +581,113 @@ struct LiveWaveformView: View {
     }
 }
 
+struct OnboardingAnimationView: View {
+    @State var step: Int = 0
+    
+    @Binding var tabViewStep: Int
+    @State var audioURL: URL?
+    var body: some View {
+        ZStack {
+            if step == 0 {
+                PromptsView(onContinue: { url in
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        withAnimation {
+                            self.audioURL = url
+                            step = 1
+                        }
+                    }
+                }, tabViewStep: $tabViewStep)
+            } else if step == 1 {
+                TimeLapseDemoView(onComplete: {
+                    withAnimation {
+                        step = 2
+                    }
+                })
+            }
+            else if step == 2 {
+                OnboardingPastLoopView(tabViewStep: $tabViewStep, audioURL: audioURL)
+            }
+        }
+    }
+}
 
 struct PromptsView: View {
-    let onContinue: () -> Void
+    let onContinue: (URL?) -> Void
     
-    @State private var currentPromptIndex = 0
-    @State private var isTimerVisible = false
+    
+    @Binding var tabViewStep: Int
+
+    @State var audioURL: URL?
+    @State var isRecording: Bool = false
+    @State private var timeRemaining: Int = 30
+    @State private var textOpacity: CGFloat = 0
+    @State private var recordingTimer: Timer?
     
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
-    private let backgroundColor = Color(hex: "FAFBFC")
-    
     private let prompt = (category: "growth", prompt: "what made you smile today?")
-    
-    @State var isRecording: Bool = false
-    @State private var timeRemaining: Int = 30
-    
-    @State private var recordingTimer: Timer?
     
     @ObservedObject var audioManager = AudioManager.shared
     @ObservedObject var loopManager = LoopManager.shared
+    
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(accentColor.opacity(0.2))
-                    .frame(width: 6, height: 6)
+        ZStack {
+            // Category text at top
+            VStack(spacing: 0) {
+                Text("RECORD YOUR FIRST LOOP")
+                    .font(.system(size: 14, weight: .medium))
+                    .tracking(1.5)
+                    .foregroundColor(textColor.opacity(0.6))
+                    .padding(.top, 32)
                 
-                Text(prompt.category)
-                    .font(.system(size: 16, weight: .light))
-                    .foregroundColor(accentColor.opacity(0.8))
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(
-                Capsule()
-                    .fill(accentColor.opacity(0.1))
-            )
-            .padding(.top, 16)
-            
-            // Progress dots
-            ProgressIndicator(
-                totalSteps: 3,
-                currentStep: currentPromptIndex,
-                accentColor: accentColor
-            )
-            .padding(.vertical, 24)
-
-            Text("record a loop")
-                .font(.system(size: 20, weight: .light))
-                .foregroundColor(textColor.opacity(0.6))
-                .padding(.top, 32)
-            
-            Spacer()
-            
-            // Main prompt
-            VStack(spacing: 32) {
-                Text(prompt.prompt)
-                    .font(.system(size: 44, weight: .ultraLight))
-                    .foregroundColor(textColor)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .transition(.opacity)
-                    .animation(.easeInOut, value: currentPromptIndex)
-            }
-            .padding(.horizontal, 32)
-            .padding(.bottom, 20)
-            
-            if isRecording {
-                HStack(spacing: 12) {
-                    PulsingDot()
-                    Text("\(timeRemaining)s")
-                        .font(.system(size: 26, weight: .ultraLight))
-                        .foregroundColor(accentColor)
-                }
-                .transition(.opacity)
-            }
-            Spacer()
-            
-           
-            VStack (spacing: 12) {
-                recordingButton
-                // Continue button
-                Button(action: {
-                    withAnimation {
-                        onContinue()
+                Spacer()
+                
+                // Main prompt section
+                VStack(spacing: isRecording ? 24 : 24) {
+                    Text(prompt.prompt)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .font(.system(size: 36, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(textColor.opacity(1))
+                    
+                    if isRecording {
+                        HStack(spacing: 12) {
+                            PulsingDot()
+                            Text("\(timeRemaining)")
+                                .font(.system(size: 24, weight: .ultraLight))
+                                .foregroundColor(accentColor)
+                        }
+                        .transition(.opacity)
                     }
-                }) {
-                    Text("skip")
-                        .font(.system(size: 18, weight: .light))
-                        .foregroundColor(.gray)
-                        .underline()
                 }
+                .padding(.horizontal, 32)
+                
+                Spacer()
+                
+                // Recording controls
+                VStack(spacing: 10) {
+                    recordingButton
+                        .padding(.bottom, 8)
+                    
+                    Button(action: {
+                        withAnimation {
+                           tabViewStep = 2
+                        }
+                    }) {
+                        Text("skip")
+                            .font(.system(size: 16, weight: .medium))
+                            .tracking(1)
+                            .foregroundColor(textColor.opacity(0.4))
+                    }
+                }
+                .padding(.bottom, 24)
             }
-            .padding(.bottom, 30)
         }
         .onAppear {
-            isTimerVisible = true
+            withAnimation(.easeIn(duration: 0.8)) {
+                textOpacity = 1
+            }
         }
     }
     
@@ -811,11 +698,13 @@ struct PromptsView: View {
             }
         }) {
             ZStack {
+                // Outer circle with shadow
                 Circle()
                     .fill(Color.white)
-                    .frame(width: 96)
-                    .shadow(color: accentColor.opacity(0.2), radius: 20, x: 0, y: 8)
+                    .frame(width: 88)
+                    .shadow(color: accentColor.opacity(0.15), radius: 16, x: 0, y: 6)
 
+                // Main button circle
                 Circle()
                     .fill(
                         LinearGradient(
@@ -827,36 +716,29 @@ struct PromptsView: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 88)
-                    .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                    .frame(width: 80)
                 
+                // Record/Stop indicator
                 if isRecording {
-                    RoundedRectangle(cornerRadius: 6)
+                    RoundedRectangle(cornerRadius: 4)
                         .fill(Color.white)
-                        .frame(width: 26, height: 26)
+                        .frame(width: 24, height: 24)
                 } else {
                     Circle()
-                        .fill(
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    accentColor,
-                                    accentColor.opacity(0.85)
-                                ]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 74)
+                        .fill(accentColor)
+                        .frame(width: 68)
                 }
-            
+                
+                // Pulsing animation when recording
                 if isRecording {
                     PulsingRing(color: accentColor)
                 }
             }
-            .scaleEffect(isRecording ? 1.08 : 1.0)
+            .scaleEffect(isRecording ? 1.05 : 1.0)
             .animation(.spring(response: 0.35, dampingFraction: 0.6), value: isRecording)
         }
     }
+  
     
     private func toggleRecording() {
         withAnimation(.easeInOut(duration: 0.3)) {
@@ -867,8 +749,8 @@ struct PromptsView: View {
             withAnimation {
                 stopTimer()
                 audioManager.stopRecording()
-                completeRecording()
-                onContinue()
+                let audioURL = completeRecording()
+                onContinue(audioURL)
             }
         } else {
             withAnimation {
@@ -901,7 +783,7 @@ struct PromptsView: View {
         recordingTimer = nil
     }
     
-    private func completeRecording() {
+    private func completeRecording() -> URL? {
         if let audioFileURL = audioManager.getRecordedAudioFile() {
             Task {
                 let loop = await loopManager.addLoop(
@@ -909,12 +791,309 @@ struct PromptsView: View {
                     isVideo: false,
                     prompt: "What made you smile today?", isDailyLoop: true, isFollowUp: false
                 )
+                
+                return audioFileURL
+            }
+        }
+        
+        return nil
+    }
+}
+
+struct OnboardingPastLoopView: View {
+    let accentColor = Color(hex: "A28497")
+    let textColor = Color(hex: "2C3E50")
+
+    
+    @Binding var tabViewStep: Int
+    
+    @State var audioURL: URL?
+    @State private var audioPlayer: AVAudioPlayer?
+    @State private var isPlaying = false
+    @State private var progress: CGFloat = 0
+    @State private var timer: Timer?
+    @Environment(\.dismiss) var dismiss
+    
+    @State private var showInitialPrompt = true
+    @State private var showTranscript = false
+    @State private var contentOpacity: CGFloat = 0
+    @State private var waveformData: [CGFloat] = Array(repeating: 0, count: 60)
+    @State private var showBars = false
+
+    var body: some View {
+        
+        ZStack {
+            if showInitialPrompt {
+                initialPromptView
+            } else {
+                mainContentView
+                    .safeAreaPadding(24)
+            }
+        }
+        .onAppear {
+            setupInitialAnimation()
+            if let audioURL = self.audioURL {
+                setupAudioPlayer(url: audioURL)
+            }
+        }
+        .onDisappear {
+            stopAudioPlayback()
+        }
+    }
+    
+    private var initialPromptView: some View {
+        Text("What made you smile today?")
+            .font(.system(size: 32, weight: .light))
+            .multilineTextAlignment(.center)
+            .foregroundColor(textColor)
+            .padding(.horizontal, 32)
+            .transition(.opacity.combined(with: .scale(scale: 1.05)))
+    }
+    
+    private var mainContentView: some View {
+        ZStack {
+            VStack(spacing: 0) {
+                // Header
+                Text("PAST REFLECTION")
+                    .font(.system(size: 14, weight: .medium))
+                    .tracking(1.5)
+                    .foregroundColor(textColor.opacity(0.6))
+                    .padding(.top, 16)
+        
+                VStack(spacing: 8) {
+                    Text("what made you smile today?")
+                        .font(.system(size: 32, weight: .ultraLight))
+                        .foregroundColor(textColor)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 16)
+                    
+                    Text(formattedDate)
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundColor(textColor.opacity(0.5))
+                }
+                .padding(.horizontal, 32)
+                
+                Spacer()
+                
+                // Waveform
+                WaveformSection(
+                    waveformData: waveformData,
+                    progress: progress,
+                    showBars: true,
+                    accentColor: accentColor
+                )
+                .padding(.horizontal, 24)
+                
+                Spacer()
+                
+                // Audio Controls
+                VStack(spacing: 20) {
+                    // Progress Slider
+                    TimeSlider(
+                        progress: $progress,
+                        duration: audioPlayer?.duration ?? 0,
+                        accentColor: accentColor,
+                        onEditingChanged: { editing in
+                            if !editing {
+                                audioPlayer?.currentTime = (audioPlayer?.duration ?? 0) * Double(progress)
+                            }
+                        }
+                    )
+                    
+                    // Playback Controls
+                    HStack {
+                        Text(timeString(from: progress * (audioPlayer?.duration ?? 0)))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(textColor.opacity(0.5))
+                        
+                        Spacer()
+                        
+                        // Play Button
+                        Button(action: {
+                            if let audioURL = audioURL {
+                                toggleAudioPlayback(audioURL: audioURL)
+                            }
+                        }) {
+                            Circle()
+                                .fill(accentColor)
+                                .frame(width: 72, height: 72)
+                                .shadow(color: accentColor.opacity(0.2), radius: 12, y: 6)
+                                .overlay(
+                                    Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                                        .font(.system(size: 28))
+                                        .foregroundColor(.white)
+                                        .offset(x: isPlaying ? 0 : 2)
+                                )
+                        }
+                        
+                        Spacer()
+                        
+                        Text(timeString(from: audioPlayer?.duration ?? 0))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(textColor.opacity(0.5))
+                    }
+                }
+                .padding(.horizontal, 24)
+                
+                // Continue Button
+                Button(action: {
+                    withAnimation {
+                        tabViewStep = 2
+                    }
+                }) {
+                    HStack(spacing: 12) {
+                        Text("continue")
+                            .font(.system(size: 18, weight: .light))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 16, weight: .light))
+                    }
+                    .frame(height: 56)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                accentColor,
+                                accentColor.opacity(0.9)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .foregroundColor(.white)
+                    .cornerRadius(28)
+                    .shadow(color: accentColor.opacity(0.15), radius: 12, y: 6)
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 32)
+                .padding(.bottom, 24)
+            }
+            .opacity(contentOpacity)
+        }
+
+    }
+    
+    private var controlsSection: some View {
+        VStack(spacing: 24) {
+            TimeSlider(progress: $progress,
+                      duration: audioPlayer?.duration ?? 0,
+                      accentColor: accentColor,
+                      onEditingChanged: { editing in
+                if !editing {
+                    audioPlayer?.currentTime = (audioPlayer?.duration ?? 0) * Double(progress)
+                }
+            })
+            
+            HStack {
+                Text(timeString(from: progress * (audioPlayer?.duration ?? 0)))
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(textColor.opacity(0.6))
+                
+                Spacer()
+                
+                Button(action: {
+                    if let audioURL = self.audioURL {
+                        toggleAudioPlayback(audioURL: audioURL)
+                    }
+                }) {
+                    Circle()
+                        .fill(accentColor)
+                        .frame(width: 64, height: 64)
+                        .shadow(color: accentColor.opacity(0.3), radius: 10, y: 5)
+                        .overlay(
+                            Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(.white)
+                                .offset(x: isPlaying ? 0 : 2)
+                        )
+                }
+                
+                Spacer()
+                
+                Text(timeString(from: audioPlayer?.duration ?? 0))
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(textColor.opacity(0.6))
+            }
+        }
+        .padding(.bottom, 20)
+    }
+    
+
+    private func setupInitialAnimation() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            withAnimation(.easeOut(duration: 0.5)) {
+                showInitialPrompt = false
+                contentOpacity = 1
+                generateWaveFormData()
             }
         }
     }
-
+    
+    private func setupAudioPlayer(url: URL) {
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.prepareToPlay()
+        } catch {
+            print("Error setting up audio player: \(error)")
+        }
+    }
+    
+    private func startProgressTimer() {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
+            if let player = audioPlayer {
+                progress = CGFloat(player.currentTime / player.duration)
+                if player.currentTime >= player.duration {
+                    stopAudioPlayback()
+                }
+            }
+        }
+    }
+    
+    private func toggleAudioPlayback(audioURL: URL) {
+        if isPlaying {
+            stopAudioPlayback()
+        } else {
+            playAudio(audioURL: audioURL)
+        }
+    }
+    
+    private func playAudio(audioURL: URL) {
+        audioPlayer?.play()
+        isPlaying = true
+        startProgressTimer()
+    }
+    
+    private func stopAudioPlayback() {
+        audioPlayer?.stop()
+        audioPlayer?.currentTime = 0
+        isPlaying = false
+        timer?.invalidate()
+        timer = nil
+        progress = 0
+    }
+    
+    private func generateWaveFormData() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            waveformData = (0..<60).map { _ in
+                CGFloat.random(in: 12...64)
+            }
+            showBars = true
+        }
+    }
+    
+    private func timeString(from timeInterval: TimeInterval) -> String {
+        let minutes = Int(timeInterval / 60)
+        let seconds = Int(timeInterval.truncatingRemainder(dividingBy: 60))
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+    
+    private var formattedDate: String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMMM d, yyyy"
+        return dateFormatter.string(from: Date())
+    }
+    
 }
-
 struct OnboardingProgressIndicator: View {
     let totalSteps: Int
     let currentStep: Int
@@ -930,6 +1109,40 @@ struct OnboardingProgressIndicator: View {
         }
     }
 }
+struct OnboardingButton: View {
+    let text: String
+    let icon: String
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Text(text)
+                    .font(.system(size: 18, weight: .light))
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .light))
+            }
+            .frame(height: 56)
+            .frame(maxWidth: .infinity)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(hex: "A28497"),
+                        Color(hex: "A28497").opacity(0.9)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .foregroundColor(.white)
+            .cornerRadius(28)
+            .shadow(color: Color(hex: "A28497").opacity(0.15), radius: 12, y: 6)
+            .padding(.horizontal, 32)
+        }
+        .buttonStyle(ScaleButtonStyle())
+    }
+}
+
 
 
 struct OnboardingInsightsView: View {

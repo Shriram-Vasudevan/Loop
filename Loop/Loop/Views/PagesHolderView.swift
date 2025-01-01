@@ -32,34 +32,72 @@ struct PagesHolderView: View {
                        InsightsView()
                     }
                     
-                    // Bottom bar with proper padding
-                    HStack(spacing: 0) {
-                        ForEach([
-                            (icon: "house", label: "Home", type: PageType.home),
-                            (icon: "book", label: "Journal", type: PageType.journal),
-                            (icon: "chart.bar", label: "Insights", type: PageType.insights),
-                            (icon: "gearshape", label: "Settings", type: PageType.settings)
-                        ], id: \.label) { item in
-                            BottomTabButton(
-                                icon: item.icon,
-                                label: item.label,
-                                isSelected: pageType == item.type,
-                                accentColor: accentColor
-                            ) {
-                                withAnimation(.easeOut(duration: 0.2)) {
-                                    pageType = item.type
+                    ZStack(alignment: .top) {
+                        // Regular tab bar
+                        HStack(spacing: 0) {
+                            // First two items
+                            ForEach([
+                                (icon: "house", label: "Home", type: PageType.home),
+                                (icon: "book", label: "Journal", type: PageType.journal),
+                            ], id: \.label) { item in
+                                BottomTabButton(
+                                    icon: item.icon,
+                                    label: item.label,
+                                    isSelected: pageType == item.type,
+                                    accentColor: accentColor
+                                ) {
+                                    withAnimation(.easeOut(duration: 0.2)) {
+                                        pageType = item.type
+                                    }
+                                }
+                            }
+                            
+                            // Spacer for plus button
+                            Spacer()
+                                .frame(maxWidth: .infinity)
+                        
+                            
+                            // Last two items
+                            ForEach([
+                                (icon: "chart.bar", label: "Insights", type: PageType.insights),
+                                (icon: "gearshape", label: "Settings", type: PageType.settings)
+                            ], id: \.label) { item in
+                                BottomTabButton(
+                                    icon: item.icon,
+                                    label: item.label,
+                                    isSelected: pageType == item.type,
+                                    accentColor: accentColor
+                                ) {
+                                    withAnimation(.easeOut(duration: 0.2)) {
+                                        pageType = item.type
+                                    }
                                 }
                             }
                         }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
+
+                        Button {
+                            // Add your action here
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 22, weight: .medium))
+                                .foregroundColor(.white)
+                                .frame(width: 62, height: 62)
+                                .background(
+                                    Circle()
+                                        .fill(accentColor)
+                                        .shadow(color: accentColor.opacity(0.25), radius: 8, x: 0, y: 4)
+                                )
+                        }
+                        .offset(y: -8) // Makes it stick out above the tab bar
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 12)
-                    .padding(.bottom, 8) // Base padding
-                    .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 16) } // Additional safe area padding
+                    .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 16) }
                     .background(
                         backgroundColor.opacity(0.95)
                             .ignoresSafeArea(edges: .bottom)
                     )
+                    
                 }
             }
             .edgesIgnoringSafeArea(.bottom)

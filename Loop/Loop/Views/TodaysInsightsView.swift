@@ -34,7 +34,7 @@ struct TodaysInsightsView: View {
                     case .noLoops:
                         ProgressStateView(
                             icon: "mic.circle.fill",
-                            title: "Complete Your Daily Reflection",
+                            title: "COMPLETE YOUR DAILY REFLECTION",
                             description: "Record all three of your daily loops to get insights",
                             progress: 0,
                             accentColor: accentColor,
@@ -44,7 +44,7 @@ struct TodaysInsightsView: View {
                     case .partial(let count):
                         ProgressStateView(
                             icon: "waveform.circle.fill",
-                            title: "Recording in Progress",
+                            title: "RECORDING IN PROGRESS",
                             description: "Complete \(3 - count) more loops to see your insights",
                             progress: Float(count) / 3.0,
                             accentColor: accentColor,
@@ -54,7 +54,7 @@ struct TodaysInsightsView: View {
                     case .analyzing:
                         ProgressStateView(
                             icon: "sparkles.circle.fill",
-                            title: "Analyzing Your Reflections",
+                            title: "ANALYZING YOUR RFLECTION",
                             description: "Creating personalized insights from your loops",
                             isLoading: true,
                             accentColor: accentColor,
@@ -90,7 +90,7 @@ struct TodaysInsightsView: View {
                     case .transcribing:
                         ProgressStateView(
                             icon: "sparkles.circle.fill",
-                            title: "Transcribing your responses",
+                            title: "TRANSCRIBING YOUR RESPONSES",
                             description: "Creating personalized insights from your loops",
                             isLoading: true,
                             accentColor: accentColor,
@@ -99,7 +99,7 @@ struct TodaysInsightsView: View {
                     case .analyzing_ai:
                         ProgressStateView(
                             icon: "sparkles.circle.fill",
-                            title: "Performing AI Analysis",
+                            title: "PERFORMING AI ANALYSIS",
                             description: "Creating personalized insights from your loops",
                             isLoading: true,
                             accentColor: accentColor,

@@ -19,49 +19,37 @@ struct ProgressStateView: View {
     @State private var rotation: Double = 0
     
     var body: some View {
-        VStack(spacing: 24) {
-            // Icon with optional rotation animation
-            Image(systemName: icon)
-                .font(.system(size: 48))
-                .foregroundColor(accentColor)
-                .rotationEffect(.degrees(isLoading ? rotation : 0))
-                .onAppear {
-                    if isLoading {
-                        withAnimation(Animation.linear(duration: 2).repeatForever(autoreverses: false)) {
-                            rotation = 360
-                        }
-                    }
-                }
+        VStack(spacing: 20) {
+            WavePattern()
+                .fill(accentColor.opacity(0.7))
+                .frame(height: 60)
             
             VStack(spacing: 8) {
                 Text(title)
-                    .font(.system(size: 24, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
+                    .tracking(1.5)
+                    .foregroundColor(textColor.opacity(0.6))
+                
+                Text(description)
+                    .font(.system(size: 17))
                     .foregroundColor(textColor)
                     .multilineTextAlignment(.center)
                 
-                Text(description)
-                    .font(.system(size: 16))
-                    .foregroundColor(textColor.opacity(0.7))
-                    .multilineTextAlignment(.center)
-            }
-            
-            if let progress = progress {
-                ProgressBar(value: progress, accentColor: accentColor)
-                    .frame(height: 4)
-                    .frame(maxWidth: 200)
-            } else if isLoading {
-                ProgressView()
-                    .tint(accentColor)
-                    .scaleEffect(1.2)
+//                Image(systemName: icon)
+//                    .font(.system(size: 48))
+//                    .foregroundColor(accentColor)
+//                    .rotationEffect(.degrees(isLoading ? rotation : 0))
+//                    .onAppear {
+//                        if isLoading {
+//                            withAnimation(Animation.linear(duration: 2).repeatForever(autoreverses: false)) {
+//                                rotation = 360
+//                            }
+//                        }
+//                    }
+//
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(32)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-        )
-        .padding(.top, 12)
+        .frame(height: 150)
     }
 }
 
@@ -90,7 +78,7 @@ struct ErrorStateView: View {
     let textColor: Color
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 48))
                 .foregroundColor(.orange)
@@ -103,24 +91,8 @@ struct ErrorStateView: View {
                 .font(.system(size: 16))
                 .foregroundColor(textColor.opacity(0.7))
                 .multilineTextAlignment(.center)
-            
-            Button(action: {
-                // Add retry logic here
-            }) {
-                Text("Try Again")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(accentColor)
-                    .cornerRadius(8)
-            }
         }
         .padding(32)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-        )
     }
     
     private func getErrorMessage() -> String {

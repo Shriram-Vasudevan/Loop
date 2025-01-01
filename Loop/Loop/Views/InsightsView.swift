@@ -24,9 +24,6 @@ struct InsightsView: View {
             Color(hex: "F5F5F5")
                 .ignoresSafeArea()
             VStack(spacing: 0) {
-                headerView
-                    .padding(.top, 45)
-                
                 tabView
                     .padding(.top, 24)
                 
@@ -36,46 +33,68 @@ struct InsightsView: View {
         }
     }
     
-    private var headerView: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("insights")
-                .font(.custom("PPNeueMontreal-Medium", size: 37))
-                .foregroundColor(textColor)
-            
-            Text("your reflection patterns")
-                .font(.system(size: 18, weight: .regular))
-                .foregroundColor(accentColor)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 24)
-    }
-    
     private var tabView: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 32) {
-                ForEach(["TODAY", "TRENDS"], id: \.self) { tab in
-                    Button {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            selectedTab = tab.lowercased()
-                        }
-                    } label: {
-                        VStack(spacing: 8) {
-                            Text(tab)
-                                .font(.system(size: 14, weight: .medium))
-                                .tracking(1.5)
-                                .foregroundColor(selectedTab == tab.lowercased() ? textColor : textColor.opacity(0.5))
-                            
-                            Rectangle()
-                                .fill(selectedTab == tab.lowercased() ? accentColor : Color.clear)
-                                .frame(height: 2)
-                                .cornerRadius(1)
-                        }
-                    }
+        Menu {
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    selectedTab = "today"
+                }
+            } label: {
+                HStack {
+                    Text("Today")
+                        .font(.system(size: 14, weight: .medium))
+                        .tracking(1.5)
                 }
             }
-            .padding(.horizontal, 24)
-
+            
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    selectedTab = "trends"
+                }
+            } label: {
+                HStack {
+                    Text("Trends")
+                        .font(.system(size: 14, weight: .medium))
+                        .tracking(1.5)
+                }
+            }
+        } label: {
+            ZStack {
+                VStack(alignment: .center, spacing: 4) {
+                    Text(selectedTab == "today" ? "TODAY" : "TRENDS")
+                        .font(.system(size: 13, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(textColor.opacity(0.6))
+                    
+                    Text(selectedTab == "today" ?
+                         formattedTodayDate() : "Dec 23 - Dec 30")
+                        .font(.system(size: 12))
+                        .foregroundColor(textColor.opacity(0.6))
+                }
+                
+                HStack {
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(textColor.opacity(0.6))
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(.white)
+            )
         }
+        .padding(.horizontal, 24)
+    }
+
+    private func formattedTodayDate() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter.string(from: Date())
     }
     
     @ViewBuilder

@@ -135,10 +135,14 @@ struct TrendsView: View {
     
     private func correlations() -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("correlations")
-                .font(.custom("PPNeueMontreal-Medium", size: 28))
-                .foregroundColor(textColor)
-                .padding(.bottom, 8)
+            HStack {
+                Text("correlations")
+                    .font(.custom("PPNeueMontreal-Medium", size: 28))
+                    .foregroundColor(textColor)
+                    .padding(.bottom, 8)
+                
+                Spacer()
+            }
             
             
             if let fastestDay = quantTrendsManager.getFastestSpeakingDay() {

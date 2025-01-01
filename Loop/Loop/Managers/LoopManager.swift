@@ -674,7 +674,6 @@ class LoopManager: ObservableObject {
             isFollowUp: isFollowUp
         )
 
-        // Add the loop to loopsByDate (check for duplicates)
         let loopDate = Calendar.current.startOfDay(for: timestamp)
         await MainActor.run {
             if var existingLoops = loopsByDate[loopDate] {
@@ -701,13 +700,17 @@ class LoopManager: ObservableObject {
         } else {
             await localStorage.addLoop(loop: loop)
         }
+        
+        if recentDates.isEmpty {
+            fetchRecentDates(limit: 10, completion: {})
+        }
 
         return (loop, transcript)
     }
 
 
     
-    func fetchRecentDates(limit: Int = 6, completion: @escaping () -> Void) {
+    func fetchRecentDates(limit: Int = 10, completion: @escaping () -> Void) {
         let group = DispatchGroup()
         let dateQueue = DispatchQueue(label: "com.loop.dateCollection")
         var allDates = Set<Date>()
@@ -744,7 +747,7 @@ class LoopManager: ObservableObject {
         }
     }
     
-    func fetchNextPageOfDates(limit: Int = 6, completion: @escaping () -> Void) {
+    func fetchNextPageOfDates(limit: Int = 10, completion: @escaping () -> Void) {
         guard let lastFetchedDate = recentDates.last else {
             completion()
             return
