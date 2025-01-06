@@ -98,9 +98,9 @@ struct RecordFreeResponseView: View {
                     }
                     
                     Spacer()
-                    
-                    Text(formattedTodayDate())
-                        .font(.system(size: 17))
+//                    
+//                    Text(formattedTodayDate())
+//                        .font(.system(size: 17))
                 }
             }
 
@@ -111,7 +111,7 @@ struct RecordFreeResponseView: View {
     private var promptArea: some View {
         VStack(spacing: isRecording ? 20 : 44) {
             Text(prompt)
-                .font(.system(size: 44, weight: .ultraLight))
+                font(.system(size: 28, weight: .medium))
                 .foregroundColor(textColor)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)

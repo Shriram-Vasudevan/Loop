@@ -102,7 +102,7 @@ struct PagesHolderView: View {
             .edgesIgnoringSafeArea(.bottom)
             .persistentSystemOverlays(.hidden)
             .fullScreenCover(isPresented: $showFreeResponseButton) {
-                RecordFreeResponseView(prompt: "Share Absolutely Anything")
+                RecordFreeResponseView(prompt: "What is on your mind right now?")
             }
         }
     }

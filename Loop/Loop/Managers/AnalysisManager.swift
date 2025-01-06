@@ -517,7 +517,7 @@ class AnalysisManager: ObservableObject {
         
     func saveDailyEmotion(emotion: String) {
         do {
-            scheduleManager.shared.emotions[Date()] = emotion
+            scheduleManager.emotions[Date()] = emotion
             guard let entityDescription = NSEntityDescription.entity(forEntityName: "DailyEmotionEntity", in: context) else { return }
             
             let entity = NSManagedObject(entity: entityDescription, insertInto: context)
