@@ -179,7 +179,7 @@ struct DecorativeBackground: View {
                 width: width,
                 height: height
             ), cornerRadius: 20)
-            context.fill(path, with: .color(Color(hex: "A28497").opacity(0.03)))
+            context.fill(path, with: .color(Color(hex: "A28497").opacity(0.07)))
             
             path = Path(roundedRect: CGRect(
                 x: size.width - width + 20,
@@ -187,7 +187,7 @@ struct DecorativeBackground: View {
                 width: width,
                 height: height
             ), cornerRadius: 20)
-            context.fill(path, with: .color(Color(hex: "A28497").opacity(0.03)))
+            context.fill(path, with: .color(Color(hex: "A28497").opacity(0.07)))
             
 
             path = Path(roundedRect: CGRect(
@@ -196,7 +196,7 @@ struct DecorativeBackground: View {
                 width: width/2,
                 height: height/2
             ), cornerRadius: 15)
-            context.fill(path, with: .color(Color(hex: "A28497").opacity(0.02)))
+            context.fill(path, with: .color(Color(hex: "A28497").opacity(0.04)))
         }
     }
 }

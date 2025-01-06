@@ -16,9 +16,8 @@ struct LoopApp: App {
     
     var body: some Scene {
         WindowGroup {
-//            AppPromo()
              OpeningViewsContainer()
-//            ViewPastLoopView(loop: Loop(id: "vvevwevwe", data: CKAsset(fileURL: URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("sampleFile.dat")), timestamp: Calendar.current.date(from: DateComponents(year: 2024, month: 9, day: 27))!, promptText: "What's a goal you're working towards?", freeResponse: false, isVideo: false))
+
         }
         
     }

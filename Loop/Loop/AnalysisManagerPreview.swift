@@ -8,16 +8,19 @@
 import Foundation
 import SwiftUI
 
+import Foundation
+import SwiftUI
+
 #if DEBUG
 extension AnalysisManager {
     static var preview: AnalysisManager {
         let manager = AnalysisManager()
         
-        // Use a fixed date for previews to ensure consistency
+        // Use a fixed date for previews
         let fixedDate = Calendar.current.date(from: DateComponents(year: 2024, month: 12, day: 27))!
         
         let mockLoopAnalysis = LoopAnalysis(
-            id: UUID().uuidString, // Use UUID for unique IDs
+            id: UUID().uuidString,
             timestamp: fixedDate,
             promptText: "What's on your mind today?",
             category: "Daily Reflection",
@@ -33,29 +36,37 @@ extension AnalysisManager {
         
         let mockAIAnalysis = AIAnalysisResult(
             emotion: EmotionAnalysis(
-                primary: "Contemplative",
-                intensity: 8,
-                tone: "Balanced",
-                description: "Showing thoughtful reflection and careful consideration of experiences."
+                emotion: "thoughtful",
+                description: "You are taking time to carefully consider and reflect on your experiences"
             ),
-            timeFocus: TimeFocus(
-                orientation: .future,
-                description: "Strong emphasis on future planning while maintaining present awareness."
+            expression: ExpressionStyle(
+                fillerWords: "minimal",
+                pattern: "analytical",
+                note: "You express yourself with clarity and precision"
             ),
-            focus: FocusAnalysis(
-                pattern: "Growth-Oriented",
-                description: "Balanced self-reflection focusing on learning and development."
+            social: SocialLandscape(
+                focus: "balanced",
+                context: "personal",
+                connections: "You maintain a healthy balance between personal growth and relationships with others"
             ),
-            phrases: SignificantPhrases(
-                insightPhrases: ["deeper understanding emerged", "patterns became clear"],
-                reflectionPhrases: ["moment of realization", "perspective shift"],
-                decisionPhrases: ["commit to daily practice"],
-                description: "Notable focus on personal growth and systematic improvement."
+            nextSteps: NextSteps(
+                actions: [
+                    "Schedule time for meditation practice",
+                    "Write down three goals for the week",
+                    "Reach out to mentor for guidance"
+                ],
+                hasActions: true
+            ),
+            challenges: Challenges(
+                items: [
+                    "Finding balance between work and personal time",
+                    "Maintaining consistent meditation practice"
+                ],
+                hasChallenges: true
             ),
             followUp: FollowUp(
                 question: "How might you apply today's insights to tomorrow's challenges?",
-                context: "Building on demonstrated growth mindset",
-                focus: "Future Application"
+                purpose: "To help you build on your current momentum and growth mindset"
             )
         )
         
@@ -76,6 +87,7 @@ extension AnalysisManager {
         )
         
         manager.currentDailyAnalysis = mockDailyAnalysis
+        manager.analysisState = .completed(mockDailyAnalysis)
         return manager
     }
 }
@@ -93,7 +105,6 @@ extension LoopAnalysis {
     }
 }
 
-
 // Preview modifier
 struct PreviewAnalysisManager: ViewModifier {
     let manager: AnalysisManager
@@ -109,5 +120,4 @@ extension View {
         modifier(PreviewAnalysisManager(manager: .preview))
     }
 }
-
 #endif

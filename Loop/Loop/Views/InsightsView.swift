@@ -97,6 +97,12 @@ struct InsightsView: View {
         return formatter.string(from: Date())
     }
     
+    private func currentYear() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "YYYY"
+        return formatter.string(from: Date())
+    }
+    
     @ViewBuilder
     private var contentView: some View {
         if selectedTab == "today" {

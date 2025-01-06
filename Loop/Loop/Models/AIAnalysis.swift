@@ -7,48 +7,43 @@
 
 import Foundation
 
-enum TimeOrientation: String, Codable {
-    case past
-    case present
-    case future
-    case mixed
-}
-
 struct EmotionAnalysis: Codable {
-    let primary: String
-    let intensity: Int
-    let tone: String
+    let emotion: String
     let description: String
 }
 
-struct TimeFocus: Codable {
-    let orientation: TimeOrientation
-    let description: String
+struct ExpressionStyle: Codable {
+    let fillerWords: String // minimal/moderate/frequent
+    let pattern: String // analytical, practical, emotional, action-focused, reflective
+    let note: String
 }
 
-struct FocusAnalysis: Codable {
-    let pattern: String
-    let description: String 
+struct SocialLandscape: Codable {
+    let focus: String // self-centered/relationship-focused/balanced
+    let context: String // work/personal/mixed
+    let connections: String
 }
 
-struct SignificantPhrases: Codable {
-    let insightPhrases: [String]
-    let reflectionPhrases: [String]
-    let decisionPhrases: [String]
-    let description: String
+struct NextSteps: Codable {
+    let actions: [String]
+    let hasActions: Bool
 }
 
-struct FollowUp: Codable, Identifiable {
-    let id: String = UUID().uuidString
+struct Challenges: Codable {
+    let items: [String]
+    let hasChallenges: Bool
+}
+
+struct FollowUp: Codable {
     let question: String
-    let context: String
-    let focus: String
+    let purpose: String
 }
 
 struct AIAnalysisResult: Codable {
     let emotion: EmotionAnalysis
-    let timeFocus: TimeFocus
-    let focus: FocusAnalysis
-    let phrases: SignificantPhrases
+    let expression: ExpressionStyle
+    let social: SocialLandscape
+    let nextSteps: NextSteps
+    let challenges: Challenges
     let followUp: FollowUp
 }

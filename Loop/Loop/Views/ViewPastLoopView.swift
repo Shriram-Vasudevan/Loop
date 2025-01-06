@@ -42,8 +42,8 @@ struct ViewPastLoopView: View {
             }
             .navigationDestination(isPresented: $showTranscript) {
                 TranscriptView(
-                    prompt: loop.promptText, transcript: loop.transcript ?? "",
-                    accentColor: accentColor,
+                    id: loop.id, prompt: loop.promptText, transcript: loop.transcript ?? "",
+                    accentColor: accentColor, editedTranscript: loop.transcript ?? "",
                     isPresented: $showTranscript
                 )
             }
@@ -441,11 +441,14 @@ struct TranscriptButton: View {
 }
 
 struct TranscriptView: View {
+    let id: String
     let prompt: String
     let transcript: String
     let accentColor: Color
     let textColor = Color(hex: "2C3E50")
     
+    @State var editedTranscript: String
+    @State private var isEditing = false
     @Binding var isPresented: Bool
     @Environment(\.dismiss) var dismiss
     
@@ -483,10 +486,19 @@ struct TranscriptView: View {
                     
                     Spacer()
                     
-                    // Empty view for symmetry
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18))
-                        .opacity(0)
+                    Button(action: {
+                        if isEditing {
+                            // Save changes
+                            Task {
+                                try? await LoopManager.shared.editTranscript(forLoopId: id, newTranscript: editedTranscript)
+                            }
+                        }
+                        isEditing.toggle()
+                    }) {
+                        Text(isEditing ? "Save" : "Edit")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(accentColor)
+                    }
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 20)
@@ -503,11 +515,19 @@ struct TranscriptView: View {
                             .padding(.top, 15)
                         
                         // Transcript
-                        Text(transcript)
-                            .font(.system(size: 18, weight: .regular))
-                            .foregroundColor(textColor.opacity(0.8))
-                            .lineSpacing(8)
-                            .multilineTextAlignment(.leading)
+                        if isEditing {
+                            TextEditor(text: $editedTranscript)
+                                .font(.system(size: 18, weight: .regular))
+                                .foregroundColor(textColor.opacity(0.8))
+                                .frame(minHeight: 200)
+                                .padding(.horizontal, -4)
+                        } else {
+                            Text(transcript)
+                                .font(.system(size: 18, weight: .regular))
+                                .foregroundColor(textColor.opacity(0.8))
+                                .lineSpacing(8)
+                                .multilineTextAlignment(.leading)
+                        }
                     }
                     .padding(.horizontal, 24)
                     .padding(.top, 20)
@@ -516,6 +536,9 @@ struct TranscriptView: View {
             }
         }
         .navigationBarBackButtonHidden()
+        .onAppear {
+            editedTranscript = transcript
+        }
     }
 }
 

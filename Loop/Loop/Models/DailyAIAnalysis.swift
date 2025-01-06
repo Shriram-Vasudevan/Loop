@@ -9,7 +9,7 @@ import Foundation
 
 struct DailyAIAnalysis: Codable {
     let feeling: String
-    let focus: String
-    let time: String
+    let expression: String
+    let social: String
     let date: Date
 }

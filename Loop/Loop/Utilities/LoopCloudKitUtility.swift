@@ -586,6 +586,26 @@ class LoopCloudKitUtility {
         return loops
     }
     
+    static func findAndUpdateTranscript(forLoopId id: String, newTranscript: String) async throws -> Bool {
+       let privateDB = container.privateCloudDatabase
+       
+       let predicate = NSPredicate(format: "ID == %@", id)
+       let query = CKQuery(recordType: "LoopRecord", predicate: predicate)
+       
+       let (matchResults, _) = try await privateDB.records(matching: query, desiredKeys: ["ID"])
+       
+       guard let firstMatch = matchResults.first else {
+           return false
+       }
+       
+       let record = try firstMatch.1.get()
+       record["Transcript"] = newTranscript as CKRecordValue
+       
+       _ = try await privateDB.save(record)
+       print("☁️ Updated transcript in CloudKit")
+       return true
+   }
+    
 }
 enum FetchResult {
     case success(Loop)

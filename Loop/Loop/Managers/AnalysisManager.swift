@@ -11,11 +11,13 @@ import Speech
 import NaturalLanguage
 import Combine
 import CoreData
-
+import SwiftUI
 
 class AnalysisManager: ObservableObject {
     static let shared = AnalysisManager()
 
+    @ObservedObject var scheduleManager = ScheduleManager.shared
+    
     @Published var currentDailyAnalysis: DailyAnalysis?
     @Published var todaysLoops: [LoopAnalysis] = []
     
@@ -39,13 +41,14 @@ class AnalysisManager: ObservableObject {
     
     @Published private(set) var isFollowUpCompletedToday: Bool = false
     
-    @Published private(set) var analysisState: AnalysisState = .noLoops
+    @Published var analysisState: AnalysisState = .noLoops
     
     @Published var weeklyAnalyses: [WeeklyAnalysis] = []
     @Published var isLoadingWeeklyAnalysis = false
     
     private let defaults = UserDefaults.standard
     private let weeklyAnalysisCacheKey = "WeeklyAnalyses"
+    
     
     lazy var persistentContainer: NSPersistentContainer = {
         let container = NSPersistentContainer(name: "LoopData")
@@ -202,6 +205,7 @@ class AnalysisManager: ObservableObject {
             }
             
             print("💾 Saving analysis results")
+            saveDailyEmotion(emotion: aiAnalysis.emotion.emotion)
             saveDailyAIAnalysis(aiAnalysis)
             QuantitativeTrendsManager.shared.saveDailyStats(dailyAnalysis)
             saveAnalysisCache()
@@ -255,7 +259,6 @@ class AnalysisManager: ObservableObject {
             "cacheDate": Date()
         ]
         
-        // Debug current state
         print("Current state:")
         print("- Daily Analysis exists: \(currentDailyAnalysis != nil)")
         print("- Today's Loops count: \(todaysLoops.count)")
@@ -341,16 +344,13 @@ class AnalysisManager: ObservableObject {
         let calendar = Calendar.current
         let today = Date()
         
-        // Since we're running this on Sunday, get the previous Monday
         guard let monday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)),
               let sunday = calendar.date(byAdding: .day, value: 6, to: monday) else {
-            // Fallback just in case - get last 7 days
             let end = calendar.startOfDay(for: today)
             let start = calendar.date(byAdding: .day, value: -6, to: end)!
             return (start, end)
         }
         
-        // Get start and end of those days
         let weekStart = calendar.startOfDay(for: monday)
         let weekEnd = calendar.date(byAdding: .day, value: 1, to: sunday)!
         
@@ -515,6 +515,22 @@ class AnalysisManager: ObservableObject {
         AITrendsManager.shared.saveDailyAnalysis(analysis, date: Date())
     }
         
+    func saveDailyEmotion(emotion: String) {
+        do {
+            scheduleManager.shared.emotions[Date()] = emotion
+            guard let entityDescription = NSEntityDescription.entity(forEntityName: "DailyEmotionEntity", in: context) else { return }
+            
+            let entity = NSManagedObject(entity: entityDescription, insertInto: context)
+            
+            entity.setValue(emotion, forKey: "emotion")
+            entity.setValue(Date(), forKey: "date")
+            
+            try context.save()
+        } catch {
+            print(error.localizedDescription)
+            return
+        }
+    }
     
     func getWeekIdentifier(_ analysis: WeeklyAnalysis) -> String {
         let calendar = Calendar.current
@@ -530,7 +546,6 @@ class AnalysisManager: ObservableObject {
         formatter.dateFormat = "MMM d"
         return "Week \(weekNumber) in Review (\(formatter.string(from: analysis.weekStartDate)) - \(formatter.string(from: analysis.weekEndDate)))"
     }
-    
 }
     
 

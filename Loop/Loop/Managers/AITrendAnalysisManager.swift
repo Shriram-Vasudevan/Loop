@@ -55,17 +55,15 @@ class AITrendsManager: ObservableObject {
                 entity = NSManagedObject(entity: entityDescription, insertInto: context)
             }
             
-            print("the focus pattern \(aiAnalysis.focus.pattern)")
-            // Set values
+            print("the focus pattern \(aiAnalysis.expression.pattern)")
             entity.setValue(date, forKey: "date")
-            entity.setValue(aiAnalysis.emotion.primary, forKey: "feeling")
-            entity.setValue(aiAnalysis.focus.pattern, forKey: "focus")
-            entity.setValue(aiAnalysis.timeFocus.orientation.rawValue, forKey: "time")
+            entity.setValue(aiAnalysis.emotion.emotion, forKey: "feeling")
+            entity.setValue(aiAnalysis.expression.pattern, forKey: "expression")
+            entity.setValue(aiAnalysis.social.connections, forKey: "social")
             
             try context.save()
             print("✅ Successfully saved AI analysis")
-            
-            // Refresh analyses after save
+
             Task {
                 await fetchCurrentWeekAnalyses()
                 await fetchCurrentMonthAnalyses()
@@ -80,15 +78,15 @@ class AITrendsManager: ObservableObject {
     private func convertToAnalysis(from entity: NSManagedObject) -> DailyAIAnalysis? {
         guard let date = entity.value(forKey: "date") as? Date,
               let feeling = entity.value(forKey: "feeling") as? String,
-              let focus = entity.value(forKey: "focus") as? String,
-              let time = entity.value(forKey: "time") as? String else {
+              let expression = entity.value(forKey: "expression") as? String,
+              let social = entity.value(forKey: "social") as? String else {
             return nil
         }
         
         return DailyAIAnalysis(
             feeling: feeling,
-            focus: focus,
-            time: time,
+            expression: expression,
+            social: social,
             date: date
         )
     }
@@ -174,19 +172,19 @@ class AITrendsManager: ObservableObject {
     
     private func calculateFrequencies(from analyses: [DailyAIAnalysis]) -> TimeframeFrequencies {
         var emotionCounts: [String: Int] = [:]
-        var focusCounts: [String: Int] = [:]
-        var timeCounts: [String: Int] = [:]
+        var expressionCounts: [String: Int] = [:]
+        var socialCounts: [String: Int] = [:]
         
         let totalCount = analyses.count
         
         for analysis in analyses {
             let emotion = analysis.feeling.lowercased()
-            let focus = analysis.focus.lowercased()
-            let time = analysis.time.lowercased()
+            let expression = analysis.expression.lowercased()
+            let social = analysis.social.lowercased()
             
             emotionCounts[emotion, default: 0] += 1
-            focusCounts[focus, default: 0] += 1
-            timeCounts[time, default: 0] += 1
+            expressionCounts[expression, default: 0] += 1
+            socialCounts[social, default: 0] += 1
         }
         
         // Convert to FrequencyResults and sort
@@ -202,8 +200,8 @@ class AITrendsManager: ObservableObject {
         
         return TimeframeFrequencies(
             topEmotions: createFrequencyResults(emotionCounts),
-            topFocuses: createFrequencyResults(focusCounts),
-            topTimeOrientations: createFrequencyResults(timeCounts)
+            topExpressionPatterns: createFrequencyResults(expressionCounts),
+            topSocial: createFrequencyResults(socialCounts)
         )
     }
     
@@ -224,25 +222,24 @@ class AITrendsManager: ObservableObject {
     }
     
     // MARK: - Convenience Methods
-    func getMostFrequent(from frequencies: TimeframeFrequencies, count: Int = 3) -> (emotions: [FrequencyResult], focuses: [FrequencyResult], times: [FrequencyResult]) {
+    func getMostFrequent(from frequencies: TimeframeFrequencies, count: Int = 3) -> (emotions: [FrequencyResult], expressionPatterns: [FrequencyResult], social: [FrequencyResult]) {
         return (
             emotions: Array(frequencies.topEmotions.prefix(count)),
-            focuses: Array(frequencies.topFocuses.prefix(count)),
-            times: Array(frequencies.topTimeOrientations.prefix(count))
+            expressionPatterns: Array(frequencies.topExpressionPatterns.prefix(count)),
+            social: Array(frequencies.topSocial.prefix(count))
         )
     }
     
-    // Get single most common for quick access
     func getMostCommonEmotion(timeframe: TimeframeFrequencies) -> FrequencyResult? {
         timeframe.topEmotions.first
     }
     
-    func getMostCommonFocus(timeframe: TimeframeFrequencies) -> FrequencyResult? {
-        timeframe.topFocuses.first
+    func getMostCommonExpression(timeframe: TimeframeFrequencies) -> FrequencyResult? {
+        timeframe.topExpressionPatterns.first
     }
     
-    func getMostCommonTimeOrientation(timeframe: TimeframeFrequencies) -> FrequencyResult? {
-        timeframe.topTimeOrientations.first
+    func getMostCommonSocial(timeframe: TimeframeFrequencies) -> FrequencyResult? {
+        timeframe.topSocial.first
     }
     
     func getEmotionForDate(_ date: Date) -> String? {

@@ -12,6 +12,7 @@ struct HomeView: View {
     @Binding var pageType: PageType
     
     @ObservedObject var loopManager = LoopManager.shared
+    @ObservedObject  var scheduleManager = ScheduleManager.shared
     @State private var showingRecordLoopsView = false
     @State private var showPastLoopSheet = false
     @State private var selectedLoop: Loop?
@@ -21,6 +22,7 @@ struct HomeView: View {
     @State private var featuredPrompt: FeaturedPrompt?
     
     @State var navigateToAllThemesView: Bool = false
+    @State var navigateToSettingsView: Bool = false
     
     @State private var showUnlockReminder = true
     @State private var distinctDays: Int = 0
@@ -31,7 +33,6 @@ struct HomeView: View {
         }))
     }
 
-    // Maintain existing color scheme
     let accentColor = Color(hex: "A28497")
     let backgroundColor = Color(hex: "FAFBFC")
     let textColor = Color(hex: "2C3E50")
@@ -45,6 +46,19 @@ struct HomeView: View {
         }
     }
     
+    let sampleData: [Date: String] = [
+        Calendar.current.startOfDay(for: Date()): "Joy",
+        Calendar.current.startOfDay(for: Calendar.current.date(byAdding: .day, value: -1, to: Date())!): "Calm",
+        Calendar.current.startOfDay(for: Calendar.current.date(byAdding: .day, value: 1, to: Date())!): "Peace"
+    ]
+    
+    // Sample color mappings based on frequency
+    let sampleColors: [String: Color] = [
+        "Joy": Color(hex: "A28497"),
+        "Calm": Color(hex: "B5D5E2"),
+        "Peace": Color(hex: "C2E5C9")
+    ]
+    
     var body: some View {
         ZStack {
             FlowingBackground(color: accentColor)
@@ -53,18 +67,15 @@ struct HomeView: View {
 //
             ScrollView {
                 VStack(spacing: 32) {
-                    // Welcome header with subtle animation
-                    welcomeHeader
-                        .padding(.top, 45)
-                        .padding(.horizontal, 24)
-                    
-//                        // Keep your original schedule bar if needed
-//                        ScheduleBar(
-//                            weekSchedule: loopManager.weekSchedule,
-//                            accentColor: accentColor
-//                        )
-//                        .padding(.horizontal, 24)
-                    
+                    VStack (spacing: 12) {
+                        welcomeHeader
+                            .padding(.top, 22)
+                            .padding(.horizontal, 24)
+
+                        EmotionSchedulePreviewView()
+                          
+
+                    }
                     recordingInterface
                         .padding(.horizontal, 24)
 
@@ -78,7 +89,7 @@ struct HomeView: View {
 //                        .padding(.horizontal, 24)
 //                        .padding(.top, 6)
                     
-                    notificationsSection
+//                    notificationsSection
                     
                    
                     
@@ -120,49 +131,65 @@ struct HomeView: View {
         .navigationDestination(isPresented: $navigateToAllThemesView) {
             AllThemesView()
         }
+        .navigationDestination(isPresented: $navigateToSettingsView) {
+            SettingsView()
+        }
     }
     
     // MARK: - Header Section
     private var welcomeHeader: some View {
-        HStack(alignment: .bottom, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-//                    Text("December 24th")
-//                        .font(.system(size: 35, weight: .medium))
-//                        .foregroundColor(textColor)
-                
-                Text(formatDate())
-                    .font(.custom("PPNeueMontreal-Medium", size: 37))
-
-                
-                Text("time to reflect")
-                    .font(.system(size: 18, weight: .regular))
-                    .foregroundColor(accentColor)
-            }
+        ZStack {
+            Text(formatDate())
+                .font(.custom("PPNeueMontreal-Medium", size: 20))
             
-            Spacer()
-//
-//                // Daily progress indicator
-//                if let currentStreak = loopManager.currentStreak?.currentStreak {
-//                    HStack(spacing: 8) {
-//                        Text("\(currentStreak)")
-//                            .font(.system(size: 20, weight: .medium))
-//                            .foregroundColor(accentColor)
-//
-//                        Image(systemName: "flame.fill")
-//                            .foregroundColor(accentColor)
-//                            .font(.system(size: 16))
-//                    }
-//                    .padding(.horizontal, 16)
-//                    .padding(.vertical, 8)
-//                    .background(
-//                        RoundedRectangle(cornerRadius: 12)
-//                            .fill(accentColor.opacity(0.08))
-//                    )
-//                    .overlay(
-//                        RoundedRectangle(cornerRadius: 12)
-//                            .stroke(accentColor.opacity(0.1), lineWidth: 1)
-//                    )
-//                }
+            HStack(alignment: .bottom, spacing: 16) {
+    //            VStack(alignment: .leading, spacing: 4) {
+    ////                    Text("December 24th")
+    ////                        .font(.system(size: 35, weight: .medium))
+    ////                        .foregroundColor(textColor)
+    //
+    //                Text(formatDate())
+    //                    .font(.custom("PPNeueMontreal-Medium", size: 20))
+    //
+    //
+    ////                Text("time to reflect")
+    ////                    .font(.system(size: 18, weight: .regular))
+    ////                    .foregroundColor(accentColor)
+    //            }
+                
+                Spacer()
+                
+                Button {
+                    navigateToSettingsView = true
+                } label: {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 17))
+                        .foregroundColor(Color(hex: "A5A5A5"))
+                }
+    //
+    //                // Daily progress indicator
+    //                if let currentStreak = loopManager.currentStreak?.currentStreak {
+    //                    HStack(spacing: 8) {
+    //                        Text("\(currentStreak)")
+    //                            .font(.system(size: 20, weight: .medium))
+    //                            .foregroundColor(accentColor)
+    //
+    //                        Image(systemName: "flame.fill")
+    //                            .foregroundColor(accentColor)
+    //                            .font(.system(size: 16))
+    //                    }
+    //                    .padding(.horizontal, 16)
+    //                    .padding(.vertical, 8)
+    //                    .background(
+    //                        RoundedRectangle(cornerRadius: 12)
+    //                            .fill(accentColor.opacity(0.08))
+    //                    )
+    //                    .overlay(
+    //                        RoundedRectangle(cornerRadius: 12)
+    //                            .stroke(accentColor.opacity(0.1), lineWidth: 1)
+    //                    )
+    //                }
+            }
         }
     }
     
@@ -427,20 +454,20 @@ struct HomeView: View {
     func formatDate() -> String {
         let dayNumber = Calendar.current.component(.day, from: Date())
         
-        let formatString = "MMMM d"
+        let formatString = "MMMM"
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = formatString
         var formattedDate = dateFormatter.string(from: Date())
         
-        var suffix: String
-        switch dayNumber {
-            case 1, 21, 31: suffix = "st"
-            case 2, 22: suffix = "nd"
-            case 3, 23: suffix = "rd"
-            default: suffix = "th"
-        }
-        
-        formattedDate.append(suffix)
+//        var suffix: String
+//        switch dayNumber {
+//            case 1, 21, 31: suffix = "st"
+//            case 2, 22: suffix = "nd"
+//            case 3, 23: suffix = "rd"
+//            default: suffix = "th"
+//        }
+//        
+//        formattedDate.append(suffix)
         
         return formattedDate
     }

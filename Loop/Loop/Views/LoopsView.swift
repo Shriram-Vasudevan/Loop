@@ -259,10 +259,17 @@ struct YearSection: View {
     @ObservedObject private var loopManager = LoopManager.shared
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            Text(String(year))
-                .font(.custom("PPNeueMontreal-Medium", size: 42))
-                .foregroundColor(textColor)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Spacer()
+                
+                Text(String(year))
+                    .font(.system(size: 14, weight: .medium))
+                    .tracking(1.5)
+                    .foregroundColor(textColor.opacity(0.6))
+
+                Spacer()
+            }
             
             LazyVGrid(columns: [
                 GridItem(.flexible(), spacing: 16),

@@ -21,7 +21,6 @@ class AIAnalyzer {
     
     
     func analyzeResponses(_ responses: [(question: String, answer: String)]) async throws -> AIAnalysisResult {
-        // Format the responses for the prompt
         let formattedResponses = responses.enumerated().map { index, response in
             """
             Question \(index + 1): \(response.question)
@@ -30,34 +29,47 @@ class AIAnalyzer {
         }.joined(separator: "\n\n")
         
         let prompt = """
-        Analyze these three responses as a unified whole. Provide a cohesive analysis focusing on consistent patterns across all responses. Address the user in second person ("your responses"):
+        You are analyzing these three daily journal entries as a UNIFIED WHOLE to provide clear, supportive insights. Keep all responses brief and direct, using "you/your" in descriptions.
+
+        Analyze these responses:
 
         \(formattedResponses)
 
-        1. Emotion:
-        - primary: [single dominant emotion - e.g., frustrated, hopeful, concerned]
-        - intensity: [1-10 scale]
-        - tone: [how emotion is expressed - e.g., reserved, direct, candid]
-        - description: [1 sentence showing how this sentiment appears across responses]
+        1. Emotional State
+        - emotion: [SELECT ONE: energetic, hopeful, peaceful, determined, curious, overwhelmed, thoughtful, excited, grateful, focused, inspired, confident, reflective, anxious, content, motivated, tired, somber, tender, vulnerable]
+        - description: [ONE clear sentence showing how this appears in their writing]
 
-        2. Time Focus:
-        - orientation: [past/present/future/mixed]
-        - description: [1 sentence about how time perspective shapes responses]
+        2. Expression Style
+        - filler_words: [SELECT ONE: minimal/moderate/frequent]
+        - pattern: [SELECT ONE: analytical, practical, emotional, action-focused, reflective]
+        - note: [ONE observation about their communication style]
 
-        3. Focus Analysis:
-        - pattern: [how user processes information - e.g., analytical, practical, experiential, action-focused]
-        - description: [1 short sentence demonstrating this pattern]
+        3. Social Landscape
+        - focus: [SELECT ONE: self-centered/relationship-focused/balanced]
+        - context: [SELECT ONE: work/personal/mixed]
+        - connections: [ONE sentence about key relationships or interactions mentioned]
 
-        4. Significant Phrases:
-        - insights: [1-2 quotes showing key realizations]
-        - reflections: [1-2 quotes showing self-awareness]
-        - decisions: [1-2 quotes showing choices/commitments]
-        - description: [1 sentence connecting these elements]
+        4. Next Steps
+        If actions mentioned:
+        - List each clear action or intention expressed (keep brief)
+        If none: "No specific actions identified"
 
-        5. Follow-up:
-        - question: [short single follow-up question targeting main pattern]
-        - context: [1 shore phrase explaining relevance]
-        - focus: [specific aspect being explored]
+        5. Challenges
+        If challenges mentioned:
+        - List each clear challenge or concern expressed (keep brief)
+        If none: "No specific challenges identified"
+
+        6. Follow-up
+        - question: [ONE specific question based on their main focus/challenge]
+        - purpose: [ONE brief sentence explaining why this question matters for their growth]
+
+        Key Requirements:
+        - All descriptions must be in second person ("you are")
+        - Keep everything concise and clear
+        - Frame observations constructively
+        - Multiple actions/challenges can be listed but keep each brief
+        - Follow-up questions should encourage reflection without being leading
+        - If unclear on emotion, choose the more constructive option
         """
         
         let requestBody: [String: Any] = [
@@ -68,7 +80,7 @@ class AIAnalyzer {
             ],
             "temperature": 0.4,
             "top_p": 0.9,
-            "max_tokens": 900,
+            "max_tokens": 1200,
             "frequency_penalty": 0.0,
             "presence_penalty": 0.0
         ]
@@ -90,159 +102,122 @@ class AIAnalyzer {
     }
     
     private func parseAIResponse(_ response: String) throws -> AIAnalysisResult {
-            let lines = response.components(separatedBy: .newlines)
-            
-            func extractContent(from line: String, prefix: String) -> String {
-                if let range = line.range(of: prefix, options: .caseInsensitive) {
-                    return String(line[range.upperBound...]).trimmingCharacters(in: .whitespaces)
-                }
-                return line.trimmingCharacters(in: .whitespaces)
+        let lines = response.components(separatedBy: .newlines)
+        
+        func extractContent(from line: String, prefix: String) -> String {
+            if let range = line.range(of: prefix, options: .caseInsensitive) {
+                return String(line[range.upperBound...]).trimmingCharacters(in: .whitespaces)
             }
-            
-            func parsePhrases(_ content: String) -> [String] {
-                if content.lowercased() == "none" {
-                    return []
-                }
-                return content.components(separatedBy: ", ")
-                    .map { $0.trimmingCharacters(in: .whitespaces) }
-                    .filter { !$0.isEmpty }
-            }
-            
-            var emotion: EmotionAnalysis?
-            var timeFocus: TimeFocus?
-            var focus: FocusAnalysis?
-            var phrases: SignificantPhrases?
-            var followUp: FollowUp?
-            
-            var currentSection = ""
-            var tempEmotionData: [String: String] = [:]
-            var tempTimeData: [String: String] = [:]
-            var focusData: [String: String] = [:]
-            var tempPhrasesData: [String: String] = [:]
-            var tempFollowUpData: [String: String] = [:]
-            
-            for line in lines {
-                let trimmedLine = line.trimmingCharacters(in: .whitespaces)
-                
-                switch true {
-                case trimmedLine.starts(with: "1. Emotion:"):
-                    currentSection = "emotion"
-                case trimmedLine.starts(with: "2. Time Focus:"):
-                    currentSection = "time"
-                case trimmedLine.starts(with: "3. Focus Analysis:"):
-                    currentSection = "focus"
-                case trimmedLine.starts(with: "4. Significant Phrases:"):
-                    currentSection = "phrases"
-                case trimmedLine.starts(with: "5. Follow-up:"):
-                    currentSection = "followup"
-                case trimmedLine.starts(with: "-"):
-                    let content = extractContent(from: trimmedLine, prefix: "-")
-                    if let colonIndex = content.firstIndex(of: ":") {
-                        let key = String(content[..<colonIndex]).trimmingCharacters(in: .whitespaces)
-                        let value = String(content[content.index(after: colonIndex)...]).trimmingCharacters(in: .whitespaces)
-                        
-                        switch currentSection {
-                        case "emotion":
-                            tempEmotionData[key] = value
-                        case "time":
-                            tempTimeData[key] = value
-                        case "focus":
-                            focusData[key] = value
-                        case "phrases":
-                            tempPhrasesData[key] = value
-                        case "followup":
-                            tempFollowUpData[key] = value
-                        default:
-                            break
-                        }
-                    }
-                default:
-                    break
-                }
-            }
-            
-            // Parse Emotion Analysis
-            if let primary = tempEmotionData["primary"],
-               let intensityStr = tempEmotionData["intensity"],
-               let intensity = Int(intensityStr.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()),
-               let tone = tempEmotionData["tone"],
-               let description = tempEmotionData["description"] {
-                emotion = EmotionAnalysis(
-                    primary: primary,
-                    intensity: intensity,
-                    tone: tone,
-                    description: description
-                )
-            }
-            
-            // Parse Time Focus
-            if let orientationStr = tempTimeData["orientation"],
-               let description = tempTimeData["description"] {
-                let orientation = TimeOrientation(rawValue: orientationStr.lowercased()) ?? .mixed
-                timeFocus = TimeFocus(
-                    orientation: orientation,
-                    description: description
-                )
-            }
-            
-            // Parse Focus Analysis
-            if let pattern = focusData["pattern"],
-               let description = focusData["description"] {
-                focus = FocusAnalysis(
-                    pattern: pattern,
-                    description: description
-                )
-            }
-            
-            // Parse Significant Phrases
-            if let insights = tempPhrasesData["insights"],
-               let reflections = tempPhrasesData["reflections"],
-               let decisions = tempPhrasesData["decisions"],
-               let description = tempPhrasesData["description"] {
-                phrases = SignificantPhrases(
-                    insightPhrases: parsePhrases(insights),
-                    reflectionPhrases: parsePhrases(reflections),
-                    decisionPhrases: parsePhrases(decisions),
-                    description: description
-                )
-            }
-            
-            // Parse Follow Up
-            if let question = tempFollowUpData["question"],
-               let context = tempFollowUpData["context"],
-               let focus = tempFollowUpData["focus"] {
-                followUp = FollowUp(
-                    question: question,
-                    context: context,
-                    focus: focus
-                )
-            }
-            
-            // Validate all required components are present
-            guard let emotion = emotion,
-                  let timeFocus = timeFocus,
-                  let focus = focus,
-                  let phrases = phrases,
-                  let followUp = followUp else {
-                let missingFields = [
-                    emotion == nil ? "emotion" : nil,
-                    timeFocus == nil ? "timeFocus" : nil,
-                    focus == nil ? "focus" : nil,
-                    phrases == nil ? "phrases" : nil,
-                    followUp == nil ? "followUp" : nil
-                ].compactMap { $0 }
-                
-                throw AnalysisError.missingFields(fields: missingFields)
-            }
-            
-            return AIAnalysisResult(
-                emotion: emotion,
-                timeFocus: timeFocus,
-                focus: focus,
-                phrases: phrases,
-                followUp: followUp
-            )
+            return line.trimmingCharacters(in: .whitespaces)
         }
+        
+        var currentSection = ""
+        var emotionData: [String: String] = [:]
+        var expressionData: [String: String] = [:]
+        var socialData: [String: String] = [:]
+        var nextStepsData: [String] = []
+        var challengesData: [String] = []
+        var followUpData: [String: String] = [:]
+        
+        for line in lines {
+            let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+            
+            switch true {
+            case trimmedLine.starts(with: "1. Emotional State"):
+                currentSection = "emotion"
+            case trimmedLine.starts(with: "2. Expression Style"):
+                currentSection = "expression"
+            case trimmedLine.starts(with: "3. Social Landscape"):
+                currentSection = "social"
+            case trimmedLine.starts(with: "4. Next Steps"):
+                currentSection = "nextSteps"
+            case trimmedLine.starts(with: "5. Challenges"):
+                currentSection = "challenges"
+            case trimmedLine.starts(with: "6. Follow-up"):
+                currentSection = "followUp"
+            case trimmedLine.starts(with: "-"):
+                let content = extractContent(from: trimmedLine, prefix: "-")
+                if let colonIndex = content.firstIndex(of: ":") {
+                    let key = String(content[..<colonIndex]).trimmingCharacters(in: .whitespaces)
+                    let value = String(content[content.index(after: colonIndex)...]).trimmingCharacters(in: .whitespaces)
+                    
+                    switch currentSection {
+                    case "emotion":
+                        emotionData[key] = value
+                    case "expression":
+                        expressionData[key] = value
+                    case "social":
+                        socialData[key] = value
+                    case "followUp":
+                        followUpData[key] = value
+                    default:
+                        break
+                    }
+                } else if currentSection == "nextSteps" && !trimmedLine.contains("If none") {
+                    nextStepsData.append(content)
+                } else if currentSection == "challenges" && !trimmedLine.contains("If none") {
+                    challengesData.append(content)
+                }
+            default:
+                break
+            }
+        }
+        
+        // Create EmotionAnalysis
+        guard let emotion = emotionData["emotion"],
+              let emotionDesc = emotionData["description"] else {
+            throw AnalysisError.missingFields(fields: ["emotion"])
+        }
+        
+        // Create ExpressionStyle
+        guard let fillerWords = expressionData["filler_words"],
+              let pattern = expressionData["pattern"],
+              let note = expressionData["note"] else {
+            throw AnalysisError.missingFields(fields: ["expression"])
+        }
+        
+        // Create SocialLandscape
+        guard let focus = socialData["focus"],
+              let context = socialData["context"],
+              let connections = socialData["connections"] else {
+            throw AnalysisError.missingFields(fields: ["social"])
+        }
+        
+        // Create FollowUp
+        guard let question = followUpData["question"],
+              let purpose = followUpData["purpose"] else {
+            throw AnalysisError.missingFields(fields: ["followUp"])
+        }
+        
+        return AIAnalysisResult(
+            emotion: EmotionAnalysis(
+                emotion: emotion,
+                description: emotionDesc
+            ),
+            expression: ExpressionStyle(
+                fillerWords: fillerWords,
+                pattern: pattern,
+                note: note
+            ),
+            social: SocialLandscape(
+                focus: focus,
+                context: context,
+                connections: connections
+            ),
+            nextSteps: NextSteps(
+                actions: nextStepsData,
+                hasActions: !nextStepsData.isEmpty
+            ),
+            challenges: Challenges(
+                items: challengesData,
+                hasChallenges: !challengesData.isEmpty
+            ),
+            followUp: FollowUp(
+                question: question,
+                purpose: purpose
+            )
+        )
+    }
 }
 
 class WeeklyAIAnalyzer {

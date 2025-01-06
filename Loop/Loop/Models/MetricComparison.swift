@@ -37,8 +37,8 @@ extension AITrendsManager {
     
     struct TimeframeFrequencies {
         let topEmotions: [FrequencyResult]
-        let topFocuses: [FrequencyResult]
-        let topTimeOrientations: [FrequencyResult]
+        let topExpressionPatterns: [FrequencyResult]
+        let topSocial: [FrequencyResult]
     }
 }
 

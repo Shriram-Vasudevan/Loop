@@ -125,23 +125,6 @@ extension View {
     }
 }
 
-extension TrendDirection {
-    var systemImage: String {
-        switch rawValue {
-        case 1: return "arrow.up.right"
-        case -1: return "arrow.down.right"
-        default: return "minus"
-        }
-    }
-    
-    var color: Color {
-        switch rawValue {
-        case 1: return .green
-        case -1: return .red
-        default: return .gray
-        }
-    }
-}
 
 extension Color {
     func adjustedHue(by amount: Double) -> Color {

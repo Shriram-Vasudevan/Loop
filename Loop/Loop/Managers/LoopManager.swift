@@ -25,7 +25,6 @@ class LoopManager: ObservableObject {
 
     @Published var additionalPrompts: [String] = []
     
-    
     @Published var weekSchedule: [Date: Bool] = [:]
     @Published var isLoadingSchedule = false
     
@@ -53,6 +52,8 @@ class LoopManager: ObservableObject {
     private let sevenDayCheckDateKey = "SevenDayCheckDateKey"
     private let stateKey = "CurrentLoopState"
     private var lastFetchedDate: Date?
+    
+    @Environment(\.scenePhase) var scenePhase
     
     enum MemoryBankStatus {
         case checking
@@ -97,16 +98,33 @@ class LoopManager: ObservableObject {
             await checkSevenDayStatus()
 
             await calculateStreak()
+            
+            fetchRecentDates(limit: 10, completion: {
+                
+            })
         }
+        
+        NotificationCenter.default.addObserver(
+           self,
+           selector: #selector(appDidBecomeActive),
+           name: UIApplication.didBecomeActiveNotification,
+           object: nil
+       )
+    }
+    
+    @objc private func appDidBecomeActive() {
+        checkAndResetIfNeeded()
+    }
+        
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     func calculateStreak() async {
         do {
-            // Get streaks from both sources
             let cloudStreak = try await LoopCloudKitUtility.calculateStreak()
             let localStreak = try await localStorage.calculateStreak()
             
-            // Take the higher values
             let combinedStreak = LoopingStreak(
                 currentStreak: max(cloudStreak.currentStreak, localStreak.currentStreak),
                 longestStreak: max(cloudStreak.longestStreak, localStreak.longestStreak),
@@ -254,7 +272,6 @@ class LoopManager: ObservableObject {
     }
     
     private func selectRandomPrompts() {
-        // Get all available prompts from the JSON structure
         let shareAnything = promptGroups.values
             .flatMap { $0 }
             .filter { $0.category == .freeform }
@@ -575,8 +592,8 @@ class LoopManager: ObservableObject {
         } else {
             loadCachedState()
         }
-        
-        print(self.dailyPrompts)
+//        
+//        print(self.dailyPrompts)
     }
     
     func resetPromptProgress() {
@@ -700,10 +717,6 @@ class LoopManager: ObservableObject {
         } else {
             await localStorage.addLoop(loop: loop)
         }
-        
-        if recentDates.isEmpty {
-            fetchRecentDates(limit: 10, completion: {})
-        }
 
         return (loop, transcript)
     }
@@ -757,7 +770,7 @@ class LoopManager: ObservableObject {
         let dateQueue = DispatchQueue(label: "com.loop.dateCollection")
         var allNewDates = Set<Date>()
         
-        // Fetch from CloudKit
+     
         group.enter()
         LoopCloudKitUtility.fetchRecentLoopDates(startingFrom: lastFetchedDate, limit: limit) { [weak self] result in
             switch result {
@@ -770,8 +783,7 @@ class LoopManager: ObservableObject {
             }
             group.leave()
         }
-        
-        // Fetch from local storage
+
         group.enter()
         Task { [weak self] in
             do {
@@ -798,8 +810,7 @@ class LoopManager: ObservableObject {
         
         for date in dates {
             group.enter()
-            
-            // Fetch loops from CloudKit
+
             LoopCloudKitUtility.fetchLoops(for: date) { [weak self] result in
                 switch result {
                 case .success(let cloudLoops):
@@ -813,7 +824,7 @@ class LoopManager: ObservableObject {
             }
             
             group.enter()
-            // Fetch loops from local storage
+
             Task {
                 do {
                     let localLoops = try await localStorage.fetchLoops(for: date)
@@ -841,32 +852,7 @@ class LoopManager: ObservableObject {
         loopsByDate[date] = existingLoops.sorted { $0.timestamp > $1.timestamp }
     }
 
-    
-    
-//    // MARK: - Queue Management
-//    func showQueuedLoops(completion: @escaping () -> Void) {
-//        let loops = queuedLoops
-//        queuedLoops.removeAll()
-//        saveQueuedLoops()
-//        
-//        for (index, loop) in loops.enumerated() {
-//            DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.5) { [weak self] in
-//                self?.pastLoops.append(loop)
-//                self?.savePastLoops()
-//                
-//                if index == loops.count - 1 {
-//                    completion()
-//                }
-//                }
-//            }
-//        }
-//        
-//        if loops.isEmpty {
-//            completion()
-//        }
-//    }
-//    
-    // MARK: - Cache Management
+
     private func saveQueuedLoops() {
         let cachedLoops = queuedLoops.map { loop -> [String: Any] in
             return [
@@ -1029,6 +1015,51 @@ class LoopManager: ObservableObject {
             throw error
         }
     }
+    
+    func editTranscript(forLoopId id: String, newTranscript: String) async throws {
+        print("🔄 Starting transcript edit for loop ID: \(id)")
+        
+        if try await localStorage.findAndUpdateTranscript(forLoopId: id, newTranscript: newTranscript) {
+            print("✅ Successfully updated transcript in local storage")
+            
+            await updateInMemoryTranscript(id: id, newTranscript: newTranscript)
+
+            return
+        }
+        
+        // If not found in local storage and cloud backup is enabled, try cloud
+        if UserDefaults.standard.bool(forKey: "iCloudBackupEnabled") {
+            if try await LoopCloudKitUtility.findAndUpdateTranscript(
+                forLoopId: id,
+                newTranscript: newTranscript
+            ) {
+                print("✅ Successfully updated transcript in cloud storage")
+                await updateInMemoryTranscript(id: id, newTranscript: newTranscript)
+                return
+            }
+        }
+        
+        throw NSError(
+            domain: "LoopManager",
+            code: -1,
+            userInfo: [NSLocalizedDescriptionKey: "Loop not found in any storage location"]
+        )
+    }
+    
+    private func updateInMemoryTranscript(id: String, newTranscript: String) async {
+        await MainActor.run {
+            for (date, var loops) in loopsByDate {
+                if let index = loops.firstIndex(where: { $0.id == id }) {
+                    var updatedLoop = loops[index]
+                    updatedLoop.transcript = newTranscript
+                    loops[index] = updatedLoop
+                    loopsByDate[date] = loops
+                    break
+                }
+            }
+        }
+    }
+    
     
     func dismissUnlockReminder() {
         hasRemovedUnlockReminder = true

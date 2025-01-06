@@ -1,30 +1,27 @@
 //
-//  RecordThematicLoopPromptsView.swift
+//  RecordFreeResponseView.swift
 //  Loop
 //
-//  Created by Shriram Vasudevan on 11/24/24.
+//  Created by Shriram Vasudevan on 1/5/25.
 //
 
 import SwiftUI
 
-struct RecordThematicLoopPromptsView: View {
-    @State var prompt: ThematicPrompt
+struct RecordFreeResponseView: View {
+    @State var prompt: String
     
     @ObservedObject var loopManager = LoopManager.shared
     @ObservedObject var audioManager = AudioManager.shared
     
-    @State private var showingFindAQuietSpace = true
-    @State private var showingThemeName = false
-    @State private var showingThankYouScreen = false
     @State private var isRecording = false
     @State private var isPostRecording = false
+    @State private var showingThankYouScreen = false
     @State private var recordingTimer: Timer?
     @State private var timeRemaining: Int = 30
     @State private var backgroundOpacity: Double = 0
     @State private var messageOpacity: Double = 0
-    
-    @State var currentPromptIndex = 0
-    @State var retryAttemptsLeft = 100
+
+    @State var retryAttempts = 100
     
     let accentColor = Color(hex: "A28497")
     let secondaryColor = Color(hex: "B7A284")
@@ -45,13 +42,7 @@ struct RecordThematicLoopPromptsView: View {
                 .edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 0) {
-                if showingFindAQuietSpace {
-                    quietSpaceView
-                }
-                else if showingThemeName {
-                    
-                }
-                else if showingThankYouScreen {
+                if showingThankYouScreen {
                     thankYouScreen
                 } else if isPostRecording {
                     postRecordingView
@@ -86,7 +77,7 @@ struct RecordThematicLoopPromptsView: View {
     private var topBar: some View {
         VStack(spacing: 24) {
             ZStack {
-                Text(prompt.name)
+                Text("Share Anything")
                     .font(.system(size: 16, weight: .light))
                     .foregroundColor(accentColor.opacity(0.8))
                     .padding(.horizontal, 16)
@@ -107,27 +98,25 @@ struct RecordThematicLoopPromptsView: View {
                     }
                     
                     Spacer()
+                    
+                    Text(formattedTodayDate())
+                        .font(.system(size: 17))
                 }
             }
-            
-            ProgressIndicator(
-                totalSteps: prompt.prompts.count,
-                currentStep: currentPromptIndex,
-                accentColor: accentColor
-            )
+
         }
         .padding(.top, 16)
     }
     
     private var promptArea: some View {
         VStack(spacing: isRecording ? 20 : 44) {
-            Text(prompt.prompts[currentPromptIndex])
-                .font(.system(size: 28, weight: .medium))
+            Text(prompt)
+                .font(.system(size: 44, weight: .ultraLight))
                 .foregroundColor(textColor)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .transition(.opacity)
-                .animation(.easeInOut, value: prompt.prompts[currentPromptIndex])
+                .animation(.easeInOut, value: prompt)
             
             if isRecording {
                 HStack(spacing: 12) {
@@ -203,7 +192,7 @@ struct RecordThematicLoopPromptsView: View {
                 audioURL: audioManager.getRecordedAudioFile() ?? URL(fileURLWithPath: ""),
                 waveformData: generateRandomWaveform(count: 40),
                 onComplete: { completeRecording() },
-                onRetry: { retryRecording() }, retryAttempts: retryAttemptsLeft
+                onRetry: { retryRecording() }, retryAttempts: retryAttempts
             )
         }
     }
@@ -221,7 +210,7 @@ struct RecordThematicLoopPromptsView: View {
                 Image(systemName: "sparkles")
                     .font(.system(size: 32, weight: .thin))
                     .foregroundColor(accentColor)
-//                
+                
 //                Text("see you tomorrow")
 //                    .font(.system(size: 24, weight: .thin))
 //                    .foregroundColor(Color.gray)
@@ -234,48 +223,6 @@ struct RecordThematicLoopPromptsView: View {
             audioManager.cleanup()
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                 dismiss()
-            }
-        }
-    }
-    
-    private var quietSpaceView: some View {
-        VStack(spacing: 24) {
-            Text("find a quiet space")
-                .font(.system(size: 36, weight: .ultraLight))
-                .foregroundColor(textColor)
-                .multilineTextAlignment(.center)
-            
-            Image(systemName: "ear")
-                .font(.system(size: 32, weight: .thin))
-                .foregroundColor(accentColor.opacity(0.8))
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                withAnimation {
-                    showingFindAQuietSpace = false
-                }
-            }
-        }
-    }
-    
-    private var themeNameView: some View {
-        VStack(spacing: 24) {
-            Text(prompt.name)
-                .font(.system(size: 36, weight: .thin))
-                .foregroundColor(textColor)
-                .multilineTextAlignment(.center)
-            
-            Image(systemName: "waveform")
-                .font(.system(size: 32, weight: .thin))
-                .foregroundColor(accentColor.opacity(0.8))
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                withAnimation {
-                    showingFindAQuietSpace = false
-                }
             }
         }
     }
@@ -325,45 +272,28 @@ struct RecordThematicLoopPromptsView: View {
                 let loop = await loopManager.addLoop(
                     mediaURL: audioFileURL,
                     isVideo: false,
-                    prompt: prompt.prompts[currentPromptIndex],
-                    isDailyLoop: false, isFollowUp: false
+                    prompt: prompt,
+                    isDailyLoop: true, isFollowUp: false
                 )
+                
             }
+            AnalysisManager.shared.markFollowUpComplete()
             
             withAnimation {
-                if currentPromptIndex < prompt.prompts.count - 1 {
-                    currentPromptIndex += 1
-                    isPostRecording = false
-                }
-                else {
-                    isPostRecording = false
-                    showingThankYouScreen = true
-                }
+                isPostRecording = false
+                showingThankYouScreen = true
             }
 
         }
     }
     
     private func retryRecording() {
-        if retryAttemptsLeft > 0 {
-            retryAttemptsLeft -= 1
+        if retryAttempts > 0 {
             audioManager.cleanup()
             isPostRecording = false
             isRecording = false
             timeRemaining = 30
         }
-    }
-    
-    private var formattedDate: String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMMM d, yyyy"
-        return dateFormatter.string(from: Date())
-    }
-    
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM d, yyyy"
-        return formatter.string(from: date)
     }
     
     private func generateRandomWaveform(count: Int, minHeight: CGFloat = 12, maxHeight: CGFloat = 64) -> [CGFloat] {
@@ -372,9 +302,14 @@ struct RecordThematicLoopPromptsView: View {
         }
     }
     
+    private func formattedTodayDate() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter.string(from: Date())
+    }
+    
 }
-
+//
 //#Preview {
-//    RecordPromptSetLoopsView()
+//    RecordFreeResponseView()
 //}
-

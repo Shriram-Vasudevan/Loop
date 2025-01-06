@@ -286,7 +286,7 @@ struct SettingsView: View {
                     }
                 }
                 
-                socialLink("Visit our Website", icon: "globe") {
+                socialLink("Visit our Website", icon: "link") {
                     if let url = URL(string: "https://loopapp.com") {
                         UIApplication.shared.open(url)
                     }
@@ -303,7 +303,9 @@ struct SettingsView: View {
     private func socialLink(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 16) {
-                Image(icon == "globe" ? "globe" : icon)
+                Image(icon)
+                    .resizable()
+                    .frame(width: 16, height: 16)
                     .font(.system(size: 16))
                     .foregroundColor(accentColor)
                 

@@ -560,4 +560,25 @@ class LoopLocalStorageUtility {
         print("💾 Found \(loops.count) daily loops in Local Storage")
         return loops
     }
+    
+    func findAndUpdateTranscript(forLoopId id: String, newTranscript: String) async throws -> Bool {
+            let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "LoopEntity")
+            fetchRequest.predicate = NSPredicate(format: "id == %@", id)
+            
+            let results = try context.fetch(fetchRequest)
+            
+            if let loopEntity = results.first {
+                await MainActor.run {
+                    loopEntity.setValue(newTranscript, forKey: "transcript")
+                    do {
+                        try context.save()
+                        print("💾 Updated transcript in local storage")
+                    } catch {
+                        print("Error saving transcript update: \(error)")
+                    }
+                }
+                return true
+            }
+            return false
+        }
 }

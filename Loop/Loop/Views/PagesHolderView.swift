@@ -13,6 +13,7 @@ struct PagesHolderView: View {
     let secondaryColor = Color(hex: "B7A284")
     let backgroundColor = Color(hex: "FAFBFC")
     
+    @State var showFreeResponseButton: Bool = false
     var body: some View {
         NavigationStack {
             ZStack {
@@ -26,8 +27,8 @@ struct PagesHolderView: View {
                         HomeView(pageType: $pageType)
                     case .journal:
                         LoopsView()
-                    case .settings:
-                        SettingsView()
+                    case .schedule:
+                        ScheduleView()
                     case .insights:
                        InsightsView()
                     }
@@ -52,15 +53,13 @@ struct PagesHolderView: View {
                                 }
                             }
                             
-                            // Spacer for plus button
                             Spacer()
                                 .frame(maxWidth: .infinity)
                         
                             
-                            // Last two items
                             ForEach([
                                 (icon: "chart.bar", label: "Insights", type: PageType.insights),
-                                (icon: "gearshape", label: "Settings", type: PageType.settings)
+                                (icon: "calendar", label: "Calendar", type: PageType.schedule)
                             ], id: \.label) { item in
                                 BottomTabButton(
                                     icon: item.icon,
@@ -78,7 +77,7 @@ struct PagesHolderView: View {
                         .padding(.top, 12)
 
                         Button {
-                            // Add your action here
+                            showFreeResponseButton = true
                         } label: {
                             Image(systemName: "plus")
                                 .font(.system(size: 22, weight: .medium))
@@ -90,7 +89,7 @@ struct PagesHolderView: View {
                                         .shadow(color: accentColor.opacity(0.25), radius: 8, x: 0, y: 4)
                                 )
                         }
-                        .offset(y: -8) // Makes it stick out above the tab bar
+                        .offset(y: -8)
                     }
                     .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 16) }
                     .background(
@@ -102,6 +101,9 @@ struct PagesHolderView: View {
             }
             .edgesIgnoringSafeArea(.bottom)
             .persistentSystemOverlays(.hidden)
+            .fullScreenCover(isPresented: $showFreeResponseButton) {
+                RecordFreeResponseView(prompt: "Share Absolutely Anything")
+            }
         }
     }
 }

@@ -32,6 +32,13 @@
 		9935CEDA2D23A0C200AF0C16 /* WordCountPatternCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CED92D23A0C200AF0C16 /* WordCountPatternCard.swift */; };
 		9935CEDC2D24576F00AF0C16 /* TimeLapseDemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CEDB2D24576F00AF0C16 /* TimeLapseDemoView.swift */; };
 		9935CEDE2D24DC8400AF0C16 /* ReflectionSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CEDD2D24DC8400AF0C16 /* ReflectionSelectionView.swift */; };
+		9935CEE02D28D07100AF0C16 /* ScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CEDF2D28D07100AF0C16 /* ScheduleView.swift */; };
+		9935CEE22D28D08700AF0C16 /* FullDayActivityBreakdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CEE12D28D08700AF0C16 /* FullDayActivityBreakdown.swift */; };
+		9935CEE42D299A7D00AF0C16 /* DailyEmotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CEE32D299A7D00AF0C16 /* DailyEmotion.swift */; };
+		9935CEE62D299EF400AF0C16 /* ScheduleManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CEE52D299EF400AF0C16 /* ScheduleManager.swift */; };
+		9935CEE82D29A3B300AF0C16 /* PreviewScheduleEmotionDay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CEE72D29A3B300AF0C16 /* PreviewScheduleEmotionDay.swift */; };
+		9935CEEA2D29AB9E00AF0C16 /* EmotionSchedulePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CEE92D29AB9E00AF0C16 /* EmotionSchedulePreview.swift */; };
+		9935CEEE2D2ADDD100AF0C16 /* RecordFreeResponseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CEED2D2ADDD100AF0C16 /* RecordFreeResponseView.swift */; };
 		9953BDDD2CEE620E00348AC3 /* AnimatedBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDDC2CEE620E00348AC3 /* AnimatedBackground.swift */; };
 		9953BDE02CEE623B00348AC3 /* PulsingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDDF2CEE623B00348AC3 /* PulsingView.swift */; };
 		9953BDE42CF17A5F00348AC3 /* LoadingWaveform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDE32CF17A5F00348AC3 /* LoadingWaveform.swift */; };
@@ -168,6 +175,13 @@
 		9935CED92D23A0C200AF0C16 /* WordCountPatternCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCountPatternCard.swift; sourceTree = "<group>"; };
 		9935CEDB2D24576F00AF0C16 /* TimeLapseDemoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeLapseDemoView.swift; sourceTree = "<group>"; };
 		9935CEDD2D24DC8400AF0C16 /* ReflectionSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectionSelectionView.swift; sourceTree = "<group>"; };
+		9935CEDF2D28D07100AF0C16 /* ScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleView.swift; sourceTree = "<group>"; };
+		9935CEE12D28D08700AF0C16 /* FullDayActivityBreakdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullDayActivityBreakdown.swift; sourceTree = "<group>"; };
+		9935CEE32D299A7D00AF0C16 /* DailyEmotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyEmotion.swift; sourceTree = "<group>"; };
+		9935CEE52D299EF400AF0C16 /* ScheduleManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleManager.swift; sourceTree = "<group>"; };
+		9935CEE72D29A3B300AF0C16 /* PreviewScheduleEmotionDay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewScheduleEmotionDay.swift; sourceTree = "<group>"; };
+		9935CEE92D29AB9E00AF0C16 /* EmotionSchedulePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionSchedulePreview.swift; sourceTree = "<group>"; };
+		9935CEED2D2ADDD100AF0C16 /* RecordFreeResponseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordFreeResponseView.swift; sourceTree = "<group>"; };
 		9953BDDC2CEE620E00348AC3 /* AnimatedBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedBackground.swift; sourceTree = "<group>"; };
 		9953BDDF2CEE623B00348AC3 /* PulsingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulsingView.swift; sourceTree = "<group>"; };
 		9953BDE32CF17A5F00348AC3 /* LoadingWaveform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingWaveform.swift; sourceTree = "<group>"; };
@@ -344,6 +358,8 @@
 				99F7F6E62CAC77F4009858AC /* HomeView.swift */,
 				99AC6DD32CDED81100B0D0D6 /* LoopsView.swift */,
 				990E4A912CB48CEF009F88A0 /* InsightsView.swift */,
+				9935CEDF2D28D07100AF0C16 /* ScheduleView.swift */,
+				9935CEE12D28D08700AF0C16 /* FullDayActivityBreakdown.swift */,
 				999DAC772D1FA82000A6626B /* TodaysInsightsView.swift */,
 				999DAC852D20994400A6626B /* TrendsView.swift */,
 				999DAC872D209AA100A6626B /* TrendGraph.swift */,
@@ -357,6 +373,7 @@
 				9953BDF72CF4101E00348AC3 /* RecordThematicLoopPromptsView.swift */,
 				99F31CA62D0F2DA300330180 /* RecordFollowUpLoopView.swift */,
 				999DAC8D2D2107D000A6626B /* RecordFeaturedLoopView.swift */,
+				9935CEED2D2ADDD100AF0C16 /* RecordFreeResponseView.swift */,
 				990E4A832CB30EAB009F88A0 /* ThankYouView.swift */,
 				990E4A852CB30EB8009F88A0 /* LoopAudioConfirmationView.swift */,
 				990E4A872CB30EC0009F88A0 /* WavyBackground.swift */,
@@ -397,6 +414,7 @@
 				9935CED92D23A0C200AF0C16 /* WordCountPatternCard.swift */,
 				9935CEDB2D24576F00AF0C16 /* TimeLapseDemoView.swift */,
 				9935CEDD2D24DC8400AF0C16 /* ReflectionSelectionView.swift */,
+				9935CEE92D29AB9E00AF0C16 /* EmotionSchedulePreview.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -417,6 +435,7 @@
 				99DC91BA2D1A50BF002B9A89 /* AudioAnalyzer.swift */,
 				999DAC7D2D20761400A6626B /* AITrendAnalysisManager.swift */,
 				999DAC7F2D2078C400A6626B /* QuantitativeTrendsManager.swift */,
+				9935CEE52D299EF400AF0C16 /* ScheduleManager.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -454,6 +473,8 @@
 				999DAC832D208B1F00A6626B /* MetricComparison.swift */,
 				999DAC8F2D210A5000A6626B /* FeaturedPrompt.swift */,
 				9935CED12D23969600AF0C16 /* SpeakingHighlight.swift */,
+				9935CEE32D299A7D00AF0C16 /* DailyEmotion.swift */,
+				9935CEE72D29A3B300AF0C16 /* PreviewScheduleEmotionDay.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -594,7 +615,9 @@
 				9953BE0E2D07AD9700348AC3 /* TrendModels.swift in Sources */,
 				99AC6DD82CE0199800B0D0D6 /* FluidParticleBackground.swift in Sources */,
 				99CCFBBC2D10DF4300DA8A55 /* CleanGraphView.swift in Sources */,
+				9935CEE42D299A7D00AF0C16 /* DailyEmotion.swift in Sources */,
 				99DC91B92D1A4658002B9A89 /* WeekInReviewView.swift in Sources */,
+				9935CEEA2D29AB9E00AF0C16 /* EmotionSchedulePreview.swift in Sources */,
 				999DAC822D208A1A00A6626B /* FrequencyModels.swift in Sources */,
 				99AC6DEA2CE18E9900B0D0D6 /* LoopStreak.swift in Sources */,
 				99F31CAD2D0F5DAF00330180 /* StatsLoadingView.swift in Sources */,
@@ -627,7 +650,10 @@
 				99F8F68C2D16FF9400F9C8D0 /* Configuration.swift in Sources */,
 				990E4A882CB30EC0009F88A0 /* WavyBackground.swift in Sources */,
 				9953BDF82CF4101E00348AC3 /* RecordThematicLoopPromptsView.swift in Sources */,
+				9935CEE22D28D08700AF0C16 /* FullDayActivityBreakdown.swift in Sources */,
+				9935CEE82D29A3B300AF0C16 /* PreviewScheduleEmotionDay.swift in Sources */,
 				9953BDFC2CF8105200348AC3 /* SettingsModels.swift in Sources */,
+				9935CEEE2D2ADDD100AF0C16 /* RecordFreeResponseView.swift in Sources */,
 				99F7F6F12CAC7B5B009858AC /* LoopCloudKitUtility.swift in Sources */,
 				9953BDE42CF17A5F00348AC3 /* LoadingWaveform.swift in Sources */,
 				99F7F6ED2CAC796E009858AC /* RecordLoopView.swift in Sources */,
@@ -635,9 +661,11 @@
 				99F7F6F72CAC93B4009858AC /* LoopRevealDate.swift in Sources */,
 				99F7F6F32CAC7D0F009858AC /* Loop.swift in Sources */,
 				9988DB8D2CDA77C8005628DE /* PrivateUserRecord.swift in Sources */,
+				9935CEE02D28D07100AF0C16 /* ScheduleView.swift in Sources */,
 				9988DB852CD9BFAC005628DE /* FriendsView.swift in Sources */,
 				99F7F6E52CAC77E7009858AC /* IntroView.swift in Sources */,
 				999DAC7E2D20761400A6626B /* AITrendAnalysisManager.swift in Sources */,
+				9935CEE62D299EF400AF0C16 /* ScheduleManager.swift in Sources */,
 				999DAC702D1E236900A6626B /* DayRating.swift in Sources */,
 				9988DB912CDA792F005628DE /* FriendsManager.swift in Sources */,
 				999DAC8E2D2107D000A6626B /* RecordFeaturedLoopView.swift in Sources */,
