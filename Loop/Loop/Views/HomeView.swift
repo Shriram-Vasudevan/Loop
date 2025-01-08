@@ -72,8 +72,8 @@ struct HomeView: View {
                             .padding(.top, 22)
                             .padding(.horizontal, 24)
 
-                        EmotionSchedulePreviewView()
-                          
+//                        EmotionSchedulePreviewView()
+//                          
 
                     }
                     recordingInterface
@@ -105,15 +105,20 @@ struct HomeView: View {
             }
         }
         .onAppear {
-            withAnimation {  // Keep your original initialization
-                loopManager.fetchWeekSchedule()
+            withAnimation {
                 Task {
                     await loopManager.loadThematicPrompts()
                 }
                 
                 Task {
-                    await fetchDistinctLoopingDays()
+                    if scheduleManager.emotions.isEmpty {
+                       await scheduleManager.loadYearDataAndAssignColors()
+                    }
                 }
+                
+//                Task {
+//                    await fetchDistinctLoopingDays()
+//                }
             }
         }
         .fullScreenCover(item: $selectedLoop) { loop in
@@ -142,6 +147,7 @@ struct HomeView: View {
             Text(formatDate())
                 .font(.custom("PPNeueMontreal-Medium", size: 20))
             
+
             HStack(alignment: .bottom, spacing: 16) {
     //            VStack(alignment: .leading, spacing: 4) {
     ////                    Text("December 24th")
@@ -227,7 +233,7 @@ struct HomeView: View {
                             .font(.system(size: 24, weight: .light))
                             .foregroundColor(textColor)
                         
-                        Text("RETURN TOMORROW")
+                        Text("GREAT WORK!")
                             .font(.system(size: 13, weight: .medium))
                             .tracking(1.5)
                             .foregroundColor(accentColor.opacity(0.5))
@@ -454,20 +460,20 @@ struct HomeView: View {
     func formatDate() -> String {
         let dayNumber = Calendar.current.component(.day, from: Date())
         
-        let formatString = "MMMM"
+        let formatString = "MMMM d"
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = formatString
         var formattedDate = dateFormatter.string(from: Date())
         
-//        var suffix: String
-//        switch dayNumber {
-//            case 1, 21, 31: suffix = "st"
-//            case 2, 22: suffix = "nd"
-//            case 3, 23: suffix = "rd"
-//            default: suffix = "th"
-//        }
-//        
-//        formattedDate.append(suffix)
+        var suffix: String
+        switch dayNumber {
+            case 1, 21, 31: suffix = "st"
+            case 2, 22: suffix = "nd"
+            case 3, 23: suffix = "rd"
+            default: suffix = "th"
+        }
+        
+        formattedDate.append(suffix)
         
         return formattedDate
     }
@@ -759,7 +765,7 @@ struct RecordingInterface: View {
                 if !isCompleted {
                     VStack(alignment: .leading, spacing: 40) {
                         // Header with minimal styling
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .center, spacing: 8) {
                             Text("TODAY'S REFLECTION")
                                 .font(.system(size: 13, weight: .medium))
                                 .tracking(1.5)
@@ -789,7 +795,7 @@ struct RecordingInterface: View {
                             .font(.system(size: 24, weight: .light))
                             .foregroundColor(textColor)
                         
-                        Text("RETURN TOMORROW")
+                        Text("GREAT WORK!")
                             .font(.system(size: 13, weight: .medium))
                             .tracking(1.5)
                             .foregroundColor(accentColor.opacity(0.5))

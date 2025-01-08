@@ -62,6 +62,31 @@ class AIAnalyzer {
         6. Follow-up
         - question: [ONE specific question based on their main focus/challenge]
         - purpose: [ONE brief sentence explaining why this question matters for their growth]
+        
+        7. key_moments:
+        [Identify 1-2 most meaningful SELF-REFLECTIVE statements that directly address their prompts. Focus on personal insights, realizations, or feelings about themselves.]
+
+        Requirements:
+        - Each insight must explicitly answer/address its prompt
+        - Must be about the user's own experiences, feelings, growth, or self-understanding
+        - Include enough context to understand the insight independently
+        - Prioritize:
+          * Personal realizations about themselves
+          * Self-awareness moments
+          * Their own feelings or reactions
+          * Their personal growth or changes
+        - AVOID:
+          * Observations about others
+          * General statements about situations
+          * External events without personal reflection
+          * Overly private or sensitive revelations
+        - Return "nil" if no qualifying self-reflective statements found
+
+        Format each as:
+        - prompt: [the exact question asked]
+        - insight: [the exact response phrase that shows self-reflection]
+        or "nil" if no qualifying statements found
+        
 
         Key Requirements:
         - All descriptions must be in second person ("you are")
@@ -104,13 +129,6 @@ class AIAnalyzer {
     private func parseAIResponse(_ response: String) throws -> AIAnalysisResult {
         let lines = response.components(separatedBy: .newlines)
         
-        func extractContent(from line: String, prefix: String) -> String {
-            if let range = line.range(of: prefix, options: .caseInsensitive) {
-                return String(line[range.upperBound...]).trimmingCharacters(in: .whitespaces)
-            }
-            return line.trimmingCharacters(in: .whitespaces)
-        }
-        
         var currentSection = ""
         var emotionData: [String: String] = [:]
         var expressionData: [String: String] = [:]
@@ -119,23 +137,48 @@ class AIAnalyzer {
         var challengesData: [String] = []
         var followUpData: [String: String] = [:]
         
+        // Track if we've hit the key_moments section
+        var keyMomentsLines: [String] = []
+        var inKeyMomentsSection = false
+        
         for line in lines {
             let trimmedLine = line.trimmingCharacters(in: .whitespaces)
             
+            // Handle section changes
             switch true {
             case trimmedLine.starts(with: "1. Emotional State"):
                 currentSection = "emotion"
+                inKeyMomentsSection = false
             case trimmedLine.starts(with: "2. Expression Style"):
                 currentSection = "expression"
+                inKeyMomentsSection = false
             case trimmedLine.starts(with: "3. Social Landscape"):
                 currentSection = "social"
+                inKeyMomentsSection = false
             case trimmedLine.starts(with: "4. Next Steps"):
                 currentSection = "nextSteps"
+                inKeyMomentsSection = false
             case trimmedLine.starts(with: "5. Challenges"):
                 currentSection = "challenges"
+                inKeyMomentsSection = false
             case trimmedLine.starts(with: "6. Follow-up"):
                 currentSection = "followUp"
-            case trimmedLine.starts(with: "-"):
+                inKeyMomentsSection = false
+            case trimmedLine.starts(with: "7. key_moments"):
+                currentSection = "keyMoments"
+                inKeyMomentsSection = true
+                continue
+            default:
+                break
+            }
+            
+            
+            if inKeyMomentsSection && !trimmedLine.isEmpty {
+                keyMomentsLines.append(trimmedLine)
+                continue
+            }
+            
+            if trimmedLine.starts(with: "-") {
                 let content = extractContent(from: trimmedLine, prefix: "-")
                 if let colonIndex = content.firstIndex(of: ":") {
                     let key = String(content[..<colonIndex]).trimmingCharacters(in: .whitespaces)
@@ -158,12 +201,10 @@ class AIAnalyzer {
                 } else if currentSection == "challenges" && !trimmedLine.contains("If none") {
                     challengesData.append(content)
                 }
-            default:
-                break
             }
         }
-        
-        // Create EmotionAnalysis
+            
+            
         guard let emotion = emotionData["emotion"],
               let emotionDesc = emotionData["description"] else {
             throw AnalysisError.missingFields(fields: ["emotion"])
@@ -188,6 +229,15 @@ class AIAnalyzer {
               let purpose = followUpData["purpose"] else {
             throw AnalysisError.missingFields(fields: ["followUp"])
         }
+    
+        if !keyMomentsLines.isEmpty {
+            if let keyMoments = parseKeyMoments(keyMomentsLines) {
+                for moment in keyMoments {
+                    KeyMomentManager.shared.saveKeyMoment(moment)
+                }
+            }
+        }
+                
         
         return AIAnalysisResult(
             emotion: EmotionAnalysis(
@@ -218,6 +268,50 @@ class AIAnalyzer {
             )
         )
     }
+    
+    private func parseKeyMoments(_ lines: [String]) -> [KeyMomentModel]? {
+        var currentSection = ""
+        var moments: [KeyMomentModel] = []
+        var currentMoment: [String: String] = [:]
+        
+        for line in lines {
+            let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+            
+            if trimmedLine == "nil" {
+                return nil
+            }
+            
+            if trimmedLine.starts(with: "- prompt:") {
+                if !currentMoment.isEmpty {
+                    if let prompt = currentMoment["prompt"], let insight = currentMoment["insight"] {
+                        moments.append(KeyMomentModel(prompt: prompt, insight: insight, date: Date()))
+                    }
+                    currentMoment = [:]
+                }
+                currentMoment["prompt"] = extractContent(from: trimmedLine, prefix: "- prompt:")
+            } else if trimmedLine.starts(with: "- insight:") {
+                currentMoment["insight"] = extractContent(from: trimmedLine, prefix: "- insight:")
+            }
+        }
+        
+        // Add last moment if exists
+        if !currentMoment.isEmpty {
+            if let prompt = currentMoment["prompt"], let insight = currentMoment["insight"] {
+                moments.append(KeyMomentModel(prompt: prompt, insight: insight, date: Date()))
+            }
+        }
+        
+        return moments.isEmpty ? nil : moments
+    }
+    
+    func extractContent(from line: String, prefix: String) -> String {
+        if let range = line.range(of: prefix, options: .caseInsensitive) {
+            return String(line[range.upperBound...]).trimmingCharacters(in: .whitespaces)
+        }
+        return line.trimmingCharacters(in: .whitespaces)
+    }
+    
+    
 }
 
 class WeeklyAIAnalyzer {

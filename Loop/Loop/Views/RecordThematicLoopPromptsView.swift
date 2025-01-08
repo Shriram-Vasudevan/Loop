@@ -320,12 +320,13 @@ struct RecordThematicLoopPromptsView: View {
     }
     
     private func completeRecording() {
+        let currentPrompt = prompt.prompts[currentPromptIndex]
         if let audioFileURL = audioManager.getRecordedAudioFile() {
             Task {
                 let loop = await loopManager.addLoop(
                     mediaURL: audioFileURL,
                     isVideo: false,
-                    prompt: prompt.prompts[currentPromptIndex],
+                    prompt: currentPrompt,
                     isDailyLoop: false, isFollowUp: false
                 )
             }

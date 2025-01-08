@@ -8,8 +8,11 @@
 import SwiftUI
 import CoreData
 
+
 struct ScheduleView: View {
     @ObservedObject private var scheduleManager = ScheduleManager.shared
+    @State private var selectedDate: Date?
+    @State private var showingDayView = false
     
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
@@ -35,8 +38,8 @@ struct ScheduleView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 32) {
-                HStack(spacing: 12) {                    
-                    Text("EMOTIONS")
+                HStack(spacing: 12) {
+                    Text("CALENDAR")
                         .font(.system(size: 14, weight: .semibold))
                         .tracking(2)
                         .foregroundColor(textColor.opacity(0.5))
@@ -64,20 +67,18 @@ struct ScheduleView: View {
                             month: month,
                             year: year,
                             accentColor: accentColor,
-                            textColor: textColor
+                            textColor: textColor,
+                            selectedDate: $selectedDate,
+                            showingDayView: $showingDayView
                         )
                     }
                 }
             }
             .padding(.horizontal, 24)
         }
-        .onAppear {
-            Task {
-                if scheduleManager.emotions.isEmpty {
-                   await scheduleManager.loadYearDataAndAssignColors()
-                }
-            }
-        }
+        .navigationDestination(item: $selectedDate, destination: { date in
+            FullDayActivityView(date: date)
+        })
     }
 }
 
@@ -86,6 +87,8 @@ struct MonthRow: View {
     let year: Int
     let accentColor: Color
     let textColor: Color
+    @Binding var selectedDate: Date?
+    @Binding var showingDayView: Bool
     
     private let calendar = Calendar.current
     private let weekdays = ["S", "M", "T", "W", "T", "F", "S"]
@@ -94,7 +97,6 @@ struct MonthRow: View {
     
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
-            
             // Calendar grid
             VStack(spacing: 8) {
                 // Weekday headers
@@ -107,7 +109,6 @@ struct MonthRow: View {
                     }
                 }
                 
-                // Days grid
                 ForEach(weeks, id: \.self) { week in
                     HStack(spacing: 0) {
                         ForEach(week, id: \.self) { day in
@@ -119,6 +120,12 @@ struct MonthRow: View {
                                             .fill(getEmotionColor(for: day) ?? .clear)
                                     )
                                     .frame(width: 28, height: 28)
+                                    .onTapGesture {
+                                        if let date = calendar.date(from: DateComponents(year: year, month: month, day: day)) {
+                                            selectedDate = date
+                                            showingDayView = true
+                                        }
+                                    }
                             } else {
                                 Color.clear
                                     .frame(width: 28, height: 28)
@@ -134,7 +141,6 @@ struct MonthRow: View {
                 .tracking(2)
                 .foregroundColor(textColor.opacity(0.5))
                 .frame(width: 10, alignment: .leading)
-                
         }
     }
     
@@ -172,13 +178,33 @@ struct MonthRow: View {
         guard let date = calendar.date(from: DateComponents(year: year, month: month, day: day)) else {
             return nil
         }
-        if let emotion = scheduleManager.emotions[calendar.startOfDay(for: date)] {
+        
+        let startOfDay = calendar.startOfDay(for: date)
+
+        if let emotion = scheduleManager.emotions[startOfDay] {
             return scheduleManager.emotionColors[emotion]
         }
+ 
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
+            print("Error: Could not calculate end of day")
+            return nil
+        }
+        
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "ActivityForToday")
+        fetchRequest.predicate = NSPredicate(format: "date >= %@ AND date < %@", startOfDay as NSDate, endOfDay as NSDate)
+        
+        do {
+            let activities = try scheduleManager.context.fetch(fetchRequest)
+            if !activities.isEmpty {
+                return Color.gray.opacity(0.5)
+            }
+        } catch {
+            print("Error fetching activities: \(error)")
+        }
+        
         return nil
     }
 }
-
 struct ScheduleView_Previews: View {
     var body: some View {
         let previewData = PreviewData()

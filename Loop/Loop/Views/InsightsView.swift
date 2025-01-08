@@ -41,21 +41,14 @@ struct InsightsView: View {
                 }
             } label: {
                 HStack {
+                    
+                    Spacer()
+                    
                     Text("Today")
                         .font(.system(size: 14, weight: .medium))
                         .tracking(1.5)
-                }
-            }
-            
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    selectedTab = "trends"
-                }
-            } label: {
-                HStack {
-                    Text("Trends")
-                        .font(.system(size: 14, weight: .medium))
-                        .tracking(1.5)
+                    
+                    Spacer()
                 }
             }
         } label: {
@@ -67,19 +60,11 @@ struct InsightsView: View {
                         .foregroundColor(textColor.opacity(0.6))
                     
                     Text(selectedTab == "today" ?
-                         formattedTodayDate() : "Dec 23 - Dec 30")
+                         formattedTodayDate() : formattedWeekDateRange())
                         .font(.system(size: 12))
                         .foregroundColor(textColor.opacity(0.6))
                 }
-                
-                HStack {
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(textColor.opacity(0.6))
-                }
+
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
@@ -90,6 +75,25 @@ struct InsightsView: View {
         }
         .padding(.horizontal, 24)
     }
+    
+    private func formattedWeekDateRange() -> String {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        // Find the most recent Sunday (start of week)
+        let weekday = calendar.component(.weekday, from: today)
+        let daysToSubtract = weekday - 1  // Since weekday is 1 for Sunday
+        guard let weekStart = calendar.date(byAdding: .day, value: -daysToSubtract, to: today),
+              let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) else {
+            return ""
+        }
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM d"
+        
+        return "\(dateFormatter.string(from: weekStart)) - \(dateFormatter.string(from: weekEnd))"
+    }
+    
 
     private func formattedTodayDate() -> String {
         let formatter = DateFormatter()

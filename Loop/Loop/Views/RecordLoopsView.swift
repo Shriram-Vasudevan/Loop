@@ -521,62 +521,64 @@ struct RecordLoopsView: View {
         if loopManager.isLastPrompt() {
             allPrompts = loopManager.dailyPrompts
             
-            withAnimation {
-                isShowingMemory = true
-                isLoadingMemory = true
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                loopManager.hasCompletedToday = true
+                loopManager.saveCachedState()
+                isShowingMemory = false
             }
-            
-            Task {
-                do {
-                    let userDays = try await loopManager.fetchDistinctLoopingDays()
-                    
-                    if userDays < 3 {
-                        await MainActor.run {
-                            withAnimation {
-                                userDaysThresholdNotMet = true
-                            }
-                            
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                    loopManager.hasCompletedToday = true
-                                    loopManager.saveCachedState()
-                                    isShowingMemory = false
-                                }
-                            }
-                        }
-                        return
-                    }
-                    
-                    if let pastLoop = try? await loopManager.getPastLoopForComparison(recordedPrompts: allPrompts) {
-                        await MainActor.run {
-                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                self.pastLoop = pastLoop
-                                isShowingMemory = true
-                                isPostRecording = false
-                                isLoadingMemory = false
-                            }
-                            audioManager.cleanup()
-                        }
-                    } else {
-                        await MainActor.run {
-                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                loopManager.hasCompletedToday = true
-                                loopManager.saveCachedState()
-                                isShowingMemory = false
-                            }
-                            audioManager.cleanup()
-                        }
-                    }
-                } catch {
-                    print("Error in memory handling: \(error)")
-                    await MainActor.run {
-                        withAnimation {
-                            loopManager.hasCompletedToday = true
-                            isShowingMemory = false
-                        }
-                    }
-                }
-            }
+            audioManager.cleanup()
+//
+//            Task {
+//                do {
+//                    let userDays = try await loopManager.fetchDistinctLoopingDays()
+//
+//                    if userDays < 3 {
+//                        await MainActor.run {
+//                            withAnimation {
+//                                userDaysThresholdNotMet = true
+//                            }
+//
+//                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+//                                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+//                                    loopManager.hasCompletedToday = true
+//                                    loopManager.saveCachedState()
+//                                    isShowingMemory = false
+//                                }
+//                            }
+//                        }
+//                        return
+//                    }
+//
+//                    if let pastLoop = try? await loopManager.getPastLoopForComparison(recordedPrompts: allPrompts) {
+//                        await MainActor.run {
+//                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+//                                self.pastLoop = pastLoop
+//                                isShowingMemory = true
+//                                isPostRecording = false
+//                                isLoadingMemory = false
+//                            }
+//                            audioManager.cleanup()
+//                        }
+//                    } else {
+//                        await MainActor.run {
+//                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+//                                loopManager.hasCompletedToday = true
+//                                loopManager.saveCachedState()
+//                                isShowingMemory = false
+//                            }
+//                            audioManager.cleanup()
+//                        }
+//                    }
+//                } catch {
+//                    print("Error in memory handling: \(error)")
+//                    await MainActor.run {
+//                        withAnimation {
+//                            loopManager.hasCompletedToday = true
+//                            isShowingMemory = false
+//                        }
+//                    }
+//                }
+//            }
         } else {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                 loopManager.moveToNextPrompt()

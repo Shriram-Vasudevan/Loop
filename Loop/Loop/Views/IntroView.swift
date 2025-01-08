@@ -19,6 +19,7 @@ struct OnboardingView: View {
     @State private var showPastLoop = false
     @State private var showInsights = false
     @State private var showStorageInfo = false
+    @State private var showFinalNote = false
     @State private var userName = ""
     @State private var selectedPurposes: Set<String> = []
     @State private var backgroundOpacity = 0.0
@@ -86,6 +87,10 @@ struct OnboardingView: View {
             if showStorageInfo {
                 StorageInfoOverlay(isShowing: $showStorageInfo)
             }
+            
+            if showFinalNote {
+                FinalThingToShare(isShowing: $showFinalNote)
+            }
         }
         .preferredColorScheme(.light)
     }
@@ -112,6 +117,7 @@ struct OnboardingView: View {
                 OnboardingButton(text: "begin", icon: "arrow.right") {
                     withAnimation {
                         currentStep = 1
+                        showFinalNote = true
                     }
                 }
                 .padding(.bottom, 48)
@@ -129,7 +135,7 @@ struct OnboardingView: View {
         ZStack {
             VStack(spacing: 16) {
                 
-                Text("PRIVACY")
+                Text("ONE NOTE")
                     .font(.system(size: 14, weight: .medium))
                     .tracking(1.5)
                     .foregroundColor(textColor.opacity(0.6))
@@ -207,6 +213,54 @@ struct OnboardingView: View {
             .onAppear {
                 isAnimating = true
             }
+        }
+    }
+    
+    struct FinalThingToShare: View {
+        @Binding var isShowing: Bool
+        
+        var body: some View {
+            ZStack {
+                Color.black.opacity(0.2)
+                    .edgesIgnoringSafeArea(.all)
+                    .onTapGesture {
+                        withAnimation {
+                            isShowing = false
+                        }
+                    }
+                
+                VStack(spacing: 24) {
+                    VStack(spacing: 16) {
+                        Text("We want you to explore loop on your own, but we'd like to share this first.")
+                            .font(.system(size: 16, weight: .light))
+                            .foregroundColor(Color(hex: "2C3E50").opacity(0.8))
+                            .multilineTextAlignment(.center)
+                    }
+                    
+                    Button {
+                        withAnimation {
+                            isShowing = false
+                        }
+                    } label: {
+                        Text("Got it")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(Color(hex: "A28497"))
+                            .frame(width: 100, height: 44)
+                            .background(
+                                RoundedRectangle(cornerRadius: 22)
+                                    .fill(Color(hex: "A28497").opacity(0.1))
+                            )
+                    }
+                }
+                .padding(32)
+                .background(
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(Color.white)
+                        .shadow(color: Color.black.opacity(0.1), radius: 20)
+                )
+                .padding(24)
+            }
+            .transition(.opacity.combined(with: .scale(scale: 1.1)))
         }
     }
     

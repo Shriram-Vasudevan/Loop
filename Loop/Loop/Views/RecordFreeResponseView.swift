@@ -7,9 +7,8 @@
 
 import SwiftUI
 
+
 struct RecordFreeResponseView: View {
-    @State var prompt: String
-    
     @ObservedObject var loopManager = LoopManager.shared
     @ObservedObject var audioManager = AudioManager.shared
     
@@ -18,215 +17,191 @@ struct RecordFreeResponseView: View {
     @State private var showingThankYouScreen = false
     @State private var recordingTimer: Timer?
     @State private var timeRemaining: Int = 30
-    @State private var backgroundOpacity: Double = 0
-    @State private var messageOpacity: Double = 0
-
-    @State var retryAttempts = 100
+    @State private var retryAttempts = 100
+    
+    @Environment(\.dismiss) var dismiss
     
     let accentColor = Color(hex: "A28497")
     let secondaryColor = Color(hex: "B7A284")
     let textColor = Color(hex: "2C3E50")
     
-        
-    @Environment(\.dismiss) var dismiss
-    
     var body: some View {
         ZStack {
-            AnimatedBackground()
-                .opacity(backgroundOpacity)
-                .onAppear {
-                    withAnimation(.easeIn(duration: 1.2)) {
-                        backgroundOpacity = 1
-                    }
-                }
-                .edgesIgnoringSafeArea(.all)
-            
             VStack(spacing: 0) {
                 if showingThankYouScreen {
-                    thankYouScreen
+                    thankYouView
                 } else if isPostRecording {
                     postRecordingView
-                }
-                else {
-                    recordingScreen
+                        .padding(.top, 50)
+                } else {
+                    mainRecordingView
                 }
             }
-            .padding(.horizontal, 32)
+            
+            VStack {
+                headerSection
+                
+                Spacer()
+            }
         }
+        .background(Color.white)
         .onAppear {
             audioManager.cleanup()
         }
     }
     
-    private var recordingScreen: some View {
-        VStack(spacing: 0) {
-            topBar
-                .padding(.bottom, 40)
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text(formattedDate())
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundColor(.gray)
+                
+                Spacer()
+                
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundColor(.gray)
+                }
+            }
+            .padding(.top, 16)
             
+            Text("Free Response")
+                .font(.system(size: 28, weight: .light))
+                .foregroundColor(textColor)
+            
+            Text("While loop usually guides your reflections, this is your space. Take a moment to share your thoughts, unfiltered and unguided")
+                .font(.system(size: 16, weight: .regular))
+                .foregroundColor(.gray)
+                .padding(.bottom, 8)
+            
+            Divider()
+        }
+        .padding(.horizontal, 32)
+    }
+    
+    private var mainRecordingView: some View {
+        VStack(spacing: 40) {
             Spacer()
             
-            promptArea
+            if isRecording {
+                VStack(spacing: 16) {
+                    HStack(spacing: 12) {
+                        PulsingDot()
+                        Text("\(timeRemaining)s")
+                            .font(.system(size: 20, weight: .regular))
+                            .foregroundColor(accentColor)
+                    }
+                    
+                    Text("Recording your thoughts...")
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundColor(.gray)
+                }
+            }
             
             Spacer()
             
             recordingButton
-                .padding(.bottom, 60)
+                .padding(.bottom, 30)
         }
+        .padding(.horizontal, 32)
     }
-    
-    private var topBar: some View {
-        VStack(spacing: 24) {
-            ZStack {
-                Text("Share Anything")
-                    .font(.system(size: 16, weight: .light))
-                    .foregroundColor(accentColor.opacity(0.8))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(
-                        Capsule()
-                            .fill(accentColor.opacity(0.1))
-                    )
-                
-                HStack {
-
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 20, weight: .light))
-                            .foregroundColor(accentColor.opacity(0.8))
-                    }
-                    
-                    Spacer()
-//                    
-//                    Text(formattedTodayDate())
-//                        .font(.system(size: 17))
-                }
-            }
-
-        }
-        .padding(.top, 16)
-    }
-    
-    private var promptArea: some View {
-        VStack(spacing: isRecording ? 20 : 44) {
-            Text(prompt)
-                font(.system(size: 28, weight: .medium))
-                .foregroundColor(textColor)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-                .transition(.opacity)
-                .animation(.easeInOut, value: prompt)
-            
-            if isRecording {
-                HStack(spacing: 12) {
-                    PulsingDot()
-                    Text("\(timeRemaining)s")
-                        .font(.system(size: 26, weight: .ultraLight))
-                        .foregroundColor(accentColor)
-                }
-                .transition(.opacity)
-            }
-            
-        }
-        .frame(maxWidth: .infinity)
-    }
-    
     private var recordingButton: some View {
-        Button(action: {
-            withAnimation {
-                toggleRecording()
-            }
-        }) {
-            ZStack {
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: 96)
-                    .shadow(color: accentColor.opacity(0.2), radius: 20, x: 0, y: 8)
+       Button(action: {
+           withAnimation {
+               toggleRecording()
+           }
+       }) {
+           ZStack {
+               Circle()
+                   .fill(Color.white)
+                   .frame(width: 96)
+                   .shadow(color: accentColor.opacity(0.2), radius: 20, x: 0, y: 8)
 
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                isRecording ? accentColor : .white,
-                                isRecording ? accentColor.opacity(0.9) : .white
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 88)
-                    .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
-                
-                if isRecording {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.white)
-                        .frame(width: 26, height: 26)
-                } else {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    accentColor,
-                                    accentColor.opacity(0.85)
-                                ]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 74)
-                }
-            
-                if isRecording {
-                    PulsingRing(color: accentColor)
-                }
-            }
-            .scaleEffect(isRecording ? 1.08 : 1.0)
-            .animation(.spring(response: 0.35, dampingFraction: 0.6), value: isRecording)
-        }
-    }
+               Circle()
+                   .fill(
+                       LinearGradient(
+                           gradient: Gradient(colors: [
+                               isRecording ? accentColor : .white,
+                               isRecording ? accentColor.opacity(0.9) : .white
+                           ]),
+                           startPoint: .topLeading,
+                           endPoint: .bottomTrailing
+                       )
+                   )
+                   .frame(width: 88)
+                   .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+               
+               if isRecording {
+                   RoundedRectangle(cornerRadius: 6)
+                       .fill(Color.white)
+                       .frame(width: 26, height: 26)
+               } else {
+                   Circle()
+                       .fill(
+                           LinearGradient(
+                               gradient: Gradient(colors: [
+                                   accentColor,
+                                   accentColor.opacity(0.85)
+                               ]),
+                               startPoint: .topLeading,
+                               endPoint: .bottomTrailing
+                           )
+                       )
+                       .frame(width: 74)
+               }
+           
+               if isRecording {
+                   PulsingRing(color: accentColor)
+               }
+           }
+           .scaleEffect(isRecording ? 1.08 : 1.0)
+           .animation(.spring(response: 0.35, dampingFraction: 0.6), value: isRecording)
+       }
+   }
+   
     
     private var postRecordingView: some View {
-        VStack {
-            LoopAudioConfirmationView(
-                audioURL: audioManager.getRecordedAudioFile() ?? URL(fileURLWithPath: ""),
-                waveformData: generateRandomWaveform(count: 40),
-                onComplete: { completeRecording() },
-                onRetry: { retryRecording() }, retryAttempts: retryAttempts
-            )
-        }
+        LoopAudioConfirmationView(
+            audioURL: audioManager.getRecordedAudioFile() ?? URL(fileURLWithPath: ""),
+            waveformData: generateRandomWaveform(count: 40),
+            onComplete: {
+                withAnimation {
+                    isPostRecording = false
+                    showingThankYouScreen = true
+                    completeRecording()
+                }
+            },
+            onRetry: { retryRecording() },
+            retryAttempts: retryAttempts
+        )
+        .padding(.top, 40)
     }
     
-    private var thankYouScreen: some View {
-        VStack(spacing: 12) {
+    private var thankYouView: some View {
+        VStack(spacing: 16) {
             Spacer()
             
-            Text("thank you for looping")
-                .font(.system(size: 36, weight: .thin))
+            Text("Entry Saved")
+                .font(.system(size: 24, weight: .light))
                 .foregroundColor(textColor)
-                .multilineTextAlignment(.center)
             
-            VStack(spacing: 12) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 32, weight: .thin))
-                    .foregroundColor(accentColor)
-                
-//                Text("see you tomorrow")
-//                    .font(.system(size: 24, weight: .thin))
-//                    .foregroundColor(Color.gray)
-            }
+            Text("Thank you for sharing your thoughts")
+                .font(.system(size: 16, weight: .regular))
+                .foregroundColor(.gray)
             
             Spacer()
         }
-        .frame(maxWidth: .infinity)
         .onAppear {
             audioManager.cleanup()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                 dismiss()
             }
         }
     }
     
+    // Helper functions remain largely the same
     private func toggleRecording() {
         withAnimation(.easeInOut(duration: 0.3)) {
             isRecording.toggle()
@@ -272,18 +247,11 @@ struct RecordFreeResponseView: View {
                 let loop = await loopManager.addLoop(
                     mediaURL: audioFileURL,
                     isVideo: false,
-                    prompt: prompt,
-                    isDailyLoop: true, isFollowUp: false
+                    prompt: formattedDate(),
+                    isDailyLoop: true,
+                    isFollowUp: false
                 )
-                
             }
-            AnalysisManager.shared.markFollowUpComplete()
-            
-            withAnimation {
-                isPostRecording = false
-                showingThankYouScreen = true
-            }
-
         }
     }
     
@@ -296,20 +264,17 @@ struct RecordFreeResponseView: View {
         }
     }
     
-    private func generateRandomWaveform(count: Int, minHeight: CGFloat = 12, maxHeight: CGFloat = 64) -> [CGFloat] {
-        return (0..<count).map { _ in
-            CGFloat.random(in: minHeight...maxHeight)
-        }
+    private func generateRandomWaveform(count: Int) -> [CGFloat] {
+        (0..<count).map { _ in CGFloat.random(in: 12...64) }
     }
     
-    private func formattedTodayDate() -> String {
+    private func formattedDate() -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
+        formatter.dateFormat = "MMMM d, yyyy"
         return formatter.string(from: Date())
     }
-    
 }
-//
-//#Preview {
-//    RecordFreeResponseView()
-//}
+
+#Preview {
+    RecordFreeResponseView()
+}

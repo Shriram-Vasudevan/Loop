@@ -30,16 +30,13 @@ class QuantitativeTrendsManager: ObservableObject {
         return persistentContainer.viewContext
     }
     
-    // MARK: - Save Methods
     func saveDailyStats(_ analysis: DailyAnalysis) {
         print("\n📊 Saving daily stats for \(analysis.date)")
         
-        // Save to each timeframe
         saveDailyToDaily(analysis)
         updateWeeklyStats(with: analysis)
         updateMonthlyStats(with: analysis)
         
-        // Refresh published properties
         Task {
             await fetchAllTimeframes()
         }
@@ -459,4 +456,136 @@ extension QuantitativeTrendsManager {
             duration: maxWordsEntry.averageDuration
         )
     }
+
+    func getDurationComparison(for timeframe: Timeframe) -> (current: [DailyStats]?, previous: [DailyStats]?) {
+        switch timeframe {
+        case .week:
+            return getWeekComparison()
+        case .month:
+            return getMonthComparison()
+        case .year:
+            return getYearComparison()
+        }
+    }
+    
+    private func getWeekComparison() -> (current: [DailyStats]?, previous: [DailyStats]?) {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        // Get current week's start
+        guard let currentWeekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)),
+              let lastWeekStart = calendar.date(byAdding: .day, value: -7, to: currentWeekStart) else {
+            return (nil, nil)
+        }
+        
+        // Fetch current week's data
+        let request = NSFetchRequest<NSManagedObject>(entityName: "DailyStatsEntity")
+        request.predicate = NSPredicate(format: "date >= %@ AND date < %@",
+            currentWeekStart as NSDate,
+            now as NSDate
+        )
+        request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
+        
+        // Fetch last week's data
+        let lastWeekRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyStatsEntity")
+        lastWeekRequest.predicate = NSPredicate(format: "date >= %@ AND date < %@",
+            lastWeekStart as NSDate,
+            currentWeekStart as NSDate
+        )
+        lastWeekRequest.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
+        
+        do {
+            let currentResults = try context.fetch(request).compactMap { convertToDailyStats(from: $0) }
+            let previousResults = try context.fetch(lastWeekRequest).compactMap { convertToDailyStats(from: $0) }
+            
+            return (
+                currentResults.isEmpty ? nil : currentResults,
+                previousResults.isEmpty ? nil : previousResults
+            )
+        } catch {
+            print("❌ Failed to fetch comparison data: \(error)")
+            return (nil, nil)
+        }
+    }
+    
+    private func getMonthComparison() -> (current: [DailyStats]?, previous: [DailyStats]?) {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        // Get current month's start
+        guard let currentMonthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now)),
+              let lastMonthStart = calendar.date(byAdding: .month, value: -1, to: currentMonthStart) else {
+            return (nil, nil)
+        }
+        
+        // Fetch current month's data
+        let request = NSFetchRequest<NSManagedObject>(entityName: "DailyStatsEntity")
+        request.predicate = NSPredicate(format: "date >= %@ AND date < %@",
+            currentMonthStart as NSDate,
+            now as NSDate
+        )
+        request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
+        
+        // Fetch last month's data
+        let lastMonthRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyStatsEntity")
+        lastMonthRequest.predicate = NSPredicate(format: "date >= %@ AND date < %@",
+            lastMonthStart as NSDate,
+            currentMonthStart as NSDate
+        )
+        lastMonthRequest.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
+        
+        do {
+            let currentResults = try context.fetch(request).compactMap { convertToDailyStats(from: $0) }
+            let previousResults = try context.fetch(lastMonthRequest).compactMap { convertToDailyStats(from: $0) }
+            
+            return (
+                currentResults.isEmpty ? nil : currentResults,
+                previousResults.isEmpty ? nil : previousResults
+            )
+        } catch {
+            print("❌ Failed to fetch comparison data: \(error)")
+            return (nil, nil)
+        }
+    }
+    
+    private func getYearComparison() -> (current: [DailyStats]?, previous: [DailyStats]?) {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        // Get current year's start
+        guard let currentYearStart = calendar.date(from: calendar.dateComponents([.year], from: now)),
+              let lastYearStart = calendar.date(byAdding: .year, value: -1, to: currentYearStart) else {
+            return (nil, nil)
+        }
+        
+        // Fetch current year's data
+        let request = NSFetchRequest<NSManagedObject>(entityName: "DailyStatsEntity")
+        request.predicate = NSPredicate(format: "date >= %@ AND date < %@",
+            currentYearStart as NSDate,
+            now as NSDate
+        )
+        request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
+        
+        // Fetch last year's data
+        let lastYearRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyStatsEntity")
+        lastYearRequest.predicate = NSPredicate(format: "date >= %@ AND date < %@",
+            lastYearStart as NSDate,
+            currentYearStart as NSDate
+        )
+        lastYearRequest.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
+        
+        do {
+            let currentResults = try context.fetch(request).compactMap { convertToDailyStats(from: $0) }
+            let previousResults = try context.fetch(lastYearRequest).compactMap { convertToDailyStats(from: $0) }
+            
+            return (
+                currentResults.isEmpty ? nil : currentResults,
+                previousResults.isEmpty ? nil : previousResults
+            )
+        } catch {
+            print("❌ Failed to fetch comparison data: \(error)")
+            return (nil, nil)
+        }
+    }
+    
 }

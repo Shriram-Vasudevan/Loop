@@ -54,9 +54,9 @@ struct OpeningViewsContainer: View {
                     .preferredColorScheme(.light)
             }
         }
-        .fullScreenCover(isPresented: $showLoops) {
-            RecordLoopsView(isFirstLaunch: true)
-        }
+//        .fullScreenCover(isPresented: $showLoops) {
+//            RecordLoopsView(isFirstLaunch: true)
+//        }
         .animation(.easeInOut, value: showingSplashScreen || showIntroView)
         .navigationBarBackButtonHidden()
     }

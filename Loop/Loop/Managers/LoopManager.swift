@@ -8,12 +8,14 @@
 import Foundation
 import CloudKit
 import SwiftUI
+import CoreData
+
 class LoopManager: ObservableObject {
     static let shared = LoopManager()
 
     @Published var dailyPrompts: [String] = []
     @Published var currentPromptIndex: Int = 0
-    @Published var retryAttemptsLeft: Int = 1
+    @Published var retryAttemptsLeft: Int = 10
     @Published var pastLoop: Loop?
     @Published var loopsByDate: [Date: [Loop]] = [:]
     @Published var recentDates: [Date] = []
@@ -87,6 +89,20 @@ class LoopManager: ObservableObject {
     }
     
     @AppStorage("hasRemovedUnlockReminder") var hasRemovedUnlockReminder: Bool = false
+    
+    lazy var persistentContainer: NSPersistentContainer = {
+        let container = NSPersistentContainer(name: "LoopData")
+        container.loadPersistentStores { _, error in
+            if let error = error as NSError? {
+                fatalError("Unresolved error \(error), \(error.userInfo)")
+            }
+        }
+        return container
+    }()
+    
+    var context: NSManagedObjectContext {
+        return persistentContainer.viewContext
+    }
     
     init() {
         Task {
@@ -718,10 +734,53 @@ class LoopManager: ObservableObject {
             await localStorage.addLoop(loop: loop)
         }
 
+        print("dding day activity")
+        addDayActivity()
+        
         return (loop, transcript)
     }
 
-
+    func addDayActivity() {
+       do {
+           print("📝 Starting addDayActivity...")
+           let date = Date()
+           
+           // Create fetch request to check for existing entry
+           let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "ActivityForToday")
+           
+           // Predicate to match the start of the day
+           let calendar = Calendar.current
+           let startOfDay = calendar.startOfDay(for: date)
+           let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+           
+           print("🔍 Checking for existing activity between \(startOfDay) and \(endOfDay)")
+           fetchRequest.predicate = NSPredicate(format: "date >= %@ AND date < %@", startOfDay as NSDate, endOfDay as NSDate)
+           
+           // Try to fetch existing entry
+           let existingEntries = try context.fetch(fetchRequest)
+           
+           if let existingEntry = existingEntries.first {
+               print("✅ Found existing activity entry for today")
+               // Update existing entry if needed
+               // existingEntry.setValue(newValue, forKey: "someAttribute")
+           } else {
+               print("➕ No existing activity found - creating new entry")
+               guard let entityDescription = NSEntityDescription.entity(forEntityName: "ActivityForToday", in: context) else {
+                   print("❌ Failed to get entity description for ActivityForToday")
+                   return
+               }
+               let entity = NSManagedObject(entity: entityDescription, insertInto: context)
+               entity.setValue(startOfDay, forKey: "date")
+               print("✏️ Set activity date to \(startOfDay)")
+           }
+           
+           try context.save()
+           print("💾 Successfully saved activity to Core Data")
+       } catch {
+           print("❌ Error in addDayActivity: \(error.localizedDescription)")
+           return
+       }
+    }
     
     func fetchRecentDates(limit: Int = 10, completion: @escaping () -> Void) {
         let group = DispatchGroup()

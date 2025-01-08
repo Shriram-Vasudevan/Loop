@@ -27,7 +27,7 @@ struct PagesHolderView: View {
                         HomeView(pageType: $pageType)
                     case .journal:
                         LoopsView()
-                    case .schedule:
+                    case .trends:
                         ScheduleView()
                     case .insights:
                        InsightsView()
@@ -59,7 +59,7 @@ struct PagesHolderView: View {
                             
                             ForEach([
                                 (icon: "chart.bar", label: "Insights", type: PageType.insights),
-                                (icon: "calendar", label: "Calendar", type: PageType.schedule)
+                                (icon: "calendar", label: "Trends", type: PageType.trends)
                             ], id: \.label) { item in
                                 BottomTabButton(
                                     icon: item.icon,
@@ -102,7 +102,7 @@ struct PagesHolderView: View {
             .edgesIgnoringSafeArea(.bottom)
             .persistentSystemOverlays(.hidden)
             .fullScreenCover(isPresented: $showFreeResponseButton) {
-                RecordFreeResponseView(prompt: "What is on your mind right now?")
+                RecordFreeResponseView()
             }
         }
     }

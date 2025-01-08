@@ -193,7 +193,7 @@ struct StatsGrid: View {
             HStack(spacing: 2) {
                 StatBox(
                     value: String(format: "%.0f", metrics.averageWordCount),
-                    label: "Total Words", image: "waveform"
+                    label: "Average Words", image: "waveform"
                 )
 
                 StatBox(

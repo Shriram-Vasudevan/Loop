@@ -24,6 +24,8 @@ struct SettingsView: View {
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
     
+    @Environment(\.dismiss) var dismiss
+    
     init() {
         let savedName = UserDefaults.standard.string(forKey: "userName") ?? "Set your name"
         _userName = State(initialValue: savedName)
@@ -40,9 +42,19 @@ struct SettingsView: View {
             
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 40) {
+                    HStack {
+                        Button(action: { dismiss() }) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(textColor)
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding(.top, 20)
+                    
                     VStack(spacing: 30) {
                         header
-                            .padding(.top, 40)
                     }
                     
                     preferencesSection
@@ -50,9 +62,7 @@ struct SettingsView: View {
                     socialSection
                     
                     supportSection
-                    
-                    accountSection
-                    
+                
                     Spacer(minLength: 60)
                 }
                 .padding(.horizontal, 24)
@@ -227,9 +237,7 @@ struct SettingsView: View {
     }
     
     private var accountSection: some View {
-        VStack(alignment: .leading, spacing: 32) {
-            sectionTitle("Account")
-            
+        VStack(alignment: .leading, spacing: 32) {            
             VStack(spacing: 24) {
                 Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")")
                     .font(.system(size: 15))
@@ -242,7 +250,10 @@ struct SettingsView: View {
                 }
                 .alert("Log Out", isPresented: $showingLogoutAlert) {
                     Button("Cancel", role: .cancel) { }
-                    Button("Log Out", role: .destructive) { }
+                    Button("Log Out", role: .destructive) { 
+                        print("logging out")
+                        FirstLaunchManager.shared.isFirstLaunch = true
+                    }
                 }
             }
         }
@@ -275,7 +286,7 @@ struct SettingsView: View {
                 }
                 
                 socialLink("Follow us on Instagram", icon: "insta") {
-                    if let url = URL(string: "https://instagram.com/loopapp") {
+                    if let url = URL(string: "https://www.instagram.com/joinloop.app/") {
                         UIApplication.shared.open(url)
                     }
                 }
@@ -287,7 +298,7 @@ struct SettingsView: View {
                 }
                 
                 socialLink("Visit our Website", icon: "link") {
-                    if let url = URL(string: "https://loopapp.com") {
+                    if let url = URL(string: "https://seeloop.app") {
                         UIApplication.shared.open(url)
                     }
                 }
@@ -297,6 +308,7 @@ struct SettingsView: View {
                 RoundedRectangle(cornerRadius: 10)
                     .fill(.white)
             )
+            .navigationBarBackButtonHidden()
         }
     }
     
@@ -487,11 +499,11 @@ struct ContactView: View {
             title: "Send us an email",
             description: "support@loopapp.com",
             icon: "envelope.fill",
-            url: "mailto:support@loopapp.com"
+            url: "mailto:loopapp.help@gmail.com"
         ),
         ContactMethod(
             title: "Call us",
-            description: "+1 (555) 123-4567",
+            description: "+1 (973) 610-9630",
             icon: "phone.fill",
             url: "tel:+15551234567"
         )
