@@ -178,26 +178,7 @@ import SwiftUI
 //        .padding(.horizontal, 24)
 //    }
 //    
-//    private var noDataView: some View {
-//        VStack(spacing: 20) {
-//            WavePattern()
-//                .fill(accentColor.opacity(0.7))
-//                .frame(height: 60)
-//            
-//            VStack(spacing: 8) {
-//                Text("REFLECTIONS REQUIRED")
-//                    .font(.system(size: 13, weight: .medium))
-//                    .tracking(1.5)
-//                    .foregroundColor(textColor.opacity(0.6))
-//                
-//                Text(noDataMessage)
-//                    .font(.system(size: 17))
-//                    .foregroundColor(textColor)
-//                    .multilineTextAlignment(.center)
-//            }
-//        }
-//        .frame(height: 150)
-//    }
+
 //    
 //    private func statisticView(title: String, value: String) -> some View {
 //        VStack(alignment: .leading, spacing: 4) {

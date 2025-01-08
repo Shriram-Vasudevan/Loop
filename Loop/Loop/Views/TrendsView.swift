@@ -13,6 +13,7 @@ import SwiftUI
 struct TrendsView: View {
     @State private var selectedTimeframe: Timeframe = .week
     @ObservedObject private var quantTrendsManager = QuantitativeTrendsManager.shared
+    @ObservedObject private var aiTrendsManager = AITrendsManager.shared
     
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
@@ -53,24 +54,35 @@ struct TrendsView: View {
         }
         return false
     }
+    
+    private var emotionFrequencies: [(emotion: String, percentage: Double)] {
+        switch selectedTimeframe {
+        case .week:
+            if let frequencies = aiTrendsManager.getWeeklyFrequencies()?.topEmotions {
+                return frequencies.map { result in
+                    (emotion: result.value, percentage: result.percentage / 100)
+                }
+            }
+        case .month:
+            if let frequencies = aiTrendsManager.getMonthlyFrequencies()?.topEmotions {
+                return frequencies.map { result in
+                    (emotion: result.value, percentage: result.percentage / 100)
+                }
+            }
+        case .year:
+            if let frequencies = aiTrendsManager.getYearlyFrequencies()?.topEmotions {
+                return frequencies.map { result in
+                    (emotion: result.value, percentage: result.percentage / 100)
+                }
+            }
+        }
+        return []
+    }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                // Header
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("trends")
-                        .font(.custom("PPNeueMontreal-Medium", size: 37))
-                        .foregroundColor(textColor)
-                    
-                    Text("reflection patterns")
-                        .font(.system(size: 18, weight: .regular))
-                        .foregroundColor(accentColor)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 45)
-                .padding(.horizontal, 24)
-                
+
                 HStack {
                     TimeframeSelector(
                        selectedTimeframe: $selectedTimeframe,
@@ -80,6 +92,7 @@ struct TrendsView: View {
                     
                     Spacer()
                 }
+                .padding(.top, 30)
                 
                 DurationGraph(
                     currentPeriod: graphData.current,
@@ -88,13 +101,26 @@ struct TrendsView: View {
                     accentColor: accentColor,
                     hasEnoughData: hasEnoughData
                 )
-                .padding(.top, 16)
                 
                 // Emotions Section
                 VStack {
-                    // Emotions content
+                    Text("EMOTIONS")
+                        .font(.system(size: 13, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(textColor.opacity(0.5))
+                    
+                    if !emotionFrequencies.isEmpty {
+                        EmotionsCard(
+                            emotions: emotionFrequencies,
+                            accentColor: accentColor,
+                            textColor: textColor
+                        )
+                        .padding(.horizontal, 24)
+                    }
                 }
                 .padding(.horizontal, 24)
+                .padding(.top, 24)
+                
                 
                 // Key Moments Section
                 VStack {
@@ -132,14 +158,14 @@ struct TimeframeSelector: View {
         } label: {
             HStack(spacing: 8) {
                 Text(selectedTimeframe.rawValue)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 18, weight: .bold))
                 
                 Image(systemName: "chevron.down")
                     .font(.system(size: 12, weight: .medium))
             }
             .foregroundColor(textColor)
             .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.vertical, 12)
             .background(
                 Capsule()
                     .fill(.white)
@@ -160,37 +186,40 @@ struct DurationGraph: View {
     private let graphHeight: CGFloat = 200
     private let labelHeight: CGFloat = 30
     
+    private let textColor = Color(hex: "2C3E50")
+    
     var body: some View {
         VStack(spacing: 8) {
            // Title and Key in same row
            HStack {
-               Text("average duration")
-                   .font(.system(size: 16, weight: .bold))
-                   .foregroundColor(.black.opacity(0.8))
-               
-               Spacer()
-               
-               // Key/Legend moved to right
-               HStack(spacing: 12) {
-                   HStack(spacing: 4) {
-                       Circle()
-                           .fill(accentColor)
-                           .frame(width: 6, height: 6)
-                       Text(timeframe.rawValue)
-                           .font(.system(size: 11, weight: .medium))
-                   }
+               VStack (spacing: 8) {
+                   Text("Average Duration")
+                       .font(.system(size: 30, weight: .bold))
+                       .foregroundColor(.black.opacity(0.8))
                    
-                   if previousPeriod != nil {
+                   HStack(spacing: 12) {
                        HStack(spacing: 4) {
                            Circle()
-                               .fill(Color.gray.opacity(0.5))
+                               .fill(accentColor)
                                .frame(width: 6, height: 6)
-                           Text("Previous")
+                           Text(timeframe.rawValue)
                                .font(.system(size: 11, weight: .medium))
                        }
+                       
+                       if previousPeriod != nil {
+                           HStack(spacing: 4) {
+                               Circle()
+                                   .fill(Color.gray.opacity(0.5))
+                                   .frame(width: 6, height: 6)
+                               Text("Previous")
+                                   .font(.system(size: 11, weight: .medium))
+                           }
+                       }
                    }
+                   .foregroundColor(.black.opacity(0.6))
                }
-               .foregroundColor(.black.opacity(0.6))
+
+            
            }
            .padding(.vertical, 8)
            .padding(.horizontal, 24)
@@ -223,10 +252,20 @@ struct DurationGraph: View {
                .blur(radius: hasEnoughData ? 0 : 3)
                .overlay {
                    if !hasEnoughData {
-                       EntriesNeededOverlay(
-                           currentEntries: currentPeriod?.count ?? 0,
-                           accentColor: accentColor
-                       )
+                       VStack(spacing: 20) {
+                           VStack(spacing: 8) {
+                               Text("REFLECTIONS REQUIRED")
+                                   .font(.system(size: 13, weight: .medium))
+                                   .tracking(1.5)
+                                   .foregroundColor(textColor.opacity(0.6))
+               
+                               Text(noDataMessage)
+                                   .font(.system(size: 17))
+                                   .foregroundColor(textColor)
+                                   .multilineTextAlignment(.center)
+                           }
+                       }
+                       .padding(.bottom, 40)
                    }
                }
            }
@@ -236,6 +275,14 @@ struct DurationGraph: View {
            TimeLabels(timeframe: timeframe)
                .frame(height: labelHeight)
        }
+    }
+    
+    private var noDataMessage: String {
+        switch timeframe {
+        case .week: return "Complete 3 Daily Reflections \nthis week to see trends"
+        case .month: return "Complete 9 days of daily reflection\nto unlock monthly trends"
+        case .year: return "Complete 40 days of daily reflection\nto see yearly patterns"
+        }
     }
 }
 
@@ -365,6 +412,60 @@ struct EntriesNeededOverlay: View {
             )
             .padding(.horizontal, 32)
         }
+    }
+}
+
+
+struct EmotionsCard: View {
+    let emotions: [(emotion: String, percentage: Double)]
+    let accentColor: Color
+    let textColor: Color
+    
+    private let maxBars = 4 // Show top 4 emotions
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            // Title
+            Text("top emotions")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(textColor)
+            
+            // Emotion bars
+            VStack(spacing: 16) {
+                ForEach(emotions.prefix(maxBars), id: \.emotion) { item in
+                    HStack(spacing: 12) {
+                        // Emotion name
+                        Text(item.emotion.lowercased())
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(textColor)
+                            .frame(width: 80, alignment: .leading)
+                        
+                        // Bar
+                        GeometryReader { geometry in
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(accentColor.opacity(0.15))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(accentColor)
+                                        .frame(width: geometry.size.width * item.percentage)
+                                    , alignment: .leading
+                                )
+                        }
+                        .frame(height: 8)
+                        
+                        // Percentage
+                        Text("\(Int(item.percentage * 100))%")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(textColor.opacity(0.6))
+                            .frame(width: 40, alignment: .trailing)
+                    }
+                }
+            }
+        }
+        .padding(24)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: Color.black.opacity(0.05), radius: 15, x: 0, y: 4)
     }
 }
 
@@ -830,9 +931,9 @@ struct EntriesNeededOverlay: View {
 //}
 //
 enum Timeframe: String, CaseIterable {
-    case week = "This Week"
-    case month = "This Month"
-    case year = "This Year"
+    case week = "Week"
+    case month = "Month"
+    case year = "Year"
 }
 
 enum MetricType: String, CaseIterable, Identifiable {

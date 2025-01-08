@@ -28,7 +28,7 @@ struct PagesHolderView: View {
                     case .journal:
                         LoopsView()
                     case .trends:
-                        ScheduleView()
+                        TrendsView()
                     case .insights:
                        InsightsView()
                     }

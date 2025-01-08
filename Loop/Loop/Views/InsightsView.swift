@@ -41,30 +41,32 @@ struct InsightsView: View {
                 }
             } label: {
                 HStack {
-                    
-                    Spacer()
-                    
                     Text("Today")
                         .font(.system(size: 14, weight: .medium))
                         .tracking(1.5)
                     
-                    Spacer()
                 }
             }
         } label: {
             ZStack {
-                VStack(alignment: .center, spacing: 4) {
-                    Text(selectedTab == "today" ? "TODAY" : "TRENDS")
-                        .font(.system(size: 13, weight: .medium))
-                        .tracking(1.5)
-                        .foregroundColor(textColor.opacity(0.6))
+                HStack {
+                    Spacer()
                     
-                    Text(selectedTab == "today" ?
-                         formattedTodayDate() : formattedWeekDateRange())
-                        .font(.system(size: 12))
-                        .foregroundColor(textColor.opacity(0.6))
-                }
+                    VStack(alignment: .center, spacing: 4) {
+                        Text(selectedTab == "today" ? "TODAY" : "TRENDS")
+                            .font(.system(size: 13, weight: .medium))
+                            .tracking(1.5)
+                            .foregroundColor(textColor.opacity(0.6))
+                        
+                        Text(selectedTab == "today" ?
+                             formattedTodayDate() : formattedWeekDateRange())
+                            .font(.system(size: 12))
+                            .foregroundColor(textColor.opacity(0.6))
+                    }
 
+                    
+                    Spacer()
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)

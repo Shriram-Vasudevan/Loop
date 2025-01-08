@@ -517,12 +517,10 @@ class AnalysisManager: ObservableObject {
         
     func saveDailyEmotion(emotion: String) {
         do {
-            DispatchQueue.main.sync {
-                let startOfDay = Calendar.current.startOfDay(for: Date())
-                var updatedEmotions = scheduleManager.emotions
-                updatedEmotions[startOfDay] = emotion
-                scheduleManager.emotions = updatedEmotions
-            }
+            let startOfDay = Calendar.current.startOfDay(for: Date())
+            var updatedEmotions = scheduleManager.emotions
+            updatedEmotions[startOfDay] = emotion
+            scheduleManager.emotions = updatedEmotions
             
             guard let entityDescription = NSEntityDescription.entity(forEntityName: "DailyEmotionEntity", in: context) else { return }
             
