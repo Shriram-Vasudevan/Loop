@@ -551,14 +551,12 @@ extension QuantitativeTrendsManager {
     private func getYearComparison() -> (current: [DailyStats]?, previous: [DailyStats]?) {
         let calendar = Calendar.current
         let now = Date()
-        
-        // Get current year's start
+
         guard let currentYearStart = calendar.date(from: calendar.dateComponents([.year], from: now)),
               let lastYearStart = calendar.date(byAdding: .year, value: -1, to: currentYearStart) else {
             return (nil, nil)
         }
         
-        // Fetch current year's data
         let request = NSFetchRequest<NSManagedObject>(entityName: "DailyStatsEntity")
         request.predicate = NSPredicate(format: "date >= %@ AND date < %@",
             currentYearStart as NSDate,
@@ -566,7 +564,6 @@ extension QuantitativeTrendsManager {
         )
         request.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
         
-        // Fetch last year's data
         let lastYearRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyStatsEntity")
         lastYearRequest.predicate = NSPredicate(format: "date >= %@ AND date < %@",
             lastYearStart as NSDate,

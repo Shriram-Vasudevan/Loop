@@ -9,6 +9,8 @@ import SwiftUI
 
 struct PagesHolderView: View {
     @State var pageType: PageType
+    @State var selectedScheduleDate: Date?
+    
     let accentColor = Color(hex: "A28497")
     let secondaryColor = Color(hex: "B7A284")
     let backgroundColor = Color(hex: "FAFBFC")
@@ -24,11 +26,11 @@ struct PagesHolderView: View {
                     // Main content
                     switch pageType {
                     case .home:
-                        HomeView(pageType: $pageType)
+                        HomeView(pageType: $pageType, selectedScheduleDate: $selectedScheduleDate)
                     case .journal:
                         LoopsView()
-                    case .trends:
-                        TrendsView()
+                    case .schedule:
+                        ScheduleView(selectedScheduleDate: $selectedScheduleDate)
                     case .insights:
                        InsightsView()
                     }
@@ -59,7 +61,7 @@ struct PagesHolderView: View {
                             
                             ForEach([
                                 (icon: "chart.bar", label: "Insights", type: PageType.insights),
-                                (icon: "calendar", label: "Trends", type: PageType.trends)
+                                (icon: "calendar", label: "Calendar", type: PageType.schedule)
                             ], id: \.label) { item in
                                 BottomTabButton(
                                     icon: item.icon,

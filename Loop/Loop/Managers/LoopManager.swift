@@ -745,10 +745,8 @@ class LoopManager: ObservableObject {
            print("📝 Starting addDayActivity...")
            let date = Date()
            
-           // Create fetch request to check for existing entry
            let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "ActivityForToday")
-           
-           // Predicate to match the start of the day
+
            let calendar = Calendar.current
            let startOfDay = calendar.startOfDay(for: date)
            let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
@@ -756,13 +754,10 @@ class LoopManager: ObservableObject {
            print("🔍 Checking for existing activity between \(startOfDay) and \(endOfDay)")
            fetchRequest.predicate = NSPredicate(format: "date >= %@ AND date < %@", startOfDay as NSDate, endOfDay as NSDate)
            
-           // Try to fetch existing entry
            let existingEntries = try context.fetch(fetchRequest)
            
            if let existingEntry = existingEntries.first {
                print("✅ Found existing activity entry for today")
-               // Update existing entry if needed
-               // existingEntry.setValue(newValue, forKey: "someAttribute")
            } else {
                print("➕ No existing activity found - creating new entry")
                guard let entityDescription = NSEntityDescription.entity(forEntityName: "ActivityForToday", in: context) else {

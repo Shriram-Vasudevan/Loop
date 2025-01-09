@@ -11,6 +11,7 @@ import CoreData
 import Foundation
 import CoreData
 import Combine
+import SwiftUI
 
 class AITrendsManager: ObservableObject {
     static let shared = AITrendsManager()
@@ -198,6 +199,9 @@ class AITrendsManager: ObservableObject {
             }.sorted { $0.count > $1.count }
         }
         
+        print("calculated frequencies")
+        print("calculated emotionCounts: \(emotionCounts)")
+        
         return TimeframeFrequencies(
             topEmotions: createFrequencyResults(emotionCounts),
             topExpressionPatterns: createFrequencyResults(expressionCounts),
@@ -207,6 +211,7 @@ class AITrendsManager: ObservableObject {
     
     // MARK: - Public Frequency Methods
     func getWeeklyFrequencies() -> TimeframeFrequencies? {
+        print("getting weekly frequencies")
         guard let analyses = weeklyAnalyses, !analyses.isEmpty else { return nil }
         return calculateFrequencies(from: analyses)
     }
@@ -281,5 +286,15 @@ class AITrendsManager: ObservableObject {
             print("❌ Error fetching emotion for date: \(error)")
             return nil
         }
+    }
+    
+    func getEmotionColors(for frequencies: [FrequencyResult]) -> [String: Color] {
+        var colors: [String: Color] = [:]
+        for frequency in frequencies {
+            if let color = ScheduleManager.shared.emotionColors[frequency.value] {
+                colors[frequency.value] = color
+            }
+        }
+        return colors
     }
 }

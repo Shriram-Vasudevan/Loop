@@ -30,7 +30,7 @@ struct LoopsView: View {
             
             VStack(spacing: 0) {
                 headerView
-                    .padding(.top, 45)
+                    .padding(.top, 22)
                 
                 tabView
                     .padding(.top, 24)

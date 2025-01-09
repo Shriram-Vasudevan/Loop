@@ -10,7 +10,8 @@ import SwiftUI
 
 struct HomeView: View {
     @Binding var pageType: PageType
-    
+    @Binding var selectedScheduleDate: Date?
+        
     @ObservedObject var loopManager = LoopManager.shared
     @ObservedObject  var scheduleManager = ScheduleManager.shared
     @State private var showingRecordLoopsView = false
@@ -72,18 +73,25 @@ struct HomeView: View {
                             .padding(.top, 22)
                             .padding(.horizontal, 24)
 
-//                        EmotionSchedulePreviewView()
-//                          
+                        VStack (spacing: 6) {
+                            EmotionSchedulePreviewView(pageType: $pageType, selectedScheduleDate: $selectedScheduleDate)
+                              
+                            Divider()
+                        }
+                        
 
                     }
-                    recordingInterface
-                        .padding(.horizontal, 24)
+                    
+                    VStack (spacing: 16) {
+                        recordingInterface
+                            .padding(.horizontal, 24)
 
+                    }
                     thematicPromptsSection
                         .padding(.horizontal, 24)
                     
-                    featuredReflectionsSection
-                        .padding(.horizontal, 24)
+//                    featuredReflectionsSection
+//                        .padding(.horizontal, 24)
 //                    
 //                    DayRatingSlider()
 //                        .padding(.horizontal, 24)
@@ -144,57 +152,29 @@ struct HomeView: View {
     // MARK: - Header Section
     private var welcomeHeader: some View {
         ZStack {
-            Text(formatDate())
-                .font(.custom("PPNeueMontreal-Medium", size: 20))
-            
+            HStack(alignment: .center, spacing: 16) {
+                VStack (alignment: .leading) {
+                    Text(formatDate())
+                        .font(.custom("PPNeueMontreal-Bold", size: 35))
+                    Text(getGreeting())
+                    .font(.system(size: 13, weight: .medium))
+                    .tracking(1.5)
+                    .foregroundColor(textColor)
 
-            HStack(alignment: .bottom, spacing: 16) {
-    //            VStack(alignment: .leading, spacing: 4) {
-    ////                    Text("December 24th")
-    ////                        .font(.system(size: 35, weight: .medium))
-    ////                        .foregroundColor(textColor)
-    //
-    //                Text(formatDate())
-    //                    .font(.custom("PPNeueMontreal-Medium", size: 20))
-    //
-    //
-    ////                Text("time to reflect")
-    ////                    .font(.system(size: 18, weight: .regular))
-    ////                    .foregroundColor(accentColor)
-    //            }
+                    
+                }
                 
                 Spacer()
                 
                 Button {
                     navigateToSettingsView = true
                 } label: {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 17))
-                        .foregroundColor(Color(hex: "A5A5A5"))
+                    Image(systemName: "person.crop.circle.fill")
+                        .font(.system(size: 30))
+                        .foregroundColor(textColor)
+                        .padding(.bottom, 4)
                 }
-    //
-    //                // Daily progress indicator
-    //                if let currentStreak = loopManager.currentStreak?.currentStreak {
-    //                    HStack(spacing: 8) {
-    //                        Text("\(currentStreak)")
-    //                            .font(.system(size: 20, weight: .medium))
-    //                            .foregroundColor(accentColor)
-    //
-    //                        Image(systemName: "flame.fill")
-    //                            .foregroundColor(accentColor)
-    //                            .font(.system(size: 16))
-    //                    }
-    //                    .padding(.horizontal, 16)
-    //                    .padding(.vertical, 8)
-    //                    .background(
-    //                        RoundedRectangle(cornerRadius: 12)
-    //                            .fill(accentColor.opacity(0.08))
-    //                    )
-    //                    .overlay(
-    //                        RoundedRectangle(cornerRadius: 12)
-    //                            .stroke(accentColor.opacity(0.1), lineWidth: 1)
-    //                    )
-    //                }
+
             }
         }
     }
@@ -203,8 +183,7 @@ struct HomeView: View {
         Button(action: { showingRecordLoopsView = true }) {
             VStack(spacing: 48) {
                 if !loopManager.hasCompletedToday && !loopManager.dailyPrompts.isEmpty {
-                    VStack(alignment: .leading, spacing: 40) {
-                        // Title and prompt
+                    VStack(alignment: .center, spacing: 40) {
                         VStack(alignment: .center, spacing: 8) {
                             Text("TODAY'S REFLECTION")
                                 .font(.system(size: 13, weight: .medium))
@@ -224,6 +203,8 @@ struct HomeView: View {
                                     .fill(index == loopManager.currentPromptIndex ? accentColor : accentColor.opacity(0.15))
                                     .frame(width: 8, height: 8)
                             }
+                            
+                            Spacer()
                         }
                     }
                 } else {
@@ -260,7 +241,7 @@ struct HomeView: View {
     
     // MARK: - Thematic Section
     private var thematicPromptsSection: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text("themes")
                     .font(.system(size: 24, weight: .regular))
@@ -292,63 +273,64 @@ struct HomeView: View {
         }
     }
     
-    private var featuredReflectionsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("featured reflections")
-                .font(.system(size: 24, weight: .regular))
-                .foregroundColor(textColor)
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
-                    ForEach(loopManager.featuredReflections, id: \.text) { prompt in
-                        Button(action: {
-                            self.featuredPrompt = FeaturedPrompt(prompt: prompt.text)
-                        }) {
-                            VStack(alignment: .leading, spacing: 16) {
-                                HStack {
-                                    Text(prompt.text)
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(textColor)
-                                        .multilineTextAlignment(.leading)
-                                        .lineLimit(2)
-                                        .frame(width: 200)
-                                    
-                                    Spacer()
-                                }
-                                
-                                HStack(spacing: 6) {
-                                    Image(systemName: "mic.fill")
-                                        .font(.system(size: 10))
-                                    Text("RECORD")
-                                        .font(.system(size: 11, weight: .medium))
-                                        .tracking(1.5)
-                                    
-                                    Spacer()
-                                }
-                                .foregroundColor(accentColor.opacity(0.6))
-                            }
-                            .frame(width: 240)
-                            .padding(24)
-                            .background(
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(.white)
-                                    
-                                    WavyBackgroundGrey()
-                                        .cornerRadius(10)
-                                }
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(accentColor.opacity(0.05), lineWidth: 1)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
+//    private var featuredReflectionsSection: some View {
+//        VStack(alignment: .leading, spacing: 16) {
+//            Text("featured reflections")
+//                .font(.system(size: 13, weight: .medium))
+//                .tracking(1.5)
+//                .foregroundColor(textColor)
+//            
+//            ScrollView(.horizontal, showsIndicators: false) {
+//                HStack(spacing: 16) {
+//                    ForEach(loopManager.featuredReflections, id: \.text) { prompt in
+//                        Button(action: {
+//                            self.featuredPrompt = FeaturedPrompt(prompt: prompt.text)
+//                        }) {
+//                            VStack(alignment: .leading, spacing: 16) {
+//                                HStack {
+//                                    Text(prompt.text)
+//                                        .font(.system(size: 14, weight: .medium))
+//                                        .foregroundColor(textColor)
+//                                        .multilineTextAlignment(.leading)
+//                                        .lineLimit(2)
+//                                        .frame(width: 200)
+//                                    
+//                                    Spacer()
+//                                }
+//                                
+//                                HStack(spacing: 6) {
+//                                    Image(systemName: "mic.fill")
+//                                        .font(.system(size: 10))
+//                                    Text("RECORD")
+//                                        .font(.system(size: 11, weight: .medium))
+//                                        .tracking(1.5)
+//                                    
+//                                    Spacer()
+//                                }
+//                                .foregroundColor(accentColor.opacity(0.6))
+//                            }
+//                            .frame(width: 240)
+//                            .padding(24)
+//                            .background(
+//                                ZStack {
+//                                    RoundedRectangle(cornerRadius: 10)
+//                                        .fill(.white)
+//                                    
+//                                    WavyBackgroundGrey()
+//                                        .cornerRadius(10)
+//                                }
+//                            )
+//                            .overlay(
+//                                RoundedRectangle(cornerRadius: 16)
+//                                    .stroke(accentColor.opacity(0.05), lineWidth: 1)
+//                            )
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+//    
     private var notificationsSection: some View {
         VStack(alignment: .leading, spacing: 20) {
             Text("more")
@@ -486,6 +468,21 @@ struct HomeView: View {
             }
         } catch {
             print("Failed to fetch distinct days: \(error)")
+        }
+    }
+    
+    func getGreeting() -> String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        
+        switch hour {
+        case 0..<12:
+            return "good morning."
+        case 12..<17:
+            return "good afternoon."
+        case 17..<24:
+            return "good evening."
+        default:
+            return "hey there."
         }
     }
 }
@@ -839,5 +836,5 @@ struct WavyOverlay: Shape {
 }
 
 #Preview {
-    HomeView(pageType: .constant(.home))
+    HomeView(pageType: .constant(.home), selectedScheduleDate: .constant(.now))
 }

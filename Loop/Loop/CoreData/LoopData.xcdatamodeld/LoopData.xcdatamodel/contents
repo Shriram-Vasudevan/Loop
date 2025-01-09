@@ -14,14 +14,9 @@
     </entity>
     <entity name="DailyAIAnalysisEntity" representedClassName="DailyAIAnalysisEntity" syncable="YES" codeGenerationType="class">
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
-        <attribute name="emotion" optional="YES" attributeType="String"/>
-        <attribute name="emotionDescription" optional="YES" attributeType="String"/>
-        <attribute name="expressionNote" optional="YES" attributeType="String"/>
-        <attribute name="expressionPattern" optional="YES" attributeType="String"/>
-        <attribute name="fillerWordFrequency" optional="YES" attributeType="String"/>
-        <attribute name="socialConnections" optional="YES" attributeType="String"/>
-        <attribute name="socialContext" optional="YES" attributeType="String"/>
-        <attribute name="socialFocus" optional="YES" attributeType="String"/>
+        <attribute name="expression" optional="YES" attributeType="String"/>
+        <attribute name="feeling" optional="YES" attributeType="String"/>
+        <attribute name="social" optional="YES" attributeType="String"/>
     </entity>
     <entity name="DailyCheckinEntity" representedClassName="DailyCheckinEntity" syncable="YES" codeGenerationType="class">
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>

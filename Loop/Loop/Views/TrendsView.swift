@@ -11,7 +11,7 @@ import SwiftUI
 import SwiftUI
 
 struct TrendsView: View {
-    @State private var selectedTimeframe: Timeframe = .week
+    @Binding var selectedTimeframe: Timeframe
     @ObservedObject private var quantTrendsManager = QuantitativeTrendsManager.shared
     @ObservedObject private var aiTrendsManager = AITrendsManager.shared
     
@@ -19,31 +19,105 @@ struct TrendsView: View {
     private let textColor = Color(hex: "2C3E50")
     private let backgroundColor = Color(hex: "F5F5F5")
     
-    let previewData: (current: [DailyStats]?, previous: [DailyStats]?)?
-      
-      init(previewData: (current: [DailyStats]?, previous: [DailyStats]?)? = nil) {
-          self.previewData = previewData
-      }
-      
-      // Update graphData to use preview data if available
-      private var graphData: (current: [DailyStats]?, previous: [DailyStats]?) {
-          if let preview = previewData {
-              return preview
-          }
-          return quantTrendsManager.getDurationComparison(for: selectedTimeframe)
-      }
+    let previewData: ((current: [DailyStats]?, previous: [DailyStats]?))?
 
-    // Data for duration graph
-    private var durationData: [DailyStats]? {
-        switch selectedTimeframe {
-        case .week:
-            return quantTrendsManager.weeklyStats
-        case .month:
-            return nil // Need to convert weeklyStats to daily points
-        case .year:
-            return nil // Need to convert monthlyStats to daily points
-        }
-    }
+    let mockCurent: [DailyStats] = [
+        DailyStats(
+            date: Date(),
+            year: 2024,
+            month: 1,
+            weekOfYear: 1,
+            weekday: 1,
+            averageWPM: 100,
+            averageDuration: 120,
+            averageWordCount: 200,
+            averageUniqueWordCount: 100,
+            vocabularyDiversityRatio: 0.5,
+            loopCount: 3,
+            lastUpdated: Date()
+        ),
+        DailyStats(
+            date: Calendar.current.date(byAdding: .day, value: -1, to: Date())!,
+            year: 2024,
+            month: 1,
+            weekOfYear: 1,
+            weekday: 1,
+            averageWPM: 100,
+            averageDuration: 90,
+            averageWordCount: 200,
+            averageUniqueWordCount: 100,
+            vocabularyDiversityRatio: 0.5,
+            loopCount: 3,
+            lastUpdated: Date()
+        ),
+        DailyStats(
+            date: Calendar.current.date(byAdding: .day, value: -2, to: Date())!,
+            year: 2024,
+            month: 1,
+            weekOfYear: 1,
+            weekday: 1,
+            averageWPM: 100,
+            averageDuration: 150,
+            averageWordCount: 200,
+            averageUniqueWordCount: 100,
+            vocabularyDiversityRatio: 0.5,
+            loopCount: 3,
+            lastUpdated: Date()
+        )
+    ]
+
+    let mockPast: [DailyStats] = [
+        DailyStats(
+            date: Calendar.current.date(byAdding: .day, value: -7, to: Date())!,
+            year: 2024,
+            month: 1,
+            weekOfYear: 1,
+            weekday: 1,
+            averageWPM: 100,
+            averageDuration: 100,
+            averageWordCount: 200,
+            averageUniqueWordCount: 100,
+            vocabularyDiversityRatio: 0.5,
+            loopCount: 3,
+            lastUpdated: Date()
+        ),
+        DailyStats(
+            date: Calendar.current.date(byAdding: .day, value: -8, to: Date())!,
+            year: 2024,
+            month: 1,
+            weekOfYear: 1,
+            weekday: 1,
+            averageWPM: 100,
+            averageDuration: 130,
+            averageWordCount: 200,
+            averageUniqueWordCount: 100,
+            vocabularyDiversityRatio: 0.5,
+            loopCount: 3,
+            lastUpdated: Date()
+        ),
+        DailyStats(
+            date: Calendar.current.date(byAdding: .day, value: -9, to: Date())!,
+            year: 2024,
+            month: 1,
+            weekOfYear: 1,
+            weekday: 1,
+            averageWPM: 100,
+            averageDuration: 110,
+            averageWordCount: 200,
+            averageUniqueWordCount: 100,
+            vocabularyDiversityRatio: 0.5,
+            loopCount: 3,
+            lastUpdated: Date()
+        )
+    ]
+    
+  private var graphData: (current: [DailyStats]?, previous: [DailyStats]?) {
+      if let preview = previewData {
+          return preview
+      }
+      return quantTrendsManager.getDurationComparison(for: selectedTimeframe)
+  }
+
     
     private var hasEnoughData: Bool {
         if let preview = previewData {
@@ -55,24 +129,24 @@ struct TrendsView: View {
         return false
     }
     
-    private var emotionFrequencies: [(emotion: String, percentage: Double)] {
+    private var emotionFrequencies: [FrequencyResult] {
         switch selectedTimeframe {
         case .week:
             if let frequencies = aiTrendsManager.getWeeklyFrequencies()?.topEmotions {
                 return frequencies.map { result in
-                    (emotion: result.value, percentage: result.percentage / 100)
+                    FrequencyResult(value: result.value, count: result.count, percentage: result.percentage / 100)
                 }
             }
         case .month:
             if let frequencies = aiTrendsManager.getMonthlyFrequencies()?.topEmotions {
                 return frequencies.map { result in
-                    (emotion: result.value, percentage: result.percentage / 100)
+                    FrequencyResult(value: result.value, count: result.count, percentage: result.percentage / 100)
                 }
             }
         case .year:
             if let frequencies = aiTrendsManager.getYearlyFrequencies()?.topEmotions {
                 return frequencies.map { result in
-                    (emotion: result.value, percentage: result.percentage / 100)
+                    FrequencyResult(value: result.value, count: result.count, percentage: result.percentage / 100)
                 }
             }
         }
@@ -87,39 +161,50 @@ struct TrendsView: View {
                     TimeframeSelector(
                        selectedTimeframe: $selectedTimeframe,
                        accentColor: accentColor,
-                       textColor: textColor
+                       textColor: textColor, changedTime: {
+                           Task {
+                               await refreshData()
+                           }
+                       }
                    )
                     
                     Spacer()
                 }
                 .padding(.top, 30)
                 
-                DurationGraph(
-                    currentPeriod: graphData.current,
-                    previousPeriod: graphData.previous,
-                    timeframe: selectedTimeframe,
-                    accentColor: accentColor,
-                    hasEnoughData: hasEnoughData
-                )
+                if ((graphData.current?.isEmpty) != nil) {
+                    DurationGraph(
+                        currentPeriod: mockCurent,
+                        previousPeriod: mockPast,
+                        timeframe: selectedTimeframe,
+                        accentColor: accentColor,
+                        hasEnoughData: hasEnoughData
+                    )
+                } else {
+                    DurationGraph(
+                        currentPeriod: graphData.current,
+                        previousPeriod: graphData.previous,
+                        timeframe: selectedTimeframe,
+                        accentColor: accentColor,
+                        hasEnoughData: hasEnoughData
+                    )
+                }
                 
                 // Emotions Section
-                VStack {
+                VStack (spacing: 12) {
                     Text("EMOTIONS")
                         .font(.system(size: 13, weight: .medium))
                         .tracking(1.5)
                         .foregroundColor(textColor.opacity(0.5))
                     
-                    if !emotionFrequencies.isEmpty {
-                        EmotionsCard(
-                            emotions: emotionFrequencies,
-                            accentColor: accentColor,
-                            textColor: textColor
-                        )
-                        .padding(.horizontal, 24)
-                    }
+                    TopEmotionsCard(
+                        emotions: emotionFrequencies,
+                        accentColor: accentColor,
+                        textColor: textColor
+                    )
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 24)
+                .padding(.top, 32)
                 
                 
                 // Key Moments Section
@@ -138,6 +223,27 @@ struct TrendsView: View {
         }
         .background(backgroundColor)
         .scrollContentBackground(.hidden)
+        .onAppear {
+           Task {
+               await refreshData()
+           }
+       }
+    }
+    
+    private func refreshData() async {
+     //  isLoading = true
+       switch selectedTimeframe {
+       case .week:
+           await quantTrendsManager.fetchCurrentWeekStats()
+           await aiTrendsManager.fetchCurrentWeekAnalyses()
+       case .month:
+           await quantTrendsManager.fetchCurrentMonthStats()
+           await aiTrendsManager.fetchCurrentMonthAnalyses()
+       case .year:
+           await quantTrendsManager.fetchCurrentYearStats()
+           await aiTrendsManager.fetchCurrentYearAnalyses()
+       }
+     //  isLoading = false
     }
 }
 
@@ -146,11 +252,14 @@ struct TimeframeSelector: View {
     let accentColor: Color
     let textColor: Color
     
+    @State var changedTime: () -> Void
+    
     var body: some View {
         Menu {
             ForEach(Timeframe.allCases, id: \.self) { timeframe in
                 Button(action: {
                     selectedTimeframe = timeframe
+                    changedTime()
                 }) {
                     Text(timeframe.rawValue)
                 }
@@ -279,9 +388,9 @@ struct DurationGraph: View {
     
     private var noDataMessage: String {
         switch timeframe {
-        case .week: return "Complete 3 Daily Reflections \nthis week to see trends"
-        case .month: return "Complete 9 days of daily reflection\nto unlock monthly trends"
-        case .year: return "Complete 40 days of daily reflection\nto see yearly patterns"
+        case .week: return "Complete 3 Daily Reflections \nthis week to see this trend"
+        case .month: return "Complete 9 days of daily reflection\nthis month to unlock this trend"
+        case .year: return "Complete 40 days of daily reflection\nthis year to see this trend"
         }
     }
 }
@@ -1045,5 +1154,5 @@ enum MetricType: String, CaseIterable, Identifiable {
        )
    ]
 
-   return TrendsView(previewData: (previewData, previousData))
+    return TrendsView(selectedTimeframe: .constant(.week), previewData: (previewData, previousData))
 }

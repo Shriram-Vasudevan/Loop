@@ -44,6 +44,7 @@
 		9935CEF62D2C8ECA00AF0C16 /* AcitivtyLocalStorageUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CEF52D2C8ECA00AF0C16 /* AcitivtyLocalStorageUtility.swift */; };
 		9935CEF82D2CA6BD00AF0C16 /* AITrendAnalysisModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CEF72D2CA6BD00AF0C16 /* AITrendAnalysisModels.swift */; };
 		9935CEFA2D2DEB4900AF0C16 /* KeyPhraseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CEF92D2DEB4900AF0C16 /* KeyPhraseManager.swift */; };
+		9935CEFC2D2F1DD000AF0C16 /* TopEmotionsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CEFB2D2F1DD000AF0C16 /* TopEmotionsCard.swift */; };
 		9953BDDD2CEE620E00348AC3 /* AnimatedBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDDC2CEE620E00348AC3 /* AnimatedBackground.swift */; };
 		9953BDE02CEE623B00348AC3 /* PulsingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDDF2CEE623B00348AC3 /* PulsingView.swift */; };
 		9953BDE42CF17A5F00348AC3 /* LoadingWaveform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDE32CF17A5F00348AC3 /* LoadingWaveform.swift */; };
@@ -192,6 +193,7 @@
 		9935CEF52D2C8ECA00AF0C16 /* AcitivtyLocalStorageUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcitivtyLocalStorageUtility.swift; sourceTree = "<group>"; };
 		9935CEF72D2CA6BD00AF0C16 /* AITrendAnalysisModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AITrendAnalysisModels.swift; sourceTree = "<group>"; };
 		9935CEF92D2DEB4900AF0C16 /* KeyPhraseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyPhraseManager.swift; sourceTree = "<group>"; };
+		9935CEFB2D2F1DD000AF0C16 /* TopEmotionsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopEmotionsCard.swift; sourceTree = "<group>"; };
 		9953BDDC2CEE620E00348AC3 /* AnimatedBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedBackground.swift; sourceTree = "<group>"; };
 		9953BDDF2CEE623B00348AC3 /* PulsingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulsingView.swift; sourceTree = "<group>"; };
 		9953BDE32CF17A5F00348AC3 /* LoadingWaveform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingWaveform.swift; sourceTree = "<group>"; };
@@ -425,6 +427,7 @@
 				9935CEDB2D24576F00AF0C16 /* TimeLapseDemoView.swift */,
 				9935CEDD2D24DC8400AF0C16 /* ReflectionSelectionView.swift */,
 				9935CEE92D29AB9E00AF0C16 /* EmotionSchedulePreview.swift */,
+				9935CEFB2D2F1DD000AF0C16 /* TopEmotionsCard.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -707,6 +710,7 @@
 				9953BE102D07ADC100348AC3 /* LoopComparison.swift in Sources */,
 				99F7F6E72CAC77F4009858AC /* HomeView.swift in Sources */,
 				9915BAB72CE6AF9E00D3C44B /* DailyCheckinManager.swift in Sources */,
+				9935CEFC2D2F1DD000AF0C16 /* TopEmotionsCard.swift in Sources */,
 				9953BDF62CF40E4A00348AC3 /* ProgressIndicator.swift in Sources */,
 				99A0C9042CA9F70500F9281A /* UserCloudKitUtility.swift in Sources */,
 				99CCFBBE2D121F2400DA8A55 /* EmptyStateView.swift in Sources */,

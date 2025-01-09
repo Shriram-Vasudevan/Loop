@@ -8,5 +8,5 @@
 import Foundation
 
 enum PageType {
-    case home, journal, trends, insights
+    case home, journal, schedule, insights
 }

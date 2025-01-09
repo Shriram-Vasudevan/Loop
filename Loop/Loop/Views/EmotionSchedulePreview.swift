@@ -8,8 +8,13 @@
 
 import SwiftUI
 
+import SwiftUI
+
 struct EmotionSchedulePreviewView: View {
     @ObservedObject private var scheduleManager = ScheduleManager.shared
+    @Binding var pageType: PageType
+    @Binding var selectedScheduleDate: Date?
+    
     private let horizontalPadding: CGFloat = 24
     private let spacing: CGFloat = 12
     
@@ -40,6 +45,10 @@ struct EmotionSchedulePreviewView: View {
         HStack(spacing: spacing) {
             ForEach(dates, id: \.self) { date in
                 dayView(for: date, width: itemWidth)
+                    .onTapGesture {
+                        selectedScheduleDate = date
+                        pageType = .schedule
+                    }
             }
         }
         .padding(.horizontal, horizontalPadding)
@@ -53,9 +62,15 @@ struct EmotionSchedulePreviewView: View {
                 .font(.system(size: 13))
                 .foregroundColor(Color(hex: "2C3E50").opacity(0.6))
             
-            Text(formatDay(date))
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(Color(hex: "2C3E50"))
+            if isCompleted {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(Color(hex: "2C3E50"))
+            } else {
+                Text(formatDay(date))
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(Color(hex: "2C3E50"))
+            }
         }
         .frame(width: width)
         .padding(.vertical, 8)
@@ -65,8 +80,9 @@ struct EmotionSchedulePreviewView: View {
     
     private func formatDayOfWeek(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "EEE"
-        return formatter.string(from: date).uppercased()
+        formatter.dateFormat = "EEEE"
+        let fullDay = formatter.string(from: date)
+        return String(fullDay.prefix(2)).uppercased()
     }
     
     private func formatDay(_ date: Date) -> String {
@@ -78,7 +94,7 @@ struct EmotionSchedulePreviewView: View {
 
 struct EmotionSchedulePreviewView_Previews: PreviewProvider {
     static var previews: some View {
-        EmotionSchedulePreviewView()
+        EmotionSchedulePreviewView(pageType: .constant(.home), selectedScheduleDate: .constant(.now))
             .previewLayout(.sizeThatFits)
             .padding()
             .background(Color(hex: "FAFBFC"))

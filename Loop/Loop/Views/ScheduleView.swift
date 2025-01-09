@@ -14,6 +14,8 @@ struct ScheduleView: View {
     @State private var selectedDate: Date?
     @State private var showingDayView = false
     
+    @Binding var selectedScheduleDate: Date?
+    
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
     
@@ -76,9 +78,16 @@ struct ScheduleView: View {
             }
             .padding(.horizontal, 24)
         }
-        .navigationDestination(item: $selectedDate, destination: { date in
-            FullDayActivityView(date: date)
-        })
+        .onAppear {
+           if let date = selectedScheduleDate {
+               selectedDate = date
+               selectedScheduleDate = nil
+               showingDayView = true
+           }
+       }
+       .navigationDestination(item: $selectedDate) { date in
+           FullDayActivityView(date: date)
+       }
     }
 }
 
@@ -208,7 +217,7 @@ struct MonthRow: View {
 struct ScheduleView_Previews: View {
     var body: some View {
         let previewData = PreviewData()
-        ScheduleView()
+        ScheduleView(selectedScheduleDate: .constant(.now))
     }
 }
 

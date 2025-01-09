@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-
+import AVFoundation
 
 struct RecordFreeResponseView: View {
     @ObservedObject var loopManager = LoopManager.shared
@@ -67,11 +67,11 @@ struct RecordFreeResponseView: View {
             }
             .padding(.top, 16)
             
-            Text("Free Response")
+            Text("New Entry")
                 .font(.system(size: 28, weight: .light))
                 .foregroundColor(textColor)
             
-            Text("While loop usually guides your reflections, this is your space. Take a moment to share your thoughts, unfiltered and unguided")
+            Text("This is your space. Take a moment to share your thoughts, unfiltered and unguided")
                 .font(.system(size: 16, weight: .regular))
                 .foregroundColor(.gray)
                 .padding(.bottom, 8)
@@ -161,9 +161,8 @@ struct RecordFreeResponseView: View {
        }
    }
    
-    
     private var postRecordingView: some View {
-        LoopAudioConfirmationView(
+        FreeResponseAudioConfirmationView(
             audioURL: audioManager.getRecordedAudioFile() ?? URL(fileURLWithPath: ""),
             waveformData: generateRandomWaveform(count: 40),
             onComplete: {
@@ -174,9 +173,10 @@ struct RecordFreeResponseView: View {
                 }
             },
             onRetry: { retryRecording() },
-            retryAttempts: retryAttempts
+            retryAttempts: retryAttempts,
+            accentColor: accentColor,
+            textColor: textColor
         )
-        .padding(.top, 40)
     }
     
     private var thankYouView: some View {
@@ -272,6 +272,134 @@ struct RecordFreeResponseView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM d, yyyy"
         return formatter.string(from: Date())
+    }
+}
+
+struct FreeResponseAudioConfirmationView: View {
+    let audioURL: URL
+    let waveformData: [CGFloat]
+    let onComplete: () -> Void
+    let onRetry: () -> Void
+    let retryAttempts: Int
+    
+    let accentColor: Color
+    let textColor: Color
+    
+    @State private var isWaveformVisible = false
+    @State private var audioPlayer: AVAudioPlayer?
+    @State private var isPlaying = false
+    
+    var body: some View {
+        VStack(spacing: 32) {
+            Spacer()
+            
+            // Waveform visualization
+            HStack(spacing: 3) {
+                ForEach(Array(waveformData.enumerated()), id: \.offset) { index, height in
+                    RoundedRectangle(cornerRadius: 1.5)
+                        .fill(accentColor.opacity(0.8))
+                        .frame(width: 2, height: isWaveformVisible ? height : 0)
+                        .animation(
+                            .spring(response: 0.4, dampingFraction: 0.7)
+                            .delay(Double(index) * 0.015),
+                            value: isWaveformVisible
+                        )
+                }
+            }
+            .frame(height: 60)
+            .padding(.horizontal, 32)
+            
+            // Playback controls
+            Button(action: togglePlayback) {
+                ZStack {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 64)
+                        .shadow(color: accentColor.opacity(0.15), radius: 15, x: 0, y: 6)
+                    
+                    Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(accentColor)
+                        .offset(x: isPlaying ? 0 : 2)
+                }
+            }
+            
+            Spacer()
+            
+            // Action buttons
+            VStack(spacing: 12) {
+                Button(action: onComplete) {
+                    Text("Save Entry")
+                        .font(.system(size: 17, weight: .regular))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(accentColor)
+                        )
+                }
+                
+                if retryAttempts > 0 {
+                    Button(action: {
+                        cleanup()
+                        onRetry()
+                    }) {
+                        Text("Try Again")
+                            .font(.system(size: 17, weight: .regular))
+                            .foregroundColor(accentColor)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(accentColor.opacity(0.3), lineWidth: 1)
+                            )
+                    }
+                }
+            }
+            .padding(.horizontal, 32)
+            .padding(.bottom, 30)
+        }
+        .onAppear {
+            setupAudioPlayer()
+            withAnimation { isWaveformVisible = true }
+        }
+        .onDisappear(perform: cleanup)
+    }
+    
+    private func setupAudioPlayer() {
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+            try AVAudioSession.sharedInstance().setActive(true)
+            
+            audioPlayer = try AVAudioPlayer(contentsOf: audioURL)
+            audioPlayer?.prepareToPlay()
+            audioPlayer?.delegate = AudioPlayerDelegate(onComplete: {
+                isPlaying = false
+            })
+        } catch {
+            print("Error setting up audio player: \(error)")
+        }
+    }
+    
+    private func togglePlayback() {
+        if isPlaying {
+            audioPlayer?.pause()
+        } else {
+            audioPlayer?.play()
+        }
+        isPlaying.toggle()
+    }
+    
+    private func cleanup() {
+        audioPlayer?.stop()
+        audioPlayer = nil
+        
+        do {
+            try AVAudioSession.sharedInstance().setActive(false)
+        } catch {
+            print("Failed to deactivate audio session: \(error)")
+        }
     }
 }
 

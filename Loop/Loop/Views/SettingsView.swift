@@ -93,7 +93,7 @@ struct SettingsView: View {
     
     private var header: some View {
         HStack {
-            Text("Settings")
+            Text("Profile")
                 .font(.custom("PPNeueMontreal-Medium", size: 36))
                 .foregroundColor(textColor)
             Spacer()

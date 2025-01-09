@@ -18,6 +18,7 @@ struct InsightsView: View {
     private let textColor = Color(hex: "2C3E50")
     private let surfaceColor = Color(hex: "F8F5F7")
     
+    @State var timeFrame: Timeframe = .week
     
     var body: some View {
         ZStack {
@@ -28,7 +29,7 @@ struct InsightsView: View {
                     .padding(.top, 24)
                 
                 contentView
-                    .padding(.top, 32)
+                    .padding(.top, selectedTab == "today" ? 32 : 0)
             }
         }
     }
@@ -44,28 +45,52 @@ struct InsightsView: View {
                     Text("Today")
                         .font(.system(size: 14, weight: .medium))
                         .tracking(1.5)
-                    
+                }
+            }
+            
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    selectedTab = "trends"
+                }
+            } label: {
+                HStack {
+                    Text("Trends")
+                        .font(.system(size: 14, weight: .medium))
+                        .tracking(1.5)
                 }
             }
         } label: {
             ZStack {
+                VStack(alignment: .center, spacing: 4) {
+                    Text(selectedTab == "today" ? "TODAY" : "TRENDS")
+                        .font(.system(size: 13, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(textColor.opacity(0.6))
+                    
+                    Text(selectedTab == "today"
+                        ? formattedTodayDate()
+                        : {
+                            switch timeFrame {
+                            case .week:
+                                return formattedWeekDateRange()
+                            case .month:
+                                return currentMonth()
+                            case .year:
+                                return currentYear()
+                            }
+                        }()
+                    )
+                    .font(.system(size: 12))
+                    .foregroundColor(textColor.opacity(0.6))
+                }
+                
                 HStack {
-                    Spacer()
-                    
-                    VStack(alignment: .center, spacing: 4) {
-                        Text(selectedTab == "today" ? "TODAY" : "TRENDS")
-                            .font(.system(size: 13, weight: .medium))
-                            .tracking(1.5)
-                            .foregroundColor(textColor.opacity(0.6))
-                        
-                        Text(selectedTab == "today" ?
-                             formattedTodayDate() : formattedWeekDateRange())
-                            .font(.system(size: 12))
-                            .foregroundColor(textColor.opacity(0.6))
-                    }
-
                     
                     Spacer()
+                    
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(textColor.opacity(0.6))
                 }
             }
             .padding(.horizontal, 16)
@@ -82,9 +107,8 @@ struct InsightsView: View {
         let calendar = Calendar.current
         let today = Date()
         
-        // Find the most recent Sunday (start of week)
         let weekday = calendar.component(.weekday, from: today)
-        let daysToSubtract = weekday - 1  // Since weekday is 1 for Sunday
+        let daysToSubtract = weekday - 1
         guard let weekStart = calendar.date(byAdding: .day, value: -daysToSubtract, to: today),
               let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) else {
             return ""
@@ -103,6 +127,12 @@ struct InsightsView: View {
         return formatter.string(from: Date())
     }
     
+    private func currentMonth() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM"
+        return formatter.string(from: Date())
+    }
+    
     private func currentYear() -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "YYYY"
@@ -114,7 +144,7 @@ struct InsightsView: View {
         if selectedTab == "today" {
             TodaysInsightsView(analysisManager: analysisManager)
         } else {
-            TrendsView()
+            TrendsView(selectedTimeframe: $timeFrame, previewData: nil)
         }
     }
 }

@@ -7,12 +7,12 @@
 
 import SwiftUI
 
-struct ContentView: View {
-    var body: some View {
-        HomeView(pageType: .constant(.home))
-    }
-}
-
-#Preview {
-    ContentView()
-}
+//struct ContentView: View {
+//    var body: some View {
+////        HomeView(pageType: .constant(.home))
+//    }
+//}
+//
+//#Preview {
+//    ContentView()
+//}
