@@ -249,7 +249,7 @@ struct RecordFreeResponseView: View {
                     isVideo: false,
                     prompt: formattedDate(),
                     isDailyLoop: true,
-                    isFollowUp: false
+                    isFollowUp: false, isUnguided: true
                 )
             }
         }

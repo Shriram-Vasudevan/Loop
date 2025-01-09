@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-import SwiftUI
+import CoreData
 
 struct EmotionSchedulePreviewView: View {
     @ObservedObject private var scheduleManager = ScheduleManager.shared
@@ -55,7 +55,7 @@ struct EmotionSchedulePreviewView: View {
     }
     
     private func dayView(for date: Date, width: CGFloat) -> some View {
-        let isCompleted = scheduleManager.weekEmotions[date] != nil
+        let isCompleted = checkForActivity(on: date)
         let isToday = Calendar.current.isDate(date, inSameDayAs: Date())
         return VStack(spacing: 4) {
             Text(formatDayOfWeek(date))
@@ -89,6 +89,26 @@ struct EmotionSchedulePreviewView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "d"
         return formatter.string(from: date)
+    }
+    
+    private func checkForActivity(on date: Date) -> Bool {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date)
+        
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
+            return false
+        }
+        
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "ActivityForToday")
+        fetchRequest.predicate = NSPredicate(format: "date >= %@ AND date < %@", startOfDay as NSDate, endOfDay as NSDate)
+        
+        do {
+            let activities = try scheduleManager.context.fetch(fetchRequest)
+            return !activities.isEmpty
+        } catch {
+            print("Error fetching activities: \(error)")
+            return false
+        }
     }
 }
 

@@ -327,7 +327,7 @@ struct RecordThematicLoopPromptsView: View {
                     mediaURL: audioFileURL,
                     isVideo: false,
                     prompt: currentPrompt,
-                    isDailyLoop: false, isFollowUp: false
+                    isDailyLoop: false, isFollowUp: false, isUnguided: false
                 )
             }
             

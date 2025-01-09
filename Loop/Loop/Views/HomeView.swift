@@ -69,8 +69,15 @@ struct HomeView: View {
             ScrollView {
                 VStack(spacing: 32) {
                     VStack (spacing: 12) {
+                        HStack {
+                            StreakIndicator()
+                            
+                            Spacer()
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.top, 22)
+                        
                         welcomeHeader
-                            .padding(.top, 22)
                             .padding(.horizontal, 24)
 
                         VStack (spacing: 6) {
@@ -172,7 +179,7 @@ struct HomeView: View {
                     Image(systemName: "person.crop.circle.fill")
                         .font(.system(size: 30))
                         .foregroundColor(textColor)
-                        .padding(.bottom, 4)
+                        .padding(.bottom, 7)
                 }
 
             }
@@ -210,14 +217,20 @@ struct HomeView: View {
                 } else {
                     // Completed state
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("complete for today")
-                            .font(.system(size: 24, weight: .light))
-                            .foregroundColor(textColor)
                         
-                        Text("GREAT WORK!")
+                        Text("DAILY REFLECTION")
                             .font(.system(size: 13, weight: .medium))
                             .tracking(1.5)
                             .foregroundColor(accentColor.opacity(0.5))
+                        VStack (alignment: .leading, spacing: 8                                             ) {
+                            Text("complete for today")
+                                .font(.system(size: 24, weight: .light))
+                                .foregroundColor(textColor)
+                            Text("check your insights")
+                            .font(.system(size: 13, weight: .medium))
+                            .tracking(1.5)
+                            .foregroundColor(textColor)
+                        }
                     }
                 }
             }
@@ -832,6 +845,49 @@ struct WavyOverlay: Shape {
         path.closeSubpath()
         
         return path
+    }
+}
+
+struct StreakIndicator: View {
+    @ObservedObject private var scheduleManager = ScheduleManager.shared
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        if scheduleManager.currentStreak > 0 {
+            HStack(spacing: 6) {
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(accentColor)
+                
+                Text("\(scheduleManager.currentStreak) day streak")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(textColor)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(accentColor.opacity(0.08))
+            )
+        }
+        else {
+            HStack(spacing: 6) {
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(accentColor)
+                
+                Text("\(scheduleManager.currentStreak)")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(textColor)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(accentColor.opacity(0.08))
+            )
+        }
     }
 }
 

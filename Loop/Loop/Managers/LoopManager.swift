@@ -71,7 +71,7 @@ class LoopManager: ObservableObject {
     
     private let recentPromptsKey = "RecentPromptsKey"
     private let recentCategoriesKey = "RecentCategoriesKey"
-    private let maxPromptHistory = 3
+    private let maxPromptHistory = 30
     
     @Published private(set) var thematicPrompts: [ThematicPrompt] = []
     @Published var selectedThematicPromptId: String? = nil {
@@ -113,8 +113,6 @@ class LoopManager: ObservableObject {
             await loadThematicPrompts()
             await checkSevenDayStatus()
 
-            await calculateStreak()
-            
             fetchRecentDates(limit: 10, completion: {
                 
             })
@@ -675,7 +673,7 @@ class LoopManager: ObservableObject {
 //        })
 //    }
     
-    func addLoop(mediaURL: URL, isVideo: Bool, prompt: String, mood: String? = nil, freeResponse: Bool = false, isDailyLoop: Bool, isFollowUp: Bool) async -> (Loop, String) {
+    func addLoop(mediaURL: URL, isVideo: Bool, prompt: String, mood: String? = nil, freeResponse: Bool = false, isDailyLoop: Bool, isFollowUp: Bool, isUnguided: Bool) async -> (Loop, String) {
         print("Adding loop with prompt: \(prompt), currentPromptIndex: \(currentPromptIndex)")
         print("Current dailyPrompts array: \(dailyPrompts)")
         
@@ -692,13 +690,16 @@ class LoopManager: ObservableObject {
                 print("Transcription failed: \(error)")
             }
         }
+        
+        let words = transcript.split(separator: " ")
+        let firstFewWords = words.prefix(4).joined(separator: " ") + "..."
 
         let loop = Loop(
             id: loopID,
             data: ckAsset,
             timestamp: timestamp,
             lastRetrieved: timestamp,
-            promptText: prompt,
+            promptText: isUnguided ? firstFewWords : prompt,
             category: category,
             transcript: transcript,
             freeResponse: freeResponse,

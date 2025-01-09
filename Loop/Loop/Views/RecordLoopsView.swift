@@ -37,6 +37,10 @@ struct RecordLoopsView: View {
         
     @Environment(\.dismiss) var dismiss
     
+    @ObservedObject private var checkinManager = DailyCheckinManager.shared
+    @State private var dayRating: Double = 0.5
+    @State private var showingDayRating: Bool = true
+    
     var body: some View {
         ZStack {
             AnimatedBackground()
@@ -55,7 +59,7 @@ struct RecordLoopsView: View {
                     thankYouScreen
                 } else if isPostRecording {
                     postRecordingView
-                } else if showingFirstLaunchScreen {
+                } else if showingFirstLaunchScreen, loopManager.currentPromptIndex == 0 {
                     firstLaunchOrQuietSpaceScreen
                 } else {
                     recordingScreen
@@ -125,7 +129,124 @@ struct RecordLoopsView: View {
         }
         .padding(.top, 16)
     }
-    
+    private var dayRatingView: some View {
+        VStack(spacing: 32) {
+            VStack(spacing: 24) {
+                VStack (spacing: 10) {
+                    Text("before we begin...")
+                        .font(.system(size: 36, weight: .ultraLight))
+                        .foregroundColor(textColor)
+                        .multilineTextAlignment(.center)
+                    
+                    HStack(spacing: 12) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 12))
+                            .foregroundColor(accentColor.opacity(0.3))
+                        
+                        Text("HOW WOULD YOU RATE TODAY?")
+                            .font(.system(size: 11, weight: .medium))
+                            .tracking(1.5)
+                            .foregroundColor(textColor.opacity(0.5))
+                    }
+                }
+                
+                VStack(spacing: 40) {
+                    VStack(spacing: 24) {
+
+                        HStack(alignment: .bottom, spacing: 4) {
+                            Text(String(format: "%.1f", dayRating * 10))
+                                .font(.system(size: 54, weight: .medium))
+                                .foregroundColor(textColor)
+                                .contentTransition(.numericText())
+                            
+                            Text("/10")
+                                .font(.system(size: 24, weight: .light))
+                                .foregroundColor(textColor.opacity(0.3))
+                                .offset(y: -12)
+                        }
+                    }
+                    
+                    // Slider
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(Color(hex: "F8F9FA"))
+                                .overlay(
+                                    Capsule()
+                                        .stroke(accentColor.opacity(0.1), lineWidth: 1)
+                                )
+                            
+                            Capsule()
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            accentColor.opacity(0.15),
+                                            accentColor.opacity(0.1)
+                                        ]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: geometry.size.width * CGFloat(dayRating))
+                            
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: 28, height: 28)
+                                .shadow(color: accentColor.opacity(0.1), radius: 8, x: 0, y: 2)
+                                .overlay(
+                                    Circle()
+                                        .stroke(accentColor.opacity(0.15), lineWidth: 1)
+                                )
+                                .overlay(
+                                    Circle()
+                                        .fill(accentColor.opacity(0.1))
+                                        .frame(width: 8, height: 8)
+                                )
+                                .offset(x: (geometry.size.width - 28) * CGFloat(dayRating))
+                        }
+                        .frame(height: 44)
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { gesture in
+                                    let newValue = gesture.location.x / geometry.size.width
+                                    dayRating = min(max(0, newValue), 1)
+                                }
+                        )
+                    }
+                    .frame(height: 44)
+                }
+                
+                VStack(spacing: 16) {
+                    Button(action: {
+                        checkinManager.saveDailyCheckin(rating: dayRating * 10)
+                        withAnimation {
+                            showingFirstLaunchScreen = false
+                        }
+                    }) {
+                        Text("continue")
+                            .font(.system(size: 18, weight: .regular))
+                            .foregroundColor(.white)
+                            .frame(height: 56)
+                            .frame(maxWidth: .infinity)
+                            .background(accentColor)
+                            .cornerRadius(28)
+                    }
+                    
+                    Button(action: {
+                        withAnimation {
+                            showingFirstLaunchScreen = false
+                        }
+                    }) {
+                        Text("skip")
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(accentColor)
+                    }
+                }
+                .padding(.top, 40)
+            }
+            .padding(32)
+        }
+    }
     private var promptArea: some View {
         VStack(spacing: isRecording ? 20 : 20) {
             Text(loopManager.getCurrentPrompt())
@@ -416,7 +537,7 @@ struct RecordLoopsView: View {
             if isFirstLaunch {
                 welcomeView
             } else {
-                quietSpaceView
+                dayRatingView
             }
         }
     }
@@ -512,7 +633,7 @@ struct RecordLoopsView: View {
                 isVideo: false,
                 prompt: prompts[currentPromptIndex],
                 isDailyLoop: true,
-                isFollowUp: false
+                isFollowUp: false, isUnguided: false
             )
             
             await analysisManager.startAnalysis(loop.0, transcript: loop.1)

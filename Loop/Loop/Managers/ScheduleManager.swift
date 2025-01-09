@@ -18,6 +18,8 @@ class ScheduleManager: ObservableObject {
     @Published var weekEmotions: [Date: String] = [:]
     @Published var weekEmotionColors: [String: Color] = [:]
     
+    @Published var currentStreak: Int = 0
+    
     lazy var persistentContainer: NSPersistentContainer = {
         let container = NSPersistentContainer(name: "LoopData")
         container.loadPersistentStores { _, error in
@@ -30,6 +32,68 @@ class ScheduleManager: ObservableObject {
     
     var context: NSManagedObjectContext {
         return persistentContainer.viewContext
+    }
+    
+    init() {
+        Task {
+            await calculateStreak()
+        }
+    }
+    
+    
+    func calculateStreak() async {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        
+        let streakDays = await withTaskGroup(of: Int.self) { group in
+            group.addTask {
+                var count = 0
+                for dayOffset in 1...365 {
+                    guard let date = calendar.date(byAdding: .day, value: -dayOffset, to: today) else { break }
+                    
+                    let hasActivity = await self.checkForActivity(on: date)
+                    if hasActivity {
+                        count += 1
+                    } else {
+                        break
+                    }
+                }
+                return count
+            }
+            
+            let result = await group.next() ?? 0
+            return result
+        }
+        
+        await MainActor.run {
+            self.currentStreak = streakDays
+        }
+    }
+    
+    private func checkForActivity(on date: Date) async -> Bool {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date)
+        
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
+            return false
+        }
+        
+        if emotions[startOfDay] != nil || weekEmotions[startOfDay] != nil {
+            return true
+        }
+        
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "ActivityForToday")
+        fetchRequest.predicate = NSPredicate(format: "date >= %@ AND date < %@",
+                                           startOfDay as NSDate,
+                                           endOfDay as NSDate)
+        
+        do {
+            let activities = try context.fetch(fetchRequest)
+            return !activities.isEmpty
+        } catch {
+            print("Error fetching activities for streak: \(error)")
+            return false
+        }
     }
     
     func loadWeekDataAndAssignColors() async {
