@@ -829,7 +829,6 @@ struct EmotionColorSelector: View {
     @Binding var selectedColor: String
     let onColorSelected: (String) -> Void
     
-    // Color spectrum from dark blue to purple
     private let colors: [Color] = [
         Color(hex: "1E3D59"),  // Deep blue (low)
         Color(hex: "2E5C8A"),  // Navy blue
@@ -843,19 +842,20 @@ struct EmotionColorSelector: View {
     @State private var previousOffset: CGFloat = 0
     
     var body: some View {
-        VStack(spacing: 40) {
-            // Color indicator
-            RoundedRectangle(cornerRadius: 24)
+        VStack(spacing: 24) {  // Reduced spacing
+            // Color indicator - reduced height
+            RoundedRectangle(cornerRadius: 16)  // Slightly smaller corners
                 .fill(Color(hex: selectedColor))
-                .frame(height: 120)
+                .frame(height: 80)  // Reduced height
                 .overlay(
-                    RoundedRectangle(cornerRadius: 24)
+                    RoundedRectangle(cornerRadius: 16)
                         .stroke(Color.white, lineWidth: 1)
                 )
                 .shadow(color: Color.black.opacity(0.05), radius: 10)
             
+            // Slider
             GeometryReader { geometry in
-                let availableWidth = geometry.size.width - 28 // Subtract handle width
+                let availableWidth = geometry.size.width - 28
                 
                 ZStack(alignment: .leading) {
                     // Track
@@ -884,12 +884,12 @@ struct EmotionColorSelector: View {
                         )
                 }
                 .onAppear {
-                    // Initialize in middle position with correct width
                     dragOffset = availableWidth / 2
                     previousOffset = dragOffset
                     updateSelectedColor(width: availableWidth)
                 }
             }
+            .frame(height: 28)
             
             // Mood labels
             HStack {
@@ -909,18 +909,16 @@ struct EmotionColorSelector: View {
     }
     
     private func updateSelectedColor(width: CGFloat) {
-        let percentage = dragOffset / width  // Remove the -28 if already accounted for in width
-        
-        // Add some safety bounds
+        let percentage = dragOffset / width
         let boundedPercentage = max(0, min(1, percentage))
         
         let adjustedPosition = boundedPercentage * Double(colors.count - 1)
         let lowerIndex = Int(floor(adjustedPosition))
-        let upperIndex = min(Int(ceil(adjustedPosition)), colors.count - 1)  // Ensure we don't exceed array bounds
+        let upperIndex = min(Int(ceil(adjustedPosition)), colors.count - 1)
         let interpolation = adjustedPosition - Double(lowerIndex)
         
         let lowerColor = colors[lowerIndex].rgbComponents
-        let upperColor = colors[min(upperIndex, colors.count - 1)].rgbComponents
+        let upperColor = colors[upperIndex].rgbComponents
         
         let r = Int((lowerColor.r + (upperColor.r - lowerColor.r) * interpolation) * 255)
         let g = Int((lowerColor.g + (upperColor.g - lowerColor.g) * interpolation) * 255)

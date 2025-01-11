@@ -67,7 +67,7 @@ class ScheduleManager: ObservableObject {
             self.currentStreak = streakDays
         }
     }
-    
+
     private func checkForActivity(on date: Date) async -> Bool {
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: date)
@@ -76,9 +76,9 @@ class ScheduleManager: ObservableObject {
             return false
         }
         
-        if !dailyColors.contains(where: { DailyColorHex in
+        if dailyColors.contains(where: { DailyColorHex in
             Calendar.current.isDate(startOfDay, inSameDayAs: DailyColorHex.date)
-        }) || !weekColors.contains(where: { DailyColorHex in
+        }) || weekColors.contains(where: { DailyColorHex in
             Calendar.current.isDate(startOfDay, inSameDayAs: DailyColorHex.date)
         }) {
             return true
