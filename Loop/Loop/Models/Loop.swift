@@ -20,6 +20,7 @@ struct Loop: Hashable, Identifiable {
     var isVideo: Bool
     var isDailyLoop: Bool
     var isFollowUp: Bool
+    var isSuccessJournal: Bool?
     var mood: String?
     
     static func from(record: CKRecord) -> Loop? {

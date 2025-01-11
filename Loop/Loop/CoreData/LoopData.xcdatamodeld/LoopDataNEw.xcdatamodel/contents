@@ -23,8 +23,8 @@
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
     </entity>
     <entity name="DailyEmotionEntity" representedClassName="DailyEmotionEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="colorHex" optional="YES" attributeType="String"/>
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
-        <attribute name="emotion" optional="YES" attributeType="String"/>
     </entity>
     <entity name="DailyStatsEntity" representedClassName="DailyStatsEntity" syncable="YES" codeGenerationType="class">
         <attribute name="averageDuration" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>

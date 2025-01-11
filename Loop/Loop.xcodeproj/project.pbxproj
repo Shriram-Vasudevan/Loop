@@ -45,6 +45,8 @@
 		9935CEF82D2CA6BD00AF0C16 /* AITrendAnalysisModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CEF72D2CA6BD00AF0C16 /* AITrendAnalysisModels.swift */; };
 		9935CEFA2D2DEB4900AF0C16 /* KeyPhraseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CEF92D2DEB4900AF0C16 /* KeyPhraseManager.swift */; };
 		9935CEFC2D2F1DD000AF0C16 /* TopEmotionsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CEFB2D2F1DD000AF0C16 /* TopEmotionsCard.swift */; };
+		9935CF182D3082CE00AF0C16 /* GoalManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CF172D3082CE00AF0C16 /* GoalManager.swift */; };
+		9935CF1B2D30BB8500AF0C16 /* AddSuccessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CF1A2D30BB8500AF0C16 /* AddSuccessView.swift */; };
 		9953BDDD2CEE620E00348AC3 /* AnimatedBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDDC2CEE620E00348AC3 /* AnimatedBackground.swift */; };
 		9953BDE02CEE623B00348AC3 /* PulsingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDDF2CEE623B00348AC3 /* PulsingView.swift */; };
 		9953BDE42CF17A5F00348AC3 /* LoadingWaveform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDE32CF17A5F00348AC3 /* LoadingWaveform.swift */; };
@@ -132,7 +134,6 @@
 		99F7F6E72CAC77F4009858AC /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6E62CAC77F4009858AC /* HomeView.swift */; };
 		99F7F6E92CAC792C009858AC /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6E82CAC792C009858AC /* NotificationManager.swift */; };
 		99F7F6EB2CAC7935009858AC /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6EA2CAC7935009858AC /* AudioManager.swift */; };
-		99F7F6ED2CAC796E009858AC /* RecordLoopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6EC2CAC796E009858AC /* RecordLoopView.swift */; };
 		99F7F6F12CAC7B5B009858AC /* LoopCloudKitUtility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6F02CAC7B5B009858AC /* LoopCloudKitUtility.swift */; };
 		99F7F6F32CAC7D0F009858AC /* Loop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6F22CAC7D0F009858AC /* Loop.swift */; };
 		99F7F6F52CAC7DB4009858AC /* LoopManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F7F6F42CAC7DB4009858AC /* LoopManager.swift */; };
@@ -194,6 +195,12 @@
 		9935CEF72D2CA6BD00AF0C16 /* AITrendAnalysisModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AITrendAnalysisModels.swift; sourceTree = "<group>"; };
 		9935CEF92D2DEB4900AF0C16 /* KeyPhraseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyPhraseManager.swift; sourceTree = "<group>"; };
 		9935CEFB2D2F1DD000AF0C16 /* TopEmotionsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopEmotionsCard.swift; sourceTree = "<group>"; };
+		9935CF172D3082CE00AF0C16 /* GoalManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalManager.swift; sourceTree = "<group>"; };
+		9935CF192D30870900AF0C16 /* LoopData 2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "LoopData 2.xcdatamodel"; sourceTree = "<group>"; };
+		9935CF1A2D30BB8500AF0C16 /* AddSuccessView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddSuccessView.swift; sourceTree = "<group>"; };
+		9935CF1C2D31F74C00AF0C16 /* LoopData 3.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "LoopData 3.xcdatamodel"; sourceTree = "<group>"; };
+		9935CF1D2D31F8A300AF0C16 /* LoopDataNEw.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = LoopDataNEw.xcdatamodel; sourceTree = "<group>"; };
+		9935CF1E2D3209D700AF0C16 /* LoopDataNewTwo.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = LoopDataNewTwo.xcdatamodel; sourceTree = "<group>"; };
 		9953BDDC2CEE620E00348AC3 /* AnimatedBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedBackground.swift; sourceTree = "<group>"; };
 		9953BDDF2CEE623B00348AC3 /* PulsingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulsingView.swift; sourceTree = "<group>"; };
 		9953BDE32CF17A5F00348AC3 /* LoadingWaveform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingWaveform.swift; sourceTree = "<group>"; };
@@ -284,7 +291,6 @@
 		99F7F6E62CAC77F4009858AC /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		99F7F6E82CAC792C009858AC /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		99F7F6EA2CAC7935009858AC /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
-		99F7F6EC2CAC796E009858AC /* RecordLoopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordLoopView.swift; sourceTree = "<group>"; };
 		99F7F6F02CAC7B5B009858AC /* LoopCloudKitUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopCloudKitUtility.swift; sourceTree = "<group>"; };
 		99F7F6F22CAC7D0F009858AC /* Loop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Loop.swift; sourceTree = "<group>"; };
 		99F7F6F42CAC7DB4009858AC /* LoopManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopManager.swift; sourceTree = "<group>"; };
@@ -376,7 +382,6 @@
 				999DAC852D20994400A6626B /* TrendsView.swift */,
 				999DAC872D209AA100A6626B /* TrendGraph.swift */,
 				99AC6DDB2CE0226500B0D0D6 /* SettingsView.swift */,
-				99F7F6EC2CAC796E009858AC /* RecordLoopView.swift */,
 				99AC6DD52CDFFAFA00B0D0D6 /* LoopChatView.swift */,
 				99AC6DD92CE01A3E00B0D0D6 /* SendLoopOverlay.swift */,
 				9988DB842CD9BFAC005628DE /* FriendsView.swift */,
@@ -386,6 +391,7 @@
 				99F31CA62D0F2DA300330180 /* RecordFollowUpLoopView.swift */,
 				999DAC8D2D2107D000A6626B /* RecordFeaturedLoopView.swift */,
 				9935CEED2D2ADDD100AF0C16 /* RecordFreeResponseView.swift */,
+				9935CF1A2D30BB8500AF0C16 /* AddSuccessView.swift */,
 				990E4A832CB30EAB009F88A0 /* ThankYouView.swift */,
 				990E4A852CB30EB8009F88A0 /* LoopAudioConfirmationView.swift */,
 				990E4A872CB30EC0009F88A0 /* WavyBackground.swift */,
@@ -450,6 +456,7 @@
 				999DAC7F2D2078C400A6626B /* QuantitativeTrendsManager.swift */,
 				9935CEE52D299EF400AF0C16 /* ScheduleManager.swift */,
 				9935CEF92D2DEB4900AF0C16 /* KeyPhraseManager.swift */,
+				9935CF172D3082CE00AF0C16 /* GoalManager.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -630,6 +637,7 @@
 				9953BDEA2CF25A7C00348AC3 /* MonthSummary.swift in Sources */,
 				99DC91B32D19C112002B9A89 /* LoopCard.swift in Sources */,
 				9915BAB52CE6AF8D00D3C44B /* DailyCheckinView.swift in Sources */,
+				9935CF1B2D30BB8500AF0C16 /* AddSuccessView.swift in Sources */,
 				9953BE0E2D07AD9700348AC3 /* TrendModels.swift in Sources */,
 				99AC6DD82CE0199800B0D0D6 /* FluidParticleBackground.swift in Sources */,
 				99CCFBBC2D10DF4300DA8A55 /* CleanGraphView.swift in Sources */,
@@ -677,7 +685,6 @@
 				9935CEEE2D2ADDD100AF0C16 /* RecordFreeResponseView.swift in Sources */,
 				99F7F6F12CAC7B5B009858AC /* LoopCloudKitUtility.swift in Sources */,
 				9953BDE42CF17A5F00348AC3 /* LoadingWaveform.swift in Sources */,
-				99F7F6ED2CAC796E009858AC /* RecordLoopView.swift in Sources */,
 				990E4AA02CBF0E29009F88A0 /* FirstLaunchManager.swift in Sources */,
 				99F7F6F72CAC93B4009858AC /* LoopRevealDate.swift in Sources */,
 				99F7F6F32CAC7D0F009858AC /* Loop.swift in Sources */,
@@ -710,6 +717,7 @@
 				9953BE102D07ADC100348AC3 /* LoopComparison.swift in Sources */,
 				99F7F6E72CAC77F4009858AC /* HomeView.swift in Sources */,
 				9915BAB72CE6AF9E00D3C44B /* DailyCheckinManager.swift in Sources */,
+				9935CF182D3082CE00AF0C16 /* GoalManager.swift in Sources */,
 				9935CEFC2D2F1DD000AF0C16 /* TopEmotionsCard.swift in Sources */,
 				9953BDF62CF40E4A00348AC3 /* ProgressIndicator.swift in Sources */,
 				99A0C9042CA9F70500F9281A /* UserCloudKitUtility.swift in Sources */,
@@ -974,6 +982,10 @@
 		9953BE0A2CFCC0FC00348AC3 /* LoopData.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				9935CF1E2D3209D700AF0C16 /* LoopDataNewTwo.xcdatamodel */,
+				9935CF1D2D31F8A300AF0C16 /* LoopDataNEw.xcdatamodel */,
+				9935CF1C2D31F74C00AF0C16 /* LoopData 3.xcdatamodel */,
+				9935CF192D30870900AF0C16 /* LoopData 2.xcdatamodel */,
 				9953BE0B2CFCC0FC00348AC3 /* LoopData.xcdatamodel */,
 			);
 			currentVersion = 9953BE0B2CFCC0FC00348AC3 /* LoopData.xcdatamodel */;

@@ -120,7 +120,8 @@ struct LoopTypeIndicator: View {
     private let accentColor = Color(hex: "A28497")
     private let thematicColor = Color(hex: "84A297")
     private let followUpColor = Color(hex: "8497A2")
-    
+    private let successColor = Color(hex: "B5D5E2"
+    )
     var body: some View {
         HStack(spacing: 6) {
             Circle()
@@ -134,19 +135,23 @@ struct LoopTypeIndicator: View {
     }
     
     private var typeText: String {
-        if !loop.isDailyLoop && !loop.isFollowUp {
-            return "thematic"
+        if loop.isSuccessJournal ?? false {
+            return "success"
         } else if loop.isFollowUp {
             return "follow up"
+        } else if !loop.isDailyLoop && !loop.isFollowUp {
+            return "thematic"
         }
         return "daily"
     }
     
     private var indicatorColor: Color {
-        if !loop.isDailyLoop && !loop.isFollowUp {
+        if loop.isSuccessJournal ?? false {
             return thematicColor
         } else if loop.isFollowUp {
             return followUpColor
+        } else if !loop.isDailyLoop && !loop.isFollowUp {
+            return thematicColor
         }
         return accentColor
     }

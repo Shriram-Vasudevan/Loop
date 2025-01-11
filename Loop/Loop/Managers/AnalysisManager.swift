@@ -516,24 +516,24 @@ class AnalysisManager: ObservableObject {
     }
         
     func saveDailyEmotion(emotion: String) {
-        do {
-            let startOfDay = Calendar.current.startOfDay(for: Date())
-            var updatedEmotions = scheduleManager.emotions
-            updatedEmotions[startOfDay] = emotion
-            scheduleManager.emotions = updatedEmotions
-            
-            guard let entityDescription = NSEntityDescription.entity(forEntityName: "DailyEmotionEntity", in: context) else { return }
-            
-            let entity = NSManagedObject(entity: entityDescription, insertInto: context)
-            
-            entity.setValue(emotion, forKey: "emotion")
-            entity.setValue(Date(), forKey: "date")
-            
-            try context.save()
-        } catch {
-            print(error.localizedDescription)
-            return
-        }
+//        do {
+//            let startOfDay = Calendar.current.startOfDay(for: Date())
+//            var updatedEmotions = scheduleManager.emotions
+//            updatedEmotions[startOfDay] = emotion
+//            scheduleManager.emotions = updatedEmotions
+//            
+//            guard let entityDescription = NSEntityDescription.entity(forEntityName: "DailyEmotionEntity", in: context) else { return }
+//            
+//            let entity = NSManagedObject(entity: entityDescription, insertInto: context)
+//            
+//            entity.setValue(emotion, forKey: "emotion")
+//            entity.setValue(Date(), forKey: "date")
+//            
+//            try context.save()
+//        } catch {
+//            print(error.localizedDescription)
+//            return
+//        }
     }
     
     func getWeekIdentifier(_ analysis: WeeklyAnalysis) -> String {

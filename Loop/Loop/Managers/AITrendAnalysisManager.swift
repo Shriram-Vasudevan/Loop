@@ -290,11 +290,11 @@ class AITrendsManager: ObservableObject {
     
     func getEmotionColors(for frequencies: [FrequencyResult]) -> [String: Color] {
         var colors: [String: Color] = [:]
-        for frequency in frequencies {
-            if let color = ScheduleManager.shared.emotionColors[frequency.value] {
-                colors[frequency.value] = color
-            }
-        }
+//        for frequency in frequencies {
+//            if let color = ScheduleManager.shared.emotionColors[frequency.value] {
+//                colors[frequency.value] = color
+//            }
+//        }
         return colors
     }
 }

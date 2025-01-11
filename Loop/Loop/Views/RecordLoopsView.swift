@@ -41,6 +41,8 @@ struct RecordLoopsView: View {
     @State private var dayRating: Double = 0.5
     @State private var showingDayRating: Bool = true
     
+    @State private var selectedColorHex: String = "#B5D5E2" // Default to base color
+    
     var body: some View {
         ZStack {
             AnimatedBackground()
@@ -129,6 +131,7 @@ struct RecordLoopsView: View {
         }
         .padding(.top, 16)
     }
+  
     private var dayRatingView: some View {
         VStack(spacing: 32) {
             VStack(spacing: 24) {
@@ -143,82 +146,22 @@ struct RecordLoopsView: View {
                             .font(.system(size: 12))
                             .foregroundColor(accentColor.opacity(0.3))
                         
-                        Text("HOW WOULD YOU RATE TODAY?")
+                        Text("HOW ARE YOU FEELING TODAY?")
                             .font(.system(size: 11, weight: .medium))
                             .tracking(1.5)
                             .foregroundColor(textColor.opacity(0.5))
                     }
                 }
                 
-                VStack(spacing: 40) {
-                    VStack(spacing: 24) {
-
-                        HStack(alignment: .bottom, spacing: 4) {
-                            Text(String(format: "%.1f", dayRating * 10))
-                                .font(.system(size: 54, weight: .medium))
-                                .foregroundColor(textColor)
-                                .contentTransition(.numericText())
-                            
-                            Text("/10")
-                                .font(.system(size: 24, weight: .light))
-                                .foregroundColor(textColor.opacity(0.3))
-                                .offset(y: -12)
-                        }
+                EmotionColorSelector(
+                    selectedColor: $selectedColorHex,
+                    onColorSelected: { colorHex in
+                        checkinManager.saveDailyCheckin(colorHex: colorHex)
                     }
-                    
-                    // Slider
-                    GeometryReader { geometry in
-                        ZStack(alignment: .leading) {
-                            Capsule()
-                                .fill(Color(hex: "F8F9FA"))
-                                .overlay(
-                                    Capsule()
-                                        .stroke(accentColor.opacity(0.1), lineWidth: 1)
-                                )
-                            
-                            Capsule()
-                                .fill(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [
-                                            accentColor.opacity(0.15),
-                                            accentColor.opacity(0.1)
-                                        ]),
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .frame(width: geometry.size.width * CGFloat(dayRating))
-                            
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: 28, height: 28)
-                                .shadow(color: accentColor.opacity(0.1), radius: 8, x: 0, y: 2)
-                                .overlay(
-                                    Circle()
-                                        .stroke(accentColor.opacity(0.15), lineWidth: 1)
-                                )
-                                .overlay(
-                                    Circle()
-                                        .fill(accentColor.opacity(0.1))
-                                        .frame(width: 8, height: 8)
-                                )
-                                .offset(x: (geometry.size.width - 28) * CGFloat(dayRating))
-                        }
-                        .frame(height: 44)
-                        .gesture(
-                            DragGesture(minimumDistance: 0)
-                                .onChanged { gesture in
-                                    let newValue = gesture.location.x / geometry.size.width
-                                    dayRating = min(max(0, newValue), 1)
-                                }
-                        )
-                    }
-                    .frame(height: 44)
-                }
+                )
                 
                 VStack(spacing: 16) {
                     Button(action: {
-                        checkinManager.saveDailyCheckin(rating: dayRating * 10)
                         withAnimation {
                             showingFirstLaunchScreen = false
                         }
@@ -247,6 +190,7 @@ struct RecordLoopsView: View {
             .padding(32)
         }
     }
+    
     private var promptArea: some View {
         VStack(spacing: isRecording ? 20 : 20) {
             Text(loopManager.getCurrentPrompt())
@@ -633,10 +577,10 @@ struct RecordLoopsView: View {
                 isVideo: false,
                 prompt: prompts[currentPromptIndex],
                 isDailyLoop: true,
-                isFollowUp: false, isUnguided: false
+                isFollowUp: false, isSuccess: false, isUnguided: false
             )
             
-            await analysisManager.startAnalysis(loop.0, transcript: loop.1)
+          // await analysisManager.startAnalysis(loop.0, transcript: loop.1)
         }
         
         if loopManager.isLastPrompt() {
@@ -878,6 +822,157 @@ struct FloatingElements: View {
         .onAppear {
             offsetY = -20
         }
+    }
+}
+
+struct EmotionColorSelector: View {
+    @Binding var selectedColor: String
+    let onColorSelected: (String) -> Void
+    
+    // Color spectrum from dark blue to purple
+    private let colors: [Color] = [
+        Color(hex: "1E3D59"),  // Deep blue (low)
+        Color(hex: "2E5C8A"),  // Navy blue
+        Color(hex: "4682B4"),  // Steel blue
+        Color(hex: "6CA0CF"),  // Mid-light blue
+        Color(hex: "8B7AB0"),  // Blue-purple
+        Color(hex: "9B6B9D")   // Purple (high)
+    ]
+    
+    @State private var dragOffset: CGFloat = 0
+    @State private var previousOffset: CGFloat = 0
+    
+    var body: some View {
+        VStack(spacing: 40) {
+            // Color indicator
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color(hex: selectedColor))
+                .frame(height: 120)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
+                        .stroke(Color.white, lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.05), radius: 10)
+            
+            GeometryReader { geometry in
+                let availableWidth = geometry.size.width - 28 // Subtract handle width
+                
+                ZStack(alignment: .leading) {
+                    // Track
+                    Rectangle()
+                        .fill(colors[2])
+                        .frame(height: 8)
+                        .cornerRadius(4)
+                    
+                    // Handle
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 28, height: 28)
+                        .shadow(color: Color.black.opacity(0.1), radius: 4)
+                        .offset(x: dragOffset)
+                        .gesture(
+                            DragGesture()
+                                .onChanged { value in
+                                    let newOffset = previousOffset + value.translation.width
+                                    dragOffset = min(max(0, newOffset), availableWidth)
+                                    updateSelectedColor(width: availableWidth)
+                                }
+                                .onEnded { _ in
+                                    previousOffset = dragOffset
+                                    onColorSelected(selectedColor)
+                                }
+                        )
+                }
+                .onAppear {
+                    // Initialize in middle position with correct width
+                    dragOffset = availableWidth / 2
+                    previousOffset = dragOffset
+                    updateSelectedColor(width: availableWidth)
+                }
+            }
+            
+            // Mood labels
+            HStack {
+                Text("Low")
+                    .font(.system(size: 14, weight: .light))
+                    .foregroundColor(.gray)
+                
+                Spacer()
+                
+                Text("High")
+                    .font(.system(size: 14, weight: .light))
+                    .foregroundColor(.gray)
+            }
+            .padding(.horizontal, 8)
+        }
+        .padding(.horizontal, 20)
+    }
+    
+    private func updateSelectedColor(width: CGFloat) {
+        let percentage = dragOffset / width  // Remove the -28 if already accounted for in width
+        
+        // Add some safety bounds
+        let boundedPercentage = max(0, min(1, percentage))
+        
+        let adjustedPosition = boundedPercentage * Double(colors.count - 1)
+        let lowerIndex = Int(floor(adjustedPosition))
+        let upperIndex = min(Int(ceil(adjustedPosition)), colors.count - 1)  // Ensure we don't exceed array bounds
+        let interpolation = adjustedPosition - Double(lowerIndex)
+        
+        let lowerColor = colors[lowerIndex].rgbComponents
+        let upperColor = colors[min(upperIndex, colors.count - 1)].rgbComponents
+        
+        let r = Int((lowerColor.r + (upperColor.r - lowerColor.r) * interpolation) * 255)
+        let g = Int((lowerColor.g + (upperColor.g - lowerColor.g) * interpolation) * 255)
+        let b = Int((lowerColor.b + (upperColor.b - lowerColor.b) * interpolation) * 255)
+        
+        selectedColor = String(format: "#%02X%02X%02X", r, g, b)
+    }
+}
+
+// Wave shape generator
+struct Wave: Shape {
+    var phase: Double
+    var amplitude: Double
+    
+    var animatableData: Double {
+        get { phase }
+        set { phase = newValue }
+    }
+    
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath()
+        let width = Double(rect.width)
+        let height = Double(rect.height)
+        let midHeight = height / 2
+        
+        path.move(to: CGPoint(x: 0, y: midHeight))
+        
+        for x in stride(from: 0, to: width, by: 1) {
+            let relativeX = x / width
+            let normalizedX = relativeX * 4 * .pi + phase
+            let y = sin(normalizedX) * amplitude + midHeight
+            path.addLine(to: CGPoint(x: x, y: y))
+        }
+        
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.close()
+        
+        return Path(path.cgPath)
+    }
+}
+
+// Color extension for RGB components (assumed to exist, but including for completeness)
+extension Color {
+    var rgbComponents: (r: Double, g: Double, b: Double) {
+        let uiColor = UIColor(self)
+        var r: CGFloat = 0
+        var g: CGFloat = 0
+        var b: CGFloat = 0
+        var a: CGFloat = 0
+        uiColor.getRed(&r, green: &g, blue: &b, alpha: &a)
+        return (Double(r), Double(g), Double(b))
     }
 }
 

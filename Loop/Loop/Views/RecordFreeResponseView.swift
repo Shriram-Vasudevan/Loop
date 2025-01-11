@@ -107,6 +107,7 @@ struct RecordFreeResponseView: View {
         }
         .padding(.horizontal, 32)
     }
+    
     private var recordingButton: some View {
        Button(action: {
            withAnimation {
@@ -249,7 +250,7 @@ struct RecordFreeResponseView: View {
                     isVideo: false,
                     prompt: formattedDate(),
                     isDailyLoop: true,
-                    isFollowUp: false, isUnguided: true
+                    isFollowUp: false, isSuccess: false, isUnguided: true
                 )
             }
         }

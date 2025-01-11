@@ -9,6 +9,6 @@ import Foundation
 
 struct DayRating: Identifiable, Codable {
     var id: String = UUID().uuidString
-    public var rating: Double
-    public var date: Date
+    let colorHex: String
+    let date: Date
 }

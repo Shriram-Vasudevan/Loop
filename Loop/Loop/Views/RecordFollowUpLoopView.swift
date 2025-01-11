@@ -270,7 +270,7 @@ struct RecordFollowUpLoopView: View {
                     mediaURL: audioFileURL,
                     isVideo: false,
                     prompt: prompt,
-                    isDailyLoop: false, isFollowUp: true, isUnguided: false
+                    isDailyLoop: false, isFollowUp: true, isSuccess: false, isUnguided: false
                 )
                 
             }

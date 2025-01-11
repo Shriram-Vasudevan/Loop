@@ -126,7 +126,7 @@ struct HomeView: View {
                 }
                 
                 Task {
-                    if scheduleManager.emotions.isEmpty {
+                    if scheduleManager.dailyColors.isEmpty {
                        await scheduleManager.loadYearDataAndAssignColors()
                     }
                 }
@@ -424,7 +424,7 @@ struct HomeView: View {
                                 .fill(accentColor.opacity(0.08))
                         )
                         .onTapGesture {
-                            self.pageType = .insights
+                            self.pageType = .trends
                         }
                 }
                 .padding(.horizontal, 24)

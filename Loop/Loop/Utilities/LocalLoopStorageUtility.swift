@@ -88,6 +88,7 @@ class LoopLocalStorageUtility {
             loopEntity.setValue(loop.isVideo, forKey: "isVideo")
             loopEntity.setValue(loop.isDailyLoop, forKey: "isDailyLoop")
             loopEntity.setValue(loop.isFollowUp, forKey: "isFollowUp")
+            loopEntity.setValue(loop.isFollowUp, forKey: "isSuccessJournal")
             
             do {
                 try context.save()
@@ -100,7 +101,7 @@ class LoopLocalStorageUtility {
     
     private func convertToLoop(from entity: NSManagedObject) -> Loop? {
         guard let id = entity.value(forKey: "id") as? String,
-                  let fileName = entity.value(forKey: "filePath") as? String,  // Now just getting filename
+                  let fileName = entity.value(forKey: "filePath") as? String,
                   let timestamp = entity.value(forKey: "timestamp") as? Date,
                   let promptText = entity.value(forKey: "promptText") as? String else {
                 return nil

@@ -673,7 +673,7 @@ class LoopManager: ObservableObject {
 //        })
 //    }
     
-    func addLoop(mediaURL: URL, isVideo: Bool, prompt: String, mood: String? = nil, freeResponse: Bool = false, isDailyLoop: Bool, isFollowUp: Bool, isUnguided: Bool) async -> (Loop, String) {
+    func addLoop(mediaURL: URL, isVideo: Bool, prompt: String, mood: String? = nil, freeResponse: Bool = false, isDailyLoop: Bool, isFollowUp: Bool, isSuccess: Bool, isUnguided: Bool) async -> (Loop, String) {
         print("Adding loop with prompt: \(prompt), currentPromptIndex: \(currentPromptIndex)")
         print("Current dailyPrompts array: \(dailyPrompts)")
         
@@ -705,7 +705,8 @@ class LoopManager: ObservableObject {
             freeResponse: freeResponse,
             isVideo: isVideo,
             isDailyLoop: isDailyLoop,
-            isFollowUp: isFollowUp
+            isFollowUp: isFollowUp,
+            isSuccessJournal: isSuccess
         )
 
         let loopDate = Calendar.current.startOfDay(for: timestamp)

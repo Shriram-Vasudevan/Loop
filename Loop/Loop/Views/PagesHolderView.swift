@@ -10,12 +10,15 @@ import SwiftUI
 struct PagesHolderView: View {
     @State var pageType: PageType
     @State var selectedScheduleDate: Date?
+    @State var isMenuOpened: Bool = false
     
     let accentColor = Color(hex: "A28497")
     let secondaryColor = Color(hex: "B7A284")
     let backgroundColor = Color(hex: "FAFBFC")
     
-    @State var showFreeResponseButton: Bool = false
+    @State private var showNewEntrySheet = false
+    @State private var showSuccessSheet = false
+    @State private var showGoalSheet = false
     var body: some View {
         NavigationStack {
             ZStack {
@@ -24,15 +27,17 @@ struct PagesHolderView: View {
                 
                 VStack(spacing: 0) {
                     // Main content
-                    switch pageType {
-                    case .home:
-                        HomeView(pageType: $pageType, selectedScheduleDate: $selectedScheduleDate)
-                    case .journal:
-                        LoopsView()
-                    case .schedule:
-                        ScheduleView(selectedScheduleDate: $selectedScheduleDate)
-                    case .insights:
-                       InsightsView()
+                    ZStack {switch pageType {
+                        case .home:
+                            HomeView(pageType: $pageType, selectedScheduleDate: $selectedScheduleDate)
+                        case .journal:
+                            LoopsView()
+                        case .schedule:
+                            ScheduleView(selectedScheduleDate: $selectedScheduleDate)
+                        case .trends:
+                        Text("test")
+//                            TrendsView()
+                        }
                     }
                     
                     ZStack(alignment: .top) {
@@ -60,7 +65,7 @@ struct PagesHolderView: View {
                         
                             
                             ForEach([
-                                (icon: "chart.bar", label: "Insights", type: PageType.insights),
+                                (icon: "chart.bar", label: "Insights", type: PageType.trends),
                                 (icon: "calendar", label: "Calendar", type: PageType.schedule)
                             ], id: \.label) { item in
                                 BottomTabButton(
@@ -79,9 +84,9 @@ struct PagesHolderView: View {
                         .padding(.top, 12)
 
                         Button {
-                            showFreeResponseButton = true
+                            toggleMenu()
                         } label: {
-                            Image(systemName: "plus")
+                            Image(systemName: isMenuOpened ? "xmark" : "plus")
                                 .font(.system(size: 22, weight: .medium))
                                 .foregroundColor(.white)
                                 .frame(width: 62, height: 62)
@@ -89,6 +94,7 @@ struct PagesHolderView: View {
                                     Circle()
                                         .fill(accentColor)
                                         .shadow(color: accentColor.opacity(0.25), radius: 8, x: 0, y: 4)
+                                        .rotationEffect(isMenuOpened ? Angle.degrees(45) : Angle.degrees(0))
                                 )
                         }
                         .offset(y: -8)
@@ -100,15 +106,112 @@ struct PagesHolderView: View {
                     )
                     
                 }
+                
+                if isMenuOpened {
+                    Color.black.opacity(0.5)
+                        .edgesIgnoringSafeArea(.all)
+                        .onTapGesture {
+                            withAnimation {
+                                toggleMenu()
+                            }
+                        }
+                    MenuOverlayButtons(showSuccessSheet: $showSuccessSheet, showNewEntrySheet: $showNewEntrySheet, showGoalSheet: $showGoalSheet)
+                }
             }
             .edgesIgnoringSafeArea(.bottom)
             .persistentSystemOverlays(.hidden)
-            .fullScreenCover(isPresented: $showFreeResponseButton) {
+            .fullScreenCover(isPresented: $showNewEntrySheet) {
                 RecordFreeResponseView()
+            }
+            .fullScreenCover(isPresented: $showSuccessSheet) {
+                AddSuccessView()
             }
         }
     }
+    
+    func toggleMenu() {
+        withAnimation {
+            isMenuOpened.toggle()
+        }
+        //action to take
+    }
 }
+
+struct MenuOverlayButtons: View {
+    let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    @Binding var showSuccessSheet: Bool
+    @Binding var showNewEntrySheet: Bool
+    @Binding var showGoalSheet: Bool
+    
+    var body: some View {
+        GeometryReader { geometry in
+            
+            Button(action: {showNewEntrySheet = true }) {
+                VStack(spacing: 4) {
+                    Circle()
+                        .fill(.white)
+                        .frame(width: 50, height: 50)
+                        .shadow(color: Color.black.opacity(0.15), radius: 4, x: 0, y: 2)
+                        .overlay(
+                            Image(systemName: "square.and.pencil")
+                                .foregroundColor(textColor)
+                        )
+                    Text("New Entry")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white)
+                }
+            }
+            .position(
+                x: geometry.size.width / 2,
+                y: geometry.size.height - 140
+            )
+            
+            // Left button (Success)
+            Button(action: {showSuccessSheet = true}) {
+                VStack(spacing: 4) {
+                    Circle()
+                        .fill(.white)
+                        .frame(width: 50, height: 50)
+                        .shadow(color: Color.black.opacity(0.15), radius: 4, x: 0, y: 2)
+                        .overlay(
+                            Image(systemName: "checkmark")
+                                .foregroundColor(textColor)
+                        )
+                    Text("Success")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white)
+                }
+            }
+            .position(
+                x: geometry.size.width / 2 - 80,
+                y: geometry.size.height - 100
+            )
+            
+            Button(action: { showGoalSheet = true }) {
+                VStack(spacing: 4) {
+                    Circle()
+                        .fill(.white)
+                        .frame(width: 50, height: 50)
+                        .shadow(color: Color.black.opacity(0.15), radius: 4, x: 0, y: 2)
+                        .overlay(
+                            Image(systemName: "target")
+                                .foregroundColor(textColor)
+                        )
+                    Text("Goal")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white)
+                }
+            }
+            .position(
+                x: geometry.size.width / 2 + 80,
+                y: geometry.size.height - 100
+            )
+        }
+    }
+}
+
 
 struct TabBarBackground: View {
     let accentColor = Color(hex: "A28497")
