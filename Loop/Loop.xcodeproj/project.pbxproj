@@ -47,6 +47,10 @@
 		9935CEFC2D2F1DD000AF0C16 /* TopEmotionsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CEFB2D2F1DD000AF0C16 /* TopEmotionsCard.swift */; };
 		9935CF182D3082CE00AF0C16 /* GoalManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CF172D3082CE00AF0C16 /* GoalManager.swift */; };
 		9935CF1B2D30BB8500AF0C16 /* AddSuccessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CF1A2D30BB8500AF0C16 /* AddSuccessView.swift */; };
+		9935CF222D32D93800AF0C16 /* DarkBlueWave.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CF212D32D93700AF0C16 /* DarkBlueWave.swift */; };
+		9935CF242D32E1E000AF0C16 /* MoodTrendsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CF232D32E1E000AF0C16 /* MoodTrendsManager.swift */; };
+		9935CF262D3426FF00AF0C16 /* MoodCheckinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CF252D3426FF00AF0C16 /* MoodCheckinView.swift */; };
+		9935CF282D34342000AF0C16 /* EntryCardTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CF272D34342000AF0C16 /* EntryCardTabView.swift */; };
 		9953BDDD2CEE620E00348AC3 /* AnimatedBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDDC2CEE620E00348AC3 /* AnimatedBackground.swift */; };
 		9953BDE02CEE623B00348AC3 /* PulsingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDDF2CEE623B00348AC3 /* PulsingView.swift */; };
 		9953BDE42CF17A5F00348AC3 /* LoadingWaveform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDE32CF17A5F00348AC3 /* LoadingWaveform.swift */; };
@@ -201,6 +205,10 @@
 		9935CF1C2D31F74C00AF0C16 /* LoopData 3.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "LoopData 3.xcdatamodel"; sourceTree = "<group>"; };
 		9935CF1D2D31F8A300AF0C16 /* LoopDataNEw.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = LoopDataNEw.xcdatamodel; sourceTree = "<group>"; };
 		9935CF1E2D3209D700AF0C16 /* LoopDataNewTwo.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = LoopDataNewTwo.xcdatamodel; sourceTree = "<group>"; };
+		9935CF212D32D93700AF0C16 /* DarkBlueWave.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DarkBlueWave.swift; sourceTree = "<group>"; };
+		9935CF232D32E1E000AF0C16 /* MoodTrendsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodTrendsManager.swift; sourceTree = "<group>"; };
+		9935CF252D3426FF00AF0C16 /* MoodCheckinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodCheckinView.swift; sourceTree = "<group>"; };
+		9935CF272D34342000AF0C16 /* EntryCardTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryCardTabView.swift; sourceTree = "<group>"; };
 		9953BDDC2CEE620E00348AC3 /* AnimatedBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedBackground.swift; sourceTree = "<group>"; };
 		9953BDDF2CEE623B00348AC3 /* PulsingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulsingView.swift; sourceTree = "<group>"; };
 		9953BDE32CF17A5F00348AC3 /* LoadingWaveform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingWaveform.swift; sourceTree = "<group>"; };
@@ -374,6 +382,7 @@
 				99F7F6E42CAC77E7009858AC /* IntroView.swift */,
 				990E4A9D2CBDE063009F88A0 /* ViewPastLoopView.swift */,
 				99F7F6E62CAC77F4009858AC /* HomeView.swift */,
+				9935CF272D34342000AF0C16 /* EntryCardTabView.swift */,
 				99AC6DD32CDED81100B0D0D6 /* LoopsView.swift */,
 				990E4A912CB48CEF009F88A0 /* InsightsView.swift */,
 				9935CEDF2D28D07100AF0C16 /* ScheduleView.swift */,
@@ -434,6 +443,8 @@
 				9935CEDD2D24DC8400AF0C16 /* ReflectionSelectionView.swift */,
 				9935CEE92D29AB9E00AF0C16 /* EmotionSchedulePreview.swift */,
 				9935CEFB2D2F1DD000AF0C16 /* TopEmotionsCard.swift */,
+				9935CF212D32D93700AF0C16 /* DarkBlueWave.swift */,
+				9935CF252D3426FF00AF0C16 /* MoodCheckinView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -457,6 +468,7 @@
 				9935CEE52D299EF400AF0C16 /* ScheduleManager.swift */,
 				9935CEF92D2DEB4900AF0C16 /* KeyPhraseManager.swift */,
 				9935CF172D3082CE00AF0C16 /* GoalManager.swift */,
+				9935CF232D32E1E000AF0C16 /* MoodTrendsManager.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -639,6 +651,7 @@
 				9915BAB52CE6AF8D00D3C44B /* DailyCheckinView.swift in Sources */,
 				9935CF1B2D30BB8500AF0C16 /* AddSuccessView.swift in Sources */,
 				9953BE0E2D07AD9700348AC3 /* TrendModels.swift in Sources */,
+				9935CF262D3426FF00AF0C16 /* MoodCheckinView.swift in Sources */,
 				99AC6DD82CE0199800B0D0D6 /* FluidParticleBackground.swift in Sources */,
 				99CCFBBC2D10DF4300DA8A55 /* CleanGraphView.swift in Sources */,
 				9935CEE42D299A7D00AF0C16 /* DailyEmotion.swift in Sources */,
@@ -655,6 +668,7 @@
 				9953BE002CF8EE9B00348AC3 /* MoodCloudKitUtility.swift in Sources */,
 				99DC91BD2D1A50E4002B9A89 /* TranscriptionError.swift in Sources */,
 				99F7F6E92CAC792C009858AC /* NotificationManager.swift in Sources */,
+				9935CF242D32E1E000AF0C16 /* MoodTrendsManager.swift in Sources */,
 				9953BE062CFBB30900348AC3 /* ArtisticBackground.swift in Sources */,
 				990E4A962CBDCA51009F88A0 /* VideoRecordingView.swift in Sources */,
 				9935CED42D23982200AF0C16 /* SpeakingPatternCard.swift in Sources */,
@@ -683,6 +697,7 @@
 				9935CEFA2D2DEB4900AF0C16 /* KeyPhraseManager.swift in Sources */,
 				9953BDFC2CF8105200348AC3 /* SettingsModels.swift in Sources */,
 				9935CEEE2D2ADDD100AF0C16 /* RecordFreeResponseView.swift in Sources */,
+				9935CF222D32D93800AF0C16 /* DarkBlueWave.swift in Sources */,
 				99F7F6F12CAC7B5B009858AC /* LoopCloudKitUtility.swift in Sources */,
 				9953BDE42CF17A5F00348AC3 /* LoadingWaveform.swift in Sources */,
 				990E4AA02CBF0E29009F88A0 /* FirstLaunchManager.swift in Sources */,
@@ -737,6 +752,7 @@
 				9988DB972CDA8508005628DE /* AddFriends.swift in Sources */,
 				999DAC8A2D20AD3700A6626B /* TrendsLoadingView.swift in Sources */,
 				9935CEF22D2C8C7700AF0C16 /* DayActivity.swift in Sources */,
+				9935CF282D34342000AF0C16 /* EntryCardTabView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

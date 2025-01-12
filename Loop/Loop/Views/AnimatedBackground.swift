@@ -62,3 +62,7 @@ struct AnimatedBackground: View {
         .edgesIgnoringSafeArea(.all)
     }
 }
+
+#Preview {
+    AnimatedBackground()
+}

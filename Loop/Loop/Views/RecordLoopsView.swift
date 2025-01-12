@@ -153,7 +153,7 @@ struct RecordLoopsView: View {
                     }
                 }
                 
-                EmotionColorSelector(
+                EmotionElevationSelector(
                     selectedColor: $selectedColorHex,
                     onColorSelected: { colorHex in
                         checkinManager.saveDailyCheckin(colorHex: colorHex)
@@ -825,152 +825,118 @@ struct FloatingElements: View {
     }
 }
 
-struct EmotionColorSelector: View {
+import SwiftUI
+
+struct EmotionElevationSelector: View {
     @Binding var selectedColor: String
     let onColorSelected: (String) -> Void
     
-    private let colors: [Color] = [
-        Color(hex: "1E3D59"),  // Deep blue (low)
-        Color(hex: "2E5C8A"),  // Navy blue
-        Color(hex: "4682B4"),  // Steel blue
-        Color(hex: "6CA0CF"),  // Mid-light blue
-        Color(hex: "8B7AB0"),  // Blue-purple
-        Color(hex: "9B6B9D")   // Purple (high)
+    // Define emotional range colors with more distinct steps
+    private let colorSteps = [
+        0.0: Color(hex: "1E3D59"),
+        0.2: Color(hex: "2E5C8A"),
+        0.3: Color(hex: "4682B4"),
+        0.4: Color(hex: "6CA0CF"),
+        0.5: Color(hex: "95A5A6"),
+        0.6: Color(hex: "F4D03F"),
+        0.7: Color(hex: "F5B041"),
+        0.8: Color(hex: "F39C12"),
+        1.0: Color(hex: "E67E22")
     ]
     
-    @State private var dragOffset: CGFloat = 0
-    @State private var previousOffset: CGFloat = 0
+    @State private var offset: CGFloat = UIScreen.main.bounds.height / 2
+    @State private var startLocation: CGFloat?
     
     var body: some View {
-        VStack(spacing: 24) {  // Reduced spacing
-            // Color indicator - reduced height
-            RoundedRectangle(cornerRadius: 16)  // Slightly smaller corners
-                .fill(Color(hex: selectedColor))
-                .frame(height: 80)  // Reduced height
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white, lineWidth: 1)
+        GeometryReader { geometry in
+            ZStack(alignment: .center) {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(getCurrentColor(in: geometry))
+                    .animation(.easeOut(duration: 0.2), value: offset)
+                
+                HStack(spacing: 2) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 14, weight: .semibold))
+                    RoundedRectangle(cornerRadius: 2)
+                        .frame(width: 30, height: 4)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .padding(8)
+                .background(Color.black.opacity(0.15))
+                .cornerRadius(8)
+                .offset(y: offset - geometry.size.height/2)
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            if startLocation == nil {
+                                startLocation = offset
+                            }
+                            
+                            let newOffset = startLocation! + value.translation.height
+                            offset = min(max(0, newOffset), geometry.size.height)
+                            
+                            let position = 1 - (offset / geometry.size.height)
+                            updateColor(position)
+                        }
+                        .onEnded { _ in
+                            startLocation = nil
+                            onColorSelected(selectedColor)
+                        }
                 )
-                .shadow(color: Color.black.opacity(0.05), radius: 10)
-            
-            // Slider
-            GeometryReader { geometry in
-                let availableWidth = geometry.size.width - 28
-                
-                ZStack(alignment: .leading) {
-                    // Track
-                    Rectangle()
-                        .fill(colors[2])
-                        .frame(height: 8)
-                        .cornerRadius(4)
-                    
-                    // Handle
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 28, height: 28)
-                        .shadow(color: Color.black.opacity(0.1), radius: 4)
-                        .offset(x: dragOffset)
-                        .gesture(
-                            DragGesture()
-                                .onChanged { value in
-                                    let newOffset = previousOffset + value.translation.width
-                                    dragOffset = min(max(0, newOffset), availableWidth)
-                                    updateSelectedColor(width: availableWidth)
-                                }
-                                .onEnded { _ in
-                                    previousOffset = dragOffset
-                                    onColorSelected(selectedColor)
-                                }
-                        )
-                }
-                .onAppear {
-                    dragOffset = availableWidth / 2
-                    previousOffset = dragOffset
-                    updateSelectedColor(width: availableWidth)
-                }
             }
-            .frame(height: 28)
-            
-            // Mood labels
-            HStack {
-                Text("Low")
-                    .font(.system(size: 14, weight: .light))
-                    .foregroundColor(.gray)
-                
-                Spacer()
-                
-                Text("High")
-                    .font(.system(size: 14, weight: .light))
-                    .foregroundColor(.gray)
-            }
-            .padding(.horizontal, 8)
         }
-        .padding(.horizontal, 20)
+        .onAppear {
+            updateColor(0.5)
+        }
     }
     
-    private func updateSelectedColor(width: CGFloat) {
-        let percentage = dragOffset / width
-        let boundedPercentage = max(0, min(1, percentage))
+    private func getCurrentColor(in geometry: GeometryProxy) -> LinearGradient {
+        let position = 1 - (offset / geometry.size.height)
+        let color = getColorForPosition(position)
         
-        let adjustedPosition = boundedPercentage * Double(colors.count - 1)
-        let lowerIndex = Int(floor(adjustedPosition))
-        let upperIndex = min(Int(ceil(adjustedPosition)), colors.count - 1)
-        let interpolation = adjustedPosition - Double(lowerIndex)
+        return LinearGradient(
+            gradient: Gradient(colors: [
+                color,
+                color.opacity(0.85)
+            ]),
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+    
+    private func getColorForPosition(_ position: CGFloat) -> Color {
+        let sortedSteps = colorSteps.keys.sorted()
+        var closestStep = sortedSteps[0]
         
-        let lowerColor = colors[lowerIndex].rgbComponents
-        let upperColor = colors[upperIndex].rgbComponents
+        for step in sortedSteps {
+            if abs(position - step) < abs(position - closestStep) {
+                closestStep = step
+            }
+        }
         
-        let r = Int((lowerColor.r + (upperColor.r - lowerColor.r) * interpolation) * 255)
-        let g = Int((lowerColor.g + (upperColor.g - lowerColor.g) * interpolation) * 255)
-        let b = Int((lowerColor.b + (upperColor.b - lowerColor.b) * interpolation) * 255)
-        
-        selectedColor = String(format: "#%02X%02X%02X", r, g, b)
+        return colorSteps[closestStep] ?? Color(hex: "95A5A6") 
+    }
+    
+    private func updateColor(_ position: CGFloat) {
+        selectedColor = getColorForPosition(position).toHex()
     }
 }
 
-// Wave shape generator
-struct Wave: Shape {
-    var phase: Double
-    var amplitude: Double
-    
-    var animatableData: Double {
-        get { phase }
-        set { phase = newValue }
-    }
-    
-    func path(in rect: CGRect) -> Path {
-        let path = UIBezierPath()
-        let width = Double(rect.width)
-        let height = Double(rect.height)
-        let midHeight = height / 2
-        
-        path.move(to: CGPoint(x: 0, y: midHeight))
-        
-        for x in stride(from: 0, to: width, by: 1) {
-            let relativeX = x / width
-            let normalizedX = relativeX * 4 * .pi + phase
-            let y = sin(normalizedX) * amplitude + midHeight
-            path.addLine(to: CGPoint(x: x, y: y))
-        }
-        
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-        path.close()
-        
-        return Path(path.cgPath)
-    }
-}
-
-// Color extension for RGB components (assumed to exist, but including for completeness)
+// Color hex conversion helper
 extension Color {
-    var rgbComponents: (r: Double, g: Double, b: Double) {
+    func toHex() -> String {
         let uiColor = UIColor(self)
-        var r: CGFloat = 0
-        var g: CGFloat = 0
-        var b: CGFloat = 0
-        var a: CGFloat = 0
-        uiColor.getRed(&r, green: &g, blue: &b, alpha: &a)
-        return (Double(r), Double(g), Double(b))
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        
+        uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        
+        let rgb: Int = (Int)(red * 255) << 16 | (Int)(green * 255) << 8 | (Int)(blue * 255) << 0
+        return String(format: "#%06x", rgb)
     }
 }
 

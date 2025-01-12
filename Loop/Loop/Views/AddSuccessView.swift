@@ -22,7 +22,7 @@ struct AddSuccessView: View {
     @State private var isPostRecording = false
     @State private var showingThankYouScreen = false
     @State private var recordingTimer: Timer?
-    @State private var timeRemaining: Int = 30
+    @State private var timeRemaining: Int = 60
     @State private var retryAttempts = 100
     @State private var showIntro = true
     @State private var dontShowAgain = false
@@ -67,8 +67,7 @@ struct AddSuccessView: View {
                 .multilineTextAlignment(.center)
                 .lineSpacing(4)
             
-            FloatingCircles()
-                .frame(height: 120)
+            DarkBlueWaveView()
             
             Text("A space to celebrate your achievements - big and small. Loop will save these successes and bring them back to remind you of your progress.")
                 .font(.system(size: 18, weight: .light))
@@ -326,7 +325,7 @@ struct AddSuccessView: View {
                     mediaURL: audioFileURL,
                     isVideo: false,
                     prompt: "Moment: " + formattedDate(),
-                    isDailyLoop: true,
+                    isDailyLoop: false,
                     isFollowUp: false,
                     isSuccess: true,
                     isUnguided: true

@@ -144,7 +144,7 @@ struct InsightsView: View {
         if selectedTab == "today" {
             TodaysInsightsView(analysisManager: analysisManager)
         } else {
-            TrendsView(selectedTimeframe: $timeFrame, previewData: nil)
+            TrendsView(selectedTimeframe: timeFrame, previewData: nil)
         }
     }
 }

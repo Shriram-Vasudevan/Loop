@@ -9,6 +9,6 @@ import Foundation
 
 struct DailyColorHex: Identifiable {
     let id: String = UUID().uuidString
-    let colorHex: String
+    var colorHex: String
     let date: Date
 }

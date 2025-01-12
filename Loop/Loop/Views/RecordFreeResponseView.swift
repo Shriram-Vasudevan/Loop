@@ -16,9 +16,9 @@ struct RecordFreeResponseView: View {
     @State private var isPostRecording = false
     @State private var showingThankYouScreen = false
     @State private var recordingTimer: Timer?
-    @State private var timeRemaining: Int = 30
-    @State private var retryAttempts = 100
     
+    @State private var timeRemaining: Int = 60
+    @State private var retryAttempts = 100
     @Environment(\.dismiss) var dismiss
     
     let accentColor = Color(hex: "A28497")

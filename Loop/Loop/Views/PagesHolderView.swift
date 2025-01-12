@@ -35,15 +35,12 @@ struct PagesHolderView: View {
                         case .schedule:
                             ScheduleView(selectedScheduleDate: $selectedScheduleDate)
                         case .trends:
-                        Text("test")
-//                            TrendsView()
+                            TrendsView(previewData: nil)
                         }
                     }
                     
                     ZStack(alignment: .top) {
-                        // Regular tab bar
                         HStack(spacing: 0) {
-                            // First two items
                             ForEach([
                                 (icon: "house", label: "Home", type: PageType.home),
                                 (icon: "book", label: "Journal", type: PageType.journal),
@@ -65,7 +62,7 @@ struct PagesHolderView: View {
                         
                             
                             ForEach([
-                                (icon: "chart.bar", label: "Insights", type: PageType.trends),
+                                (icon: "chart.bar", label: "Trends", type: PageType.trends),
                                 (icon: "calendar", label: "Calendar", type: PageType.schedule)
                             ], id: \.label) { item in
                                 BottomTabButton(

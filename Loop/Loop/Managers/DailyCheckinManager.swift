@@ -48,6 +48,23 @@ class DailyCheckinManager: ObservableObject {
             }
             print("✅ Got entity description for DailyCheckinEntity")
             
+            let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyCheckinEntity")
+            fetchRequest.predicate = NSPredicate(format: "date == %@", Date() as NSDate)
+            
+            if let result = try context.fetch(fetchRequest).first {
+                result.setValue(colorHex, forKey: "colorHex")
+                try context.save()
+                
+                if var todaysColor = ScheduleManager.shared.dailyColors.first(where: { DailyColorHex in
+                    DailyColorHex.date == Date()
+                }) {
+                    todaysColor.colorHex = colorHex
+                    objectWillChange.send()
+                }
+                
+                return
+            }
+            
             let entity = NSManagedObject(entity: entityDescription, insertInto: context)
             print("Created new managed object")
             
@@ -63,6 +80,13 @@ class DailyCheckinManager: ObservableObject {
             
             cacheCheckinCompletion(colorHex: colorHex)
             print("✅ Daily check-in save completed")
+            
+            if var todaysColor = ScheduleManager.shared.dailyColors.first(where: { DailyColorHex in
+                DailyColorHex.date == Date()
+            }) {
+                todaysColor.colorHex = colorHex
+                objectWillChange.send()
+            }
             
         } catch {
             print("❌ Failed to save daily check-in: \(error)")

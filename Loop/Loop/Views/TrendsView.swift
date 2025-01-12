@@ -11,7 +11,7 @@ import SwiftUI
 import SwiftUI
 
 struct TrendsView: View {
-    @Binding var selectedTimeframe: Timeframe
+    @State var selectedTimeframe: Timeframe = .week
     @ObservedObject private var quantTrendsManager = QuantitativeTrendsManager.shared
     @ObservedObject private var aiTrendsManager = AITrendsManager.shared
     
@@ -1154,5 +1154,5 @@ enum MetricType: String, CaseIterable, Identifiable {
        )
    ]
 
-    return TrendsView(selectedTimeframe: .constant(.week), previewData: (previewData, previousData))
+    return TrendsView(previewData: (previewData, previousData))
 }

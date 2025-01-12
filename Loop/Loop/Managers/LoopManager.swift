@@ -71,7 +71,7 @@ class LoopManager: ObservableObject {
     
     private let recentPromptsKey = "RecentPromptsKey"
     private let recentCategoriesKey = "RecentCategoriesKey"
-    private let maxPromptHistory = 30
+    private let maxPromptHistory = 34
     
     @Published private(set) var thematicPrompts: [ThematicPrompt] = []
     @Published var selectedThematicPromptId: String? = nil {
