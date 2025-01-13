@@ -18,7 +18,8 @@ struct PagesHolderView: View {
     
     @State private var showNewEntrySheet = false
     @State private var showSuccessSheet = false
-    @State private var showGoalSheet = false
+    @State private var showMoodCheckInSheet = false
+    
     var body: some View {
         NavigationStack {
             ZStack {
@@ -27,7 +28,8 @@ struct PagesHolderView: View {
                 
                 VStack(spacing: 0) {
                     // Main content
-                    ZStack {switch pageType {
+                    ZStack {
+                        switch pageType {
                         case .home:
                             HomeView(pageType: $pageType, selectedScheduleDate: $selectedScheduleDate)
                         case .journal:
@@ -112,7 +114,8 @@ struct PagesHolderView: View {
                                 toggleMenu()
                             }
                         }
-                    MenuOverlayButtons(showSuccessSheet: $showSuccessSheet, showNewEntrySheet: $showNewEntrySheet, showGoalSheet: $showGoalSheet)
+                    
+                    EntryCardTabView(newEntrySelected: $showNewEntrySheet, successSelected: $showSuccessSheet, moodCheckIn: $showMoodCheckInSheet)
                 }
             }
             .edgesIgnoringSafeArea(.bottom)

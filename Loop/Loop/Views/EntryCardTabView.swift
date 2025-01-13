@@ -5,6 +5,10 @@ struct EntryCardTabView: View {
     
     @State private var selectedTab = 0
     
+    @Binding var newEntrySelected: Bool
+    @Binding var successSelected: Bool
+    @Binding var moodCheckIn: Bool
+    
     var body: some View {
         TabView(selection: $selectedTab) {
             EntryCard(
@@ -173,7 +177,7 @@ struct MoodCurve: Shape {
 }
 
 #Preview {
-    EntryCardTabView()
+    EntryCardTabView(newEntrySelected: .constant(false), successSelected: .constant(false), moodCheckIn: .constant(false))
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.gray.opacity(0.1))
 }
