@@ -21,6 +21,9 @@ struct EntryCardTabView: View {
                 )
             )
             .tag(0)
+            .onTapGesture {
+                newEntrySelected = true
+            }
             
             EntryCard(
                 title: "Success",
@@ -31,6 +34,9 @@ struct EntryCardTabView: View {
                 )
             )
             .tag(1)
+            .onTapGesture {
+                successSelected = true
+            }
             
             EntryCard(
                 title: "Mood Check-in",
@@ -40,8 +46,11 @@ struct EntryCardTabView: View {
                 )
             )
             .tag(2)
+            .onTapGesture {
+                moodCheckIn = true
+            }
         }
-        .tabViewStyle(.page)
+        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
         .frame(height: 400)
     }
 }

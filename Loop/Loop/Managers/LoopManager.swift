@@ -15,7 +15,7 @@ class LoopManager: ObservableObject {
 
     @Published var dailyPrompts: [String] = []
     @Published var currentPromptIndex: Int = 0
-    @Published var retryAttemptsLeft: Int = 10
+    @Published var retryAttemptsLeft: Int = 30
     @Published var pastLoop: Loop?
     @Published var loopsByDate: [Date: [Loop]] = [:]
     @Published var recentDates: [Date] = []
@@ -73,6 +73,16 @@ class LoopManager: ObservableObject {
     private let recentCategoriesKey = "RecentCategoriesKey"
     private let maxPromptHistory = 34
     
+    private let fixedPrompts = [
+        "Give a short summary of your day.",
+        "Is there anything that stood out about today?",
+        "CATEGORY_SELECTION_PENDING",
+        "CATEGORY_SELECTION_PENDING",
+        "Share anything on your mind"
+    ]
+
+    @Published var selectedCategories: [Int: PromptCategory] = [:]
+
     @Published private(set) var thematicPrompts: [ThematicPrompt] = []
     @Published var selectedThematicPromptId: String? = nil {
         didSet {
@@ -339,6 +349,14 @@ class LoopManager: ObservableObject {
     }
     
     func switchToPrompt(_ newPrompt: Prompt) {
+        guard currentPromptIndex == 2 || currentPromptIndex == 3,
+              let selectedCategory = selectedCategories[currentPromptIndex],
+              newPrompt.category == selectedCategory,
+              (currentPromptIndex == 2 && newPrompt.isDailyPrompt) ||
+              (currentPromptIndex == 3 && !newPrompt.isDailyPrompt) else {
+            return
+        }
+        
         var updatedPrompts = dailyPrompts
         updatedPrompts[currentPromptIndex] = newPrompt.text
         dailyPrompts = updatedPrompts
@@ -346,31 +364,26 @@ class LoopManager: ObservableObject {
         saveCachedState()
     }
     
+   
     func getAlternativePrompts() -> [Prompt] {
-        guard currentPromptIndex < 2 else { return [] }
+        guard currentPromptIndex == 2 || currentPromptIndex == 3,
+              let selectedCategory = selectedCategories[currentPromptIndex] else {
+            return []
+        }
         
         let currentPrompt = getCurrentPrompt()
-        let currentCategory = getCategoryForPrompt(currentPrompt)
+        let recentPrompts = getRecentPrompts()
+        let todaysPrompts = Set(dailyPrompts)
         
-        if currentPromptIndex == 1 {
-            return Array(promptGroups
-                .filter { $0.key != .freeform }
-                .values
-                .flatMap { $0 }
-                .filter { $0.isDailyPrompt && $0.text != currentPrompt }
-                .shuffled()
-                .prefix(3))
-        }
-        
-        else {
-            return Array(promptGroups
-                .filter { $0.key != .freeform && $0.key != currentCategory }
-                .values
-                .flatMap { $0 }
-                .filter { !$0.isDailyPrompt && $0.text != currentPrompt }
-                .shuffled()
-                .prefix(3))
-        }
+        return Array(promptGroups[selectedCategory]?
+            .filter {
+                $0.text != currentPrompt &&
+                !recentPrompts.contains($0.text) &&
+                !todaysPrompts.contains($0.text) &&
+                (currentPromptIndex == 2 ? $0.isDailyPrompt : !$0.isDailyPrompt)
+            }
+            .shuffled()
+            .prefix(3) ?? [])
     }
     
     func loadThematicPrompts() async {
@@ -600,20 +613,19 @@ class LoopManager: ObservableObject {
 
     func checkAndResetIfNeeded() {
         if !isCacheValidForToday() {
-            selectRandomPrompts()
+            initializeDailyReflection()
             resetPromptProgress()
             saveCachedState()
         } else {
             loadCachedState()
         }
-//        
-//        print(self.dailyPrompts)
     }
     
     func resetPromptProgress() {
         currentPromptIndex = 0
         retryAttemptsLeft = 1
         hasCompletedToday = false
+        selectedCategories = [:]
     }
     
     func moveToNextPrompt() {
@@ -930,22 +942,31 @@ class LoopManager: ObservableObject {
     }
     
     func saveCachedState() {
-       UserDefaults.standard.set(dailyPrompts, forKey: promptCacheKey)
-       UserDefaults.standard.set(currentPromptIndex, forKey: promptIndexKey)
-       UserDefaults.standard.set(retryAttemptsLeft, forKey: retryAttemptsKey)
-       UserDefaults.standard.set(hasCompletedToday, forKey: "hasCompletedToday")
-       UserDefaults.standard.set(Date(), forKey: lastPromptDateKey)
-   }
-   
+        UserDefaults.standard.set(dailyPrompts, forKey: promptCacheKey)
+        UserDefaults.standard.set(currentPromptIndex, forKey: promptIndexKey)
+        UserDefaults.standard.set(retryAttemptsLeft, forKey: retryAttemptsKey)
+        UserDefaults.standard.set(hasCompletedToday, forKey: "hasCompletedToday")
+        UserDefaults.standard.set(Date(), forKey: lastPromptDateKey)
+        
+        if let encodedCategories = try? JSONEncoder().encode(selectedCategories) {
+            UserDefaults.standard.set(encodedCategories, forKey: "selectedCategoriesKey")
+        }
+    }
+
     private func loadCachedState() {
         DispatchQueue.main.async {
             self.hasCompletedToday = UserDefaults.standard.bool(forKey: "hasCompletedToday")
             self.dailyPrompts = UserDefaults.standard.stringArray(forKey: self.promptCacheKey) ?? []
             self.currentPromptIndex = UserDefaults.standard.integer(forKey: self.promptIndexKey)
             self.retryAttemptsLeft = UserDefaults.standard.integer(forKey: self.retryAttemptsKey)
+            
+            if let categoriesData = UserDefaults.standard.data(forKey: "selectedCategoriesKey"),
+               let decodedCategories = try? JSONDecoder().decode([Int: PromptCategory].self, from: categoriesData) {
+                self.selectedCategories = decodedCategories
+            }
         }
     }
-    
+
     private func isCacheValidForToday() -> Bool {
         if let lastPromptDate = UserDefaults.standard.object(forKey: lastPromptDateKey) as? Date {
             return Calendar.current.isDateInToday(lastPromptDate)
@@ -1121,6 +1142,77 @@ class LoopManager: ObservableObject {
         hasRemovedUnlockReminder = true
     }
     
+    private func initializeDailyReflection() {
+        dailyPrompts = fixedPrompts
+        selectedCategories = [:]
+        saveCachedState()
+    }
+
+    func getAvailableCategories() -> [PromptCategory] {
+        return PromptCategory.allCases
+    }
+
+    private func getAvailablePromptsForCategory(_ category: PromptCategory, isDailyPrompt: Bool) -> [Prompt] {
+        let recentPrompts = getRecentPrompts()
+        let todaysPrompts = Set(dailyPrompts)
+        
+        return promptGroups[category]?
+            .filter {
+                $0.isDailyPrompt == isDailyPrompt &&
+                !recentPrompts.contains($0.text) &&
+                !todaysPrompts.contains($0.text)
+            } ?? []
+    }
+
+    func selectCategory(_ category: PromptCategory) async {
+        guard currentPromptIndex == 2 || currentPromptIndex == 3 else { return }
+        
+        selectedCategories[currentPromptIndex] = category
+        let availablePrompts = getAvailablePromptsForCategory(category, isDailyPrompt: currentPromptIndex == 2)
+        
+        let selectedPrompt: Prompt
+        if let prompt = availablePrompts.randomElement() {
+            selectedPrompt = prompt
+        } else {
+            selectedPrompt = Prompt(
+                text: getFallbackPrompt(for: category, isDailyPrompt: currentPromptIndex == 2),
+                category: category,
+                isDailyPrompt: currentPromptIndex == 2
+            )
+        }
+        
+        await MainActor.run {
+            var updatedPrompts = dailyPrompts
+            updatedPrompts[currentPromptIndex] = selectedPrompt.text
+            dailyPrompts = updatedPrompts
+            saveRecentPrompt(selectedPrompt.text)
+            saveCachedState()
+        }
+    }
+
+    private func getFallbackPrompt(for category: PromptCategory, isDailyPrompt: Bool) -> String {
+        switch (category, isDailyPrompt) {
+            case (.emotionalWellbeing, true): return "How are your emotions evolving today?"
+            case (.emotionalWellbeing, false): return "What feelings are you sitting with right now?"
+            case (.challenges, true): return "What challenge did you face today?"
+            case (.challenges, false): return "How are you growing through your current challenges?"
+            case (.growth, true): return "What did you learn about yourself today?"
+            case (.growth, false): return "What's an area where you're seeing progress?"
+            case (.connections, true): return "Who made an impact on your day?"
+            case (.connections, false): return "What relationship is on your mind?"
+            case (.curiosity, true): return "What sparked your interest today?"
+            case (.curiosity, false): return "What are you curious about lately?"
+            case (.extraPrompts, true): return "What would you like to remember about today?"
+            case (.extraPrompts, false): return "What's worth noting right now?"
+            case (.freeform, _): return "What's on your mind?"
+        }
+    }
+
+    func needsCategorySelection() -> Bool {
+        guard currentPromptIndex == 2 || currentPromptIndex == 3 else { return false }
+        return dailyPrompts[currentPromptIndex] == "CATEGORY_SELECTION_PENDING"
+    }
+    
 }
 
 enum MemoryBankStatus {
@@ -1131,7 +1223,7 @@ enum MemoryBankStatus {
 }
 
 
-enum PromptCategory: String, CaseIterable {
+enum PromptCategory: String, CaseIterable, Codable {
     case freeform = "Share Anything"
     case emotionalWellbeing = "Emotional Wellbeing"
     case challenges = "Challenges"

@@ -120,20 +120,8 @@ struct HomeView: View {
             }
         }
         .onAppear {
-            withAnimation {
-                Task {
-                    await loopManager.loadThematicPrompts()
-                }
-                
-                Task {
-                    if scheduleManager.dailyColors.isEmpty {
-                       await scheduleManager.loadYearDataAndAssignColors()
-                    }
-                }
-                
-//                Task {
-//                    await fetchDistinctLoopingDays()
-//                }
+            Task {
+                await loopManager.loadThematicPrompts()
             }
         }
         .fullScreenCover(item: $selectedLoop) { loop in
@@ -197,7 +185,7 @@ struct HomeView: View {
                                 .tracking(1.5)
                                 .foregroundColor(textColor.opacity(0.5))
                             
-                            Text(loopManager.getCurrentPrompt())
+                            Text("Take time to look back on your day")
                                 .font(.system(size: 23, weight: .medium))
                                 .tracking(1.5)
                                 .foregroundColor(textColor)
@@ -205,7 +193,7 @@ struct HomeView: View {
                         
                         // Progress dots
                         HStack(spacing: 24) {
-                            ForEach(0..<3, id: \.self) { index in
+                            ForEach(0..<5, id: \.self) { index in
                                 Circle()
                                     .fill(index == loopManager.currentPromptIndex ? accentColor : accentColor.opacity(0.15))
                                     .frame(width: 8, height: 8)

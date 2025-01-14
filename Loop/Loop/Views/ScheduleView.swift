@@ -190,10 +190,8 @@ struct MonthRow: View {
         
         let startOfDay = calendar.startOfDay(for: date)
 
-        if let dailyColor = scheduleManager.dailyColors.first(where: { DailyColorHex in
-            Calendar.current.isDate(DailyColorHex.date, inSameDayAs: date)
-        }) {
-            return Color(hex: dailyColor.colorHex)
+        if let emotion = scheduleManager.emotions[startOfDay] {
+            return scheduleManager.emotionColors[emotion]
         }
  
         guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {

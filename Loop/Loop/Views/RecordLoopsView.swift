@@ -45,14 +45,16 @@ struct RecordLoopsView: View {
     
     var body: some View {
         ZStack {
-            AnimatedBackground()
-                .opacity(backgroundOpacity)
-                .onAppear {
-                    withAnimation(.easeIn(duration: 1.2)) {
-                        backgroundOpacity = 1
+            if loopManager.currentPromptIndex > 1 {
+                AnimatedBackground()
+                    .opacity(backgroundOpacity)
+                    .onAppear {
+                        withAnimation(.easeIn(duration: 1.2)) {
+                            backgroundOpacity = 1
+                        }
                     }
-                }
-                .edgesIgnoringSafeArea(.all)
+                    .edgesIgnoringSafeArea(.all)
+            }
             
             VStack(spacing: 0) {
                 if isShowingMemory {
@@ -69,7 +71,7 @@ struct RecordLoopsView: View {
             }
             .padding(.horizontal, 32)
             
-            if showingPromptOptions && !isRecording && !isPostRecording && loopManager.currentPromptIndex < 2 {
+            if showingPromptOptions && !isRecording && !isPostRecording && loopManager.currentPromptIndex > 2 {
                 promptSwitcherOverlay
             }
         }
@@ -83,8 +85,6 @@ struct RecordLoopsView: View {
             topBar
                 .padding(.bottom, 40)
             
-            Spacer()
-            
             promptArea
             
             Spacer()
@@ -97,17 +97,10 @@ struct RecordLoopsView: View {
     private var topBar: some View {
         VStack(spacing: 24) {
             ZStack {
-                if let category = loopManager.getCategoryForPrompt(loopManager.getCurrentPrompt()) {
-                    Text(category.rawValue)
-                        .font(.system(size: 16, weight: .light))
-                        .foregroundColor(accentColor.opacity(0.8))
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(
-                            Capsule()
-                                .fill(accentColor.opacity(0.1))
-                        )
-                }
+                Text("DAILY REFLECTION")
+                    .font(.system(size: 13, weight: .medium))
+                    .tracking(1.5)
+                    .foregroundColor(textColor.opacity(0.5))
                 
                 HStack {
 
@@ -136,7 +129,7 @@ struct RecordLoopsView: View {
         VStack(spacing: 32) {
             VStack(spacing: 24) {
                 VStack (spacing: 10) {
-                    Text("before we begin...")
+                    Text("before we begin")
                         .font(.system(size: 36, weight: .ultraLight))
                         .foregroundColor(textColor)
                         .multilineTextAlignment(.center)
@@ -152,16 +145,76 @@ struct RecordLoopsView: View {
                             .foregroundColor(textColor.opacity(0.5))
                     }
                 }
-                
-                EmotionElevationSelector(
-                    selectedColor: $selectedColorHex,
-                    onColorSelected: { colorHex in
-                        checkinManager.saveDailyCheckin(colorHex: colorHex)
+            
+                VStack(spacing: 40) {
+                    VStack(spacing: 24) {
+
+                        HStack(alignment: .bottom, spacing: 4) {
+                            Text(String(format: "%.1f", dayRating * 10))
+                                .font(.system(size: 54, weight: .medium))
+                                .foregroundColor(textColor)
+                                .contentTransition(.numericText())
+                            
+                            Text("/10")
+                                .font(.system(size: 24, weight: .light))
+                                .foregroundColor(textColor.opacity(0.3))
+                                .offset(y: -12)
+                        }
                     }
-                )
+                    
+                    // Slider
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(Color(hex: "F8F9FA"))
+                                .overlay(
+                                    Capsule()
+                                        .stroke(accentColor.opacity(0.1), lineWidth: 1)
+                                )
+                            
+                            Capsule()
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            accentColor.opacity(0.15),
+                                            accentColor.opacity(0.1)
+                                        ]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: geometry.size.width * CGFloat(dayRating))
+                            
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: 28, height: 28)
+                                .shadow(color: accentColor.opacity(0.1), radius: 8, x: 0, y: 2)
+                                .overlay(
+                                    Circle()
+                                        .stroke(accentColor.opacity(0.15), lineWidth: 1)
+                                )
+                                .overlay(
+                                    Circle()
+                                        .fill(accentColor.opacity(0.1))
+                                        .frame(width: 8, height: 8)
+                                )
+                                .offset(x: (geometry.size.width - 28) * CGFloat(dayRating))
+                        }
+                        .frame(height: 44)
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { gesture in
+                                    let newValue = gesture.location.x / geometry.size.width
+                                    dayRating = min(max(0, newValue), 1)
+                                }
+                        )
+                    }
+                    .frame(height: 44)
+                }
                 
                 VStack(spacing: 16) {
                     Button(action: {
+                        checkinManager.saveDailyCheckin(rating: dayRating * 10)
                         withAnimation {
                             showingFirstLaunchScreen = false
                         }
@@ -193,45 +246,89 @@ struct RecordLoopsView: View {
     
     private var promptArea: some View {
         VStack(spacing: isRecording ? 20 : 20) {
-            Text(loopManager.getCurrentPrompt())
-                .font(.system(size: 28, weight: .medium))
-                .foregroundColor(textColor)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-                .transition(.opacity)
-                .animation(.easeInOut, value: loopManager.getCurrentPrompt())
-            
-            if isRecording {
-                HStack(spacing: 12) {
-                    PulsingDot()
-                    Text("\(timeRemaining)s")
-                        .font(.system(size: 26, weight: .ultraLight))
-                        .foregroundColor(accentColor)
-                }
-                .transition(.opacity)
-            } else if !isPostRecording && loopManager.currentPromptIndex < 2 {
-                Button(action: {
-                    withAnimation {
-                        showingPromptOptions.toggle()
+            if loopManager.needsCategorySelection() {
+                CategorySelectionView(
+                    loopManager: loopManager,
+                    onCategorySelected: { category in
+                        Task {
+                            await loopManager.selectCategory(category)
+                        }
+                    },
+                    isDailyPrompt: loopManager.currentPromptIndex == 2,
+                    accentColor: accentColor,
+                    textColor: textColor
+                )
+            } else {
+                VStack(spacing: 30) {
+                    if loopManager.currentPromptIndex > 1 {
+                        VStack(spacing: isRecording ? 20 : 20) {
+                            Text(loopManager.getCurrentPrompt())
+                                .font(.system(size: 28, weight: .medium))
+                                .foregroundColor(textColor)
+                                .multilineTextAlignment(.center)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .transition(.opacity)
+                                .animation(.easeInOut, value: loopManager.getCurrentPrompt())
+                            
+                            if isRecording {
+                                HStack(spacing: 12) {
+                                    PulsingDot()
+                                    Text("\(timeRemaining)s")
+                                        .font(.system(size: 26, weight: .ultraLight))
+                                        .foregroundColor(accentColor)
+                                }
+                                .transition(.opacity)
+                            } else if !isPostRecording && loopManager.currentPromptIndex > 1 && loopManager.currentPromptIndex < 4 {
+                                Button(action: {
+                                    withAnimation {
+                                        showingPromptOptions.toggle()
+                                    }
+                                }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "arrow.triangle.2.circlepath")
+                                        Text("try another prompt")
+                                    }
+                                    .font(.system(size: 16, weight: .light))
+                                    .foregroundColor(accentColor)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(
+                                        Capsule()
+                                            .stroke(accentColor.opacity(0.3), lineWidth: 1)
+                                    )
+                                }
+                                .opacity(isRecording ? 0 : 1)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                    } else {
+                        VStack (spacing: 20) {
+                            HStack {
+                                Text(loopManager.getCurrentPrompt())
+                                    .font(.system(size: 28, weight: .medium))
+                                    .foregroundColor(textColor)
+                                    .multilineTextAlignment(.center)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            
+                            if isRecording {
+                                HStack(spacing: 12) {
+                                    PulsingDot()
+                                    Text("\(timeRemaining)s")
+                                        .font(.system(size: 26, weight: .ultraLight))
+                                        .foregroundColor(accentColor)
+                                }
+                                .transition(.opacity)
+                            }
+                        }
+                        .padding(.top, 40)
+                        
+                        InitialReflectionVisual(index: loopManager.currentPromptIndex)
                     }
-                }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                        Text("try another prompt")
-                    }
-                    .font(.system(size: 16, weight: .light))
-                    .foregroundColor(accentColor)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(
-                        Capsule()
-                            .stroke(accentColor.opacity(0.3), lineWidth: 1)
-                    )
                 }
-                .opacity(isRecording ? 0 : 1)
+                .frame(maxWidth: .infinity)
             }
         }
-        .frame(maxWidth: .infinity)
     }
     
     private var promptSwitcherOverlay: some View {
@@ -345,7 +442,8 @@ struct RecordLoopsView: View {
                 audioURL: audioManager.getRecordedAudioFile() ?? URL(fileURLWithPath: ""),
                 waveformData: generateRandomWaveform(count: 40),
                 onComplete: { completeRecording() },
-                onRetry: { retryRecording() }, retryAttempts: loopManager.retryAttemptsLeft
+                onRetry: { retryRecording() },
+                retryAttempts: loopManager.retryAttemptsLeft
             )
         }
     }
@@ -592,58 +690,7 @@ struct RecordLoopsView: View {
                 isShowingMemory = false
             }
             audioManager.cleanup()
-//
-//            Task {
-//                do {
-//                    let userDays = try await loopManager.fetchDistinctLoopingDays()
-//
-//                    if userDays < 3 {
-//                        await MainActor.run {
-//                            withAnimation {
-//                                userDaysThresholdNotMet = true
-//                            }
-//
-//                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-//                                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-//                                    loopManager.hasCompletedToday = true
-//                                    loopManager.saveCachedState()
-//                                    isShowingMemory = false
-//                                }
-//                            }
-//                        }
-//                        return
-//                    }
-//
-//                    if let pastLoop = try? await loopManager.getPastLoopForComparison(recordedPrompts: allPrompts) {
-//                        await MainActor.run {
-//                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-//                                self.pastLoop = pastLoop
-//                                isShowingMemory = true
-//                                isPostRecording = false
-//                                isLoadingMemory = false
-//                            }
-//                            audioManager.cleanup()
-//                        }
-//                    } else {
-//                        await MainActor.run {
-//                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-//                                loopManager.hasCompletedToday = true
-//                                loopManager.saveCachedState()
-//                                isShowingMemory = false
-//                            }
-//                            audioManager.cleanup()
-//                        }
-//                    }
-//                } catch {
-//                    print("Error in memory handling: \(error)")
-//                    await MainActor.run {
-//                        withAnimation {
-//                            loopManager.hasCompletedToday = true
-//                            isShowingMemory = false
-//                        }
-//                    }
-//                }
-//            }
+
         } else {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                 loopManager.moveToNextPrompt()
@@ -924,7 +971,343 @@ struct EmotionElevationSelector: View {
     }
 }
 
-// Color hex conversion helper
+struct CategorySelectionView: View {
+    @ObservedObject var loopManager: LoopManager
+    let onCategorySelected: (PromptCategory) -> Void
+    let isDailyPrompt: Bool
+    let accentColor: Color
+    let textColor: Color
+    
+    var body: some View {
+        VStack(spacing: 32) {
+            // Header
+            VStack(spacing: 12) {
+                Text(isDailyPrompt ? "daily reflection" : "general reflection")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(accentColor)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule()
+                            .fill(accentColor.opacity(0.1))
+                    )
+                
+                Text("select a topic to talk about")
+                    .font(.system(size: 24, weight: .light))
+                    .foregroundColor(textColor)
+            }
+            
+            // Categories Grid
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: 16) {
+                ForEach(loopManager.getAvailableCategories(), id: \.self) { category in
+                    CategoryButton(
+                        category: category,
+                        accentColor: accentColor,
+                        textColor: textColor
+                    ) {
+                        onCategorySelected(category)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 24)
+    }
+}
+
+struct CategoryButton: View {
+    let category: PromptCategory
+    let accentColor: Color
+    let textColor: Color
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 12) {
+                // Category Icon
+                Image(systemName: iconName(for: category))
+                    .font(.system(size: 24))
+                    .foregroundColor(accentColor)
+                
+                // Category Name
+                Text(category.rawValue)
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundColor(textColor)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 24)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white)
+                    .shadow(color: accentColor.opacity(0.1), radius: 8, y: 4)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(accentColor.opacity(0.1), lineWidth: 1)
+            )
+        }
+    }
+    
+    private func iconName(for category: PromptCategory) -> String {
+        switch category {
+        case .emotionalWellbeing: return "heart"
+        case .challenges: return "mountain.2"
+        case .growth: return "leaf"
+        case .connections: return "person.2"
+        case .curiosity: return "sparkles"
+        case .extraPrompts: return "star"
+        case .freeform: return "square.and.pencil"
+        }
+    }
+}
+
+struct UnfoldingDayWave: Shape {
+    var phase: Double
+    var frequency: Double = 1
+    var amplitudeFactor: Double = 1
+    
+    var animatableData: Double {
+        get { phase }
+        set { phase = newValue }
+    }
+    
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath()
+        let width = rect.width
+        let height = rect.height
+        let midHeight = height / 2
+        let amplitude = height * 0.25 * amplitudeFactor
+        
+        path.move(to: CGPoint(x: 0, y: midHeight))
+        
+        for x in stride(from: 0, through: width, by: 1) {
+            let relativeX = x / width
+            let normalizedX = relativeX * .pi * frequency + phase
+            let y = midHeight + sin(normalizedX * 4) * cos(normalizedX) * amplitude
+            
+            if x == 0 {
+                path.move(to: CGPoint(x: x, y: y))
+            } else {
+                path.addLine(to: CGPoint(x: x, y: y))
+            }
+        }
+        
+        return Path(path.cgPath)
+    }
+}
+
+struct MomentWave: Shape {
+    var phase: Double
+    var frequency: Double = 1
+    var focusPoint: CGFloat // 0 to 1, represents where waves concentrate
+    
+    var animatableData: Double {
+        get { phase }
+        set { phase = newValue }
+    }
+    
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath()
+        let width = rect.width
+        let height = rect.height
+        let midHeight = height / 2
+        let focusX = width * focusPoint
+        
+        path.move(to: CGPoint(x: 0, y: midHeight))
+        
+        for x in stride(from: 0, through: width, by: 1) {
+            let distanceFromFocus = abs(x - focusX) / width
+            let amplitude = height * 0.2 * (1 - distanceFromFocus)
+            let relativeX = x / width
+            let normalizedX = relativeX * .pi * frequency + phase
+            let y = midHeight + sin(normalizedX * 3) * amplitude
+            
+            if x == 0 {
+                path.move(to: CGPoint(x: x, y: y))
+            } else {
+                path.addLine(to: CGPoint(x: x, y: y))
+            }
+        }
+        
+        return Path(path.cgPath)
+    }
+}
+
+struct InitialReflectionVisual: View {
+    let index: Int
+    @State private var phase = 0.0
+    
+    private let accentColor = Color(hex: "A28497")
+    private let blueColor = Color(hex: "1E3D59")
+    
+    var body: some View {
+        ZStack {
+            if index == 0 {
+                WavePattern()
+                    .fill(accentColor.opacity(0.7))
+                    .frame(height: 100)
+            } else {
+                WavePattern()
+                    .fill(blueColor.opacity(0.7))
+                    .frame(height: 100)
+            }
+        }
+        .frame(height: 150)
+        .onAppear {
+            withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
+                phase = 2 * .pi
+            }
+        }
+    }
+}
+
+struct InitialReflectionConfirmation: View {
+    let audioURL: URL
+    let index: Int
+    let onComplete: () -> Void
+    let onRetry: () -> Void
+    let retryAttempts: Int
+    
+    @State private var audioPlayer: AVAudioPlayer?
+    @State private var isPlaying = false
+    @State private var phase = 0.0
+    @State private var amplitude: CGFloat = 0
+    
+    private let accentColor = Color(hex: "A28497")
+    private let blueColor = Color(hex: "1E3D59")
+    
+    var body: some View {
+        VStack(spacing: 40) {
+            Text(index == 0 ? "your day unfolded" : "a moment captured")
+                .font(.system(size: 32, weight: .thin))
+                .foregroundColor(index == 0 ? accentColor : blueColor)
+            
+            // Audio visualization
+            ZStack {
+                // Wave visualization that responds to audio
+                ForEach(0..<3) { i in
+                    if index == 0 {
+                        UnfoldingDayWave(
+                            phase: phase,
+                            frequency: Double(i + 1),
+                            amplitudeFactor: isPlaying ? 1.0 / Double(i + 1) : 0.3 / Double(i + 1)
+                        )
+                        .stroke(accentColor, lineWidth: 1.5)
+                        .opacity(0.3 - Double(i) * 0.08)
+                    } else {
+                        MomentWave(
+                            phase: phase,
+                            frequency: Double(i + 1) * 0.8,
+                            focusPoint: 0.5
+                        )
+                        .stroke(blueColor, lineWidth: 1.5)
+                        .opacity(0.3 - Double(i) * 0.08)
+                    }
+                }
+                
+                // Playback button
+                Button(action: togglePlayback) {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 60, height: 60)
+                        .shadow(color: Color.black.opacity(0.1), radius: 8)
+                        .overlay(
+                            Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(index == 0 ? accentColor : blueColor)
+                                .offset(x: isPlaying ? 0 : 2)
+                        )
+                }
+            }
+            .frame(height: 200)
+            
+            // Action buttons
+            VStack(spacing: 16) {
+                Button(action: onComplete) {
+                    HStack(spacing: 8) {
+                        Text("continue")
+                        Image(systemName: "arrow.right")
+                    }
+                    .font(.system(size: 18, weight: .light))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(index == 0 ? accentColor : blueColor)
+                    )
+                }
+                
+                if retryAttempts > 0 {
+                    Button(action: onRetry) {
+                        Text("reflect again")
+                            .font(.system(size: 18, weight: .light))
+                            .foregroundColor(index == 0 ? accentColor : blueColor)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(index == 0 ? accentColor : blueColor, lineWidth: 1)
+                            )
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+        }
+        .onAppear {
+            setupAudioPlayer()
+            startWaveAnimation()
+        }
+        .onDisappear(perform: cleanup)
+    }
+    
+    private func setupAudioPlayer() {
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+            try AVAudioSession.sharedInstance().setActive(true)
+            
+            audioPlayer = try AVAudioPlayer(contentsOf: audioURL)
+            audioPlayer?.prepareToPlay()
+            audioPlayer?.delegate = AudioPlayerDelegate(onComplete: {
+                isPlaying = false
+            })
+        } catch {
+            print("Error setting up audio player: \(error)")
+        }
+    }
+    
+    private func togglePlayback() {
+        if isPlaying {
+            audioPlayer?.pause()
+        } else {
+            audioPlayer?.play()
+        }
+        isPlaying.toggle()
+    }
+    
+    private func startWaveAnimation() {
+        withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
+            phase = 2 * .pi
+        }
+    }
+    
+    private func cleanup() {
+        audioPlayer?.stop()
+        audioPlayer = nil
+        
+        do {
+            try AVAudioSession.sharedInstance().setActive(false)
+        } catch {
+            print("Error cleaning up audio session: \(error)")
+        }
+    }
+}
+
+
 extension Color {
     func toHex() -> String {
         let uiColor = UIColor(self)

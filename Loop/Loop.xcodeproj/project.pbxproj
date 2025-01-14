@@ -209,6 +209,7 @@
 		9935CF232D32E1E000AF0C16 /* MoodTrendsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodTrendsManager.swift; sourceTree = "<group>"; };
 		9935CF252D3426FF00AF0C16 /* MoodCheckinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodCheckinView.swift; sourceTree = "<group>"; };
 		9935CF272D34342000AF0C16 /* EntryCardTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryCardTabView.swift; sourceTree = "<group>"; };
+		9935CF292D35D3AC00AF0C16 /* LoopDataAgain.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = LoopDataAgain.xcdatamodel; sourceTree = "<group>"; };
 		9953BDDC2CEE620E00348AC3 /* AnimatedBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedBackground.swift; sourceTree = "<group>"; };
 		9953BDDF2CEE623B00348AC3 /* PulsingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulsingView.swift; sourceTree = "<group>"; };
 		9953BDE32CF17A5F00348AC3 /* LoadingWaveform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingWaveform.swift; sourceTree = "<group>"; };
@@ -998,6 +999,7 @@
 		9953BE0A2CFCC0FC00348AC3 /* LoopData.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				9935CF292D35D3AC00AF0C16 /* LoopDataAgain.xcdatamodel */,
 				9935CF1E2D3209D700AF0C16 /* LoopDataNewTwo.xcdatamodel */,
 				9935CF1D2D31F8A300AF0C16 /* LoopDataNEw.xcdatamodel */,
 				9935CF1C2D31F74C00AF0C16 /* LoopData 3.xcdatamodel */,

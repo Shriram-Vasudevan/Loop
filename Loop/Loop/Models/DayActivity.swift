@@ -11,12 +11,12 @@ import CloudKit
 import SwiftUI
 
 struct DayActivity {
-    let colorHex: String?
+    let emotion: String?
     let dailyLoops: [Loop]
     let thematicLoops: [Loop]
     let followUpLoops: [Loop]
     
-    static func categorize(_ loops: [Loop], colorHex: String?) -> DayActivity {
+    static func categorize(_ loops: [Loop], emotion: String?) -> DayActivity {
         let (daily, thematic, followUp) = loops.reduce(into: ([Loop](), [Loop](), [Loop]())) { result, loop in
             if loop.isDailyLoop {
                 result.0.append(loop)
@@ -28,7 +28,7 @@ struct DayActivity {
         }
         
         return DayActivity(
-            colorHex: colorHex,
+            emotion: emotion,
             dailyLoops: daily.sorted { $0.timestamp > $1.timestamp },
             thematicLoops: thematic.sorted { $0.timestamp > $1.timestamp },
             followUpLoops: followUp.sorted { $0.timestamp > $1.timestamp }

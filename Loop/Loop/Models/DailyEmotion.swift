@@ -7,8 +7,8 @@
 
 import Foundation
 
-struct DailyColorHex: Identifiable {
+struct DailyEmotion: Identifiable {
     let id: String = UUID().uuidString
-    var colorHex: String
+    let emotion: String
     let date: Date
 }

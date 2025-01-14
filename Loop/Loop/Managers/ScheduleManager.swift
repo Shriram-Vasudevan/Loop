@@ -12,10 +12,12 @@ import CoreData
 class ScheduleManager: ObservableObject {
     static let shared = ScheduleManager()
     
-    @Published var dailyColors: [DailyColorHex] = []
+    @Published var emotions: [Date: String] = [:]
+    @Published var emotionColors: [String: Color] = [:]
     
-    @Published var weekColors: [DailyColorHex] = []
-
+    @Published var weekEmotions: [Date: String] = [:]
+    @Published var weekEmotionColors: [String: Color] = [:]
+    
     @Published var currentStreak: Int = 0
     
     lazy var persistentContainer: NSPersistentContainer = {
@@ -67,7 +69,7 @@ class ScheduleManager: ObservableObject {
             self.currentStreak = streakDays
         }
     }
-
+    
     private func checkForActivity(on date: Date) async -> Bool {
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: date)
@@ -76,11 +78,7 @@ class ScheduleManager: ObservableObject {
             return false
         }
         
-        if dailyColors.contains(where: { DailyColorHex in
-            Calendar.current.isDate(startOfDay, inSameDayAs: DailyColorHex.date)
-        }) || weekColors.contains(where: { DailyColorHex in
-            Calendar.current.isDate(startOfDay, inSameDayAs: DailyColorHex.date)
-        }) {
+        if emotions[startOfDay] != nil || weekEmotions[startOfDay] != nil {
             return true
         }
         
@@ -100,9 +98,44 @@ class ScheduleManager: ObservableObject {
     func loadWeekDataAndAssignColors() async {
         guard let weekData = try? await fetchEmotionsForPastWeek() else { return }
         
+        let assignment = await withTaskGroup(of: ColorAssignment.self) { group in
+            group.addTask {
+                let frequencyCounts = Dictionary(grouping: weekData.values, by: { $0 })
+                    .mapValues { $0.count }
+                    .sorted { $0.value > $1.value }
+
+                let colors = [
+                    Color(hex: "A28497"),
+                    Color(hex: "B5D5E2"),
+                    Color(hex: "C2E5C9"),
+                    Color(hex: "E2C9B5"),
+                    Color(hex: "D5B5E2"),
+                    Color(hex: "E2DCB5"),
+                    Color(hex: "B5E2D5"),
+                    Color(hex: "E2B5C9"),
+                    Color(hex: "C9E2B5"),
+                    Color(hex: "B5C9E2")
+                ]
+
+                var colorMap: [String: Color] = [:]
+                for (index, emotion) in frequencyCounts.enumerated() {
+                    let colorIndex = index % colors.count
+                    colorMap[emotion.key] = colors[colorIndex]
+                }
+
+                return ColorAssignment(
+                    emotions: weekData,
+                    emotionColors: colorMap
+                )
+            }
+
+            return await group.next() ?? ColorAssignment(emotions: [:], emotionColors: [:])
+        }
         
+        // Update published properties on the main thread with the final result
         await MainActor.run {
-            self.weekColors = weekData
+            self.weekEmotions = assignment.emotions
+            self.weekEmotionColors = assignment.emotionColors
         }
     }
     
@@ -111,12 +144,48 @@ class ScheduleManager: ObservableObject {
             return
         }
 
+        let assignment = await withTaskGroup(of: ColorAssignment.self) { group in
+            group.addTask {
+                let frequencyCounts = Dictionary(grouping: yearData.values, by: { $0 })
+                    .mapValues { $0.count }
+                    .sorted { $0.value > $1.value }
+
+                let colors = [
+                    Color(hex: "A28497"),
+                    Color(hex: "B5D5E2"),
+                    Color(hex: "C2E5C9"),
+                    Color(hex: "E2C9B5"),
+                    Color(hex: "D5B5E2"),
+                    Color(hex: "E2DCB5"),
+                    Color(hex: "B5E2D5"),
+                    Color(hex: "E2B5C9"),
+                    Color(hex: "C9E2B5"),
+                    Color(hex: "B5C9E2") 
+                ]
+
+                var colorMap: [String: Color] = [:]
+                for (index, emotion) in frequencyCounts.enumerated() {
+                    let colorIndex = index % colors.count
+                    colorMap[emotion.key] = colors[colorIndex]
+                }
+
+                return ColorAssignment(
+                    emotions: yearData,
+                    emotionColors: colorMap
+                )
+            }
+
+            return await group.next() ?? ColorAssignment(emotions: [:], emotionColors: [:])
+        }
+        
+        // Update published properties on the main thread with the final result
         await MainActor.run {
-            self.dailyColors = yearData
+            self.emotions = assignment.emotions
+            self.emotionColors = assignment.emotionColors
         }
     }
     
-    func fetchEmotionsForPastYear() async throws -> [DailyColorHex] {
+    func fetchEmotionsForPastYear() async throws -> [Date: String] {
         let calendar = Calendar.current
         let now = Date()
         
@@ -130,7 +199,7 @@ class ScheduleManager: ObservableObject {
             throw NSError(domain: "DateError", code: -1)
         }
         
-        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyCheckinEntity")
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyEmotionEntity")
         fetchRequest.predicate = NSPredicate(
             format: "date >= %@ AND date < %@",
             startDate as NSDate,
@@ -138,35 +207,39 @@ class ScheduleManager: ObservableObject {
         )
         
         let results = try context.fetch(fetchRequest)
-        let emotions = results.compactMap { result -> DailyColorHex? in
+        let emotions = results.compactMap { result -> DailyEmotion? in
             guard let date = result.value(forKey: "date") as? Date,
-                  let colorHex = result.value(forKey: "colorHex") as? String else {
+                  let emotion = result.value(forKey: "emotion") as? String else {
                 return nil
             }
-            return DailyColorHex(colorHex: colorHex, date: Calendar.current.startOfDay(for: date))
+            return DailyEmotion(emotion: emotion, date: date)
         }
         
-        return emotions
+        return Dictionary(uniqueKeysWithValues: emotions.map {
+            (calendar.startOfDay(for: $0.date), $0.emotion)
+        })
     }
     
-    func fetchEmotionsForPastWeek()  async throws -> [DailyColorHex] {
+    func fetchEmotionsForPastWeek()  async throws -> [Date: String] {
         guard let startDate = Calendar.current.date(byAdding: .day, value: -6, to: Date()) else { throw NSError(domain: "DateError", code: -1) }
         let endDate = Date()
         
-        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyCheckinEntity")
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyEmotionEntity")
         fetchRequest.predicate = NSPredicate(format: "date >= %@ AND date <= %@", startDate as NSDate, endDate as NSDate)
         
         let results = try context.fetch(fetchRequest)
         
-        let emotions = results.compactMap { result -> DailyColorHex? in
+        let emotions = results.compactMap { result -> DailyEmotion? in
             guard let date = result.value(forKey: "date") as? Date,
-                  let colorHex = result.value(forKey: "colorHex") as? String else {
+                  let emotion = result.value(forKey: "emotion") as? String else {
                 return nil
             }
-            return DailyColorHex(colorHex: colorHex, date: Calendar.current.startOfDay(for: date))
+            return DailyEmotion(emotion: emotion, date: date)
         }
         
-        return emotions
+        return Dictionary(uniqueKeysWithValues: emotions.map {
+            (Calendar.current.startOfDay(for: $0.date), $0.emotion)
+        })
     }
 }
 

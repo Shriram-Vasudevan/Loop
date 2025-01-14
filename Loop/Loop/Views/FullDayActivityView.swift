@@ -40,16 +40,15 @@ struct FullDayActivityView: View {
                 
                 if let activity = activity {
                     if activity.dailyLoops.isEmpty && activity.thematicLoops.isEmpty &&
-                        activity.followUpLoops.isEmpty && activity.colorHex == nil {
+                       activity.followUpLoops.isEmpty && activity.emotion == nil {
                         emptyStateView
                             .padding(.horizontal, 24)
                     } else {
                         VStack(spacing: 32) {
-                            if let colorHex = activity.colorHex {
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(Color(hex: colorHex))
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 32)
+                            if let emotion = activity.emotion {
+                                Text("\(emotion).")
+                                    .font(.custom("PPNeueMontreal-Bold", size: 28))
+                                    .foregroundColor(textColor)
                             }
                             
                             if !activity.dailyLoops.isEmpty {
@@ -81,11 +80,8 @@ struct FullDayActivityView: View {
                 let cloudLoops = try await ActivityCloudKitUtility.fetchLoopsForDate(date)
                 let localLoops = try await ActivityLocalStorageUtility.shared.fetchLoopsForDate(date)
                 let allLoops = Array(Set(cloudLoops + localLoops))
-                let colorHex = ScheduleManager.shared.dailyColors.first(where: { DailyColorHex in
-                    Calendar.current.isDate(date, inSameDayAs: DailyColorHex.date)
-                })
-                
-                activity = DayActivity.categorize(allLoops, colorHex: colorHex?.colorHex)
+                let emotion = ScheduleManager.shared.emotions[Calendar.current.startOfDay(for: date)]
+                activity = DayActivity.categorize(allLoops, emotion: emotion)
             } catch {
                 print("Error fetching loosps: \(error)")
             }
