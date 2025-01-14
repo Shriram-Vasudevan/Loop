@@ -1,192 +1,157 @@
 import SwiftUI
 
-struct EntryCardTabView: View {
-    private let accentColor = Color(hex: "A28497")
-    
-    @State private var selectedTab = 0
-    
+import SwiftUI
+
+struct FloatingEntryMenu: View {
     @Binding var newEntrySelected: Bool
     @Binding var successSelected: Bool
     @Binding var moodCheckIn: Bool
+    @State private var isMenuOpen = true
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
     
     var body: some View {
-        TabView(selection: $selectedTab) {
-            EntryCard(
-                title: "New Entry",
-                subtitle: "Record your thoughts and feelings",
-                content: AnyView(
-                    WavePattern()
-                        .fill(accentColor.opacity(0.7))
-                        .frame(height: 100)
-                )
-            )
-            .tag(0)
-            .onTapGesture {
-                newEntrySelected = true
+        ZStack {
+            // Background overlay
+            if isMenuOpen {
+                Color.black.opacity(0.5)
+                    .edgesIgnoringSafeArea(.all)
+                    .onTapGesture {
+                        withAnimation {
+                            isMenuOpen = false
+                        }
+                    }
             }
             
-            EntryCard(
-                title: "Success",
-                subtitle: "Celebrate your achievements",
-                content: AnyView(
-                    DarkBlueWaveView()
-                        .frame(height: 100)
-                )
-            )
-            .tag(1)
-            .onTapGesture {
-                successSelected = true
-            }
-            
-            EntryCard(
-                title: "Mood Check-in",
-                subtitle: "Track how you're feeling",
-                content: AnyView(
-                    MoodPatternView()
-                )
-            )
-            .tag(2)
-            .onTapGesture {
-                moodCheckIn = true
+            // Menu items
+            VStack(spacing: 0) {
+                Spacer()
+                
+                // Entry buttons container
+                VStack(spacing: 24) {
+                    // New Entry
+                    EntryButton(
+                        title: "New Entry",
+                        subtitle: "Record your thoughts and feelings",
+                        icon: "square.and.pencil",
+                        accentColor: accentColor,
+                        textColor: textColor
+                    ) {
+                        newEntrySelected = true
+                    }
+                    
+                    // Success
+                    EntryButton(
+                        title: "Success",
+                        subtitle: "Celebrate your achievements",
+                        icon: "checkmark",
+                        accentColor: accentColor,
+                        textColor: textColor
+                    ) {
+                        successSelected = true
+                    }
+                    
+                    // Mood Check-in
+                    EntryButton(
+                        title: "Mood Check-in",
+                        subtitle: "Track how you're feeling",
+                        icon: "heart.fill",
+                        accentColor: accentColor,
+                        textColor: textColor
+                    ) {
+                        moodCheckIn = true
+                    }
+                }
+                .offset(y: isMenuOpen ? 0 : 200)
+                .opacity(isMenuOpen ? 1 : 0)
+                .animation(.spring(response: 0.35, dampingFraction: 0.7), value: isMenuOpen)
+                
+                Spacer()
+                    .frame(height: 100)
+                
+                // Toggle button
+                Button {
+                    withAnimation {
+                        isMenuOpen.toggle()
+                    }
+                } label: {
+                    Image(systemName: isMenuOpen ? "xmark" : "plus")
+                        .font(.system(size: 22, weight: .medium))
+                        .foregroundColor(.white)
+                        .frame(width: 62, height: 62)
+                        .background(
+                            Circle()
+                                .fill(accentColor)
+                                .shadow(color: accentColor.opacity(0.25), radius: 8, x: 0, y: 4)
+                        )
+                        .rotationEffect(isMenuOpen ? Angle.degrees(135) : .zero)
+                }
+                .padding(.bottom, 32)
             }
         }
-        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
-        .frame(height: 400)
     }
 }
 
-struct EntryCard: View {
+struct EntryButton: View {
     let title: String
     let subtitle: String
-    let content: AnyView
+    let icon: String
+    let accentColor: Color
+    let textColor: Color
+    let action: () -> Void
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack (spacing: 10) {
-                HStack {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                // Icon
+                Circle()
+                    .fill(.white)
+                    .frame(width: 48, height: 48)
+                    .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                    .overlay(
+                        Image(systemName: icon)
+                            .font(.system(size: 20))
+                            .foregroundColor(accentColor)
+                    )
+                
+                // Text
+                VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.primary)
-                    Spacer()
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(textColor)
+                    
+                    Text(subtitle)
+                        .font(.system(size: 14))
+                        .foregroundColor(textColor.opacity(0.6))
                 }
                 
-                HStack {
-                    Text(subtitle)
-                        .font(.system(size: 17))
-                        .foregroundColor(.secondary)
-                    
-                    Spacer()
-                }
+                Spacer()
+                
+                // Arrow
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(textColor.opacity(0.3))
             }
-            
-            content
-                .padding(.vertical, 20)
-            
-            Spacer()
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white)
+                    .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+            )
         }
-        .padding(25)
-        .frame(width: 320, height: 380)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.white)
-        )
+        .buttonStyle(ScaleButtonStyle())
+        .padding(.horizontal, 24)
     }
 }
 
-struct NewDarkBlueWaveView: View {
-    private let waveColor = Color.blue.opacity(0.8)
-    
-    var body: some View {
-        ZStack {
-            ForEach(0..<3) { index in
-                SineWave(frequency: Double(index + 1) * 1.5, phase: .random(in: 0...2 * .pi))
-                    .fill(waveColor)
-                    .opacity(0.3 - Double(index) * 0.1)
-            }
-        }
-        .frame(height: 100)
-    }
-}
-
-struct SineWave: Shape {
-    var frequency: Double
-    var phase: Double
-    
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let width = rect.width
-        let height = rect.height
-        let midHeight = height / 2
-        let amplitude = height * 0.25
-        
-        path.move(to: CGPoint(x: 0, y: height))
-        
-        stride(from: 0, through: width, by: 1).forEach { x in
-            let relativeX = x / width
-            // Fixed operator precedence by adding parentheses
-            let normalizedX = ((relativeX * .pi) * 2.0 * frequency) + phase
-            let y = midHeight + sin(normalizedX) * amplitude
-            
-            if x == 0 {
-                path.move(to: CGPoint(x: x, y: y))
-            } else {
-                path.addLine(to: CGPoint(x: x, y: y))
-            }
-        }
-        
-        path.addLine(to: CGPoint(x: width, y: height))
-        path.addLine(to: CGPoint(x: 0, y: height))
-        path.closeSubpath()
-        
-        return path
-    }
-}
-
-struct MoodPatternView: View {
-    private let waveColor = Color(hex: "84A297")
-    
-    var body: some View {
-        ZStack {
-            // Three gentle filled waves
-            ForEach(0..<3) { index in
-                MoodCurve(yOffset: CGFloat(index) * 20)
-                    .fill(waveColor)
-                    .opacity(0.3 - Double(index) * 0.1)
-            }
-        }
-        .frame(height: 100)
-    }
-}
-
-struct MoodCurve: Shape {
-    var yOffset: CGFloat
-    
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let width = rect.width
-        let height = rect.height
-        let midHeight = height / 2
-        
-        path.move(to: CGPoint(x: 0, y: height))
-        
-        // Draw the curve
-        stride(from: 0, through: width, by: 1).forEach { x in
-            let relativeX = x / width
-            let y = midHeight + sin(relativeX * .pi) * 20 + yOffset
-            path.addLine(to: CGPoint(x: x, y: y))
-        }
-        
-        // Complete the path to fill
-        path.addLine(to: CGPoint(x: width, y: height))
-        path.addLine(to: CGPoint(x: 0, y: height))
-        path.closeSubpath()
-        
-        return path
-    }
-}
 
 #Preview {
-    EntryCardTabView(newEntrySelected: .constant(false), successSelected: .constant(false), moodCheckIn: .constant(false))
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.gray.opacity(0.1))
+    FloatingEntryMenu(
+        newEntrySelected: .constant(false),
+        successSelected: .constant(false),
+        moodCheckIn: .constant(false)
+    )
+    .preferredColorScheme(.light)
 }

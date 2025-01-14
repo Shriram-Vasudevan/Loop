@@ -115,7 +115,7 @@ struct PagesHolderView: View {
                             }
                         }
                     
-                    EntryCardTabView(newEntrySelected: $showNewEntrySheet, successSelected: $showSuccessSheet, moodCheckIn: $showMoodCheckInSheet)
+                    FloatingEntryMenu(newEntrySelected: $showNewEntrySheet, successSelected: $showSuccessSheet, moodCheckIn: $showMoodCheckInSheet)
                 }
             }
             .edgesIgnoringSafeArea(.bottom)
