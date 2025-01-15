@@ -7,8 +7,8 @@
 
 import Foundation
 
-struct DailyEmotion: Identifiable {
+struct DailyCheckin: Identifiable {
     let id: String = UUID().uuidString
-    let emotion: String
+    let rating: Double
     let date: Date
 }

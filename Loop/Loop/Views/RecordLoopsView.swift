@@ -85,7 +85,7 @@ struct RecordLoopsView: View {
             }
             .padding(.horizontal, 32)
             
-            if showingPromptOptions && !isRecording && !isPostRecording && loopManager.currentPromptIndex > 2 {
+            if showingPromptOptions && !isRecording && !isPostRecording && loopManager.currentPromptIndex > 1 {
                 promptSwitcherOverlay
             }
         }
@@ -99,8 +99,9 @@ struct RecordLoopsView: View {
             topBar
                 .padding(.bottom, 40)
             
-            Spacer()
-            
+            if !(loopManager.currentPromptIndex == 2) && !(loopManager.currentPromptIndex == 3) {
+                Spacer()
+            }
             promptArea
             
             Spacer()
@@ -115,7 +116,7 @@ struct RecordLoopsView: View {
     private var topBar: some View {
         VStack(spacing: 24) {
             ZStack {
-                Text("DAILY REFLECTION")
+                Text(loopManager.currentPromptIndex == 3 ? "GENERAL REFLECTION" : "DAILY REFLECTION")
                     .font(.system(size: 13, weight: .medium))
                     .tracking(1.5)
                     .foregroundColor(textColor.opacity(0.5))
@@ -144,122 +145,132 @@ struct RecordLoopsView: View {
     }
   
     private var dayRatingView: some View {
-        VStack(spacing: 32) {
-            VStack(spacing: 24) {
-                VStack (spacing: 10) {
-                    Text("before we begin")
-                        .font(.system(size: 36, weight: .ultraLight))
+        VStack(spacing: 24) {
+            VStack (spacing: 10) {
+                HStack {
+                    Text("daily reflection for \(formatDate())")
+                        .font(.custom("PPNeueMontreal-Bold", size: 35))
                         .foregroundColor(textColor)
-                        .multilineTextAlignment(.center)
+                        .multilineTextAlignment(.leading)
                     
-                    HStack(spacing: 12) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 12))
-                            .foregroundColor(accentColor.opacity(0.3))
-                        
-                        Text("HOW ARE YOU FEELING TODAY?")
-                            .font(.system(size: 11, weight: .medium))
-                            .tracking(1.5)
-                            .foregroundColor(textColor.opacity(0.5))
-                    }
-                }
-            
-                VStack(spacing: 40) {
-                    VStack(spacing: 24) {
-
-                        HStack(alignment: .bottom, spacing: 4) {
-                            Text(String(format: "%.1f", dayRating * 10))
-                                .font(.system(size: 54, weight: .medium))
-                                .foregroundColor(textColor)
-                                .contentTransition(.numericText())
-                            
-                            Text("/10")
-                                .font(.system(size: 24, weight: .light))
-                                .foregroundColor(textColor.opacity(0.3))
-                                .offset(y: -12)
-                        }
-                    }
-                    
-                    // Slider
-                    GeometryReader { geometry in
-                        ZStack(alignment: .leading) {
-                            Capsule()
-                                .fill(Color(hex: "F8F9FA"))
-                                .overlay(
-                                    Capsule()
-                                        .stroke(accentColor.opacity(0.1), lineWidth: 1)
-                                )
-                            
-                            Capsule()
-                                .fill(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [
-                                            accentColor.opacity(0.15),
-                                            accentColor.opacity(0.1)
-                                        ]),
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .frame(width: geometry.size.width * CGFloat(dayRating))
-                            
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: 28, height: 28)
-                                .shadow(color: accentColor.opacity(0.1), radius: 8, x: 0, y: 2)
-                                .overlay(
-                                    Circle()
-                                        .stroke(accentColor.opacity(0.15), lineWidth: 1)
-                                )
-                                .overlay(
-                                    Circle()
-                                        .fill(accentColor.opacity(0.1))
-                                        .frame(width: 8, height: 8)
-                                )
-                                .offset(x: (geometry.size.width - 28) * CGFloat(dayRating))
-                        }
-                        .frame(height: 44)
-                        .gesture(
-                            DragGesture(minimumDistance: 0)
-                                .onChanged { gesture in
-                                    let newValue = gesture.location.x / geometry.size.width
-                                    dayRating = min(max(0, newValue), 1)
-                                }
-                        )
-                    }
-                    .frame(height: 44)
+                    Spacer()
                 }
                 
-                VStack(spacing: 16) {
-                    Button(action: {
-                        checkinManager.saveDailyCheckin(rating: dayRating * 10)
-                        withAnimation {
-                            showingFirstLaunchScreen = false
-                        }
-                    }) {
-                        Text("continue")
-                            .font(.system(size: 18, weight: .regular))
-                            .foregroundColor(.white)
-                            .frame(height: 56)
-                            .frame(maxWidth: .infinity)
-                            .background(accentColor)
-                            .cornerRadius(28)
-                    }
+                HStack {
+                    Text("let's explore your day in a meaningful way")
+                        .font(.system(size: 15, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(textColor.opacity(0.5))
+                        .multilineTextAlignment(.leading)
                     
-                    Button(action: {
-                        withAnimation {
-                            showingFirstLaunchScreen = false
-                        }
-                    }) {
-                        Text("skip")
-                            .font(.system(size: 16, weight: .regular))
-                            .foregroundColor(accentColor)
+                    Spacer()
+                }
+
+            }
+            
+        
+            VStack(spacing: 40) {
+                VStack(spacing: 24) {
+                    Text("HOW ARE YOU FEELING TODAY?")
+                        .font(.system(size: 11, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(textColor.opacity(0.5))
+                    
+                    HStack(alignment: .bottom, spacing: 4) {
+                        Text(String(format: "%.1f", dayRating * 10))
+                            .font(.system(size: 54, weight: .medium))
+                            .foregroundColor(textColor)
+                            .contentTransition(.numericText())
+                        
+                        Text("/10")
+                            .font(.system(size: 24, weight: .light))
+                            .foregroundColor(textColor.opacity(0.3))
+                            .offset(y: -12)
                     }
                 }
-                .padding(.top, 40)
+                
+                // Slider
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(Color(hex: "F8F9FA"))
+                            .overlay(
+                                Capsule()
+                                    .stroke(accentColor.opacity(0.1), lineWidth: 1)
+                            )
+                        
+                        Capsule()
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        accentColor.opacity(0.15),
+                                        accentColor.opacity(0.1)
+                                    ]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(width: geometry.size.width * CGFloat(dayRating))
+                        
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 28, height: 28)
+                            .shadow(color: accentColor.opacity(0.1), radius: 8, x: 0, y: 2)
+                            .overlay(
+                                Circle()
+                                    .stroke(accentColor.opacity(0.15), lineWidth: 1)
+                            )
+                            .overlay(
+                                Circle()
+                                    .fill(accentColor.opacity(0.1))
+                                    .frame(width: 8, height: 8)
+                            )
+                            .offset(x: (geometry.size.width - 28) * CGFloat(dayRating))
+                    }
+                    .frame(height: 44)
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { gesture in
+                                let newValue = gesture.location.x / geometry.size.width
+                                dayRating = min(max(0, newValue), 1)
+                            }
+                    )
+                }
+                .frame(height: 44)
             }
-            .padding(32)
+            
+            Spacer()
+            
+            VStack(spacing: 16) {
+                Button(action: {
+                    checkinManager.saveDailyCheckin(rating: dayRating * 10)
+                    withAnimation {
+                        showingFirstLaunchScreen = false
+                    }
+                }) {
+                    Text("continue")
+                        .font(.system(size: 18, weight: .regular))
+                        .foregroundColor(.white)
+                        .frame(height: 56)
+                        .frame(maxWidth: .infinity)
+                        .background(accentColor)
+                        .cornerRadius(28)
+                }
+                
+                Button(action: {
+                    withAnimation {
+                        showingFirstLaunchScreen = false
+                    }
+                }) {
+                    Text("skip")
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundColor(accentColor)
+                }
+            }
+            .padding(.top, 40)
         }
+        .padding(.top, 35)
+//        .padding(.horizontal)
     }
     
     private var promptArea: some View {
@@ -321,12 +332,36 @@ struct RecordLoopsView: View {
                         .frame(maxWidth: .infinity)
                     } else {
                         VStack (spacing: 20) {
-                            HStack {
-                                Text(loopManager.getCurrentPrompt())
-                                    .font(.system(size: 28, weight: .medium))
-                                    .foregroundColor(textColor)
-                                    .multilineTextAlignment(.center)
-                                    .fixedSize(horizontal: false, vertical: true)
+                            VStack (spacing: 15) {
+                                HStack {
+                                    Text(loopManager.getCurrentPrompt())
+                                        .font(.system(size: 28, weight: .medium))
+                                        .foregroundColor(textColor)
+                                        .multilineTextAlignment(.leading)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                    
+                                    Spacer()
+                                }
+                                
+                                if loopManager.currentPromptIndex == 0 {
+                                    HStack {
+                                        Text("Let’s start with a quick recap of your day. Think about how you spent your time, what you did, and how it all felt. No need to overthink—just share the highlights or an overview.")
+                                            .font(.system(size: 14, weight: .medium))
+                                            .tracking(1.5)
+                                            .foregroundColor(textColor.opacity(0.5))
+                                        
+                                        Spacer()
+                                    }
+                                } else {
+                                    HStack {
+                                        Text("Now, focus on the moments that caught your attention. Was there something unique, surprising, or memorable about your day? It could be big or small—whatever stuck with you.")
+                                            .font(.system(size: 14, weight: .medium))
+                                            .tracking(1.5)
+                                            .foregroundColor(textColor.opacity(0.5))
+                                        
+                                        Spacer()
+                                    }
+                                }
                             }
                             
                             if isRecording {
@@ -338,6 +373,8 @@ struct RecordLoopsView: View {
                                 }
                                 .transition(.opacity)
                             }
+                            
+                            Spacer()
                         }
                         .padding(.bottom, 60)
                     }
@@ -408,14 +445,14 @@ struct RecordLoopsView: View {
                 Circle()
                     .fill(Color.white)
                     .frame(width: 96)
-                    .shadow(color: accentColor.opacity(0.2), radius: 20, x: 0, y: 8)
+                    .shadow(color: loopManager.currentPromptIndex == 1 ? Color(hex: "1E3D59").opacity(0.2) : accentColor.opacity(0.2), radius: 20, x: 0, y: 8)
 
                 Circle()
                     .fill(
                         LinearGradient(
                             gradient: Gradient(colors: [
-                                isRecording ? accentColor : .white,
-                                isRecording ? accentColor.opacity(0.9) : .white
+                                isRecording ? loopManager.currentPromptIndex == 1 ? Color(hex: "1E3D59") : accentColor : .white,
+                                isRecording ? loopManager.currentPromptIndex == 1 ? Color(hex: "1E3D59").opacity(0.9) : accentColor.opacity(0.9) : .white
                             ]),
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -433,8 +470,8 @@ struct RecordLoopsView: View {
                         .fill(
                             LinearGradient(
                                 gradient: Gradient(colors: [
-                                    accentColor,
-                                    accentColor.opacity(0.85)
+                                    loopManager.currentPromptIndex == 1 ? Color(hex: "1E3D59") : accentColor,
+                                    loopManager.currentPromptIndex == 1 ? Color(hex: "1E3D59").opacity(0.85) : accentColor.opacity(0.85)
                                 ]),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -742,6 +779,27 @@ struct RecordLoopsView: View {
             CGFloat.random(in: minHeight...maxHeight)
         }
     }
+    
+    func formatDate() -> String {
+        let dayNumber = Calendar.current.component(.day, from: Date())
+        
+        let formatString = "MMMM d"
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = formatString
+        var formattedDate = dateFormatter.string(from: Date())
+        
+        var suffix: String
+        switch dayNumber {
+            case 1, 21, 31: suffix = "st"
+            case 2, 22: suffix = "nd"
+            case 3, 23: suffix = "rd"
+            default: suffix = "th"
+        }
+        
+        formattedDate.append(suffix)
+        
+        return formattedDate
+    }
 }
 
 //struct PastLoopPlayer: View {
@@ -896,13 +954,13 @@ struct CategorySelectionView: View {
     let textColor: Color
     
     var body: some View {
-        VStack (spacing: 16){
+        VStack (spacing: 26){
             HStack {
                 Text(isDailyPrompt ? "Let's go deeper on today's reflection. " : "Now we'll try to look at a larger scale. ")
                     .font(.system(size: 18, weight: .medium))
                     .tracking(1.5)
                     .foregroundColor(textColor)
-                + Text("Choose a topic")
+                + Text("Choose a topic.")
                     .font(.system(size: 18, weight: .medium))
                     .tracking(1.5)
                     .foregroundColor(textColor.opacity(0.5))
@@ -939,6 +997,7 @@ struct CategorySelectionView: View {
             }
             
         }
+        .padding(.top, 8)
     }
 }
 
@@ -1003,20 +1062,20 @@ struct InitialReflectionVisual: View {
                     )
                 }
                 
-                for i in 0..<3 {
-                    let rectPhase = sin(timeOffset + Double(i) * 0.3) * 0.4
-                    let rect = CGRect(
-                        x: size.width/2 + CGFloat(i * 30) - 30,
-                        y: size.height * 0.4,
-                        width: 4,
-                        height: 20
-                    )
-                    context.opacity = rectPhase
-                    context.fill(
-                        RoundedRectangle(cornerRadius: 2).path(in: rect),
-                        with: .color(blueColor)
-                    )
-                }
+//                for i in 0..<3 {
+//                    let rectPhase = sin(timeOffset + Double(i) * 0.3) * 0.4
+//                    let rect = CGRect(
+//                        x: size.width/2 + CGFloat(i * 30) - 30,
+//                        y: size.height * 0.4,
+//                        width: 4,
+//                        height: 20
+//                    )
+//                    context.opacity = rectPhase
+//                    context.fill(
+//                        RoundedRectangle(cornerRadius: 2).path(in: rect),
+//                        with: .color(blueColor)
+//                    )
+//                }
             }
         }
     }

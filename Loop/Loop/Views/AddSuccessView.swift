@@ -68,6 +68,7 @@ struct AddSuccessView: View {
                 .lineSpacing(4)
             
             DarkBlueWaveView()
+                .padding(.horizontal, 32)
             
             Text("A space to celebrate your achievements - big and small. Loop will save these successes and bring them back to remind you of your progress.")
                 .font(.system(size: 18, weight: .light))

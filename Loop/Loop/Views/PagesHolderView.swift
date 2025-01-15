@@ -37,7 +37,7 @@ struct PagesHolderView: View {
                         case .schedule:
                             ScheduleView(selectedScheduleDate: $selectedScheduleDate)
                         case .trends:
-                            TrendsView(previewData: nil)
+                            InsightsView()
                         }
                     }
                     
@@ -64,7 +64,7 @@ struct PagesHolderView: View {
                         
                             
                             ForEach([
-                                (icon: "chart.bar", label: "Trends", type: PageType.trends),
+                                (icon: "chart.bar", label: "Insights", type: PageType.trends),
                                 (icon: "calendar", label: "Calendar", type: PageType.schedule)
                             ], id: \.label) { item in
                                 BottomTabButton(

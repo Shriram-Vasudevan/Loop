@@ -190,10 +190,10 @@ struct MonthRow: View {
         
         let startOfDay = calendar.startOfDay(for: date)
 
-        if let emotion = scheduleManager.emotions[startOfDay] {
-            return scheduleManager.emotionColors[emotion]
+        if let rating = scheduleManager.ratings[startOfDay] {
+            return scheduleManager.ratingColors[rating]
         }
- 
+
         guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
             print("Error: Could not calculate end of day")
             return nil

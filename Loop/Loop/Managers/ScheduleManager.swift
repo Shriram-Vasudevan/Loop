@@ -9,14 +9,15 @@ import Foundation
 import SwiftUI
 import CoreData
 
+
 class ScheduleManager: ObservableObject {
     static let shared = ScheduleManager()
     
-    @Published var emotions: [Date: String] = [:]
-    @Published var emotionColors: [String: Color] = [:]
+    @Published var ratings: [Date: Double] = [:]
+    @Published var ratingColors: [Double: Color] = [:]
     
-    @Published var weekEmotions: [Date: String] = [:]
-    @Published var weekEmotionColors: [String: Color] = [:]
+    @Published var weekRatings: [Date: Double] = [:]
+    @Published var weekRatingColors: [Double: Color] = [:]
     
     @Published var currentStreak: Int = 0
     
@@ -40,6 +41,22 @@ class ScheduleManager: ObservableObject {
         }
     }
     
+    private func getColorForRating(_ rating: Double) -> Color {
+        switch rating {
+        case 9.0...10.0:
+            return Color(hex: "C2E5C9")  // Bright positive color
+        case 8.0..<9.0:
+            return Color(hex: "B5E2D5")  // Light positive color
+        case 6.0..<8.0:
+            return Color(hex: "B5D5E2")  // Neutral positive color
+        case 4.0..<6.0:
+            return Color(hex: "E2DCB5")  // Neutral color
+        case 2.0..<4.0:
+            return Color(hex: "E2C9B5")  // Light negative color
+        default:
+            return Color(hex: "A28497")  // Dark negative color
+        }
+    }
     
     func calculateStreak() async {
         let calendar = Calendar.current
@@ -78,7 +95,7 @@ class ScheduleManager: ObservableObject {
             return false
         }
         
-        if emotions[startOfDay] != nil || weekEmotions[startOfDay] != nil {
+        if ratings[startOfDay] != nil || weekRatings[startOfDay] != nil {
             return true
         }
         
@@ -87,7 +104,8 @@ class ScheduleManager: ObservableObject {
                                            startOfDay as NSDate,
                                            endOfDay as NSDate)
         
-        do {                let activities = try context.fetch(fetchRequest)
+        do {
+            let activities = try context.fetch(fetchRequest)
             return !activities.isEmpty
         } catch {
             print("Error fetching activities for streak: \(error)")
@@ -96,96 +114,56 @@ class ScheduleManager: ObservableObject {
     }
     
     func loadWeekDataAndAssignColors() async {
-        guard let weekData = try? await fetchEmotionsForPastWeek() else { return }
+        guard let weekData = try? await fetchRatingsForPastWeek() else { return }
         
         let assignment = await withTaskGroup(of: ColorAssignment.self) { group in
             group.addTask {
-                let frequencyCounts = Dictionary(grouping: weekData.values, by: { $0 })
-                    .mapValues { $0.count }
-                    .sorted { $0.value > $1.value }
-
-                let colors = [
-                    Color(hex: "A28497"),
-                    Color(hex: "B5D5E2"),
-                    Color(hex: "C2E5C9"),
-                    Color(hex: "E2C9B5"),
-                    Color(hex: "D5B5E2"),
-                    Color(hex: "E2DCB5"),
-                    Color(hex: "B5E2D5"),
-                    Color(hex: "E2B5C9"),
-                    Color(hex: "C9E2B5"),
-                    Color(hex: "B5C9E2")
-                ]
-
-                var colorMap: [String: Color] = [:]
-                for (index, emotion) in frequencyCounts.enumerated() {
-                    let colorIndex = index % colors.count
-                    colorMap[emotion.key] = colors[colorIndex]
+                var colorMap: [Double: Color] = [:]
+                for rating in weekData.values {
+                    colorMap[rating] = self.getColorForRating(rating)
                 }
-
+                
                 return ColorAssignment(
-                    emotions: weekData,
-                    emotionColors: colorMap
+                    ratings: weekData,
+                    ratingColors: colorMap
                 )
             }
-
-            return await group.next() ?? ColorAssignment(emotions: [:], emotionColors: [:])
+            
+            return await group.next() ?? ColorAssignment(ratings: [:], ratingColors: [:])
         }
         
-        // Update published properties on the main thread with the final result
         await MainActor.run {
-            self.weekEmotions = assignment.emotions
-            self.weekEmotionColors = assignment.emotionColors
+            self.weekRatings = assignment.ratings
+            self.weekRatingColors = assignment.ratingColors
         }
     }
     
     func loadYearDataAndAssignColors() async {
-        guard let yearData = try? await fetchEmotionsForPastYear() else {
-            return
-        }
-
+        guard let yearData = try? await fetchRatingsForPastYear() else { return }
+        
         let assignment = await withTaskGroup(of: ColorAssignment.self) { group in
             group.addTask {
-                let frequencyCounts = Dictionary(grouping: yearData.values, by: { $0 })
-                    .mapValues { $0.count }
-                    .sorted { $0.value > $1.value }
-
-                let colors = [
-                    Color(hex: "A28497"),
-                    Color(hex: "B5D5E2"),
-                    Color(hex: "C2E5C9"),
-                    Color(hex: "E2C9B5"),
-                    Color(hex: "D5B5E2"),
-                    Color(hex: "E2DCB5"),
-                    Color(hex: "B5E2D5"),
-                    Color(hex: "E2B5C9"),
-                    Color(hex: "C9E2B5"),
-                    Color(hex: "B5C9E2") 
-                ]
-
-                var colorMap: [String: Color] = [:]
-                for (index, emotion) in frequencyCounts.enumerated() {
-                    let colorIndex = index % colors.count
-                    colorMap[emotion.key] = colors[colorIndex]
+                var colorMap: [Double: Color] = [:]
+                for rating in yearData.values {
+                    colorMap[rating] = self.getColorForRating(rating)
                 }
-
+                
                 return ColorAssignment(
-                    emotions: yearData,
-                    emotionColors: colorMap
+                    ratings: yearData,
+                    ratingColors: colorMap
                 )
             }
-
-            return await group.next() ?? ColorAssignment(emotions: [:], emotionColors: [:])
+            
+            return await group.next() ?? ColorAssignment(ratings: [:], ratingColors: [:])
         }
         
-        // Update published properties on the main thread with the final result
         await MainActor.run {
-            self.emotions = assignment.emotions
-            self.emotionColors = assignment.emotionColors
+            self.ratings = assignment.ratings
+            self.ratingColors = assignment.ratingColors
         }
     }
     
-    func fetchEmotionsForPastYear() async throws -> [Date: String] {
+    func fetchRatingsForPastYear() async throws -> [Date: Double] {
         let calendar = Calendar.current
         let now = Date()
         
@@ -199,7 +177,7 @@ class ScheduleManager: ObservableObject {
             throw NSError(domain: "DateError", code: -1)
         }
         
-        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyEmotionEntity")
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyCheckinEntity")
         fetchRequest.predicate = NSPredicate(
             format: "date >= %@ AND date < %@",
             startDate as NSDate,
@@ -207,43 +185,46 @@ class ScheduleManager: ObservableObject {
         )
         
         let results = try context.fetch(fetchRequest)
-        let emotions = results.compactMap { result -> DailyEmotion? in
+        let ratings = results.compactMap { result -> DailyCheckin? in
             guard let date = result.value(forKey: "date") as? Date,
-                  let emotion = result.value(forKey: "emotion") as? String else {
+                  let rating = result.value(forKey: "rating") as? Double else {
                 return nil
             }
-            return DailyEmotion(emotion: emotion, date: date)
+            return DailyCheckin(rating: rating, date: date)
         }
         
-        return Dictionary(uniqueKeysWithValues: emotions.map {
-            (calendar.startOfDay(for: $0.date), $0.emotion)
+        return Dictionary(uniqueKeysWithValues: ratings.map {
+            (calendar.startOfDay(for: $0.date), $0.rating)
         })
     }
     
-    func fetchEmotionsForPastWeek()  async throws -> [Date: String] {
-        guard let startDate = Calendar.current.date(byAdding: .day, value: -6, to: Date()) else { throw NSError(domain: "DateError", code: -1) }
+    func fetchRatingsForPastWeek() async throws -> [Date: Double] {
+        guard let startDate = Calendar.current.date(byAdding: .day, value: -6, to: Date()) else {
+            throw NSError(domain: "DateError", code: -1)
+        }
         let endDate = Date()
         
-        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyEmotionEntity")
-        fetchRequest.predicate = NSPredicate(format: "date >= %@ AND date <= %@", startDate as NSDate, endDate as NSDate)
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyCheckinEntity")
+        fetchRequest.predicate = NSPredicate(format: "date >= %@ AND date <= %@",
+                                           startDate as NSDate,
+                                           endDate as NSDate)
         
         let results = try context.fetch(fetchRequest)
-        
-        let emotions = results.compactMap { result -> DailyEmotion? in
+        let ratings = results.compactMap { result -> DailyCheckin? in
             guard let date = result.value(forKey: "date") as? Date,
-                  let emotion = result.value(forKey: "emotion") as? String else {
+                  let rating = result.value(forKey: "rating") as? Double else {
                 return nil
             }
-            return DailyEmotion(emotion: emotion, date: date)
+            return DailyCheckin(rating: rating, date: date)
         }
         
-        return Dictionary(uniqueKeysWithValues: emotions.map {
-            (Calendar.current.startOfDay(for: $0.date), $0.emotion)
+        return Dictionary(uniqueKeysWithValues: ratings.map {
+            (Calendar.current.startOfDay(for: $0.date), $0.rating)
         })
     }
 }
 
 struct ColorAssignment {
-    let emotions: [Date: String]
-    let emotionColors: [String: Color]
+    let ratings: [Date: Double]
+    let ratingColors: [Double: Color]
 }
