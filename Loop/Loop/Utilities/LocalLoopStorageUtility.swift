@@ -115,7 +115,7 @@ class LoopLocalStorageUtility {
         let asset = CKAsset(fileURL: fileURL)
         
         // Get category from LoopManager using the promptText
-        let category = LoopManager.shared.getCategoryForPrompt(promptText)?.rawValue ?? "Share Anything"
+        let category = /*LoopManager.shared.getCategoryForPrompt(promptText)?.rawValue ??*/ "Share Anything"
         
         return Loop(
             id: id,

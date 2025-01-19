@@ -6,146 +6,213 @@
 //
 
 import SwiftUI
+import CoreData
 
-struct MoodCheckinView: View { 
-    let accentColor = Color(hex: "A28497")
-    let secondaryColor = Color(hex: "B7A284")
-    let textColor = Color(hex: "2C3E50")
+struct MoodCheckInView: View {
+    @Binding var dayRating: Double
+    let isEditable: Bool
     
-        
-    @Environment(\.dismiss) var dismiss
+    var onCompletion: (() -> Void)?
+
+    private let sadColor = Color(hex: "1E3D59")
+    private let neutralColor = Color(hex: "94A7B7")
+    private let happyColor = Color(hex: "B784A7")
     
-    @ObservedObject private var checkinManager = DailyCheckinManager.shared
-    @State private var dayRating: Double = 0.5
-    @State private var showingDayRating: Bool = true
+    @ObservedObject private var checkinManager: DailyCheckinManager
+    @State private var isAnimating = false
+    
+    init(dayRating: Binding<Double>, isEditable: Bool, onCompletion: (() -> Void)? = nil) {
+        self._dayRating = dayRating
+        self.isEditable = isEditable
+        self.onCompletion = onCompletion
+        self.checkinManager = DailyCheckinManager.shared
+    }
+    
+    init(dayRating: Binding<Double>, isEditable: Bool, previewManager: DailyCheckinManager) {
+        self._dayRating = dayRating
+        self.isEditable = isEditable
+        self.onCompletion = nil
+        self.checkinManager = previewManager
+    }
     
     var body: some View {
-        ZStack {
-            VStack {
-                HStack {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .foregroundColor(.black)
-                    }
-
-                    Spacer()
-                }
-                .padding()
-                Spacer()
+        VStack(spacing: 48) {
+            VStack(spacing: 8) {
+                Text("HOW ARE YOU FEELING TODAY?")
+                    .font(.system(size: 13, weight: .medium))
+                    .tracking(1.5)
+                    .foregroundColor(Color(hex: "2C3E50").opacity(0.5))
+                
+                Text(getMoodDescription(for: dayRating))
+                    .font(.system(size: 28, weight: .light))
+                    .foregroundColor(Color(hex: "2C3E50"))
+                    .multilineTextAlignment(.center)
             }
             
-            VStack (spacing: 16) {
-                VStack(spacing: 24) {
-                    VStack (spacing: 10) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 12))
-                                .foregroundColor(accentColor.opacity(0.3))
-                            
-                            Text("HOW ARE YOU FEELING TODAY?")
-                                .font(.system(size: 13, weight: .medium))
-                                .tracking(1.5)
-                                .foregroundColor(textColor.opacity(0.5))
-                        }
-                    }
-                
-                    VStack(spacing: 40) {
-                        VStack(spacing: 24) {
-
-                            HStack(alignment: .bottom, spacing: 4) {
-                                Text(String(format: "%.1f", dayRating * 10))
-                                    .font(.system(size: 54, weight: .medium))
-                                    .foregroundColor(textColor)
-                                    .contentTransition(.numericText())
-                                
-                                Text("/10")
-                                    .font(.system(size: 24, weight: .light))
-                                    .foregroundColor(textColor.opacity(0.3))
-                                    .offset(y: -12)
-                            }
-                        }
-                        
-                        // Slider
-                        GeometryReader { geometry in
-                            ZStack(alignment: .leading) {
-                                Capsule()
-                                    .fill(Color(hex: "F8F9FA"))
-                                    .overlay(
-                                        Capsule()
-                                            .stroke(accentColor.opacity(0.1), lineWidth: 1)
-                                    )
-                                
-                                Capsule()
-                                    .fill(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [
-                                                accentColor.opacity(0.15),
-                                                accentColor.opacity(0.1)
-                                            ]),
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
-                                    )
-                                    .frame(width: geometry.size.width * CGFloat(dayRating))
-                                
-                                Circle()
-                                    .fill(Color.white)
-                                    .frame(width: 28, height: 28)
-                                    .shadow(color: accentColor.opacity(0.1), radius: 8, x: 0, y: 2)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(accentColor.opacity(0.15), lineWidth: 1)
-                                    )
-                                    .overlay(
-                                        Circle()
-                                            .fill(accentColor.opacity(0.1))
-                                            .frame(width: 8, height: 8)
-                                    )
-                                    .offset(x: (geometry.size.width - 28) * CGFloat(dayRating))
-                            }
-                            .frame(height: 44)
-                            .gesture(
-                                DragGesture(minimumDistance: 0)
-                                    .onChanged { gesture in
-                                        let newValue = gesture.location.x / geometry.size.width
-                                        dayRating = min(max(0, newValue), 1)
-                                    }
+            ZStack {
+                Circle()
+                    .fill(getColor(for: dayRating))
+                    .frame(width: 140, height: 140)
+                    .overlay(
+                        Circle()
+                            .stroke(Color.white, lineWidth: 4)
+                    )
+                    .shadow(color: getColor(for: dayRating).opacity(0.2), radius: 15, x: 0, y: 8)
+                    .scaleEffect(isAnimating ? 1.05 : 1.0)
+//                    .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: isAnimating)
+            }
+            .padding(.vertical, 20)
+            
+            if isEditable {
+                VStack(spacing: 16) {
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            // Gradient bar
+                            LinearGradient(
+                                gradient: Gradient(colors: [sadColor, neutralColor, happyColor]),
+                                startPoint: .leading,
+                                endPoint: .trailing
                             )
-                        }
-                        .frame(height: 44)
-                    }
-                    
-                    VStack(spacing: 16) {
-                        Button(action: {
-                            checkinManager.saveDailyCheckin(rating: dayRating * 10)
-                            withAnimation {
-                                 dismiss()
+                            .frame(height: 16)
+                            .cornerRadius(8)
+                            .contentShape(Rectangle())
+                            .onTapGesture { location in
+                                let ratio = max(0, min(1, location.x / geometry.size.width))
+                                dayRating = 1 + (9 * ratio)
+                                checkinManager.saveDailyCheckin(rating: dayRating)
+                                onCompletion?()
                             }
-                        }) {
-                            Text("complete")
-                                .font(.system(size: 18, weight: .regular))
-                                .foregroundColor(.white)
-                                .frame(height: 56)
-                                .frame(maxWidth: .infinity)
-                                .background(accentColor)
-                                .cornerRadius(28)
+                            
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: 36, height: 36)
+                                .offset(x: -18 + geometry.size.width * (dayRating / 10))
+                                .gesture(
+                                    DragGesture()
+                                        .onChanged { value in
+                                            let ratio = max(0, min(1, (value.location.x + 18) / geometry.size.width))
+                                            dayRating = 10 * ratio
+                                            checkinManager.saveDailyCheckin(rating: dayRating)
+                                            
+                                            onCompletion?()
+                                        }
+                                )
                         }
                     }
-                    .padding(.top, 8)
+                    .frame(height: 36)
+
+                    
+                    HStack {
+                        Text("feeling down")
+                            .foregroundColor(sadColor.opacity(0.8))
+                        Spacer()
+                        Text("feeling great")
+                            .foregroundColor(happyColor.opacity(0.8))
+                    }
+                    .font(.system(size: 13, weight: .medium))
+                    .tracking(1.5)
                 }
-                .padding(32)
+                .padding(.horizontal, 20)
             }
         }
+        .padding(32)
         .onAppear {
-            if let rating = checkinManager.checkIfCheckinCompleted() {
-                self.dayRating = rating
+            isAnimating = true
+            if let savedRating = checkinManager.checkIfCheckinCompleted() {
+                dayRating = savedRating
+            } else {
+                dayRating = 5.0  // <-- Add this line to set middle position by default
             }
+        }
+    }
+    
+    private func getColor(for rating: Double) -> Color {
+        if rating <= 5 {
+            let t = (rating - 1) / 4
+            return interpolateColor(from: sadColor, to: neutralColor, with: t)
+        } else {
+            let t = (rating - 5) / 5
+            return interpolateColor(from: neutralColor, to: happyColor, with: t)
+        }
+    }
+    
+    private func interpolateColor(from: Color, to: Color, with percentage: Double) -> Color {
+        let fromUIColor = UIColor(from)
+        let toUIColor = UIColor(to)
+        
+        var fromR: CGFloat = 0
+        var fromG: CGFloat = 0
+        var fromB: CGFloat = 0
+        var fromA: CGFloat = 0
+        fromUIColor.getRed(&fromR, green: &fromG, blue: &fromB, alpha: &fromA)
+        
+        var toR: CGFloat = 0
+        var toG: CGFloat = 0
+        var toB: CGFloat = 0
+        var toA: CGFloat = 0
+        toUIColor.getRed(&toR, green: &toG, blue: &toB, alpha: &toA)
+        
+        let r = fromR + (toR - fromR) * CGFloat(percentage)
+        let g = fromG + (toG - fromG) * CGFloat(percentage)
+        let b = fromB + (toB - fromB) * CGFloat(percentage)
+        let a = fromA + (toA - fromA) * CGFloat(percentage)
+        
+        return Color(UIColor(red: r, green: g, blue: b, alpha: a))
+    }
+    
+    private func getMoodDescription(for rating: Double) -> String {
+        switch rating {
+        case 0...3:
+            return "feeling down"
+        case 3...4:
+            return "not great"
+        case 4...6:
+            return "okay"
+        case 6...8:
+            return "pretty good"
+        case 8...10:
+            return "feeling great"
+        default:
+            return "okay"
         }
     }
 }
 
-#Preview {
-    MoodCheckinView()
+// Mock manager for previews
+class PreviewDailyCheckinManager: DailyCheckinManager {
+    override init() {
+        // Initialize with an empty persistent container
+        super.init()
+    }
+    
+    override func checkIfCheckinCompleted() -> Double? {
+        return 5.0 // Always return middle value for preview
+    }
+    
+    override func saveDailyCheckin(rating: Double) {
+        print("Preview: Would save rating \(rating)") // Just print instead of saving
+    }
+}
+
+// Preview wrapper to handle state
+struct PreviewWrapper: View {
+    @State private var rating: Double = 5.0
+    
+    var body: some View {
+        ZStack {
+            Color(hex: "F5F5F5").edgesIgnoringSafeArea(.all)
+            
+            MoodCheckInView(
+                dayRating: $rating,
+                isEditable: true,
+                previewManager: PreviewDailyCheckinManager()
+            )
+        }
+    }
+}
+
+struct MoodCheckInView_Previews: PreviewProvider {
+    static var previews: some View {
+        PreviewWrapper()
+    }
 }

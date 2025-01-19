@@ -37,14 +37,16 @@ struct AddSuccessView: View {
     
     var body: some View {
         ZStack {
-            AnimatedBackground()
-                .opacity(backgroundOpacity)
-                .onAppear {
-                    withAnimation(.easeIn(duration: 1.2)) {
-                        backgroundOpacity = 1
+            if showIntro && !hideSuccessIntro {
+                AnimatedBackground()
+                    .opacity(backgroundOpacity)
+                    .onAppear {
+                        withAnimation(.easeIn(duration: 1.2)) {
+                            backgroundOpacity = 1
+                        }
                     }
-                }
-                .edgesIgnoringSafeArea(.all)
+                    .edgesIgnoringSafeArea(.all)
+            }
             
             if showIntro && !hideSuccessIntro {
                 introView
@@ -59,6 +61,15 @@ struct AddSuccessView: View {
     
     private var introView: some View {
         VStack(spacing: 32) {
+            HStack {
+                Spacer()
+                
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundColor(.gray)
+                }
+            }
             Spacer()
             
             Text("successes")

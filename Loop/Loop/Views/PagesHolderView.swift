@@ -20,6 +20,8 @@ struct PagesHolderView: View {
     @State private var showSuccessSheet = false
     @State private var showMoodCheckInSheet = false
     
+    @State private var dayRating: Double = 5.0
+    
     var body: some View {
         NavigationStack {
             ZStack {
@@ -125,6 +127,9 @@ struct PagesHolderView: View {
             }
             .fullScreenCover(isPresented: $showSuccessSheet) {
                 AddSuccessView()
+            }
+            .fullScreenCover(isPresented: $showMoodCheckInSheet) {
+                MoodCheckInView(dayRating: $dayRating, isEditable: true)
             }
         }
     }

@@ -12,6 +12,8 @@ struct RecordLoopsView: View {
     @ObservedObject var loopManager = LoopManager.shared
     @ObservedObject var audioManager = AudioManager.shared
     @ObservedObject var analysisManager = AnalysisManager.shared
+    @ObservedObject var reflectionCardManager = ReflectionCardManager.shared
+    @ObservedObject var reflectionSessionManager = ReflectionSessionManager.shared
     
     @State private var isRecording = false
     @State private var isPostRecording = false
@@ -38,55 +40,62 @@ struct RecordLoopsView: View {
     @Environment(\.dismiss) var dismiss
     
     @ObservedObject private var checkinManager = DailyCheckinManager.shared
-    @State private var dayRating: Double = 0.5
+    @State private var dayRating: Double = 5.0
     @State private var showingDayRating: Bool = true
     
-    @State private var selectedColorHex: String = "#B5D5E2" // Default to base color
+    @State private var selectedColorHex: String = "#B5D5E2"
     
+    @State private var currentTab = 0
+    @State private var recordedTabs: Set<Int> = []
+    @State private var recordedAudioURLs: [Int: URL] = [:]
+    
+    @State private var postRecordingTabs: Set<Int> = []
+
     var body: some View {
         ZStack {
-            if loopManager.currentPromptIndex > 1 && !loopManager.needsCategorySelection() {
-                AnimatedBackground()
-                    .opacity(backgroundOpacity)
-                    .onAppear {
-                        withAnimation(.easeIn(duration: 1.2)) {
-                            backgroundOpacity = 1
-                        }
-                    }
-                    .edgesIgnoringSafeArea(.all)
-            }
-            else if loopManager.currentPromptIndex > 1 && loopManager.needsCategorySelection() {
-                Color(hex: "F5F5F5")
-                    .edgesIgnoringSafeArea(.all)
-            }
-            else if !showingFirstLaunchScreen {
-                InitialReflectionVisual(index: loopManager.currentPromptIndex)
-                    .opacity(backgroundOpacity)
-                    .onAppear {
-                        withAnimation(.easeIn(duration: 1.2)) {
-                            backgroundOpacity = 1
-                        }
-                    }
-                    .edgesIgnoringSafeArea(.all)
-            }
-           
-            VStack(spacing: 0) {
-                if isShowingMemory {
-                    memoryPlaybackView
-                } else if loopManager.hasCompletedToday {
-                    thankYouScreen
-                } else if isPostRecording {
-                    postRecordingView
-                } else if showingFirstLaunchScreen, loopManager.currentPromptIndex == 0 {
-                    firstLaunchOrQuietSpaceScreen
-                } else {
-                    recordingScreen
-                }
-            }
-            .padding(.horizontal, 32)
+            TransitioningBackground(
+                currentTab: currentTab,
+                prompts: reflectionSessionManager.prompts
+            )
             
-            if showingPromptOptions && !isRecording && !isPostRecording && loopManager.currentPromptIndex > 1 {
-                promptSwitcherOverlay
+            if !UserDefaults.standard.hasSetupDailyReflection {
+                firstLaunchOrQuietSpaceScreen
+                    .padding(.horizontal, 24)
+            } else {
+                VStack {
+                    topBar
+                        .padding(.bottom, 40)
+                        .padding(.horizontal, 24)
+                    
+                    TabView(selection: $currentTab) {
+                        ForEach(reflectionSessionManager.prompts.indices, id: \.self) { index in
+                            ZStack {
+                                if reflectionSessionManager.completedPrompts.contains(index) && reflectionSessionManager.prompts[index].type != .moodCheckIn {
+                                    ReflectionCompletedView()
+                                } else if isPostRecording && (reflectionSessionManager.prompts[index].type == .recording || reflectionSessionManager.prompts[index].type == .guided)  {
+                                    postRecordingView
+                                } else {
+                                    VStack(spacing: 0) {
+                                        dynamicPromptView(for: reflectionSessionManager.prompts[index], at: index)
+                                    }
+                                    .padding(.horizontal, 24)
+                                }
+                            }
+                            .tag(index)
+                        }
+                    }
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .indexViewStyle(.page(backgroundDisplayMode: .never))
+                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+                    .animation(.easeInOut(duration: 0.3), value: currentTab)
+                    .onChange(of: currentTab) { index in
+                        withAnimation {
+                            handleTabChange(to: index)
+                        }
+                    }
+                    
+                    
+                }
             }
         }
         .onAppear {
@@ -94,29 +103,36 @@ struct RecordLoopsView: View {
         }
     }
     
-    private var recordingScreen: some View {
-        VStack(spacing: 0) {
-            topBar
-                .padding(.bottom, 40)
-            
-            if !(loopManager.currentPromptIndex == 2) && !(loopManager.currentPromptIndex == 3) {
-                Spacer()
-            }
-            promptArea
-            
-            Spacer()
-            
-            if !loopManager.needsCategorySelection() {
-                recordingButton
-                    .padding(.bottom, 60)
+    func handleTabChange(to index: Int) {
+        guard index >= 0 && index < reflectionSessionManager.prompts.count else {
+            print("Invalid index for tab change.")
+            return
+        }
+        
+        currentTab = index
+        let currentPrompt = reflectionSessionManager.prompts[index]
+
+        // Reset recording state when changing tabs
+        isRecording = false
+        timeRemaining = 30
+        
+        withAnimation {
+            backgroundOpacity = 0
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            withAnimation {
+                backgroundOpacity = 1
             }
         }
     }
+
+
+    
     
     private var topBar: some View {
         VStack(spacing: 24) {
             ZStack {
-                Text(loopManager.currentPromptIndex == 3 ? "GENERAL REFLECTION" : "DAILY REFLECTION")
+                Text("DAILY REFLECTION")
                     .font(.system(size: 13, weight: .medium))
                     .tracking(1.5)
                     .foregroundColor(textColor.opacity(0.5))
@@ -132,19 +148,20 @@ struct RecordLoopsView: View {
                     }
                     
                     Spacer()
+                    
                 }
             }
             
             ProgressIndicator(
-                totalSteps: loopManager.dailyPrompts.count,
-                currentStep: loopManager.currentPromptIndex,
+                totalSteps: reflectionSessionManager.prompts.count,
+                currentStep: currentTab,
                 accentColor: accentColor
             )
         }
         .padding(.top, 16)
     }
   
-    private var dayRatingView: some View {
+    private var initialView: some View {
         VStack(spacing: 24) {
             VStack (spacing: 10) {
                 HStack {
@@ -167,85 +184,20 @@ struct RecordLoopsView: View {
                 }
 
             }
+            .padding(.bottom, 25)
             
-        
-            VStack(spacing: 40) {
-                VStack(spacing: 24) {
-                    Text("HOW ARE YOU FEELING TODAY?")
-                        .font(.system(size: 11, weight: .medium))
-                        .tracking(1.5)
-                        .foregroundColor(textColor.opacity(0.5))
-                    
-                    HStack(alignment: .bottom, spacing: 4) {
-                        Text(String(format: "%.1f", dayRating * 10))
-                            .font(.system(size: 54, weight: .medium))
-                            .foregroundColor(textColor)
-                            .contentTransition(.numericText())
-                        
-                        Text("/10")
-                            .font(.system(size: 24, weight: .light))
-                            .foregroundColor(textColor.opacity(0.3))
-                            .offset(y: -12)
-                    }
-                }
-                
-                // Slider
-                GeometryReader { geometry in
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(Color(hex: "F8F9FA"))
-                            .overlay(
-                                Capsule()
-                                    .stroke(accentColor.opacity(0.1), lineWidth: 1)
-                            )
-                        
-                        Capsule()
-                            .fill(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        accentColor.opacity(0.15),
-                                        accentColor.opacity(0.1)
-                                    ]),
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .frame(width: geometry.size.width * CGFloat(dayRating))
-                        
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: 28, height: 28)
-                            .shadow(color: accentColor.opacity(0.1), radius: 8, x: 0, y: 2)
-                            .overlay(
-                                Circle()
-                                    .stroke(accentColor.opacity(0.15), lineWidth: 1)
-                            )
-                            .overlay(
-                                Circle()
-                                    .fill(accentColor.opacity(0.1))
-                                    .frame(width: 8, height: 8)
-                            )
-                            .offset(x: (geometry.size.width - 28) * CGFloat(dayRating))
-                    }
-                    .frame(height: 44)
-                    .gesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { gesture in
-                                let newValue = gesture.location.x / geometry.size.width
-                                dayRating = min(max(0, newValue), 1)
-                            }
-                    )
-                }
-                .frame(height: 44)
-            }
+            TodaysReflectionPlanView()
             
             Spacer()
             
             VStack(spacing: 16) {
                 Button(action: {
-                    checkinManager.saveDailyCheckin(rating: dayRating * 10)
                     withAnimation {
+                        let selectedCards = reflectionCardManager.getOrderedCards()
+                        reflectionSessionManager.setupSession(withCards: selectedCards)
+                        UserDefaults.standard.hasSetupDailyReflection = true
                         showingFirstLaunchScreen = false
+                        currentTab = 0
                     }
                 }) {
                     Text("continue")
@@ -256,111 +208,163 @@ struct RecordLoopsView: View {
                         .background(accentColor)
                         .cornerRadius(28)
                 }
-                
-                Button(action: {
-                    withAnimation {
-                        showingFirstLaunchScreen = false
-                    }
-                }) {
-                    Text("skip")
-                        .font(.system(size: 16, weight: .regular))
-                        .foregroundColor(accentColor)
-                }
+
+
             }
             .padding(.top, 40)
         }
-        .padding(.top, 35)
-//        .padding(.horizontal)
+        .padding(.top, 45)
+        .padding(.bottom, 40)
     }
-    
-    private var promptArea: some View {
-        VStack(spacing: isRecording ? 20 : 20) {
-            if loopManager.needsCategorySelection() {
-                CategorySelectionView(
-                    loopManager: loopManager,
-                    onCategorySelected: { category in
-                        Task {
-                            await loopManager.selectCategory(category)
+   
+    private func dynamicPromptView(for prompt: ReflectionPrompt, at tabIndex: Int) -> some View {
+        switch prompt.type {
+        case .moodCheckIn:
+            return AnyView(
+                ZStack {
+                    VStack {
+                        MoodCheckInView(
+                            dayRating: $dayRating,
+                            isEditable: true
+                        ) {
+                            reflectionSessionManager.markPromptComplete(at: tabIndex)
                         }
-                    },
-                    isDailyPrompt: loopManager.currentPromptIndex == 2,
-                    accentColor: accentColor,
-                    textColor: textColor
-                )
-            } else {
-                VStack(spacing: 30) {
-                    if loopManager.currentPromptIndex > 1 {
-                        VStack(spacing: isRecording ? 20 : 20) {
-                            Text(loopManager.getCurrentPrompt())
+                        
+                        Spacer()
+                        
+                        HStack {
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .resizable()
+                                .padding()
+                                .background (
+                                    Circle()
+                                        .fill(accentColor)
+                                )
+                                .padding(   )
+                        }
+                        .padding(.bottom, 35)
+                    }
+                }
+            )
+        case .recording:
+            return AnyView(
+                ZStack {
+                    VStack(spacing: 15) {
+                        HStack {
+                            Text(prompt.text)
                                 .font(.system(size: 28, weight: .medium))
                                 .foregroundColor(textColor)
-                                .multilineTextAlignment(.center)
+                                .multilineTextAlignment(.leading)
+                                .transition(.opacity.combined(with: .scale))
                                 .fixedSize(horizontal: false, vertical: true)
-                                .transition(.opacity)
-                                .animation(.easeInOut, value: loopManager.getCurrentPrompt())
                             
-                            if isRecording {
-                                HStack(spacing: 12) {
-                                    PulsingDot()
-                                    Text("\(timeRemaining)s")
-                                        .font(.system(size: 26, weight: .ultraLight))
-                                        .foregroundColor(accentColor)
-                                }
-                                .transition(.opacity)
-                            } else if !isPostRecording && loopManager.currentPromptIndex > 1 && loopManager.currentPromptIndex < 4 {
-                                Button(action: {
-                                    withAnimation {
-                                        showingPromptOptions.toggle()
-                                    }
-                                }) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "arrow.triangle.2.circlepath")
-                                        Text("try another prompt")
-                                    }
-                                    .font(.system(size: 16, weight: .light))
-                                    .foregroundColor(accentColor)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .background(
-                                        Capsule()
-                                            .stroke(accentColor.opacity(0.3), lineWidth: 1)
-                                    )
-                                }
-                                .opacity(isRecording ? 0 : 1)
+                            Spacer()
+                        }
+                        
+                        if let description = prompt.description {
+                            HStack {
+                                Text(description)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .tracking(1.5)
+                                    .foregroundColor(textColor.opacity(0.5))
+                                
+                                Spacer()
                             }
                         }
-                        .frame(maxWidth: .infinity)
-                    } else {
-                        VStack (spacing: 20) {
-                            VStack (spacing: 15) {
-                                HStack {
-                                    Text(loopManager.getCurrentPrompt())
-                                        .font(.system(size: 28, weight: .medium))
-                                        .foregroundColor(textColor)
-                                        .multilineTextAlignment(.leading)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                    
-                                    Spacer()
+                        
+                        if isRecording {
+                            HStack(spacing: 12) {
+                                PulsingDot()
+                                Text("\(timeRemaining)s")
+                                    .font(.system(size: 26, weight: .ultraLight))
+                                    .foregroundColor(accentColor)
+                            }
+                            .transition(.opacity)
+                        }
+                        
+                        Spacer()
+                        
+                        recordingButton(for: prompt) {
+                            toggleRecording()
+                        }      
+                    }
+                    .padding(.bottom, 40)
+                }
+            )
+        case .guided:
+            return AnyView(
+                ZStack {
+                    if reflectionSessionManager.needCategorySelection() {
+                        CategorySelectionView(
+                            reflectionSessionManager: reflectionSessionManager,
+                            onCategorySelected: { category, isAI in
+                                Task {
+                                    if isAI {
+                                        reflectionSessionManager.isLoadingAIPrompt = true
+                                        if let aiPrompt = await reflectionSessionManager.generateAIPrompt() {
+                                            let updatedPrompt = ReflectionPrompt(
+                                                text: aiPrompt,
+                                                type: .guided,
+                                                description: nil
+                                            )
+                                            reflectionSessionManager.updateGuidedPrompt(updatedPrompt)
+                                        }
+                                        reflectionSessionManager.isLoadingAIPrompt = false
+                                    } else {
+                                        if let category = category {
+                                            if let prompt = reflectionSessionManager.getRandomPrompt(for: category) {
+                                                let updatedPrompt = ReflectionPrompt(
+                                                    text: prompt.text,
+                                                    type: .guided,
+                                                    description: nil
+                                                )
+                                                reflectionSessionManager.updateGuidedPrompt(updatedPrompt)
+                                            }
+                                        }
+                                        else {
+                                            let updatedPrompt = ReflectionPrompt(
+                                                text: "",
+                                                type: .guided,
+                                                description: nil
+                                            )
+                                            reflectionSessionManager.updateGuidedPrompt(updatedPrompt)
+                                        }
+                                    }
                                 }
+                            }
+                        )
+                    } else if reflectionSessionManager.isLoadingAIPrompt {
+                        VStack(spacing: 16) {
+                            ProgressView()
+                                .scaleEffect(1.5)
+                            Text("Generating thoughtful question...")
+                                .font(.system(size: 14))
+                                .foregroundColor(textColor.opacity(0.6))
+                        }
+                    } else {
+                        VStack(spacing: 24) {
+                            Spacer()
+                            
+                            VStack(spacing: 16) {
+                                Text(prompt.text)
+                                    .font(.system(size: 28, weight: .medium))
+                                    .foregroundColor(textColor)
+                                    .multilineTextAlignment(.center)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .transition(.opacity.combined(with: .scale))
+                                    .animation(.easeInOut, value: prompt.text)
                                 
-                                if loopManager.currentPromptIndex == 0 {
-                                    HStack {
-                                        Text("Let’s start with a quick recap of your day. Think about how you spent your time, what you did, and how it all felt. No need to overthink—just share the highlights or an overview.")
-                                            .font(.system(size: 14, weight: .medium))
-                                            .tracking(1.5)
-                                            .foregroundColor(textColor.opacity(0.5))
-                                        
-                                        Spacer()
+                                Button(action: {
+                                    reflectionSessionManager.resetGuidedPrompt()
+                                }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "arrow.left")
+                                        Text("Choose different topic")
                                     }
-                                } else {
-                                    HStack {
-                                        Text("Now, focus on the moments that caught your attention. Was there something unique, surprising, or memorable about your day? It could be big or small—whatever stuck with you.")
-                                            .font(.system(size: 14, weight: .medium))
-                                            .tracking(1.5)
-                                            .foregroundColor(textColor.opacity(0.5))
-                                        
-                                        Spacer()
-                                    }
+                                    .font(.system(size: 14))
+                                    .foregroundColor(accentColor)
                                 }
                             }
                             
@@ -375,84 +379,206 @@ struct RecordLoopsView: View {
                             }
                             
                             Spacer()
+                            
+                            recordingButton(for: prompt) {
+                                toggleRecording()
+                            }
+                            .padding(.bottom, 40)
                         }
-                        .padding(.bottom, 60)
                     }
                 }
-                .frame(maxWidth: .infinity)
-            }
+            )
         }
     }
+
+
+
+    
+//    private func promptArea(forTab tab: Int) -> some View {
+//        VStack(spacing: isRecording ? 20 : 20) {
+//            if tab == 3 && (!loopManager.completedPromptIndices.contains(0) || !loopManager.completedPromptIndices.contains(1)) {
+//                VStack(spacing: 24) {
+//                    ZStack {
+//                        Circle()
+//                            .fill(textColor.opacity(0.05))
+//                            .frame(width: 64, height: 64)
+//                        
+//                        Image(systemName: "lock.fill")
+//                            .font(.system(size: 24))
+//                            .foregroundColor(textColor.opacity(0.5))
+//                    }
+//                    
+//                    VStack(spacing: 8) {
+//                        Text("REFLECTION LOCKED")
+//                            .font(.system(size: 13, weight: .medium))
+//                            .tracking(1.5)
+//                            .foregroundColor(textColor.opacity(0.5))
+//                        
+//                        Text("Complete the first two reflections")
+//                            .font(.system(size: 18, weight: .medium))
+//                            .foregroundColor(textColor)
+//                            .multilineTextAlignment(.center)
+//                    }
+//                }
+//            }
+//            else if tab == 3 && loopManager.needsCategorySelection() {
+//                CategorySelectionView(
+//                    loopManager: loopManager,
+//                    onCategorySelected: { category in
+//                        Task {
+////                            await loopManager.selectCategory(category)
+//                        }
+//                    },
+//                    isDailyPrompt: true,
+//                    accentColor: accentColor,
+//                    textColor: textColor
+//                )
+//            } else {
+//                VStack(spacing: 20) {
+//                    if tab == 3 {
+//                        // For dynamic third prompt
+//                        VStack(spacing: isRecording ? 20 : 20) {
+//                            Text(loopManager.dailyPrompts[tab - 1])
+//                                .font(.system(size: 28, weight: .medium))
+//                                .foregroundColor(textColor)
+//                                .multilineTextAlignment(.center)
+//                                .fixedSize(horizontal: false, vertical: true)
+//                                .transition(.opacity)
+//                                .animation(.easeInOut, value: loopManager.dailyPrompts[tab - 1])
+//                            
+//                            if isRecording {
+//                                HStack(spacing: 12) {
+//                                    PulsingDot()
+//                                    Text("\(timeRemaining)s")
+//                                        .font(.system(size: 26, weight: .ultraLight))
+//                                        .foregroundColor(accentColor)
+//                                }
+//                                .transition(.opacity)
+//                            } else if !isPostRecording {
+//                                Button(action: {
+//                                    withAnimation {
+//                                        showingPromptOptions.toggle()
+//                                    }
+//                                }) {
+//                                    HStack(spacing: 8) {
+//                                        Image(systemName: "arrow.triangle.2.circlepath")
+//                                        Text("try another prompt")
+//                                    }
+//                                    .font(.system(size: 16, weight: .light))
+//                                    .foregroundColor(accentColor)
+//                                    .padding(.horizontal, 16)
+//                                    .padding(.vertical, 8)
+//                                    .background(
+//                                        Capsule()
+//                                            .stroke(accentColor.opacity(0.3), lineWidth: 1)
+//                                    )
+//                                }
+//                                .opacity(isRecording ? 0 : 1)
+//                            }
+//                        }
+//                        .frame(maxWidth: .infinity)
+//                    } else {
+//                        // For prompts 1 and 2
+//                    
+//                    }
+//                }
+//                .frame(maxWidth: .infinity)
+//            }
+//        }
+//    }
+//    
     
     private var promptSwitcherOverlay: some View {
         ZStack {
-            Color.black.opacity(0.5)
-                .edgesIgnoringSafeArea(.all)
-                .onTapGesture {
-                    withAnimation {
-                        showingPromptOptions = false
-                    }
-                }
-            
-            VStack(spacing: 24) {
-                Text("Choose another prompt")
-                    .font(.system(size: 24, weight: .light))
-                    .foregroundColor(.black)
-                
-                VStack(spacing: 16) {
-                    ForEach(loopManager.getAlternativePrompts(), id: \.text) { prompt in
-                        Button(action: {
-                            withAnimation {
-                                loopManager.switchToPrompt(prompt)
-                                showingPromptOptions = false
-                            }
-                        }) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(prompt.category.rawValue)
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(accentColor)
-                                
-                                Text(prompt.text)
-                                    .font(.system(size: 18, weight: .light))
-                                    .foregroundColor(.black)
-                                    .multilineTextAlignment(.leading)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding()
-                            .background(Color.white.opacity(0.1))
-                            .cornerRadius(12)
-                        }
-                    }
-                }
-            }
-            .padding(32)
-            .background(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(Color(hex: "FFFFFF").opacity(0.95))
-            )
-            .padding(24)
+//            Color.black.opacity(0.5)
+//                .edgesIgnoringSafeArea(.all)
+//                .onTapGesture {
+//                    withAnimation {
+//                        showingPromptOptions = false
+//                    }
+//                }
+//            
+//            VStack(spacing: 24) {
+//                Text("Choose another prompt")
+//                    .font(.system(size: 24, weight: .light))
+//                    .foregroundColor(.black)
+//                
+//                VStack(spacing: 16) {
+//                    ForEach(loopManager.getAlternativePrompts(), id: \.text) { prompt in
+//                        Button(action: {
+//                            withAnimation {
+//                                loopManager.switchToPrompt(prompt)
+//                                showingPromptOptions = false
+//                            }
+//                        }) {
+//                            VStack(alignment: .leading, spacing: 8) {
+//                                Text(prompt.category.rawValue)
+//                                    .font(.system(size: 14, weight: .medium))
+//                                    .foregroundColor(accentColor)
+//                                
+//                                Text(prompt.text)
+//                                    .font(.system(size: 18, weight: .light))
+//                                    .foregroundColor(.black)
+//                                    .multilineTextAlignment(.leading)
+//                            }
+//                            .frame(maxWidth: .infinity, alignment: .leading)
+//                            .padding()
+//                            .background(Color.white.opacity(0.1))
+//                            .cornerRadius(12)
+//                        }
+//                    }
+//                }
+//            }
+//            .padding(32)
+//            .background(
+//                RoundedRectangle(cornerRadius: 24)
+//                    .fill(Color(hex: "FFFFFF").opacity(0.95))
+//            )
+//            .padding(24)
         }
         .transition(.opacity.combined(with: .scale(scale: 1.1)))
     }
     
-    private var recordingButton: some View {
-        Button(action: {
+    private func recordingButton(for prompt: ReflectionPrompt, onTap: @escaping () -> Void) -> some View {
+        let isRecording = self.isRecording
+        let primaryColor: Color
+        let secondaryColor: Color
+        
+        // Determine colors based on prompt type
+        switch prompt.type {
+        case .moodCheckIn:
+            primaryColor = Color(hex: "F5F5F5")
+            secondaryColor = Color(hex: "B7A284")
+        case .recording:
+            primaryColor = Color(hex: "A28497")
+            secondaryColor = Color(hex: "A28497")
+        case .guided:
+            primaryColor = Color(hex: "4C5B61")
+            secondaryColor = Color(hex: "94A7B7")
+        }
+        
+        return Button(action: {
             withAnimation {
-                toggleRecording()
+                onTap()
             }
         }) {
             ZStack {
                 Circle()
                     .fill(Color.white)
                     .frame(width: 96)
-                    .shadow(color: loopManager.currentPromptIndex == 1 ? Color(hex: "1E3D59").opacity(0.2) : accentColor.opacity(0.2), radius: 20, x: 0, y: 8)
-
+                    .shadow(
+                        color: isRecording ? primaryColor.opacity(0.2) : secondaryColor.opacity(0.2),
+                        radius: 20,
+                        x: 0,
+                        y: 8
+                    )
+                
                 Circle()
                     .fill(
                         LinearGradient(
                             gradient: Gradient(colors: [
-                                isRecording ? loopManager.currentPromptIndex == 1 ? Color(hex: "1E3D59") : accentColor : .white,
-                                isRecording ? loopManager.currentPromptIndex == 1 ? Color(hex: "1E3D59").opacity(0.9) : accentColor.opacity(0.9) : .white
+                                isRecording ? primaryColor : .white,
+                                isRecording ? primaryColor.opacity(0.9) : secondaryColor.opacity(0.9)
                             ]),
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -470,8 +596,8 @@ struct RecordLoopsView: View {
                         .fill(
                             LinearGradient(
                                 gradient: Gradient(colors: [
-                                    loopManager.currentPromptIndex == 1 ? Color(hex: "1E3D59") : accentColor,
-                                    loopManager.currentPromptIndex == 1 ? Color(hex: "1E3D59").opacity(0.85) : accentColor.opacity(0.85)
+                                    primaryColor,
+                                    primaryColor.opacity(0.85)
                                 ]),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -479,15 +605,16 @@ struct RecordLoopsView: View {
                         )
                         .frame(width: 74)
                 }
-            
+                
                 if isRecording {
-                    PulsingRing(color: accentColor)
+                    PulsingRing(color: secondaryColor)
                 }
             }
             .scaleEffect(isRecording ? 1.08 : 1.0)
             .animation(.spring(response: 0.35, dampingFraction: 0.6), value: isRecording)
         }
     }
+
     
     private var postRecordingView: some View {
         VStack {
@@ -495,108 +622,13 @@ struct RecordLoopsView: View {
                 audioURL: audioManager.getRecordedAudioFile() ?? URL(fileURLWithPath: ""),
                 waveformData: generateRandomWaveform(count: 40),
                 onComplete: { completeRecording() },
-                onRetry: { retryRecording() },
-                retryAttempts: loopManager.retryAttemptsLeft
+                onRetry: { retryRecording() }, isReadOnly: false
             )
+            .transition(.opacity.combined(with: .scale))
+            .animation(.easeInOut(duration: 0.3), value: isPostRecording)
         }
     }
         
-    private var memoryPlaybackView: some View {
-        VStack(spacing: 32) {
-            Group {
-                if isLoadingMemory && !userDaysThresholdNotMet {
-                    loadingView
-                } else if userDaysThresholdNotMet {
-                    thresholdNotMetView
-                } else if let pastLoop = pastLoop {
-                    pastLoopContent(pastLoop)
-                }
-            }
-            .transition(.opacity.combined(with: .move(edge: .trailing)))
-        }
-        .padding(.bottom, 40)
-    }
-
-    private var loadingView: some View {
-        VStack(spacing: 24) {
-            Text("loading from your past")
-                .font(.system(size: 24, weight: .ultraLight))
-                .foregroundColor(textColor)
-            
-            LoadingWaveform(accentColor: accentColor)
-        }
-    }
-
-    private var thresholdNotMetView: some View {
-        Text("loop for three days to get memories")
-            .font(.system(size: 28, weight: .medium))
-            .foregroundColor(textColor)
-            .multilineTextAlignment(.center)
-            .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private func pastLoopContent(_ loop: Loop) -> some View {
-        VStack(spacing: 24) {
-            MemoryPlaybackView(loop: loop)
-                .padding(.top)
-            
-            continueButton
-        }
-    }
-
-    private var continueButton: some View {
-        Button(action: {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                isShowingMemory = false
-                loopManager.moveToNextPrompt()
-            }
-        }) {
-            HStack(spacing: 8) {
-                Text("continue")
-                    .font(.system(size: 18, weight: .light))
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 16, weight: .light))
-            }
-            .frame(height: 56)
-            .frame(maxWidth: .infinity)
-            .background(accentColor)
-            .foregroundColor(.white)
-            .cornerRadius(28)
-            .shadow(color: accentColor.opacity(0.2), radius: 10, y: 5)
-            .padding(.horizontal, 32)
-        }
-    }
-        
-    private var memoryMessageView: some View {
-        VStack(spacing: 24) {
-            VStack(spacing: 16) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 44, weight: .light))
-                    .foregroundColor(accentColor)
-                
-                Text("added to memories")
-                    .font(.system(size: 32, weight: .ultraLight))
-                    .foregroundColor(textColor)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .opacity(messageOpacity)
-        .onAppear {
-            withAnimation(.easeIn(duration: 0.6)) {
-                messageOpacity = 1
-            }
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                withAnimation {
-                    messageOpacity = 0
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                    loopManager.moveToNextPrompt()
-                }
-            }
-        }
-    }
-    
     private var thankYouScreen: some View {
         VStack(spacing: 12) {
             Spacer()
@@ -631,10 +663,13 @@ struct RecordLoopsView: View {
         Group {
             if isFirstLaunch {
                 welcomeView
+                    .transition(.opacity.combined(with: .scale))
             } else {
-                dayRatingView
+                initialView
+                    .transition(.opacity.combined(with: .scale))
             }
         }
+        .animation(.easeInOut(duration: 0.5), value: isFirstLaunch)
     }
     
     private var welcomeView: some View {
@@ -655,39 +690,20 @@ struct RecordLoopsView: View {
             }
         }
     }
-    
-    private var quietSpaceView: some View {
-        VStack(spacing: 24) {
-            Text("find a quiet space")
-                .font(.system(size: 36, weight: .ultraLight))
-                .foregroundColor(textColor)
-                .multilineTextAlignment(.center)
-            
-            Image(systemName: "ear")
-                .font(.system(size: 32, weight: .thin))
-                .foregroundColor(accentColor.opacity(0.8))
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                withAnimation {
-                    showingFirstLaunchScreen = false
-                }
-            }
-        }
-    }
 
     private func toggleRecording() {
-        withAnimation(.easeInOut(duration: 0.3)) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
             isRecording.toggle()
-        }
-        
-        if !isRecording {
-            audioManager.stopRecording()
-            stopTimer()
-            isPostRecording = true
-        } else {
-            startRecordingWithTimer()
+            
+            if !isRecording {
+                audioManager.stopRecording()
+                stopTimer()
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isPostRecording = true
+                }
+            } else {
+                startRecordingWithTimer()
+            }
         }
     }
     
@@ -717,49 +733,67 @@ struct RecordLoopsView: View {
     }
     
     private func completeRecording() {
-        guard let audioFileURL = audioManager.getRecordedAudioFile() else { return }
-        
-        let currentPromptIndex = loopManager.currentPromptIndex
-        let prompts = loopManager.dailyPrompts
-        
-        Task {
-            let loop = await loopManager.addLoop(
-                mediaURL: audioFileURL,
-                isVideo: false,
-                prompt: prompts[currentPromptIndex],
-                isDailyLoop: true,
-                isFollowUp: false, isSuccess: false, isUnguided: false
-            )
-            
-          // await analysisManager.startAnalysis(loop.0, transcript: loop.1)
+        guard let audioFileURL = audioManager.getRecordedAudioFile() else {
+            print("Audio file not found.")
+            return
         }
         
-        if loopManager.isLastPrompt() {
-            allPrompts = loopManager.dailyPrompts
+        // Mark the current prompt as completed
+        recordedTabs.insert(currentTab)
+        recordedAudioURLs[currentTab] = audioFileURL
+        
+        let currentPromptIndex = currentTab
+        guard currentPromptIndex < reflectionSessionManager.prompts.count else {
+            print("Invalid prompt index.")
+            return
+        }
+        
+        let currentPrompt = reflectionSessionManager.prompts[currentPromptIndex]
+        
+        // Save the loop data
+        Task {
+            let loopSaved = await loopManager.addLoop(
+                mediaURL: audioFileURL,
+                isVideo: false,
+                prompt: currentPrompt.text,
+                isDailyLoop: true,
+                isFollowUp: false,
+                isSuccess: true,
+                isUnguided: false
+            )
             
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                loopManager.hasCompletedToday = true
-                loopManager.saveCachedState()
-                isShowingMemory = false
+            if loopSaved != nil {
+                reflectionSessionManager.markPromptComplete(at: currentPromptIndex)
+                reflectionSessionManager.saveRecordingCache(prompt: currentPrompt.text, transcript: loopSaved.1)
             }
-            audioManager.cleanup()
-
-        } else {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                loopManager.moveToNextPrompt()
-                isPostRecording = false
+            
+            // Handle navigation based on completion state
+            if reflectionSessionManager.hasCompletedForToday {
+                // All prompts completed
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                    isShowingMemory = false
+                    audioManager.cleanup()
+                    dismiss() // Dismiss view since all prompts are completed
+                }
+            } else {
+                // Move to the next incomplete prompt
+                if let nextPromptIndex = reflectionSessionManager.prompts.firstIndex(where: { !reflectionSessionManager.completedPrompts.contains(reflectionSessionManager.prompts.firstIndex(of: $0) ?? -1) }) {
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                        isPostRecording = false
+                        currentTab = nextPromptIndex
+                    }
+                } else {
+                    print("No next prompt found.")
+                }
             }
         }
     }
     
     private func retryRecording() {
-        if loopManager.retryAttemptsLeft > 0 {
-            loopManager.retryRecording()
-            audioManager.cleanup()
-            isPostRecording = false
-            isRecording = false
-            timeRemaining = 30
-        }
+        audioManager.cleanup()
+        isPostRecording = false
+        isRecording = false
+        timeRemaining = 30
     }
     
     private var formattedDate: String {
@@ -947,16 +981,16 @@ struct FloatingElements: View {
 }
 
 struct CategorySelectionView: View {
-    @ObservedObject var loopManager: LoopManager
-    let onCategorySelected: (PromptCategory) -> Void
-    let isDailyPrompt: Bool
-    let accentColor: Color
-    let textColor: Color
+    @ObservedObject var reflectionSessionManager: ReflectionSessionManager
+    let onCategorySelected: (PromptCategory?, Bool) -> Void
+    
+    let accentColor = Color(hex: "A28497")
+    let textColor = Color(hex: "2C3E50")
     
     var body: some View {
-        VStack (spacing: 26){
+        VStack(spacing: 26) {
             HStack {
-                Text(isDailyPrompt ? "Let's go deeper on today's reflection. " : "Now we'll try to look at a larger scale. ")
+                Text("Let's go deeper on today's reflection. ")
                     .font(.system(size: 18, weight: .medium))
                     .tracking(1.5)
                     .foregroundColor(textColor)
@@ -964,15 +998,54 @@ struct CategorySelectionView: View {
                     .font(.system(size: 18, weight: .medium))
                     .tracking(1.5)
                     .foregroundColor(textColor.opacity(0.5))
-
                 
                 Spacer()
-                
+            }
+
+            if !reflectionSessionManager.completedPrompts.isEmpty {
+                Button(action: {
+                    withAnimation {
+                        onCategorySelected(nil, true)
+                    }
+                }) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "sparkles")
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Get AI Suggestion")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("Based on your previous reflections")
+                                .font(.system(size: 12))
+                                .opacity(0.7)
+                        }
+                        
+                        Spacer()
+                    }
+                    .foregroundColor(reflectionSessionManager.aiPromptAttempted ? textColor.opacity(0.3) : accentColor)
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(reflectionSessionManager.aiPromptAttempted ? Color.gray.opacity(0.1) : accentColor.opacity(0.1))
+                    )
+                }
+                .disabled(reflectionSessionManager.aiPromptAttempted)
+            } else {
+                HStack(spacing: 12) {
+                    Image(systemName: "info.circle")
+                    Text("Complete previous reflections to get AI suggestions")
+                        .font(.system(size: 14))
+                    Spacer()
+                }
+                .foregroundColor(textColor.opacity(0.5))
+                .padding()
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(10)
             }
             
+            // Categories
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 4) {
-                    ForEach(loopManager.getAvailableCategories().filter { $0 != .freeform }, id: \.self) { category in
+                    ForEach(reflectionSessionManager.availableCategories.filter { $0 != .freeform && $0 != .extraPrompts }, id: \.self) { category in
                         HStack {
                             Text(category.rawValue)
                                 .font(.system(size: 14, weight: .bold))
@@ -981,26 +1054,26 @@ struct CategorySelectionView: View {
                             
                             Spacer()
                         }
+                        
                         .padding()
                         .padding(.vertical, 20)
-                        .background (
+                        .background(
                             RoundedRectangle(cornerRadius: 10)
                                 .fill(.white)
                         )
                         .onTapGesture {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                onCategorySelected(category)
+                                onCategorySelected(category, false)
                             }
                         }
+                        .transition(.opacity.combined(with: .slide))
+                        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: category)
                     }
                 }
             }
-            
         }
-        .padding(.top, 8)
     }
 }
-
 struct InitialReflectionVisual: View {
     let index: Int
     private let accentColor = Color(hex: "A28497")
@@ -1081,6 +1154,33 @@ struct InitialReflectionVisual: View {
     }
 }
 
+struct TransitioningBackground: View {
+    let currentTab: Int
+    let prompts: [ReflectionPrompt]
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                ForEach(prompts.indices, id: \.self) { index in
+                    let promptType = prompts[index].type
+                    Group {
+                        switch promptType {
+                        case .moodCheckIn:
+                            Color(hex: "F5F5F5")
+                        case .recording:
+                            InitialReflectionVisual(index: 0)
+                        case .guided:
+                            InitialReflectionVisual(index: 1)
+                        }
+                    }
+                    .opacity(currentTab == index ? 1 : 0)
+                    .animation(.easeInOut(duration: 0.5), value: currentTab)
+                }
+            }
+        }
+        .edgesIgnoringSafeArea(.all)
+    }
+}
 
 extension Color {
     func toHex() -> String {

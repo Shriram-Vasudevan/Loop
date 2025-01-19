@@ -189,7 +189,7 @@ struct RecordFollowUpLoopView: View {
                 audioURL: audioManager.getRecordedAudioFile() ?? URL(fileURLWithPath: ""),
                 waveformData: generateRandomWaveform(count: 40),
                 onComplete: { completeRecording() },
-                onRetry: { retryRecording() }, retryAttempts: retryAttempts
+                onRetry: { retryRecording() }, isReadOnly: false
             )
         }
     }

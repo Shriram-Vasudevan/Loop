@@ -8,7 +8,6 @@
 import SwiftUI
 import CoreData
 
-
 struct ScheduleView: View {
     @ObservedObject private var scheduleManager = ScheduleManager.shared
     @State private var selectedDate: Date?
@@ -31,7 +30,7 @@ struct ScheduleView: View {
                 months.append((month, year))
             }
         }
-        
+        print("📅 Generated \(months.count) months to show")
         return months
     }
     
@@ -78,16 +77,19 @@ struct ScheduleView: View {
             }
             .padding(.horizontal, 24)
         }
-        .onAppear {
-           if let date = selectedScheduleDate {
-               selectedDate = date
-               selectedScheduleDate = nil
-               showingDayView = true
-           }
-       }
-       .navigationDestination(item: $selectedDate) { date in
-           FullDayActivityView(date: date)
-       }
+        .task {
+            print("🔄 ScheduleView appeared, loading data")
+            await scheduleManager.loadYearDataAndAssignColors()
+            if let date = selectedScheduleDate {
+                print("📅 Setting selected date to: \(date)")
+                selectedDate = date
+                selectedScheduleDate = nil
+                showingDayView = true
+            }
+        }
+        .navigationDestination(item: $selectedDate) { date in
+            FullDayActivityView(date: date)
+        }
     }
 }
 
@@ -99,10 +101,10 @@ struct MonthRow: View {
     @Binding var selectedDate: Date?
     @Binding var showingDayView: Bool
     
+    @ObservedObject private var scheduleManager = ScheduleManager.shared
+    
     private let calendar = Calendar.current
     private let weekdays = ["S", "M", "T", "W", "T", "F", "S"]
-    
-    @ObservedObject private var scheduleManager = ScheduleManager.shared
     
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
@@ -189,13 +191,14 @@ struct MonthRow: View {
         }
         
         let startOfDay = calendar.startOfDay(for: date)
-
+        
         if let rating = scheduleManager.ratings[startOfDay] {
+            print("🎨 Found rating \(rating) for \(date)")
             return scheduleManager.ratingColors[rating]
         }
-
+        
         guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
-            print("Error: Could not calculate end of day")
+            print("🔴 Error: Could not calculate end of day")
             return nil
         }
         
@@ -205,15 +208,17 @@ struct MonthRow: View {
         do {
             let activities = try scheduleManager.context.fetch(fetchRequest)
             if !activities.isEmpty {
+                print("📝 Found activities for \(date)")
                 return Color.gray.opacity(0.5)
             }
         } catch {
-            print("Error fetching activities: \(error)")
+            print("🔴 Error fetching activities: \(error)")
         }
         
         return nil
     }
 }
+
 struct ScheduleView_Previews: View {
     var body: some View {
         let previewData = PreviewData()

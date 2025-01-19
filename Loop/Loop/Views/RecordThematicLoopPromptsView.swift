@@ -45,13 +45,7 @@ struct RecordThematicLoopPromptsView: View {
                 .edgesIgnoringSafeArea(.all)
             
             VStack(spacing: 0) {
-                if showingFindAQuietSpace {
-                    quietSpaceView
-                }
-                else if showingThemeName {
-                    
-                }
-                else if showingThankYouScreen {
+                if showingThankYouScreen {
                     thankYouScreen
                 } else if isPostRecording {
                     postRecordingView
@@ -203,7 +197,7 @@ struct RecordThematicLoopPromptsView: View {
                 audioURL: audioManager.getRecordedAudioFile() ?? URL(fileURLWithPath: ""),
                 waveformData: generateRandomWaveform(count: 40),
                 onComplete: { completeRecording() },
-                onRetry: { retryRecording() }, retryAttempts: retryAttemptsLeft
+                onRetry: { retryRecording() }, isReadOnly: false
             )
         }
     }
@@ -234,27 +228,6 @@ struct RecordThematicLoopPromptsView: View {
             audioManager.cleanup()
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                 dismiss()
-            }
-        }
-    }
-    
-    private var quietSpaceView: some View {
-        VStack(spacing: 24) {
-            Text("find a quiet space")
-                .font(.system(size: 36, weight: .ultraLight))
-                .foregroundColor(textColor)
-                .multilineTextAlignment(.center)
-            
-            Image(systemName: "ear")
-                .font(.system(size: 32, weight: .thin))
-                .foregroundColor(accentColor.opacity(0.8))
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                withAnimation {
-                    showingFindAQuietSpace = false
-                }
             }
         }
     }

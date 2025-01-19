@@ -20,7 +20,7 @@ import CoreData
 
 class DailyCheckinManager: ObservableObject {
     static let shared = DailyCheckinManager()
-
+        
     @Published var todaysCheckIn: DayRating?
     
     let dateKey: String = "checkinDateKey"
@@ -44,23 +44,50 @@ class DailyCheckinManager: ObservableObject {
         checkIfCheckinCompleted()
     }
     
+    private func fetchTodaysCheckin() -> NSManagedObject? {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: Date())
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
+            return nil
+        }
+        
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyCheckinEntity")
+        fetchRequest.predicate = NSPredicate(
+            format: "date >= %@ AND date < %@",
+            startOfDay as NSDate,
+            endOfDay as NSDate
+        )
+        
+        do {
+            let results = try context.fetch(fetchRequest)
+            return results.first
+        } catch {
+            print("❌ Failed to fetch today's check-in: \(error)")
+            return nil
+        }
+    }
+    
     func saveDailyCheckin(rating: Double) {
         print("\n💾 Starting to save daily check-in...")
         print("Rating to save: \(rating)")
         
         do {
-            guard let entityDescription = NSEntityDescription.entity(forEntityName: "DailyCheckinEntity", in: context) else {
-                print("❌ Failed to get DailyCheckinEntity description")
-                return
+            // Check if we already have an entry for today
+            if let existingCheckin = fetchTodaysCheckin() {
+                print("📝 Found existing check-in for today, updating...")
+                existingCheckin.setValue(rating, forKey: "rating")
+                existingCheckin.setValue(Date(), forKey: "date")
+            } else {
+                print("➕ No existing check-in found, creating new entry...")
+                guard let entityDescription = NSEntityDescription.entity(forEntityName: "DailyCheckinEntity", in: context) else {
+                    print("❌ Failed to get DailyCheckinEntity description")
+                    return
+                }
+                
+                let entity = NSManagedObject(entity: entityDescription, insertInto: context)
+                entity.setValue(rating, forKey: "rating")
+                entity.setValue(Date(), forKey: "date")
             }
-            print("✅ Got entity description for DailyCheckinEntity")
-            
-            let entity = NSManagedObject(entity: entityDescription, insertInto: context)
-            print("Created new managed object")
-            
-            entity.setValue(rating, forKey: "rating")
-            entity.setValue(Date(), forKey: "date")
-            print("Set values - Rating: \(rating), Date: \(Date())")
             
             try context.save()
             print("✅ Successfully saved to Core Data")

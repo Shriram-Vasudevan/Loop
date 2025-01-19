@@ -40,13 +40,13 @@ struct FullDayActivityView: View {
                 
                 if let activity = activity {
                     if activity.dailyLoops.isEmpty && activity.thematicLoops.isEmpty &&
-                       activity.followUpLoops.isEmpty && activity.emotion == nil {
+                       activity.followUpLoops.isEmpty && activity.rating == nil {
                         emptyStateView
                             .padding(.horizontal, 24)
                     } else {
                         VStack(spacing: 32) {
-                            if let emotion = activity.emotion {
-                                Text("\(emotion).")
+                            if let rating = activity.rating {
+                                Text("\(rating).")
                                     .font(.custom("PPNeueMontreal-Bold", size: 28))
                                     .foregroundColor(textColor)
                             }
@@ -80,8 +80,8 @@ struct FullDayActivityView: View {
                 let cloudLoops = try await ActivityCloudKitUtility.fetchLoopsForDate(date)
                 let localLoops = try await ActivityLocalStorageUtility.shared.fetchLoopsForDate(date)
                 let allLoops = Array(Set(cloudLoops + localLoops))
-                let emotion = ScheduleManager.shared.emotions[Calendar.current.startOfDay(for: date)]
-                activity = DayActivity.categorize(allLoops, emotion: emotion)
+                let rating = ScheduleManager.shared.ratings[Calendar.current.startOfDay(for: date)]
+                activity = DayActivity.categorize(allLoops, rating: rating)
             } catch {
                 print("Error fetching loosps: \(error)")
             }

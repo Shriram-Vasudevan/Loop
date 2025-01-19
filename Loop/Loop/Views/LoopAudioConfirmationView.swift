@@ -16,8 +16,7 @@ struct LoopAudioConfirmationView: View {
     let waveformData: [CGFloat]
     let onComplete: () -> Void
     let onRetry: () -> Void
-    
-    let retryAttempts: Int
+    let isReadOnly: Bool
     
     let accentColor = Color(hex: "A28497")
     let secondaryColor = Color(hex: "B7A284")
@@ -27,10 +26,12 @@ struct LoopAudioConfirmationView: View {
     
     var body: some View {
         VStack(spacing: 40) {
-            Text("review your loop")
-                .font(.system(size: 32, weight: .thin))
-                .foregroundColor(textColor)
-                .padding(.top, 24)
+            if !isReadOnly {
+                Text("review your loop")
+                    .font(.system(size: 32, weight: .thin))
+                    .foregroundColor(textColor)
+                    .padding(.top, 24)
+            }
             
             VStack(spacing: 24) {
                 WaveformView(waveformData: waveformData, color: accentColor.opacity(0.8), onAnimationComplete: {
@@ -56,28 +57,32 @@ struct LoopAudioConfirmationView: View {
                                 .fill(isWaveformReady ? accentColor : accentColor.opacity(0.5))
                         )
                 }
-                .disabled(!isWaveformReady)
+                .disabled(!isWaveformReady || isReadOnly)
+                .opacity(isReadOnly ? 0.5 : 1)
+                .padding(.horizontal, 24)
                 
-                if retryAttempts > 0 {
-                    Button(action: {
-                        withAnimation {
-                            onRetry()
-                        }
-                    }) {
-                        Text("try again")
-                            .font(.system(size: 18, weight: .light))
-                            .foregroundColor(accentColor)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(accentColor, lineWidth: 1)
-                            )
+                Button(action: {
+                    withAnimation {
+                        onRetry()
                     }
+                }) {
+                    Text("try again")
+                        .font(.system(size: 18, weight: .light))
+                        .foregroundColor(accentColor)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(accentColor, lineWidth: 1)
+                        )
                 }
+                .disabled(isReadOnly)
+                .opacity(isReadOnly ? 0.6 : 1)
+                .padding(.horizontal, 24)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
+            
         }
     }
 }

@@ -13,7 +13,9 @@ struct HomeView: View {
     @Binding var selectedScheduleDate: Date?
         
     @ObservedObject var loopManager = LoopManager.shared
-    @ObservedObject  var scheduleManager = ScheduleManager.shared
+    @ObservedObject var scheduleManager = ScheduleManager.shared
+    @ObservedObject var reflectionSessionManager = ReflectionSessionManager.shared
+    
     @State private var showingRecordLoopsView = false
     @State private var showPastLoopSheet = false
     @State private var selectedLoop: Loop?
@@ -176,66 +178,42 @@ struct HomeView: View {
     
     private var recordingInterface: some View {
         Button(action: { showingRecordLoopsView = true }) {
-            VStack(spacing: 48) {
-                if !loopManager.hasCompletedToday && !loopManager.dailyPrompts.isEmpty {
-                    VStack(alignment: .center, spacing: 40) {
-                        VStack(alignment: .center, spacing: 8) {
-                            Text("TODAY'S REFLECTION")
-                                .font(.system(size: 13, weight: .medium))
-                                .tracking(1.5)
-                                .foregroundColor(textColor.opacity(0.5))
-                            
-                            Text("Take time to look back on your day")
-                                .font(.system(size: 23, weight: .medium))
-                                .tracking(1.5)
-                                .foregroundColor(textColor)
-                        }
-                        
-                        // Progress dots
-                        HStack(spacing: 24) {
-                            ForEach(0..<5, id: \.self) { index in
-                                Circle()
-                                    .fill(index == loopManager.currentPromptIndex ? accentColor : accentColor.opacity(0.15))
-                                    .frame(width: 8, height: 8)
-                            }
-                            
-                            Spacer()
-                        }
-                    }
+            Group {
+                if !ReflectionSessionManager.shared.hasCompletedForToday {
+                    SunsetReflectionView()
                 } else {
-                    // Completed state
                     VStack(alignment: .leading, spacing: 16) {
-                        
                         Text("DAILY REFLECTION")
                             .font(.system(size: 13, weight: .medium))
                             .tracking(1.5)
                             .foregroundColor(accentColor.opacity(0.5))
-                        VStack (alignment: .leading, spacing: 8                                             ) {
+                        
+                        VStack(alignment: .leading, spacing: 8) {
                             Text("complete for today")
                                 .font(.system(size: 24, weight: .light))
                                 .foregroundColor(textColor)
-                            Text("check your insights")
-                            .font(.system(size: 13, weight: .medium))
-                            .tracking(1.5)
-                            .foregroundColor(textColor)
+                            Text("great work!")
+                                .font(.system(size: 13, weight: .medium))
+                                .tracking(1.5)
+                                .foregroundColor(textColor)
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(32)
+                    .background(
+                        ZStack(alignment: .bottomTrailing) {
+                            Color.white
+                            Image(systemName: "quote.closing")
+                                .font(.system(size: 160))
+                                .foregroundColor(accentColor.opacity(0.05))
+                                .rotationEffect(.degrees(8))
+                                .padding(.trailing, -20)
+                                .padding(.bottom, -20)
+                        }
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(32)
-            .background(
-                ZStack(alignment: .bottomTrailing) {
-                    Color.white
-                    Image(systemName: "quote.closing")
-                        .font(.system(size: 160))
-                        .foregroundColor(accentColor.opacity(0.05))
-                        .rotationEffect(.degrees(8))
-                        .padding(.trailing, -20)
-                        .padding(.bottom, -20)
-                }
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 12))
             .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 2)
         }
     }

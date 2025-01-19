@@ -13,9 +13,6 @@ import CoreData
 class LoopManager: ObservableObject {
     static let shared = LoopManager()
 
-    @Published var dailyPrompts: [String] = []
-    @Published var currentPromptIndex: Int = 0
-    @Published var retryAttemptsLeft: Int = 30
     @Published var pastLoop: Loop?
     @Published var loopsByDate: [Date: [Loop]] = [:]
     @Published var recentDates: [Date] = []
@@ -63,26 +60,7 @@ class LoopManager: ObservableObject {
         case ready
         case noMemoriesForPrompt
     }
-
-    @Published private(set) var promptGroups: [PromptCategory: [Prompt]] = [:]
-    @Published private(set) var isLoadingPrompts = false
     
-    private let promptCacheKeys = PromptCacheKeys.self
-    
-    private let recentPromptsKey = "RecentPromptsKey"
-    private let recentCategoriesKey = "RecentCategoriesKey"
-    private let maxPromptHistory = 34
-    
-    private let fixedPrompts = [
-        "Give a short summary of your day.",
-        "Is there anything that stood out about today?",
-        "CATEGORY_SELECTION_PENDING",
-        "CATEGORY_SELECTION_PENDING",
-        "Share anything on your mind"
-    ]
-
-    @Published var selectedCategories: [Int: PromptCategory] = [:]
-
     @Published private(set) var thematicPrompts: [ThematicPrompt] = []
     @Published var selectedThematicPromptId: String? = nil {
         didSet {
@@ -116,10 +94,6 @@ class LoopManager: ObservableObject {
     
     init() {
         Task {
-            await loadPrompts()
-            await MainActor.run {
-                checkAndResetIfNeeded()
-            }
             await loadThematicPrompts()
             await checkSevenDayStatus()
 
@@ -127,22 +101,9 @@ class LoopManager: ObservableObject {
                 
             })
         }
-        
-        NotificationCenter.default.addObserver(
-           self,
-           selector: #selector(appDidBecomeActive),
-           name: UIApplication.didBecomeActiveNotification,
-           object: nil
-       )
+
     }
-    
-    @objc private func appDidBecomeActive() {
-        checkAndResetIfNeeded()
-    }
-        
-    deinit {
-        NotificationCenter.default.removeObserver(self)
-    }
+
     
     func calculateStreak() async {
         do {
@@ -180,211 +141,6 @@ class LoopManager: ObservableObject {
         }
     }
 
-    private func loadPrompts() async {
-        await MainActor.run {
-            isLoadingPrompts = true
-            do { isLoadingPrompts = false }
-        }
-        
-        do {
-            if let newPromptSet = try await LoopCloudKitUtility.fetchPromptSetIfNeeded() {
-                if let encodedData = try? JSONEncoder().encode(newPromptSet) {
-                    UserDefaults.standard.set(encodedData, forKey: promptCacheKeys.promptSetKey)
-                }
-                
-                let newPromptSet = newPromptSet.getPromptGroups()
-                await MainActor.run {
-                    self.promptGroups = newPromptSet
-                    
-                    self.featuredReflections = (self.promptGroups[.extraPrompts] ?? [])
-                        .shuffled()
-                        .map { $0 }
-                    
-                    print("featured reflectins: \(featuredReflections)")
-                }
-            } else {
-                loadCachedPrompts()
-            }
-        } catch {
-            print("Error loading prompts: \(error)")
-            loadCachedPrompts()
-        }
-    }
-    
-    private func loadCachedPrompts() {
-        guard let cachedData = UserDefaults.standard.data(forKey: promptCacheKeys.promptSetKey),
-              let promptSet = try? JSONDecoder().decode(PromptSet.self, from: cachedData) else {
-            print("⚠️ No cached prompts found, using fallback")
-   
-            if let url = Bundle.main.url(forResource: "fallback_prompts", withExtension: "json"),
-               let data = try? Data(contentsOf: url),
-               let promptSet = try? JSONDecoder().decode(PromptSet.self, from: data) {
-                promptGroups = promptSet.getPromptGroups()
-            }
-            return
-        }
-        
-        let promptGroups = promptSet.getPromptGroups()
-        DispatchQueue.main.sync {
-            self.promptGroups = promptGroups
-            print(promptGroups)
-            
-            self.featuredReflections = (self.promptGroups[.extraPrompts] ?? [])
-                .shuffled()
-                .map { $0 }
-        }
-    }
-
-    
-    func getCategoryForPrompt(_ promptText: String) -> PromptCategory? {
-        for (category, prompts) in promptGroups {
-            if prompts.contains(where: { $0.text == promptText }) {
-                return category
-            }
-        }
-        return nil
-    }
-    
-    
-    private func getRecentPrompts() -> [String] {
-        return UserDefaults.standard.stringArray(forKey: recentPromptsKey) ?? []
-    }
-
-    
-    private func saveRecentPrompt(_ prompt: String) {
-        var recentPrompts = getRecentPrompts()
-        recentPrompts.insert(prompt, at: 0)
-        if recentPrompts.count > maxPromptHistory {
-            recentPrompts = Array(recentPrompts.prefix(maxPromptHistory))
-        }
-        UserDefaults.standard.set(recentPrompts, forKey: recentPromptsKey)
-    }
-    
-    
-    private func selectDailyPrompt() -> Prompt {
-        let recentPrompts = getRecentPrompts()
-        
-        let dailyPrompts = promptGroups.values.flatMap { $0 }.filter { $0.isDailyPrompt }
-        
-        let availablePrompts = dailyPrompts.filter { prompt in
-            !recentPrompts.contains(prompt.text)
-        }
-        
-        if let selectedPrompt = availablePrompts.randomElement() {
-            return selectedPrompt
-        }
-
-        return dailyPrompts.randomElement() ?? dailyPrompts[0]
-    }
-    
-    private func selectGeneralPrompt(excluding category: PromptCategory) -> Prompt {
-        let recentPrompts = getRecentPrompts()
-
-        let availablePrompts = promptGroups.filter { $0.key != category }
-            .values
-            .flatMap { $0 }
-            .filter { !recentPrompts.contains($0.text) }
-
-        if let selectedPrompt = availablePrompts.randomElement() {
-            return selectedPrompt
-        }
-        
-        return promptGroups.filter { $0.key != category }
-            .values
-            .flatMap { $0 }
-            .randomElement() ?? promptGroups.values.first!.first!
-    }
-    
-    private func selectRandomPrompts() {
-        let shareAnything = promptGroups.values
-            .flatMap { $0 }
-            .filter { $0.category == .freeform }
-        
-        let dailyPrompts = promptGroups.values
-            .flatMap { $0 }
-            .filter { $0.isDailyPrompt && $0.category != .freeform }
-        
-        let generalPrompts = promptGroups.values
-            .flatMap { $0 }
-            .filter { !$0.isDailyPrompt && $0.category != .freeform }
-        
-        let thirdPrompt: Prompt
-        if let randomShare = shareAnything.randomElement() {
-            thirdPrompt = randomShare
-        } else {
-            thirdPrompt = dailyPrompts.randomElement() ??
-                Prompt(text: "What's on your mind?", category: .freeform, isDailyPrompt: true)
-        }
-        
-        let firstPrompt: Prompt
-        let availableDailyPrompts = dailyPrompts.filter { $0.category != thirdPrompt.category }
-        if let randomDaily = availableDailyPrompts.randomElement() {
-            firstPrompt = randomDaily
-        } else {
-            firstPrompt = dailyPrompts.randomElement() ??
-                Prompt(text: "How are you feeling today?", category: .emotionalWellbeing, isDailyPrompt: true)
-        }
-
-        let secondPrompt: Prompt
-        let availableGeneralPrompts = generalPrompts.filter {
-            $0.category != firstPrompt.category && $0.category != thirdPrompt.category
-        }
-        if let randomGeneral = availableGeneralPrompts.randomElement() {
-            secondPrompt = randomGeneral
-        } else {
-            // Try any general prompt if filtered list is empty
-            secondPrompt = generalPrompts.randomElement() ??
-                Prompt(text: "What's giving you hope lately?", category: .growth, isDailyPrompt: false)
-        }
-        
-        // Update the prompts array with our selections
-        self.dailyPrompts = [firstPrompt.text, secondPrompt.text, thirdPrompt.text]
-        
-        // Save our selections to recent prompts
-        saveRecentPrompt(firstPrompt.text)
-        saveRecentPrompt(secondPrompt.text)
-        saveRecentPrompt(thirdPrompt.text)
-        
-        print("Selected prompts: \(self.dailyPrompts)")
-    }
-    
-    func switchToPrompt(_ newPrompt: Prompt) {
-        guard currentPromptIndex == 2 || currentPromptIndex == 3,
-              let selectedCategory = selectedCategories[currentPromptIndex],
-              newPrompt.category == selectedCategory,
-              (currentPromptIndex == 2 && newPrompt.isDailyPrompt) ||
-              (currentPromptIndex == 3 && !newPrompt.isDailyPrompt) else {
-            return
-        }
-        
-        var updatedPrompts = dailyPrompts
-        updatedPrompts[currentPromptIndex] = newPrompt.text
-        dailyPrompts = updatedPrompts
-        saveRecentPrompt(newPrompt.text)
-        saveCachedState()
-    }
-    
-   
-    func getAlternativePrompts() -> [Prompt] {
-        guard currentPromptIndex == 2 || currentPromptIndex == 3,
-              let selectedCategory = selectedCategories[currentPromptIndex] else {
-            return []
-        }
-        
-        let currentPrompt = getCurrentPrompt()
-        let recentPrompts = getRecentPrompts()
-        let todaysPrompts = Set(dailyPrompts)
-        
-        return Array(promptGroups[selectedCategory]?
-            .filter {
-                $0.text != currentPrompt &&
-                !recentPrompts.contains($0.text) &&
-                !todaysPrompts.contains($0.text) &&
-                (currentPromptIndex == 2 ? $0.isDailyPrompt : !$0.isDailyPrompt)
-            }
-            .shuffled()
-            .prefix(3) ?? [])
-    }
     
     func loadThematicPrompts() async {
         do {
@@ -401,7 +157,6 @@ class LoopManager: ObservableObject {
         guard let selectedId = selectedThematicPromptId,
               let selectedTheme = thematicPrompts.first(where: { $0.id == selectedId }),
               selectedTheme.prompts.count >= 3 else {
-            selectRandomPrompts()
             return
         }
         
@@ -418,13 +173,8 @@ class LoopManager: ObservableObject {
         
         guard selectedPrompts.count == 3 else {
             print("Couldn't select enough prompts")
-            selectRandomPrompts()
             return
         }
-        
-        self.dailyPrompts = selectedPrompts
-        resetPromptProgress()
-        saveCachedState()
     }
 
     func fetchWeekSchedule() {
@@ -504,195 +254,13 @@ class LoopManager: ObservableObject {
         return max(cloudCount, localCount)
     }
     
-    private func determinePreferredStorage() async throws -> StorageSystem {
-        let cloudCount = try await LoopCloudKitUtility.fetchDistinctLoopingDays()
-        let localCount = try await localStorage.fetchDistinctLoopingDays()
-        
-        if cloudCount > localCount {
-            return .cloud
-        } else if localCount > cloudCount {
-            return .local
-        } else {
-            // If equal, randomly choose
-            return Bool.random() ? .cloud : .local
-        }
-    }
-    
-    func getPastLoopForComparison(recordedPrompts: [String]) async throws -> Loop? {
-        print("\n🔍 Starting getPastLoopForComparison")
-        print("📝 Input prompts:", recordedPrompts)
-
-        // Get prompt categories and calculate frequencies
-        let promptCategories = recordedPrompts.compactMap { promptText -> PromptCategory? in
-            return getCategoryForPrompt(promptText)
-        }
-
-        // Calculate category frequencies for scoring
-        let categoryFrequencies = Dictionary(grouping: promptCategories, by: { $0 })
-            .mapValues { Double($0.count) / Double(promptCategories.count) }
-
-        print("📊 Category frequencies:", categoryFrequencies)
-
-        // Check minimum history requirement
-        let userDays = try await fetchDistinctLoopingDays()
-        print("📅 User has \(userDays) days of history")
-
-        guard userDays >= 3 else {
-            print("❌ Not enough history (need 3 days, have \(userDays))")
-            return nil
-        }
-
-        // Try fetching the past loop in preferred order: CloudKit first, then local
-        if let cloudLoop = try await fetchFromStorage(
-            using: .cloud,
-            prompts: recordedPrompts,
-            categoryFrequencies: categoryFrequencies
-        ) {
-            return cloudLoop
-        }
-
-        if let localLoop = try await fetchFromStorage(
-            using: .local,
-            prompts: recordedPrompts,
-            categoryFrequencies: categoryFrequencies
-        ) {
-            return localLoop
-        }
-
-        print("❌ No matching loops found in any storage system")
-        return nil
-    }
-
-    private func fetchFromStorage(
-        using storage: StorageSystem,
-        prompts: [String],
-        categoryFrequencies: [PromptCategory: Double]
-    ) async throws -> Loop? {
-        print("\n🔎 Fetching from \(storage) storage")
-
-        // Define the time windows in descending order of priority
-        let timeWindows: [(min: Int, max: Int?)] = [
-            (30, 180),       // 2–6 months → highest priority
-            (7, 30),         // 1–4 weeks
-            (1, 7),          // 1–7 days → recent overlap
-            (180, 365),      // 6–12 months
-            (365, nil)       // Older than 1 year → fallback
-        ]
-
-        for window in timeWindows {
-            let minDaysAgo = window.min
-            let maxDaysAgo = window.max
-
-            print("📅 Trying window: \(minDaysAgo)-\(maxDaysAgo != nil ? "\(maxDaysAgo!)" : "∞") days ago")
-
-            let loop = try await (storage == .cloud ?
-                LoopCloudKitUtility.fetchPastLoop(
-                    forPrompts: prompts,
-                    minDaysAgo: minDaysAgo,
-                    maxDaysAgo: maxDaysAgo,
-                    categoryFrequencies: categoryFrequencies,
-                    limitToFields: ["ID", "Timestamp", "Category", "LastRetrieved", "Prompt", "Data"]
-
-                ) :
-                LoopLocalStorageUtility.shared.fetchPastLoop(
-                    forPrompts: prompts,
-                    minDaysAgo: minDaysAgo,
-                    maxDaysAgo: maxDaysAgo,
-                    categoryFrequencies: categoryFrequencies
-                ))
-
-            if let loop = loop {
-                print("✅ Found matching loop from \(minDaysAgo)-\(maxDaysAgo != nil ? "\(maxDaysAgo!)" : "∞") days ago")
-                return loop
-            }
-        }
-
-        print("❌ No matches found in any time window")
-        return nil
-    }
-
-    func checkAndResetIfNeeded() {
-        if !isCacheValidForToday() {
-            initializeDailyReflection()
-            resetPromptProgress()
-            saveCachedState()
-        } else {
-            loadCachedState()
-        }
-    }
-    
-    func resetPromptProgress() {
-        currentPromptIndex = 0
-        retryAttemptsLeft = 1
-        hasCompletedToday = false
-        selectedCategories = [:]
-    }
-    
-    func moveToNextPrompt() {
-        if currentPromptIndex < dailyPrompts.count - 1 {
-            currentPromptIndex += 1
-            retryAttemptsLeft = 1
-            saveCachedState()
-        } else {
-            hasCompletedToday = true
-            saveCachedState()
-        }
-    }
-    private func completeAllPrompts() {
-        print("all prompts completed")
-        hasCompletedToday = true
-        saveCachedState()
-    }
-    
-    func getCurrentPrompt() -> String {
-        return dailyPrompts[currentPromptIndex]
-    }
-    
-    func isLastPrompt() -> Bool {
-        return currentPromptIndex == dailyPrompts.count - 1
-    }
-    
-    func retryRecording() {
-        if retryAttemptsLeft > 0 {
-            retryAttemptsLeft -= 1
-            saveCachedState()
-        }
-    }
-    
-    func areAllPromptsDone() -> Bool {
-        return hasCompletedToday
-    }
-    
-    // MARK: - CloudKit Operations
-//    func handleLoopCompletion() {
-//        LoopCloudKitUtility.getRandomLoop { [weak self] randomLoop in
-//            if let loop = randomLoop {
-//                DispatchQueue.main.async {
-//                    self?.queuedLoops.append(loop)
-//                    self?.saveQueuedLoops()
-//                }
-//            }
-//        }
-//    }
-//    
-//    func fetchRandomPastLoop() {
-//        LoopCloudKitUtility.getRandomLoop(completion: { randomLoop in
-//            if let loop = randomLoop {
-//                DispatchQueue.main.async {
-//                    self.pastLoops.append(loop)
-//                }
-//            }
-//        })
-//    }
     
     func addLoop(mediaURL: URL, isVideo: Bool, prompt: String, mood: String? = nil, freeResponse: Bool = false, isDailyLoop: Bool, isFollowUp: Bool, isSuccess: Bool, isUnguided: Bool) async -> (Loop, String) {
-        print("Adding loop with prompt: \(prompt), currentPromptIndex: \(currentPromptIndex)")
-        print("Current dailyPrompts array: \(dailyPrompts)")
-        
+
         let loopID = UUID().uuidString
         let timestamp = Date()
         let ckAsset = CKAsset(fileURL: mediaURL)
-        let category = getCategoryForPrompt(prompt)?.rawValue ?? "Share Anything"
+        let category = ""
         
         var transcript: String = ""
         if !isVideo {
@@ -920,53 +488,6 @@ class LoopManager: ObservableObject {
         loopsByDate[date] = existingLoops.sorted { $0.timestamp > $1.timestamp }
     }
 
-
-    private func saveQueuedLoops() {
-        let cachedLoops = queuedLoops.map { loop -> [String: Any] in
-            return [
-                "id": loop.id,
-                "timestamp": loop.timestamp.timeIntervalSince1970,
-                "promptText": loop.promptText,
-                "category": getCategoryForPrompt(loop.promptText)?.rawValue ?? "Share Anything",
-                "transcript": loop.transcript ?? "",
-                "freeResponse": loop.freeResponse,
-                "isVideo": loop.isVideo,
-                "assetURLString": loop.data.fileURL?.absoluteString ?? "",
-                "cacheDate": Date().timeIntervalSince1970
-            ]
-        }
-        
-        if JSONSerialization.isValidJSONObject(cachedLoops) {
-            UserDefaults.standard.set(cachedLoops, forKey: queuedLoopsKey)
-        }
-    }
-    
-    func saveCachedState() {
-        UserDefaults.standard.set(dailyPrompts, forKey: promptCacheKey)
-        UserDefaults.standard.set(currentPromptIndex, forKey: promptIndexKey)
-        UserDefaults.standard.set(retryAttemptsLeft, forKey: retryAttemptsKey)
-        UserDefaults.standard.set(hasCompletedToday, forKey: "hasCompletedToday")
-        UserDefaults.standard.set(Date(), forKey: lastPromptDateKey)
-        
-        if let encodedCategories = try? JSONEncoder().encode(selectedCategories) {
-            UserDefaults.standard.set(encodedCategories, forKey: "selectedCategoriesKey")
-        }
-    }
-
-    private func loadCachedState() {
-        DispatchQueue.main.async {
-            self.hasCompletedToday = UserDefaults.standard.bool(forKey: "hasCompletedToday")
-            self.dailyPrompts = UserDefaults.standard.stringArray(forKey: self.promptCacheKey) ?? []
-            self.currentPromptIndex = UserDefaults.standard.integer(forKey: self.promptIndexKey)
-            self.retryAttemptsLeft = UserDefaults.standard.integer(forKey: self.retryAttemptsKey)
-            
-            if let categoriesData = UserDefaults.standard.data(forKey: "selectedCategoriesKey"),
-               let decodedCategories = try? JSONDecoder().decode([Int: PromptCategory].self, from: categoriesData) {
-                self.selectedCategories = decodedCategories
-            }
-        }
-    }
-
     private func isCacheValidForToday() -> Bool {
         if let lastPromptDate = UserDefaults.standard.object(forKey: lastPromptDateKey) as? Date {
             return Calendar.current.isDateInToday(lastPromptDate)
@@ -1141,54 +662,48 @@ class LoopManager: ObservableObject {
     func dismissUnlockReminder() {
         hasRemovedUnlockReminder = true
     }
-    
-    private func initializeDailyReflection() {
-        dailyPrompts = fixedPrompts
-        selectedCategories = [:]
-        saveCachedState()
-    }
 
     func getAvailableCategories() -> [PromptCategory] {
         return PromptCategory.allCases
     }
 
-    private func getAvailablePromptsForCategory(_ category: PromptCategory, isDailyPrompt: Bool) -> [Prompt] {
-        let recentPrompts = getRecentPrompts()
-        let todaysPrompts = Set(dailyPrompts)
-        
-        return promptGroups[category]?
-            .filter {
-                $0.isDailyPrompt == isDailyPrompt &&
-                !recentPrompts.contains($0.text) &&
-                !todaysPrompts.contains($0.text)
-            } ?? []
-    }
-
-    func selectCategory(_ category: PromptCategory) async {
-        guard currentPromptIndex == 2 || currentPromptIndex == 3 else { return }
-        
-        selectedCategories[currentPromptIndex] = category
-        let availablePrompts = getAvailablePromptsForCategory(category, isDailyPrompt: currentPromptIndex == 2)
-        
-        let selectedPrompt: Prompt
-        if let prompt = availablePrompts.randomElement() {
-            selectedPrompt = prompt
-        } else {
-            selectedPrompt = Prompt(
-                text: getFallbackPrompt(for: category, isDailyPrompt: currentPromptIndex == 2),
-                category: category,
-                isDailyPrompt: currentPromptIndex == 2
-            )
-        }
-        
-        await MainActor.run {
-            var updatedPrompts = dailyPrompts
-            updatedPrompts[currentPromptIndex] = selectedPrompt.text
-            dailyPrompts = updatedPrompts
-            saveRecentPrompt(selectedPrompt.text)
-            saveCachedState()
-        }
-    }
+//    private func getAvailablePromptsForCategory(_ category: PromptCategory, isDailyPrompt: Bool) -> [Prompt] {
+//        let recentPrompts = getRecentPrompts()
+//        let todaysPrompts = Set(dailyPrompts)
+//        
+//        return promptGroups[category]?
+//            .filter {
+//                $0.isDailyPrompt == isDailyPrompt &&
+//                !recentPrompts.contains($0.text) &&
+//                !todaysPrompts.contains($0.text)
+//            } ?? []
+//    }
+//
+//    func selectCategory(_ category: PromptCategory) async {
+//        guard currentPromptIndex == 2 else { return }
+//        
+//        selectedCategories[currentPromptIndex] = category
+//        let availablePrompts = getAvailablePromptsForCategory(category, isDailyPrompt: currentPromptIndex == 2)
+//        
+//        let selectedPrompt: Prompt
+//        if let prompt = availablePrompts.randomElement() {
+//            selectedPrompt = prompt
+//        } else {
+//            selectedPrompt = Prompt(
+//                text: getFallbackPrompt(for: category, isDailyPrompt: currentPromptIndex == 2),
+//                category: category,
+//                isDailyPrompt: currentPromptIndex == 2
+//            )
+//        }
+//        
+//        await MainActor.run {
+//            var updatedPrompts = dailyPrompts
+//            updatedPrompts[currentPromptIndex] = selectedPrompt.text
+//            dailyPrompts = updatedPrompts
+//            saveRecentPrompt(selectedPrompt.text)
+//            saveCachedState()
+//        }
+//    }
 
     private func getFallbackPrompt(for category: PromptCategory, isDailyPrompt: Bool) -> String {
         switch (category, isDailyPrompt) {
@@ -1207,11 +722,6 @@ class LoopManager: ObservableObject {
             case (.freeform, _): return "What's on your mind?"
         }
     }
-
-    func needsCategorySelection() -> Bool {
-        guard currentPromptIndex == 2 || currentPromptIndex == 3 else { return false }
-        return dailyPrompts[currentPromptIndex] == "CATEGORY_SELECTION_PENDING"
-    }
     
 }
 
@@ -1222,21 +732,22 @@ enum MemoryBankStatus {
         case noMemoriesForPrompt
 }
 
-
-enum PromptCategory: String, CaseIterable, Codable {
-    case freeform = "Share Anything"
-    case emotionalWellbeing = "Emotional Wellbeing"
-    case challenges = "Challenges"
-    case growth = "Growth"
-    case connections = "Connections"
-    case curiosity = "Curiosity"
-    case extraPrompts = "Extra Prompts"
-}
-
-
 struct Prompt {
     let text: String
     let category: PromptCategory
     let isDailyPrompt: Bool
 }
 
+extension UserDefaults {
+    var lastReflectionPlanDate: Date? {
+        get { object(forKey: "lastReflectionPlanDate") as? Date }
+        set { set(newValue, forKey: "lastReflectionPlanDate") }
+    }
+    
+    var hasOpenedReflectionToday: Bool {
+        if let lastDate = lastReflectionPlanDate {
+            return Calendar.current.isDateInToday(lastDate)
+        }
+        return false
+    }
+}

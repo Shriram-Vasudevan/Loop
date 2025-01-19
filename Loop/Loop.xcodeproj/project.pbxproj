@@ -73,6 +73,13 @@
 		9953BE102D07ADC100348AC3 /* LoopComparison.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BE0F2D07ADC100348AC3 /* LoopComparison.swift */; };
 		9953BE122D07ADE400348AC3 /* LoopAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BE112D07ADE400348AC3 /* LoopAnalysis.swift */; };
 		9953BE142D0CF79200348AC3 /* AppPromoVid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BE132D0CF79200348AC3 /* AppPromoVid.swift */; };
+		996F82062D38719100116F86 /* WaveRatingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 996F82052D38719100116F86 /* WaveRatingView.swift */; };
+		996F82082D393E2800116F86 /* TodaysReflectionWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 996F82072D393E2800116F86 /* TodaysReflectionWidget.swift */; };
+		996F820A2D39EA1300116F86 /* AIPromptManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 996F82092D39EA1300116F86 /* AIPromptManager.swift */; };
+		996F820C2D39F2B200116F86 /* ReflectionCompleteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 996F820B2D39F2B200116F86 /* ReflectionCompleteView.swift */; };
+		996F820E2D39FECD00116F86 /* ReflectionCardManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 996F820D2D39FECD00116F86 /* ReflectionCardManager.swift */; };
+		996F82102D39FF6300116F86 /* TodaysReflectionPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 996F820F2D39FF6300116F86 /* TodaysReflectionPlanView.swift */; };
+		996F82122D3B0B5900116F86 /* ReflectionSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 996F82112D3B0B5900116F86 /* ReflectionSessionManager.swift */; };
 		9988DB852CD9BFAC005628DE /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB842CD9BFAC005628DE /* FriendsView.swift */; };
 		9988DB8B2CD9CAEE005628DE /* SharedLoop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */; };
 		9988DB8D2CDA77C8005628DE /* PrivateUserRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8C2CDA77C8005628DE /* PrivateUserRecord.swift */; };
@@ -233,6 +240,13 @@
 		9953BE0F2D07ADC100348AC3 /* LoopComparison.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopComparison.swift; sourceTree = "<group>"; };
 		9953BE112D07ADE400348AC3 /* LoopAnalysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopAnalysis.swift; sourceTree = "<group>"; };
 		9953BE132D0CF79200348AC3 /* AppPromoVid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPromoVid.swift; sourceTree = "<group>"; };
+		996F82052D38719100116F86 /* WaveRatingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveRatingView.swift; sourceTree = "<group>"; };
+		996F82072D393E2800116F86 /* TodaysReflectionWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodaysReflectionWidget.swift; sourceTree = "<group>"; };
+		996F82092D39EA1300116F86 /* AIPromptManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIPromptManager.swift; sourceTree = "<group>"; };
+		996F820B2D39F2B200116F86 /* ReflectionCompleteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectionCompleteView.swift; sourceTree = "<group>"; };
+		996F820D2D39FECD00116F86 /* ReflectionCardManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectionCardManager.swift; sourceTree = "<group>"; };
+		996F820F2D39FF6300116F86 /* TodaysReflectionPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodaysReflectionPlanView.swift; sourceTree = "<group>"; };
+		996F82112D3B0B5900116F86 /* ReflectionSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectionSessionManager.swift; sourceTree = "<group>"; };
 		9988DB842CD9BFAC005628DE /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedLoop.swift; sourceTree = "<group>"; };
 		9988DB8C2CDA77C8005628DE /* PrivateUserRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateUserRecord.swift; sourceTree = "<group>"; };
@@ -447,6 +461,10 @@
 				9935CEFB2D2F1DD000AF0C16 /* TopEmotionsCard.swift */,
 				9935CF212D32D93700AF0C16 /* DarkBlueWave.swift */,
 				9935CF252D3426FF00AF0C16 /* MoodCheckinView.swift */,
+				996F82052D38719100116F86 /* WaveRatingView.swift */,
+				996F82072D393E2800116F86 /* TodaysReflectionWidget.swift */,
+				996F820B2D39F2B200116F86 /* ReflectionCompleteView.swift */,
+				996F820F2D39FF6300116F86 /* TodaysReflectionPlanView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -471,6 +489,9 @@
 				9935CEF92D2DEB4900AF0C16 /* KeyPhraseManager.swift */,
 				9935CF172D3082CE00AF0C16 /* GoalManager.swift */,
 				9935CF232D32E1E000AF0C16 /* MoodTrendsManager.swift */,
+				996F82092D39EA1300116F86 /* AIPromptManager.swift */,
+				996F820D2D39FECD00116F86 /* ReflectionCardManager.swift */,
+				996F82112D3B0B5900116F86 /* ReflectionSessionManager.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -627,6 +648,7 @@
 			files = (
 				99AC6DE62CE0F99800B0D0D6 /* CachedLoop.swift in Sources */,
 				9953BE122D07ADE400348AC3 /* LoopAnalysis.swift in Sources */,
+				996F820A2D39EA1300116F86 /* AIPromptManager.swift in Sources */,
 				99AC6DDE2CE03CC600B0D0D6 /* AudioBulletJournal.swift in Sources */,
 				99CCFBC22D137A2100DA8A55 /* AnalysisState.swift in Sources */,
 				9935CEDE2D24DC8400AF0C16 /* ReflectionSelectionView.swift in Sources */,
@@ -639,6 +661,7 @@
 				9953BE022CFABA4400348AC3 /* LocalLoopStorageUtility.swift in Sources */,
 				9953BE142D0CF79200348AC3 /* AppPromoVid.swift in Sources */,
 				990E4AA42CC0A7CD009F88A0 /* InsightModels.swift in Sources */,
+				996F82122D3B0B5900116F86 /* ReflectionSessionManager.swift in Sources */,
 				990E4A9E2CBDE063009F88A0 /* ViewPastLoopView.swift in Sources */,
 				999DAC722D1E239400A6626B /* DayRatingSlider.swift in Sources */,
 				99AC6DD62CDFFAFA00B0D0D6 /* LoopChatView.swift in Sources */,
@@ -646,6 +669,7 @@
 				999DAC782D1FA82100A6626B /* TodaysInsightsView.swift in Sources */,
 				9935CED82D23A0A500AF0C16 /* DurationPatternCard.swift in Sources */,
 				999DAC8C2D20F4C500A6626B /* MemoryPlaybackView.swift in Sources */,
+				996F82102D39FF6300116F86 /* TodaysReflectionPlanView.swift in Sources */,
 				990E4A8E2CB48BB9009F88A0 /* SplashScreen.swift in Sources */,
 				99DC91B72D1A258A002B9A89 /* WeeklyAnalysis.swift in Sources */,
 				9953BDEA2CF25A7C00348AC3 /* MonthSummary.swift in Sources */,
@@ -659,6 +683,7 @@
 				9935CEE42D299A7D00AF0C16 /* DailyEmotion.swift in Sources */,
 				99DC91B92D1A4658002B9A89 /* WeekInReviewView.swift in Sources */,
 				9935CEEA2D29AB9E00AF0C16 /* EmotionSchedulePreview.swift in Sources */,
+				996F82082D393E2800116F86 /* TodaysReflectionWidget.swift in Sources */,
 				999DAC822D208A1A00A6626B /* FrequencyModels.swift in Sources */,
 				99AC6DEA2CE18E9900B0D0D6 /* LoopStreak.swift in Sources */,
 				99F31CAD2D0F5DAF00330180 /* StatsLoadingView.swift in Sources */,
@@ -683,6 +708,7 @@
 				99F31CAB2D0F477500330180 /* Graph.swift in Sources */,
 				999DAC7A2D1FA87600A6626B /* AnalysisManagerPreview.swift in Sources */,
 				9988DBAE2CDD25C8005628DE /* PastLoopCard.swift in Sources */,
+				996F820C2D39F2B200116F86 /* ReflectionCompleteView.swift in Sources */,
 				99AC6DDC2CE0226500B0D0D6 /* SettingsView.swift in Sources */,
 				999DAC762D1F4E9800A6626B /* AIAnalysis.swift in Sources */,
 				99F7F6FD2CAF814B009858AC /* RecordLoopsView.swift in Sources */,
@@ -711,6 +737,7 @@
 				99F7F6E52CAC77E7009858AC /* IntroView.swift in Sources */,
 				999DAC7E2D20761400A6626B /* AITrendAnalysisManager.swift in Sources */,
 				9935CEE62D299EF400AF0C16 /* ScheduleManager.swift in Sources */,
+				996F82062D38719100116F86 /* WaveRatingView.swift in Sources */,
 				999DAC702D1E236900A6626B /* DayRating.swift in Sources */,
 				9988DB912CDA792F005628DE /* FriendsManager.swift in Sources */,
 				999DAC8E2D2107D000A6626B /* RecordFeaturedLoopView.swift in Sources */,
@@ -736,6 +763,7 @@
 				9915BAB72CE6AF9E00D3C44B /* DailyCheckinManager.swift in Sources */,
 				9935CF182D3082CE00AF0C16 /* GoalManager.swift in Sources */,
 				9935CEFC2D2F1DD000AF0C16 /* TopEmotionsCard.swift in Sources */,
+				996F820E2D39FECD00116F86 /* ReflectionCardManager.swift in Sources */,
 				9953BDF62CF40E4A00348AC3 /* ProgressIndicator.swift in Sources */,
 				99A0C9042CA9F70500F9281A /* UserCloudKitUtility.swift in Sources */,
 				99CCFBBE2D121F2400DA8A55 /* EmptyStateView.swift in Sources */,

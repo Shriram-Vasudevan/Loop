@@ -17,7 +17,6 @@ struct ViewPastLoopView: View {
     @State private var timer: Timer?
     @Environment(\.dismiss) var dismiss
     
-    @State private var showInitialPrompt = true
     @State private var showTranscript = false
     @State private var contentOpacity: CGFloat = 0
     @State private var waveformData: [CGFloat] = Array(repeating: 0, count: 60)
@@ -33,12 +32,9 @@ struct ViewPastLoopView: View {
                     Color(hex: "FAFBFC").ignoresSafeArea()
                 }
                 
-                if showInitialPrompt {
-                    initialPromptView
-                } else {
-                    mainContentView
-                        .safeAreaPadding(.horizontal, 24)
-                }
+                mainContentView
+                    .safeAreaPadding(.horizontal, 24)
+                
             }
             .navigationDestination(isPresented: $showTranscript) {
                 TranscriptView(
@@ -194,7 +190,6 @@ struct ViewPastLoopView: View {
     private func setupInitialAnimation() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             withAnimation(.easeOut(duration: 0.5)) {
-                showInitialPrompt = false
                 contentOpacity = 1
                 generateWaveFormData()
             }

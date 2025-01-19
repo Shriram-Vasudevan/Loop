@@ -166,3 +166,22 @@ extension String {
         return nil
     }
 }
+
+extension UserDefaults {
+    var hasSetupDailyReflection: Bool {
+        get {
+            if let lastSetupDate = object(forKey: "LastReflectionSetupDate") as? Date {
+                return Calendar.current.isDateInToday(lastSetupDate)
+            }
+            return false
+        }
+        set {
+            if newValue {
+                set(Date(), forKey: "LastReflectionSetupDate")
+            } else {
+                removeObject(forKey: "LastReflectionSetupDate")
+            }
+        }
+    }
+}
+

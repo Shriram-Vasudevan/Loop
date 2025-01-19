@@ -150,7 +150,7 @@ class AnalysisManager: ObservableObject {
                 vocabularyDiversity: vocabularyDiversity
             )
             
-            let category = LoopManager.shared.getCategoryForPrompt(loop.promptText)?.rawValue ?? "Share Anything"
+            let category =/* LoopManager.shared.getCategoryForPrompt(loop.promptText)?.rawValue ??*/ "Share Anything"
             print("🏷 Loop \(loop.id) categorized as: \(category)")
             
             return LoopAnalysis(
