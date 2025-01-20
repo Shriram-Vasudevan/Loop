@@ -106,6 +106,11 @@ struct ReflectionCard: View {
     @ViewBuilder
     private var cardPattern: some View {
         switch card {
+        case .sleepCheckin:
+            GeometricMountains()
+                .fill(accentColor)
+                .frame(height: 60)
+                .offset(y: 40)
         case .moodCheckin:
             GeometricMountains()
                 .fill(accentColor)
@@ -229,6 +234,7 @@ struct PencilPattern: Shape {
 extension ReflectionCardManager.ReflectionCardType {
     var shortDescription: String {
         switch self {
+        case .sleepCheckin: return "Sleep tracker"
         case .moodCheckin: return "Quick check-in"
         case .daySummary: return "Reflect on today"
         case .standOut: return "Key moment"
@@ -324,7 +330,7 @@ struct EditPlanView: View {
             .navigationTitle("Edit Plan")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
+                    Button("Done") {
                         dismiss()
                     }
                     .foregroundColor(textColor)

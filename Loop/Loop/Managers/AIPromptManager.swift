@@ -9,7 +9,7 @@ import Foundation
 
 class AIPromptManager {
     static let shared = AIPromptManager()
-    
+        
     private let endpoint = "https://api.openai.com/v1/chat/completions"
     private let apiKey: String
         
@@ -20,26 +20,36 @@ class AIPromptManager {
     func generatePrompt() async -> String {
         let responses = await getTodaysResponses()
         
-        guard !responses.isEmpty else {
+        if responses.isEmpty || (responses.count == 1 && responses[0].question.contains("feeling today")) {
             return ReflectionSessionManager.shared.getRandomPrompt(for: .emotionalWellbeing)?.text ?? getFallbackPrompt(for: .emotionalWellbeing)
         }
         
-        let formattedResponses = responses.map { "\($0.question): \($0.answer)" }
+        let significantResponses = responses.filter { !$0.question.contains("feeling today") }
+        
+        let formattedResponses = significantResponses.map { "\($0.question): \($0.answer)" }
             .joined(separator: "\n\n")
             
+        let moodContext = responses.first { $0.question.contains("feeling today") }
+       
         let prompt = """
         Based on these responses:
 
         \(formattedResponses)
 
-        Generate ONE reflective question about them:
-        1. References themes/patterns from their responses
-        2. Never mentions specific names, places, or events
-        3. Generalizes personal details while keeping the core meaning
-        4. Is one brief sentence with a question mark
+        \(moodContext != nil ? "Context: User rated their mood as \(moodContext!.answer)" : "")
 
-        BAD: "How did your fight with Sarah affect you?"
-        GOOD: "How do recent emotional conversations shape your responses?"
+        Generate ONE reflective question that:
+        1. Directly references themes or ideas from their specific responses
+        2. Shows you've understood and analyzed their unique situation
+        3. Makes connections between different points they've mentioned
+        4. Avoids generic questions that could apply to any response
+        5. Remains specific while protecting privacy (no names/places)
+
+        Examples based on sample responses:
+        BAD: "What patterns do you notice in your life?" (too generic)
+        BAD: "How do you feel about your situation?" (could apply to anything)
+        GOOD: If they discussed work-life balance: "How does your approach to managing deadlines reflect your broader life priorities?"
+        GOOD: If they mentioned learning new skills: "What similarities do you notice between how you tackle new challenges now versus earlier attempts?"
 
         Response: Only the question, no other text.
         """
@@ -48,11 +58,16 @@ class AIPromptManager {
             let requestBody: [String: Any] = [
                 "model": "gpt-4",
                 "messages": [
-                    ["role": "system", "content": "You are an expert at creating thoughtful reflection prompts that encourage self-discovery while maintaining appropriate boundaries."],
+                    ["role": "system", "content": """
+                        You are an expert at creating varied, insightful reflection prompts.
+                        You excel at identifying subtle patterns and asking questions that encourage deep self-discovery.
+                        Never default to simple cause-and-effect questions about mood or emotions.
+                        Focus on generating diverse question structures that explore different aspects of self-reflection.
+                        """],
                     ["role": "user", "content": prompt]
                 ],
-                "temperature": 0.7,
-                "max_tokens": 200
+                "temperature": 0.8,
+                "max_tokens": 100
             ]
             
             var request = URLRequest(url: URL(string: endpoint)!)
@@ -73,7 +88,7 @@ class AIPromptManager {
         
         return ReflectionSessionManager.shared.getRandomPrompt(for: .emotionalWellbeing)?.text ?? getFallbackPrompt(for: .emotionalWellbeing)
     }
-    
+
     private func getTodaysResponses() async -> [(question: String, answer: String)] {
         var responses: [(question: String, answer: String)] = []
 

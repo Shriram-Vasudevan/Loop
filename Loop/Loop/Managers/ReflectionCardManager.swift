@@ -11,14 +11,16 @@ class ReflectionCardManager: ObservableObject {
     static let shared = ReflectionCardManager()
     
     enum ReflectionCardType: Int, CaseIterable, Codable {
-        case moodCheckin = 0
-        case daySummary = 1
-        case standOut = 2
-        case aiGenerated = 3
-        case freeform = 4
+        case sleepCheckin = 0
+        case moodCheckin = 1
+        case daySummary = 2
+        case standOut = 3
+        case aiGenerated = 4
+        case freeform = 5
         
         var title: String {
             switch self {
+            case .sleepCheckin: return "Sleep Check-in"
             case .moodCheckin: return "Mood Check-in"
             case .daySummary: return "Day Summary"
             case .standOut: return "What stood out?"
@@ -29,6 +31,7 @@ class ReflectionCardManager: ObservableObject {
         
         var description: String {
             switch self {
+            case .sleepCheckin: return "Track your sleep quality"
             case .moodCheckin: return "Take a moment to check in with yourself"
             case .daySummary: return "Give a quick overview of your day"
             case .standOut: return "What moments caught your attention?"
@@ -112,12 +115,9 @@ class ReflectionCardManager: ObservableObject {
         saveTemplates()
     }
     
-    // MARK: - Card Management
-    
     func toggleCard(_ card: ReflectionCardType) {
         var updatedCards = currentTemplate.selectedCards
-        
-        // Handle mood checkin special case
+
         if card == .moodCheckin {
             if updatedCards.contains(.moodCheckin) && updatedCards.count > 1 {
                 updatedCards.remove(.moodCheckin)

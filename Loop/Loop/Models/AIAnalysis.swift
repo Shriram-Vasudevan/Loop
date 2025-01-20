@@ -7,31 +7,57 @@
 
 import Foundation
 
-struct EmotionAnalysis: Codable {
-    let emotion: String
-    let description: String
+enum CommunicationStyle: String, Codable {
+    case analytical
+    case emotional
+    case practical
+    case reflective
 }
 
-struct ExpressionStyle: Codable {
-    let fillerWords: String // minimal/moderate/frequent
-    let pattern: String // analytical, practical, emotional, action-focused, reflective
-    let note: String
+enum TopicCategory: String, Codable, CaseIterable {
+    case work
+    case personal
+    case relationships
+    case health
+    case learning
+    case creativity
+    case purpose
+    case wellbeing
+    case growth
 }
 
-struct SocialLandscape: Codable {
-    let focus: String // self-centered/relationship-focused/balanced
-    let context: String // work/personal/mixed
-    let connections: String
+enum ToneCategory: String, Codable {
+    case positive
+    case neutral
+    case reflective
+    case challenging
 }
 
-struct NextSteps: Codable {
-    let actions: [String]
-    let hasActions: Bool
+// MARK: - Daily Analysis Models
+
+struct DailyExpression: Codable {
+    let style: CommunicationStyle
+    let topics: Set<TopicCategory>
+    let tone: ToneCategory
 }
 
-struct Challenges: Codable {
-    let items: [String]
-    let hasChallenges: Bool
+struct NotableElement: Codable {
+    let type: ElementType
+    let content: String
+    
+    enum ElementType: String, Codable {
+        case insight
+        case win
+        case challenge
+        case positive
+        case strategy
+        case intention
+    }
+}
+
+struct MoodCorrelation: Codable {
+    let rating: Double?
+    let sleep: Int?
 }
 
 struct FollowUp: Codable {
@@ -39,11 +65,10 @@ struct FollowUp: Codable {
     let purpose: String
 }
 
-struct AIAnalysisResult: Codable {
-    let emotion: EmotionAnalysis
-    let expression: ExpressionStyle
-    let social: SocialLandscape
-    let nextSteps: NextSteps
-    let challenges: Challenges
-    let followUp: FollowUp
+struct DailyAIAnalysisResult: Codable {
+    let date: Date
+    let expression: DailyExpression
+    let notableElements: [NotableElement]
+    let mood: MoodCorrelation
+    let followUp: FollowUp  // New field
 }

@@ -39,7 +39,9 @@ struct PagesHolderView: View {
                         case .schedule:
                             ScheduleView(selectedScheduleDate: $selectedScheduleDate)
                         case .trends:
-                            InsightsView()
+//                            InsightsView()
+//                            Text("oops")
+                            TodayInsightsView()
                         }
                     }
                     

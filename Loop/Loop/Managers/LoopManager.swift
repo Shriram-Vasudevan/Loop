@@ -300,14 +300,12 @@ class LoopManager: ObservableObject {
                 loopsByDate[loopDate] = [loop]
             }
 
-            // Ensure the date is in recentDates
             if !recentDates.contains(loopDate) {
                 recentDates.append(loopDate)
                 recentDates.sort(by: >)
             }
         }
 
-        // Save based on iCloud backup setting
         if UserDefaults.standard.bool(forKey: "iCloudBackupEnabled") {
             Task {
                 await LoopCloudKitUtility.addLoop(loop: loop)

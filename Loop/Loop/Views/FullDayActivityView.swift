@@ -46,7 +46,7 @@ struct FullDayActivityView: View {
                     } else {
                         VStack(spacing: 32) {
                             if let rating = activity.rating {
-                                Text("\(rating).")
+                                Text("\(getMoodDescription(for: rating))")
                                     .font(.custom("PPNeueMontreal-Bold", size: 28))
                                     .foregroundColor(textColor)
                             }
@@ -126,6 +126,23 @@ struct FullDayActivityView: View {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MMMM d"
         return dateFormatter.string(from: date).lowercased()
+    }
+    
+    private func getMoodDescription(for rating: Double) -> String {
+        switch rating {
+        case 0...3:
+            return "feeling down"
+        case 3...4:
+            return "not great"
+        case 4...6:
+            return "okay"
+        case 6...8:
+            return "pretty good"
+        case 8...10:
+            return "feeling great"
+        default:
+            return "okay"
+        }
     }
     
     private func sectionView(title: String, loops: [Loop]) -> some View {

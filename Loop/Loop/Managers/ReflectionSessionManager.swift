@@ -73,6 +73,8 @@ class ReflectionSessionManager: ObservableObject {
     func setupSession(withCards cards: [ReflectionCardManager.ReflectionCardType]) {
         let selectedPrompts = cards.map { card in
             switch card {
+            case .sleepCheckin:
+                    return ReflectionPrompt(text: "How many hours did you sleep?", type: .sleepCheckin, description: nil)
             case .moodCheckin:
                 return ReflectionPrompt(text: "How are you feeling right now?", type: .moodCheckIn, description: nil)
             case .daySummary:
@@ -114,6 +116,9 @@ class ReflectionSessionManager: ObservableObject {
         if completedPrompts.count == prompts.count {
             hasCompletedForToday = true
             UserDefaults.standard.set(true, forKey: hasCompletedForTodayKey)
+            Task {
+                await AnalysisManager.shared.performAnalysis()
+            }
         }
         saveState()
     }
@@ -152,7 +157,7 @@ class ReflectionSessionManager: ObservableObject {
         let savedDate = UserDefaults.standard.object(forKey: reflectionDateKey) as? Date
         
         if savedDate == nil || !Calendar.current.isDateInToday(savedDate!) {
-            setupSession(withCards: ReflectionCardManager.shared.currentTemplate.selectedCards.sorted(by: { $0.rawValue < $1.rawValue }))
+            setupSession(withCards: Array(ReflectionCardManager.shared.currentTemplate.selectedCards))
             return
         }
 
@@ -318,6 +323,7 @@ struct ReflectionPrompt: Equatable {
 }
 
 enum PromptType: String {
+    case sleepCheckin
     case moodCheckIn
     case guided
     case recording

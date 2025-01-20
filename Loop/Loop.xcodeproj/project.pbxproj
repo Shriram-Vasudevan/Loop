@@ -137,6 +137,10 @@
 		99DC91CA2D1BAB05002B9A89 /* PPNeueMontreal-Thin.otf in Resources */ = {isa = PBXBuildFile; fileRef = 99DC91C42D1BAB05002B9A89 /* PPNeueMontreal-Thin.otf */; };
 		99DC91CB2D1BAB05002B9A89 /* PPNeueMontreal-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 99DC91C52D1BAB05002B9A89 /* PPNeueMontreal-Italic.otf */; };
 		99DC91CC2D1BAB05002B9A89 /* PPNeueMontreal-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 99DC91C62D1BAB05002B9A89 /* PPNeueMontreal-Bold.otf */; };
+		99F00AB52D3D9C90008F1228 /* WavePattern.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F00AB42D3D9C90008F1228 /* WavePattern.swift */; };
+		99F00AB72D3DA3D7008F1228 /* SleepCheckInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F00AB62D3DA3D7008F1228 /* SleepCheckInView.swift */; };
+		99F00AB92D3DA794008F1228 /* SleepCheckinManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F00AB82D3DA794008F1228 /* SleepCheckinManager.swift */; };
+		99F00ABB2D3DC159008F1228 /* TrendsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F00ABA2D3DC159008F1228 /* TrendsManager.swift */; };
 		99F31CA72D0F2DA300330180 /* RecordFollowUpLoopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CA62D0F2DA300330180 /* RecordFollowUpLoopView.swift */; };
 		99F31CA92D0F31AF00330180 /* FollowUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CA82D0F31AF00330180 /* FollowUp.swift */; };
 		99F31CAB2D0F477500330180 /* Graph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CAA2D0F477500330180 /* Graph.swift */; };
@@ -207,16 +211,11 @@
 		9935CEF92D2DEB4900AF0C16 /* KeyPhraseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyPhraseManager.swift; sourceTree = "<group>"; };
 		9935CEFB2D2F1DD000AF0C16 /* TopEmotionsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopEmotionsCard.swift; sourceTree = "<group>"; };
 		9935CF172D3082CE00AF0C16 /* GoalManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalManager.swift; sourceTree = "<group>"; };
-		9935CF192D30870900AF0C16 /* LoopData 2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "LoopData 2.xcdatamodel"; sourceTree = "<group>"; };
 		9935CF1A2D30BB8500AF0C16 /* AddSuccessView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddSuccessView.swift; sourceTree = "<group>"; };
-		9935CF1C2D31F74C00AF0C16 /* LoopData 3.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "LoopData 3.xcdatamodel"; sourceTree = "<group>"; };
-		9935CF1D2D31F8A300AF0C16 /* LoopDataNEw.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = LoopDataNEw.xcdatamodel; sourceTree = "<group>"; };
-		9935CF1E2D3209D700AF0C16 /* LoopDataNewTwo.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = LoopDataNewTwo.xcdatamodel; sourceTree = "<group>"; };
 		9935CF212D32D93700AF0C16 /* DarkBlueWave.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DarkBlueWave.swift; sourceTree = "<group>"; };
 		9935CF232D32E1E000AF0C16 /* MoodTrendsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodTrendsManager.swift; sourceTree = "<group>"; };
 		9935CF252D3426FF00AF0C16 /* MoodCheckinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodCheckinView.swift; sourceTree = "<group>"; };
 		9935CF272D34342000AF0C16 /* EntryCardTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryCardTabView.swift; sourceTree = "<group>"; };
-		9935CF292D35D3AC00AF0C16 /* LoopDataAgain.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = LoopDataAgain.xcdatamodel; sourceTree = "<group>"; };
 		9935CF2A2D36373500AF0C16 /* LoopDataNext.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = LoopDataNext.xcdatamodel; sourceTree = "<group>"; };
 		9953BDDC2CEE620E00348AC3 /* AnimatedBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedBackground.swift; sourceTree = "<group>"; };
 		9953BDDF2CEE623B00348AC3 /* PulsingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulsingView.swift; sourceTree = "<group>"; };
@@ -307,6 +306,10 @@
 		99DC91C52D1BAB05002B9A89 /* PPNeueMontreal-Italic.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PPNeueMontreal-Italic.otf"; sourceTree = "<group>"; };
 		99DC91C62D1BAB05002B9A89 /* PPNeueMontreal-Bold.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "PPNeueMontreal-Bold.otf"; sourceTree = "<group>"; };
 		99DC91CD2D1BAB11002B9A89 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		99F00AB42D3D9C90008F1228 /* WavePattern.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WavePattern.swift; sourceTree = "<group>"; };
+		99F00AB62D3DA3D7008F1228 /* SleepCheckInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepCheckInView.swift; sourceTree = "<group>"; };
+		99F00AB82D3DA794008F1228 /* SleepCheckinManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepCheckinManager.swift; sourceTree = "<group>"; };
+		99F00ABA2D3DC159008F1228 /* TrendsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsManager.swift; sourceTree = "<group>"; };
 		99F31CA62D0F2DA300330180 /* RecordFollowUpLoopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordFollowUpLoopView.swift; sourceTree = "<group>"; };
 		99F31CA82D0F31AF00330180 /* FollowUp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FollowUp.swift; sourceTree = "<group>"; };
 		99F31CAA2D0F477500330180 /* Graph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Graph.swift; sourceTree = "<group>"; };
@@ -465,6 +468,8 @@
 				996F82072D393E2800116F86 /* TodaysReflectionWidget.swift */,
 				996F820B2D39F2B200116F86 /* ReflectionCompleteView.swift */,
 				996F820F2D39FF6300116F86 /* TodaysReflectionPlanView.swift */,
+				99F00AB42D3D9C90008F1228 /* WavePattern.swift */,
+				99F00AB62D3DA3D7008F1228 /* SleepCheckInView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -492,6 +497,8 @@
 				996F82092D39EA1300116F86 /* AIPromptManager.swift */,
 				996F820D2D39FECD00116F86 /* ReflectionCardManager.swift */,
 				996F82112D3B0B5900116F86 /* ReflectionSessionManager.swift */,
+				99F00AB82D3DA794008F1228 /* SleepCheckinManager.swift */,
+				99F00ABA2D3DC159008F1228 /* TrendsManager.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -711,6 +718,7 @@
 				996F820C2D39F2B200116F86 /* ReflectionCompleteView.swift in Sources */,
 				99AC6DDC2CE0226500B0D0D6 /* SettingsView.swift in Sources */,
 				999DAC762D1F4E9800A6626B /* AIAnalysis.swift in Sources */,
+				99F00AB92D3DA794008F1228 /* SleepCheckinManager.swift in Sources */,
 				99F7F6FD2CAF814B009858AC /* RecordLoopsView.swift in Sources */,
 				9935CEF62D2C8ECA00AF0C16 /* AcitivtyLocalStorageUtility.swift in Sources */,
 				999DAC902D210A5000A6626B /* FeaturedPrompt.swift in Sources */,
@@ -752,6 +760,7 @@
 				999DAC7C2D20757700A6626B /* DailyAIAnalysis.swift in Sources */,
 				9953BE042CFB940500348AC3 /* TabButton.swift in Sources */,
 				9953BDE62CF1832100348AC3 /* ThematicLoopCard.swift in Sources */,
+				99F00AB72D3DA3D7008F1228 /* SleepCheckInView.swift in Sources */,
 				9988DB8B2CD9CAEE005628DE /* SharedLoop.swift in Sources */,
 				99DC91BB2D1A50BF002B9A89 /* AudioAnalyzer.swift in Sources */,
 				9935CED22D23969600AF0C16 /* SpeakingHighlight.swift in Sources */,
@@ -783,6 +792,8 @@
 				999DAC8A2D20AD3700A6626B /* TrendsLoadingView.swift in Sources */,
 				9935CEF22D2C8C7700AF0C16 /* DayActivity.swift in Sources */,
 				9935CF282D34342000AF0C16 /* EntryCardTabView.swift in Sources */,
+				99F00AB52D3D9C90008F1228 /* WavePattern.swift in Sources */,
+				99F00ABB2D3DC159008F1228 /* TrendsManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1029,11 +1040,6 @@
 			isa = XCVersionGroup;
 			children = (
 				9935CF2A2D36373500AF0C16 /* LoopDataNext.xcdatamodel */,
-				9935CF292D35D3AC00AF0C16 /* LoopDataAgain.xcdatamodel */,
-				9935CF1E2D3209D700AF0C16 /* LoopDataNewTwo.xcdatamodel */,
-				9935CF1D2D31F8A300AF0C16 /* LoopDataNEw.xcdatamodel */,
-				9935CF1C2D31F74C00AF0C16 /* LoopData 3.xcdatamodel */,
-				9935CF192D30870900AF0C16 /* LoopData 2.xcdatamodel */,
 				9953BE0B2CFCC0FC00348AC3 /* LoopData.xcdatamodel */,
 			);
 			currentVersion = 9953BE0B2CFCC0FC00348AC3 /* LoopData.xcdatamodel */;

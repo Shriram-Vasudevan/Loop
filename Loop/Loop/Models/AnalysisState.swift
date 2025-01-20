@@ -7,42 +7,95 @@
 
 import Foundation
 
-enum AnalysisState {
-    case noLoops
-    case partial(count: Int)
-    case analyzing
-    case transcribing
-    case analyzing_ai
-    case completed(DailyAnalysis)
-    case failed(AnalysisError)
-    
-    var description: String {
-        switch self {
-        case .noLoops:
-            return "Record your first Loop to begin analysis"
-        case .partial(let count):
-            return "\(count)/3 Loops recorded. Complete all three to see your insights"
-        case .analyzing:
-            return "Analyzing your responses..."
-        case .transcribing:
-            return "Converting your speech to text..."
-        case .analyzing_ai:
-            return "Generating AI insights..."
-        case .completed(_):
-            return "Analysis complete"
-        case .failed(let error):
-            switch error {
-            case .transcriptionFailed:
-                return "Speech analysis failed. Please try again."
-            case .aiAnalysisFailed:
-                return "AI analysis unavailable. Other insights are still viewable."
-            case .analysisFailure:
-                return "Analysis incomplete. Some results may be unavailable."
-            case .invalidData:
-                return "Invalid data. Please contact us if the issue persists."
-            case .missingFields(fields: let fields):
-                return  "AI analysis unavailable. Other insights are still viewable."
-            }
-        }
-    }
+enum AnalysisState: Equatable {
+   case notStarted
+   case retrievingResponses
+   case analyzingQuantitative
+   case analyzingAI
+   case completed(DailyAnalysis)
+   case failed(AnalysisError)
+   
+   static func == (lhs: AnalysisState, rhs: AnalysisState) -> Bool {
+       switch (lhs, rhs) {
+       case (.notStarted, .notStarted):
+           return true
+       case (.retrievingResponses, .retrievingResponses):
+           return true
+       case (.analyzingQuantitative, .analyzingQuantitative):
+           return true
+       case (.analyzingAI, .analyzingAI):
+           return true
+       case (.completed(let lhsAnalysis), .completed(let rhsAnalysis)):
+           return lhsAnalysis.date == rhsAnalysis.date
+       case (.failed(let lhsError), .failed(let rhsError)):
+           return lhsError == rhsError
+       default:
+           return false
+       }
+   }
+   
+   var description: String {
+       switch self {
+       case .notStarted:
+           return "Complete your daily reflections to begin analysis"
+           
+       case .retrievingResponses:
+           return "Gathering today's reflections for analysis..."
+           
+       case .analyzingQuantitative:
+           return "Calculating metrics from your responses..."
+           
+       case .analyzingAI:
+           return "Analyzing patterns and generating insights..."
+           
+       case .completed(_):
+           return "Analysis complete - view your insights below"
+           
+       case .failed(let error):
+           switch error {
+           case .noResponses:
+               return "No reflections found for today. Complete your daily reflections to see insights."
+               
+           case .analysisError(_):
+               return "We encountered an issue analyzing your reflections. Some insights may be unavailable. Please try again later."
+           case .missingRequiredFields(fields: let fields):
+               return "We encountered an issue analyzing your reflections. Some insights may be unavailable. Please try again later."
+           case .aiAnalysisFailed(_):
+               return "We encountered an issue analyzing your reflections. Some insights may be unavailable. Please try again later."
+           case .transcriptionFailed(_):
+               return "We encountered an issue analyzing your reflections. Some insights may be unavailable. Please try again later."
+           }
+       }
+   }
+   
+   var isLoading: Bool {
+       switch self {
+       case .retrievingResponses, .analyzingQuantitative, .analyzingAI:
+           return true
+       default:
+           return false
+       }
+   }
+   
+   var shouldShowProgress: Bool {
+       switch self {
+       case .retrievingResponses, .analyzingQuantitative, .analyzingAI:
+           return true
+       default:
+           return false
+       }
+   }
+   
+   var progressMessage: String {
+       switch self {
+       case .retrievingResponses:
+           return "Step 1/3: Gathering responses"
+       case .analyzingQuantitative:
+           return "Step 2/3: Calculating metrics"
+       case .analyzingAI:
+           return "Step 3/3: Generating insights"
+       default:
+           return ""
+       }
+   }
 }

@@ -51,6 +51,8 @@ struct RecordLoopsView: View {
     
     @State private var postRecordingTabs: Set<Int> = []
 
+    @State private var sleepHours: Double = 7.0
+    
     var body: some View {
         ZStack {
             TransitioningBackground(
@@ -70,7 +72,7 @@ struct RecordLoopsView: View {
                     TabView(selection: $currentTab) {
                         ForEach(reflectionSessionManager.prompts.indices, id: \.self) { index in
                             ZStack {
-                                if reflectionSessionManager.completedPrompts.contains(index) && reflectionSessionManager.prompts[index].type != .moodCheckIn {
+                                if reflectionSessionManager.completedPrompts.contains(index) && reflectionSessionManager.prompts[index].type != .moodCheckIn || reflectionSessionManager.prompts[index].type != .sleepCheckin {
                                     ReflectionCompletedView()
                                 } else if isPostRecording && (reflectionSessionManager.prompts[index].type == .recording || reflectionSessionManager.prompts[index].type == .guided)  {
                                     postRecordingView
@@ -219,6 +221,45 @@ struct RecordLoopsView: View {
    
     private func dynamicPromptView(for prompt: ReflectionPrompt, at tabIndex: Int) -> some View {
         switch prompt.type {
+        case .sleepCheckin:
+            return AnyView(
+                ZStack {
+                    VStack {
+                        MinimalSleepCheckInView(
+                            hoursSlept: $sleepHours,
+                            isEditable: true
+                        ) {
+                            reflectionSessionManager.markPromptComplete(at: tabIndex)
+                        }
+                        
+                        Spacer()
+                        
+                        HStack {
+                            Spacer()
+                            
+                            Button {
+                                currentTab += 1
+                            } label: {
+                                HStack {
+                                    Spacer()
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 23, weight: .medium))
+                                        .foregroundColor(.white)
+                                        .padding(24)
+                                        .background (
+                                            Circle()
+                                                .fill(accentColor)
+                                        )
+                                        .padding()
+                                }
+                            }
+                        }
+                        .padding(.bottom, 5)
+
+                    }
+                }
+            )
         case .moodCheckIn:
             return AnyView(
                 ZStack {
@@ -235,16 +276,26 @@ struct RecordLoopsView: View {
                         HStack {
                             Spacer()
                             
-                            Image(systemName: "chevron.right")
-                                .resizable()
-                                .padding()
-                                .background (
-                                    Circle()
-                                        .fill(accentColor)
-                                )
-                                .padding(   )
+                            Button {
+                                currentTab += 1
+                            } label: {
+                                HStack {
+                                    Spacer()
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 23, weight: .medium))
+                                        .foregroundColor(.white)
+                                        .padding(24)
+                                        .background (
+                                            Circle()
+                                                .fill(accentColor)
+                                        )
+                                        .padding()
+                                }
+                            }
                         }
-                        .padding(.bottom, 35)
+                        .padding(.bottom, 5)
+
                     }
                 }
             )
@@ -302,34 +353,51 @@ struct RecordLoopsView: View {
                             onCategorySelected: { category, isAI in
                                 Task {
                                     if isAI {
-                                        reflectionSessionManager.isLoadingAIPrompt = true
-                                        if let aiPrompt = await reflectionSessionManager.generateAIPrompt() {
-                                            let updatedPrompt = ReflectionPrompt(
-                                                text: aiPrompt,
-                                                type: .guided,
-                                                description: nil
-                                            )
-                                            reflectionSessionManager.updateGuidedPrompt(updatedPrompt)
-                                        }
-                                        reflectionSessionManager.isLoadingAIPrompt = false
-                                    } else {
-                                        if let category = category {
-                                            if let prompt = reflectionSessionManager.getRandomPrompt(for: category) {
-                                                let updatedPrompt = ReflectionPrompt(
-                                                    text: prompt.text,
-                                                    type: .guided,
-                                                    description: nil
-                                                )
-                                                reflectionSessionManager.updateGuidedPrompt(updatedPrompt)
+                                        DispatchQueue.main.async {
+                                            withAnimation {
+                                                reflectionSessionManager.isLoadingAIPrompt = true
                                             }
                                         }
-                                        else {
-                                            let updatedPrompt = ReflectionPrompt(
-                                                text: "",
-                                                type: .guided,
-                                                description: nil
-                                            )
-                                            reflectionSessionManager.updateGuidedPrompt(updatedPrompt)
+                                        if let aiPrompt = await reflectionSessionManager.generateAIPrompt() {
+                                            DispatchQueue.main.async {
+                                                withAnimation(.easeInOut(duration: 0.3)) {
+                                                    let updatedPrompt = ReflectionPrompt(
+                                                        text: aiPrompt,
+                                                        type: .guided,
+                                                        description: nil
+                                                    )
+                                                    reflectionSessionManager.updateGuidedPrompt(updatedPrompt)
+                                                    reflectionSessionManager.isLoadingAIPrompt = false
+                                                }
+                                            }
+                                        } else {
+                                            DispatchQueue.main.async {
+                                                withAnimation {
+                                                    reflectionSessionManager.isLoadingAIPrompt = false
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        DispatchQueue.main.async {
+                                            withAnimation(.easeInOut(duration: 0.3)) {
+                                                if let category = category {
+                                                    if let prompt = reflectionSessionManager.getRandomPrompt(for: category) {
+                                                        let updatedPrompt = ReflectionPrompt(
+                                                            text: prompt.text,
+                                                            type: .guided,
+                                                            description: nil
+                                                        )
+                                                        reflectionSessionManager.updateGuidedPrompt(updatedPrompt)
+                                                    }
+                                                } else {
+                                                    let updatedPrompt = ReflectionPrompt(
+                                                        text: "",
+                                                        type: .guided,
+                                                        description: nil
+                                                    )
+                                                    reflectionSessionManager.updateGuidedPrompt(updatedPrompt)
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -555,6 +623,9 @@ struct RecordLoopsView: View {
         case .guided:
             primaryColor = Color(hex: "4C5B61")
             secondaryColor = Color(hex: "94A7B7")
+        case .sleepCheckin:
+            primaryColor = Color(hex: "F5F5F5")
+            secondaryColor = Color(hex: "B7A284")
         }
         
         return Button(action: {
@@ -1062,7 +1133,7 @@ struct CategorySelectionView: View {
                                 .fill(.white)
                         )
                         .onTapGesture {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            withAnimation(.easeInOut(duration: 0.3)) {
                                 onCategorySelected(category, false)
                             }
                         }
@@ -1074,6 +1145,7 @@ struct CategorySelectionView: View {
         }
     }
 }
+
 struct InitialReflectionVisual: View {
     let index: Int
     private let accentColor = Color(hex: "A28497")
@@ -1100,27 +1172,38 @@ struct InitialReflectionVisual: View {
                 )
                 
                 let timeOffset = timeline.date.timeIntervalSinceReferenceDate
+                // Bound the phase to prevent potential floating-point precision issues
+                let boundedTimeOffset = timeOffset.remainder(dividingBy: 2 * .pi)
+                let phase = boundedTimeOffset * 0.5
                 
                 // Wave layers
                 for i in 0..<3 {
-                    let phase = timeOffset * 0.5
                     var path = Path()
                     let width = size.width
                     let height = size.height
                     
-                    // Optimize steps for smoother performance
+                    // Pre-calculate some constants outside the inner loop
+                    let heightFactor = height * 0.1
+                    let baseHeight = height * 0.6
+                    let layerPhase = phase + Double(i)
+                    
+                    // Optimize steps while maintaining visual quality
                     let steps = Int(width / 4)
                     let dx = width / CGFloat(steps)
                     
                     path.move(to: CGPoint(x: 0, y: height))
                     
+                    // Pre-calculate step values that don't change in the loop
+                    let stepScale = 1.0 / 100.0
+                    
                     for step in 0...steps {
                         let x = CGFloat(step) * dx
-                        let relativeX = x / 100
-                        let sine = sin(relativeX + phase + Double(i))
-                        let cosine = cos(relativeX * 2 + phase + Double(i))
-                        let heightFactor = height * 0.1
-                        let y = height * 0.6 + CGFloat(sine * cosine) * heightFactor
+                        let relativeX = x * stepScale
+                        
+                        // Combined sine-cosine calculation remains the same for visual identity
+                        let sine = sin(relativeX + layerPhase)
+                        let cosine = cos(relativeX * 2 + layerPhase)
+                        let y = baseHeight + CGFloat(sine * cosine) * heightFactor
                         
                         path.addLine(to: CGPoint(x: x, y: y))
                     }
@@ -1134,21 +1217,6 @@ struct InitialReflectionVisual: View {
                         with: .color(baseColor)
                     )
                 }
-                
-//                for i in 0..<3 {
-//                    let rectPhase = sin(timeOffset + Double(i) * 0.3) * 0.4
-//                    let rect = CGRect(
-//                        x: size.width/2 + CGFloat(i * 30) - 30,
-//                        y: size.height * 0.4,
-//                        width: 4,
-//                        height: 20
-//                    )
-//                    context.opacity = rectPhase
-//                    context.fill(
-//                        RoundedRectangle(cornerRadius: 2).path(in: rect),
-//                        with: .color(blueColor)
-//                    )
-//                }
             }
         }
     }
@@ -1171,6 +1239,8 @@ struct TransitioningBackground: View {
                             InitialReflectionVisual(index: 0)
                         case .guided:
                             InitialReflectionVisual(index: 1)
+                        case .sleepCheckin:
+                            Color(hex: "F5F5F5")
                         }
                     }
                     .opacity(currentTab == index ? 1 : 0)

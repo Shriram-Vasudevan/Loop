@@ -18,7 +18,6 @@ struct ViewPastLoopView: View {
     @Environment(\.dismiss) var dismiss
     
     @State private var showTranscript = false
-    @State private var contentOpacity: CGFloat = 0
     @State private var waveformData: [CGFloat] = Array(repeating: 0, count: 60)
     @State private var showBars = false
     let accentColor = Color(hex: "A28497")
@@ -83,7 +82,6 @@ struct ViewPastLoopView: View {
         }
         .safeAreaInset(edge: .leading) { Color.clear.frame(width: 0) }
         .safeAreaInset(edge: .trailing) { Color.clear.frame(width: 0) }
-        .opacity(contentOpacity)
     }
     
     private var promptHeader: some View {
@@ -190,7 +188,7 @@ struct ViewPastLoopView: View {
     private func setupInitialAnimation() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             withAnimation(.easeOut(duration: 0.5)) {
-                contentOpacity = 1
+
                 generateWaveFormData()
             }
         }
