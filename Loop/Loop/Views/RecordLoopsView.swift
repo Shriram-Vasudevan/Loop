@@ -55,10 +55,15 @@ struct RecordLoopsView: View {
     
     var body: some View {
         ZStack {
-            TransitioningBackground(
-                currentTab: currentTab,
-                prompts: reflectionSessionManager.prompts
-            )
+            if !UserDefaults.standard.hasSetupDailyReflection {
+                Color(hex: "F5F5F5")
+                    .edgesIgnoringSafeArea(.all)
+            } else {
+                TransitioningBackground(
+                    currentTab: currentTab,
+                    prompts: reflectionSessionManager.prompts
+                )
+            }
             
             if !UserDefaults.standard.hasSetupDailyReflection {
                 firstLaunchOrQuietSpaceScreen
@@ -72,7 +77,7 @@ struct RecordLoopsView: View {
                     TabView(selection: $currentTab) {
                         ForEach(reflectionSessionManager.prompts.indices, id: \.self) { index in
                             ZStack {
-                                if reflectionSessionManager.completedPrompts.contains(index) && reflectionSessionManager.prompts[index].type != .moodCheckIn || reflectionSessionManager.prompts[index].type != .sleepCheckin {
+                                if reflectionSessionManager.completedPrompts.contains(index) && (reflectionSessionManager.prompts[index].type != .moodCheckIn && reflectionSessionManager.prompts[index].type != .sleepCheckin) {
                                     ReflectionCompletedView()
                                 } else if isPostRecording && (reflectionSessionManager.prompts[index].type == .recording || reflectionSessionManager.prompts[index].type == .guided)  {
                                     postRecordingView
@@ -190,11 +195,11 @@ struct RecordLoopsView: View {
             
             TodaysReflectionPlanView()
             
-            Spacer()
+//            Spacer()
             
             VStack(spacing: 16) {
                 Button(action: {
-                    withAnimation {
+                    withAnimation (.easeInOut(duration: 1)) {
                         let selectedCards = reflectionCardManager.getOrderedCards()
                         reflectionSessionManager.setupSession(withCards: selectedCards)
                         UserDefaults.standard.hasSetupDailyReflection = true
@@ -213,7 +218,7 @@ struct RecordLoopsView: View {
 
 
             }
-            .padding(.top, 40)
+            .padding(.top, 10)
         }
         .padding(.top, 45)
         .padding(.bottom, 40)
@@ -266,7 +271,8 @@ struct RecordLoopsView: View {
                     VStack {
                         MoodCheckInView(
                             dayRating: $dayRating,
-                            isEditable: true
+                            isEditable: true,
+                            isOpenedFromPlus: false
                         ) {
                             reflectionSessionManager.markPromptComplete(at: tabIndex)
                         }
@@ -732,34 +738,10 @@ struct RecordLoopsView: View {
     
     private var firstLaunchOrQuietSpaceScreen: some View {
         Group {
-            if isFirstLaunch {
-                welcomeView
-                    .transition(.opacity.combined(with: .scale))
-            } else {
-                initialView
-                    .transition(.opacity.combined(with: .scale))
-            }
+            initialView
+                .transition(.opacity.combined(with: .scale))
         }
         .animation(.easeInOut(duration: 0.5), value: isFirstLaunch)
-    }
-    
-    private var welcomeView: some View {
-        VStack(spacing: 24) {
-            Text("it's time to loop")
-                .font(.system(size: 36, weight: .ultraLight))
-                .foregroundColor(textColor)
-                .multilineTextAlignment(.center)
-            
-            FloatingElements()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                withAnimation {
-                    isFirstLaunch = false
-                }
-            }
-        }
     }
 
     private func toggleRecording() {

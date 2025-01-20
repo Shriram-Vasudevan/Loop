@@ -20,38 +20,39 @@ class AIPromptManager {
     func generatePrompt() async -> String {
         let responses = await getTodaysResponses()
         
-        if responses.isEmpty || (responses.count == 1 && responses[0].question.contains("feeling today")) {
+        // If no significant responses, use fallback prompts
+        if responses.isEmpty || responses.allSatisfy({ $0.question.contains("feeling today") }) {
             return ReflectionSessionManager.shared.getRandomPrompt(for: .emotionalWellbeing)?.text ?? getFallbackPrompt(for: .emotionalWellbeing)
         }
         
+        // Filter significant responses, ignoring basic mood questions
         let significantResponses = responses.filter { !$0.question.contains("feeling today") }
         
-        let formattedResponses = significantResponses.map { "\($0.question): \($0.answer)" }
-            .joined(separator: "\n\n")
-            
-        let moodContext = responses.first { $0.question.contains("feeling today") }
-       
+        // Format the responses for the AI
+        let formattedResponses = significantResponses.enumerated().map { index, response in
+            "\(index + 1). \(response.question): \(response.answer)"
+        }.joined(separator: "\n\n")
+        
         let prompt = """
-        Based on these responses:
+        Based on these reflections:
 
         \(formattedResponses)
 
-        \(moodContext != nil ? "Context: User rated their mood as \(moodContext!.answer)" : "")
+        Create ONE clear, concise, and specific follow-up question that:
+        1. References a theme, situation, or activity mentioned in the responses if it adds value, without being overly personal.
+           - Avoid mentioning specific people, names, or sensitive personal details (e.g., "your boss" or "the argument you had").
+           - It is acceptable to reference hobbies, activities, or general experiences (e.g., "your creative hobby" or "a challenging task").
+           - Be explicit and descriptive without using ambiguous phrasing like "this" or "that."
+        2. Encourages thoughtful reflection while being approachable and conversational.
+        3. Adds variety to phrasing, avoiding repetitive structures like "How has [X] influenced [Y]?" or "What inspired [Z]?"
+        4. Stays under 20 words and avoids abstract, generic questions like "What patterns do you notice?"
 
-        Generate ONE reflective question that:
-        1. Directly references themes or ideas from their specific responses
-        2. Shows you've understood and analyzed their unique situation
-        3. Makes connections between different points they've mentioned
-        4. Avoids generic questions that could apply to any response
-        5. Remains specific while protecting privacy (no names/places)
+        Examples for inspiration (but not to reuse):
+        - If they mention trying something new: "What surprised you most about trying [activity] today?"
+        - If they describe a challenge: "What made handling [specific challenge] easier or harder than usual?"
+        - If they mention emotions: "What helped you embrace or move past feeling [emotion] today?"
 
-        Examples based on sample responses:
-        BAD: "What patterns do you notice in your life?" (too generic)
-        BAD: "How do you feel about your situation?" (could apply to anything)
-        GOOD: If they discussed work-life balance: "How does your approach to managing deadlines reflect your broader life priorities?"
-        GOOD: If they mentioned learning new skills: "What similarities do you notice between how you tackle new challenges now versus earlier attempts?"
-
-        Response: Only the question, no other text.
+        Response: Only the question, no additional text.
         """
         
         do {
@@ -59,15 +60,14 @@ class AIPromptManager {
                 "model": "gpt-4",
                 "messages": [
                     ["role": "system", "content": """
-                        You are an expert at creating varied, insightful reflection prompts.
-                        You excel at identifying subtle patterns and asking questions that encourage deep self-discovery.
-                        Never default to simple cause-and-effect questions about mood or emotions.
-                        Focus on generating diverse question structures that explore different aspects of self-reflection.
+                        You are an expert in creating simple, reflective follow-up questions.
+                        Your goal is to encourage users to think deeply without overwhelming them.
+                        Avoid direct references to mood ratings. Focus on actionable follow-ups based on their responses.
                         """],
                     ["role": "user", "content": prompt]
                 ],
-                "temperature": 0.8,
-                "max_tokens": 100
+                "temperature": 0.6,
+                "max_tokens": 50 // Ensures short, concise questions
             ]
             
             var request = URLRequest(url: URL(string: endpoint)!)
@@ -88,6 +88,7 @@ class AIPromptManager {
         
         return ReflectionSessionManager.shared.getRandomPrompt(for: .emotionalWellbeing)?.text ?? getFallbackPrompt(for: .emotionalWellbeing)
     }
+
 
     private func getTodaysResponses() async -> [(question: String, answer: String)] {
         var responses: [(question: String, answer: String)] = []

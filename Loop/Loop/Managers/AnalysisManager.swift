@@ -19,6 +19,8 @@ class AnalysisManager: ObservableObject {
     @Published private(set) var analysisState: AnalysisState = .notStarted
     @Published var currentDailyAnalysis: DailyAnalysis?
     
+    @Published private(set) var isFollowUpCompletedToday: Bool = false
+    
     private let dailyAnalysisKey = "DailyAnalysisStore"
         
     lazy var persistentContainer: NSPersistentContainer = {
@@ -42,6 +44,7 @@ class AnalysisManager: ObservableObject {
     init() {
         print("[AnalysisManager] Initializing AnalysisManager")
         loadTodaysAnalysis()
+        isFollowUpCompletedToday = UserDefaults.standard.bool(forKey: "FollowUpCompletedToday")
     }
     
     func performAnalysis() async {
@@ -199,5 +202,10 @@ class AnalysisManager: ObservableObject {
             print("[AnalysisManager] Saved notable element of type: \(element.type.rawValue)")
         }
         print("[AnalysisManager] ✅ Completed saving all notable elements")
+    }
+    
+    func markFollowUpComplete() {
+        isFollowUpCompletedToday = true
+        UserDefaults.standard.set(true, forKey: "FollowUpCompletedToday")
     }
 }

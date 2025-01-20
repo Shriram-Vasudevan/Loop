@@ -34,7 +34,7 @@ class AIAnalyzer {
         - tone: [SELECT ONE: positive/neutral/reflective/challenging]
 
         2. Notable Elements
-        For each category, either rephrase what they said in second person or write "none" if not present. Don't force insights or reuse content across categories.
+        For each category, assign each response to only one category where it fits best. Do not reuse content across categories.
 
         - insights: Describe any new awareness or understanding they've gained
         - wins: Describe any achievements or progress they've made
@@ -61,7 +61,7 @@ class AIAnalyzer {
         let requestBody: [String: Any] = [
             "model": "gpt-4",
             "messages": [
-                ["role": "system", "content": "You are an expert at analyzing personal reflections while maintaining privacy. Focus on finding clear elements rather than forcing insights."],
+                ["role": "system", "content": "You are an expert at analyzing personal reflections while maintaining privacy. Focus on finding clear elements rather than forcing insights. Assign each response to only one category to avoid redundancy."],
                 ["role": "user", "content": prompt]
             ],
             "temperature": 0.3,
@@ -83,6 +83,7 @@ class AIAnalyzer {
         
         return try parseAIResponse(content)
     }
+
     
     private func parseAIResponse(_ response: String) throws -> DailyAIAnalysisResult {
         let lines = response.components(separatedBy: .newlines)
@@ -146,7 +147,14 @@ class AIAnalyzer {
                     case "mood":
                         switch key {
                         case "rating":
-                            moodRating = Double(value.components(separatedBy: CharacterSet(charactersIn: "0123456789.")).joined())
+                            let numericValue = value.components(separatedBy: CharacterSet.decimalDigits.inverted).joined(separator: ".").trimmingCharacters(in: .whitespacesAndNewlines)
+                            moodRating = Double(numericValue)
+
+                            if let moodRating = moodRating {
+                                print("Parsed mood rating: \(moodRating)")
+                            } else {
+                                print("Failed to parse mood rating from value: \(value)")
+                            }
                         case "sleep":
                             sleepRating = Int(value.components(separatedBy: CharacterSet.decimalDigits.inverted).joined())
                         default:
@@ -252,6 +260,8 @@ class AIAnalyzer {
                 question: "How are you feeling today?",
                 answer: "Rated mood as \(Double(moodRating)) out of 10"
             ))
+            
+            print("the mooding rating: \(moodRating)")
         }
         
         let cachedResponses = ReflectionSessionManager.shared.getTodaysCachedResponses()

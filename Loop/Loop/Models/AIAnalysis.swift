@@ -60,7 +60,8 @@ struct MoodCorrelation: Codable {
     let sleep: Int?
 }
 
-struct FollowUp: Codable {
+struct FollowUp: Codable, Identifiable {
+    let id: String = UUID().uuidString
     let question: String
     let purpose: String
 }

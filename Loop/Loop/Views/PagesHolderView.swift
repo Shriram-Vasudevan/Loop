@@ -41,7 +41,7 @@ struct PagesHolderView: View {
                         case .trends:
 //                            InsightsView()
 //                            Text("oops")
-                            TodayInsightsView()
+                            TodaysInsightsView()
                         }
                     }
                     
@@ -131,7 +131,7 @@ struct PagesHolderView: View {
                 AddSuccessView()
             }
             .fullScreenCover(isPresented: $showMoodCheckInSheet) {
-                MoodCheckInView(dayRating: $dayRating, isEditable: true)
+                MoodCheckInView(dayRating: $dayRating, isEditable: true, isOpenedFromPlus: true)
             }
         }
     }

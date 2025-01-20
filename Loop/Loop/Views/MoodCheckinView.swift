@@ -11,9 +11,12 @@ import CoreData
 struct MoodCheckInView: View {
     @Binding var dayRating: Double
     let isEditable: Bool
-    
+    let isOpenedFromPlus: Bool
+
     var onCompletion: (() -> Void)?
 
+    private let accentColor = Color(hex: "A28497")
+    
     private let sadColor = Color(hex: "1E3D59")
     private let neutralColor = Color(hex: "94A7B7")
     private let happyColor = Color(hex: "B784A7")
@@ -21,15 +24,19 @@ struct MoodCheckInView: View {
     @ObservedObject private var checkinManager: DailyCheckinManager
     @State private var isAnimating = false
     
-    init(dayRating: Binding<Double>, isEditable: Bool, onCompletion: (() -> Void)? = nil) {
+    @Environment(\.dismiss) var dismiss
+    
+    init(dayRating: Binding<Double>, isEditable: Bool, isOpenedFromPlus: Bool, onCompletion: (() -> Void)? = nil) {
         self._dayRating = dayRating
+        self.isOpenedFromPlus = isOpenedFromPlus
         self.isEditable = isEditable
         self.onCompletion = onCompletion
         self.checkinManager = DailyCheckinManager.shared
     }
     
-    init(dayRating: Binding<Double>, isEditable: Bool, previewManager: DailyCheckinManager) {
+    init(dayRating: Binding<Double>, isEditable: Bool, isOpenedFromPlus: Bool, previewManager: DailyCheckinManager) {
         self._dayRating = dayRating
+        self.isOpenedFromPlus = isOpenedFromPlus
         self.isEditable = isEditable
         self.onCompletion = nil
         self.checkinManager = previewManager
@@ -37,6 +44,21 @@ struct MoodCheckInView: View {
     
     var body: some View {
         VStack(spacing: 48) {
+            if isOpenedFromPlus {
+                HStack {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 20, weight: .light))
+                            .foregroundColor(accentColor.opacity(0.8))
+                    }
+                    
+                    
+                    Spacer()
+                }
+                Spacer()
+            }
             VStack(spacing: 8) {
                 Text("HOW ARE YOU FEELING TODAY?")
                     .font(.system(size: 13, weight: .medium))
@@ -113,6 +135,10 @@ struct MoodCheckInView: View {
                     .tracking(1.5)
                 }
                 .padding(.horizontal, 20)
+            }
+            
+            if isOpenedFromPlus {
+                Spacer()
             }
         }
         .padding(32)
@@ -205,7 +231,7 @@ struct PreviewWrapper: View {
             MoodCheckInView(
                 dayRating: $rating,
                 isEditable: true,
-                previewManager: PreviewDailyCheckinManager()
+                isOpenedFromPlus: false, previewManager: PreviewDailyCheckinManager()
             )
         }
     }

@@ -5,53 +5,53 @@
 ////  Created by Shriram Vasudevan on 12/29/24.
 ////
 //
-//import SwiftUI
+import SwiftUI
+
+struct ProgressStateView: View {
+    let icon: String
+    let title: String
+    let description: String
+    var progress: Float? = nil
+    var isLoading: Bool = false
+    let accentColor: Color
+    let textColor: Color
+    
+    @State private var rotation: Double = 0
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            WavePattern()
+                .fill(accentColor.opacity(0.7))
+                .frame(height: 60)
+            
+            VStack(spacing: 8) {
+                Text(title)
+                    .font(.system(size: 13, weight: .medium))
+                    .tracking(1.5)
+                    .foregroundColor(textColor.opacity(0.6))
+                
+                Text(description)
+                    .font(.system(size: 17))
+                    .foregroundColor(textColor)
+                    .multilineTextAlignment(.center)
+                
+//                Image(systemName: icon)
+//                    .font(.system(size: 48))
+//                    .foregroundColor(accentColor)
+//                    .rotationEffect(.degrees(isLoading ? rotation : 0))
+//                    .onAppear {
+//                        if isLoading {
+//                            withAnimation(Animation.linear(duration: 2).repeatForever(autoreverses: false)) {
+//                                rotation = 360
+//                            }
+//                        }
+//                    }
 //
-//struct ProgressStateView: View {
-//    let icon: String
-//    let title: String
-//    let description: String
-//    var progress: Float? = nil
-//    var isLoading: Bool = false
-//    let accentColor: Color
-//    let textColor: Color
-//    
-//    @State private var rotation: Double = 0
-//    
-//    var body: some View {
-//        VStack(spacing: 20) {
-//            WavePattern()
-//                .fill(accentColor.opacity(0.7))
-//                .frame(height: 60)
-//            
-//            VStack(spacing: 8) {
-//                Text(title)
-//                    .font(.system(size: 13, weight: .medium))
-//                    .tracking(1.5)
-//                    .foregroundColor(textColor.opacity(0.6))
-//                
-//                Text(description)
-//                    .font(.system(size: 17))
-//                    .foregroundColor(textColor)
-//                    .multilineTextAlignment(.center)
-//                
-////                Image(systemName: icon)
-////                    .font(.system(size: 48))
-////                    .foregroundColor(accentColor)
-////                    .rotationEffect(.degrees(isLoading ? rotation : 0))
-////                    .onAppear {
-////                        if isLoading {
-////                            withAnimation(Animation.linear(duration: 2).repeatForever(autoreverses: false)) {
-////                                rotation = 360
-////                            }
-////                        }
-////                    }
-////
-//            }
-//        }
-//        .frame(height: 150)
-//    }
-//}
+            }
+        }
+        .frame(height: 150)
+    }
+}
 //
 //struct ProgressBar: View {
 //    let value: Float

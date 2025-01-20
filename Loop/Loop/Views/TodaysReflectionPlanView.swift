@@ -24,7 +24,7 @@ struct TodaysReflectionPlanView: View {
     var body: some View {
         VStack(spacing: 24) {
             HStack {
-                Text("TODAY'S REFLECTION")
+                Text("TODAY'S PLAN")
                     .font(.system(size: 13, weight: .medium))
                     .tracking(1.5)
                     .foregroundColor(textColor.opacity(0.5))
@@ -48,7 +48,9 @@ struct TodaysReflectionPlanView: View {
                     }
                 }
                 .padding(.horizontal, 2)
+                .padding(.top, 3)
             }
+            .scrollIndicators(.hidden)
         }
         .fullScreenCover(isPresented: $showingEditView) {
             EditPlanView()
