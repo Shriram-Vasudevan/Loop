@@ -511,7 +511,7 @@ class LoopManager: ObservableObject {
     }
 
     
-    func loadMonthData(monthId: MonthIdentifier) async {
+    func loadMonthData(monthId: MonthIdentifier) async -> MonthSummary? {
         await MainActor.run {
             self.isLoadingMonthData = true
             do { self.isLoadingMonthData = false }
@@ -526,10 +526,13 @@ class LoopManager: ObservableObject {
             let selectedMonthSummary = MonthSummary(year: monthId.year, month: monthId.month, totalEntries: selectedMonthCloudSummary.loops.count + selectedMonthLocalSummary.loops.count, completionRate: 0.0, loops: Array(combinedLoops))
             await MainActor.run {
                 self.selectedMonthSummary = selectedMonthSummary
+                return selectedMonthSummary
             }
         } catch {
             print("Error loading month data: \(error)")
         }
+        
+        return nil
     }
     
     func loadYearData(year: Int) async {

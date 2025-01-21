@@ -67,7 +67,6 @@ struct ReflectionCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Content Section
             VStack(alignment: .center, spacing: 6) {
                 Text(card.title)
                     .font(.system(size: 15, weight: .medium))
@@ -83,7 +82,6 @@ struct ReflectionCard: View {
         .padding(16)
         .background(
             ZStack {
-                // Gradient background
                 LinearGradient(
                     gradient: Gradient(colors: [
                         lightMauve.opacity(0.3),
@@ -92,8 +90,7 @@ struct ReflectionCard: View {
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
-                
-                // Geometric pattern
+
                 cardPattern
                     .opacity(0.2)
             }

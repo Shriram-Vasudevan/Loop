@@ -199,7 +199,7 @@ struct RecordLoopsView: View {
             
             VStack(spacing: 16) {
                 Button(action: {
-                    withAnimation (.easeInOut(duration: 1)) {
+                    withAnimation (.smooth(duration: 0.4)) {
                         let selectedCards = reflectionCardManager.getOrderedCards()
                         reflectionSessionManager.setupSession(withCards: selectedCards)
                         UserDefaults.standard.hasSetupDailyReflection = true
@@ -811,7 +811,7 @@ struct RecordLoopsView: View {
                 prompt: currentPrompt.text,
                 isDailyLoop: true,
                 isFollowUp: false,
-                isSuccess: true,
+                isSuccess: false,
                 isUnguided: false
             )
             

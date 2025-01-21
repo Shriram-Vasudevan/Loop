@@ -7,69 +7,59 @@
 
 import Foundation
 
-enum CommunicationStyle: String, Codable {
-    case analytical
-    case emotional
-    case practical
-    case reflective
-}
-
-enum TopicCategory: String, Codable, CaseIterable {
-    case work
-    case personal
-    case relationships
-    case health
-    case learning
-    case creativity
-    case purpose
-    case wellbeing
-    case growth
-}
-
-enum ToneCategory: String, Codable {
-    case positive
-    case neutral
-    case reflective
-    case challenging
-}
-
-// MARK: - Daily Analysis Models
-
-struct DailyExpression: Codable {
-    let style: CommunicationStyle
-    let topics: Set<TopicCategory>
-    let tone: ToneCategory
-}
-
-struct NotableElement: Codable {
-    let type: ElementType
-    let content: String
-    
-    enum ElementType: String, Codable {
-        case insight
-        case win
-        case challenge
-        case positive
-        case strategy
-        case intention
-    }
-}
-
-struct MoodCorrelation: Codable {
-    let rating: Double?
-    let sleep: Int?
-}
-
-struct FollowUp: Codable, Identifiable {
-    let id: String = UUID().uuidString
-    let question: String
-    let purpose: String
-}
-
 struct DailyAIAnalysisResult: Codable {
     let date: Date
-    let expression: DailyExpression
-    let notableElements: [NotableElement]
-    let mood: MoodCorrelation
-    let followUp: FollowUp  // New field
+    let moodData: MoodData?
+    let sleepData: SleepData?
+    let standoutAnalysis: StandoutAnalysis?
+    let summaryAnalysis: SummaryAnalysis?
+    let freeformAnalysis: FreeformAnalysis?
+    let fillerAnalysis: FillerAnalysis
+}
+struct MoodData: Codable {
+    let exists: Bool
+    let rating: Double?
+}
+
+struct SleepData: Codable {
+    let exists: Bool
+    let hours: Double?
+}
+
+struct StandoutAnalysis: Codable {
+    let exists: Bool
+    let primaryTopic: TopicCategory?
+    let sentiment: SentimentCategory?
+    let keyMoment: String?
+}
+
+struct SummaryAnalysis: Codable {
+    let exists: Bool
+    let primaryTopic: TopicCategory?
+    let sentiment: SentimentCategory?
+}
+
+struct FreeformAnalysis: Codable {
+    let exists: Bool
+    let primaryTopic: TopicCategory?
+    let sentiment: SentimentCategory?
+}
+
+struct FillerAnalysis: Codable {
+    let totalCount: Int
+}
+
+enum TopicCategory: String, Codable {
+    case work
+    case relationships
+    case health
+    case growth
+    case creativity
+    case purpose
+}
+
+enum SentimentCategory: String, Codable {
+    case positive
+    case neutral
+    case negative
 }

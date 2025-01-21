@@ -38,21 +38,41 @@ class AIPromptManager {
 
         \(formattedResponses)
 
-        Create ONE clear, concise, and specific follow-up question that:
-        1. References a theme, situation, or activity mentioned in the responses if it adds value, without being overly personal.
-           - Avoid mentioning specific people, names, or sensitive personal details (e.g., "your boss" or "the argument you had").
-           - It is acceptable to reference hobbies, activities, or general experiences (e.g., "your creative hobby" or "a challenging task").
-           - Be explicit and descriptive without using ambiguous phrasing like "this" or "that."
-        2. Encourages thoughtful reflection while being approachable and conversational.
-        3. Adds variety to phrasing, avoiding repetitive structures like "How has [X] influenced [Y]?" or "What inspired [Z]?"
-        4. Stays under 20 words and avoids abstract, generic questions like "What patterns do you notice?"
+        Generate ONE follow-up question that helps the user explore broader patterns in their life. The question should build upon their shared experiences while encouraging deeper reflection.
 
-        Examples for inspiration (but not to reuse):
-        - If they mention trying something new: "What surprised you most about trying [activity] today?"
-        - If they describe a challenge: "What made handling [specific challenge] easier or harder than usual?"
-        - If they mention emotions: "What helped you embrace or move past feeling [emotion] today?"
+        CORE PRINCIPLES:
+        1. Move from specific experiences to broader patterns in their life
+        2. Build on emotional themes or behaviors they've mentioned
+        3. Help them discover connections between different aspects of their life
+        4. Use their own perspective as a foundation
 
-        Response: Only the question, no additional text.
+        EXAMPLES:
+
+        User shares: "Finally finished that big project at work. Felt great to complete it, even though it was stressful. The team really came together at the end."
+
+        ✓ Good: "How do challenging situations tend to affect your relationships with others?"
+        (Expands from specific project to broader pattern about challenges and connections)
+
+        ✗ Bad: "What made the project stressful?"
+        (Too specific, focuses on past details they've already discussed)
+
+        GUIDELINES:
+        - Use simple, conversational language
+        - Make questions easy to answer through reflection
+        - Stay under 15 words
+        - Focus on patterns and themes rather than specific events
+        - Build on their perspective without contradicting it
+        - Connect their experiences to broader life patterns
+
+        AVOID:
+        - Questions about details they've already shared
+        - Multiple questions in one
+        - Complex or abstract language
+        - Yes/no questions
+        - Questioning their experiences or feelings
+        - Overly specific focus on single events
+
+        Response format: Return only the question, nothing else.
         """
         
         do {

@@ -51,7 +51,7 @@ class ReflectionCardManager: ObservableObject {
             ReflectionTemplate(
                 id: UUID(),
                 name: "Default",
-                selectedCards: [.moodCheckin, .daySummary, .standOut, .aiGenerated],
+                selectedCards: [.moodCheckin, .standOut, .aiGenerated],
                 isDefault: true
             )
         }

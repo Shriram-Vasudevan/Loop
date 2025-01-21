@@ -22,7 +22,7 @@ class AnalysisManager: ObservableObject {
     @Published private(set) var isFollowUpCompletedToday: Bool = false
     
     private let dailyAnalysisKey = "DailyAnalysisStore"
-        
+    
     lazy var persistentContainer: NSPersistentContainer = {
         print("[AnalysisManager] Initializing persistent container")
         let container = NSPersistentContainer(name: "LoopData")
@@ -70,9 +70,9 @@ class AnalysisManager: ObservableObject {
                 print("[AnalysisManager] Starting quantitative analysis")
                 analysisState = .analyzingQuantitative
             }
-
+            
             async let quantitativeMetrics = calculateQuantitativeMetrics(responses)
-
+            
             await MainActor.run {
                 print("[AnalysisManager] Starting AI analysis")
                 analysisState = .analyzingAI
@@ -110,7 +110,7 @@ class AnalysisManager: ObservableObject {
         let totalWords = responses.reduce(0) { total, response in
             total + response.transcript.split(separator: " ").count
         }
-
+        
         let totalDuration = responses.reduce(0.0) { total, response in
             total + getDuration(for: response)
         }
@@ -123,6 +123,22 @@ class AnalysisManager: ObservableObject {
             totalDurationSeconds: totalDuration,
             averageWordsPerRecording: Double(totalWords) / count,
             averageDurationPerRecording: totalDuration / count
+        )
+    }
+    
+    private func calculateQuantitativeMetrics(_ transcript: String) -> QuantitativeMetrics {
+        let totalWords = transcript.split(separator: " ").count
+        
+        let totalDuration = getDuration(for: transcript)
+        
+        let count = 1
+        print("[AnalysisManager] Quantitative metrics calculated - Words: \(totalWords), Duration: \(totalDuration)s")
+        
+        return QuantitativeMetrics(
+            totalWordCount: totalWords,
+            totalDurationSeconds: totalDuration,
+            averageWordsPerRecording: Double(totalWords),
+            averageDurationPerRecording: totalDuration
         )
     }
     
@@ -155,53 +171,132 @@ class AnalysisManager: ObservableObject {
         return 0.0
     }
     
-    func saveDayMetricsToCoreData(analysis: DailyAnalysis) {
-        print("[AnalysisManager] Starting to save metrics to Core Data")
-        guard let entityDescription = NSEntityDescription.entity(forEntityName: "MetricDayEntity", in: context) else {
-            print("[AnalysisManager] 🚨 Failed to get MetricDayEntity description")
-            return
-        }
-        
-        let metricDay = NSManagedObject(entity: entityDescription, insertInto: context)
-        print("[AnalysisManager] Created new MetricDayEntity")
-        
-        metricDay.setValue(analysis.date, forKey: "date")
-        metricDay.setValue(Int(analysis.quantitativeMetrics.totalWordCount), forKey: "totalWords")
-        metricDay.setValue(analysis.quantitativeMetrics.totalDurationSeconds, forKey: "recordingSeconds")
-        metricDay.setValue(Double(analysis.quantitativeMetrics.totalWordCount) / (analysis.quantitativeMetrics.totalDurationSeconds / 60.0), forKey: "wordsPerMinute")
-        metricDay.setValue(Double(analysis.aiAnalysis.mood.rating ?? -1.0), forKey: "moodRating")
-        metricDay.setValue(Int(analysis.aiAnalysis.mood.sleep ?? -1), forKey: "sleepRating")
-        metricDay.setValue(analysis.aiAnalysis.expression.topics.first?.rawValue, forKey: "primaryTopic")
-        print("[AnalysisManager] Set all metric values for MetricDayEntity")
-        
-        saveNotableElementsToCoreData(analysis.aiAnalysis.notableElements, context: context, mood: analysis.aiAnalysis.mood.rating ?? -1.0)
-                
-        do {
-            try context.save()
-            print("[AnalysisManager] ✅ Successfully saved all metrics to Core Data")
-        } catch {
-            print("[AnalysisManager] 🚨 Failed to save metrics to Core Data: \(error)")
-        }
+    private func getDuration(for transcript: String) -> Double {
+        print("[AnalysisManager] Getting duration for response")
+        return 0.0
     }
     
-    private func saveNotableElementsToCoreData(_ elements: [NotableElement], context: NSManagedObjectContext, mood: Double) {
-        guard let momentEntity = NSEntityDescription.entity(forEntityName: "SignificantMomentEntity", in: context) else {
-            print("[AnalysisManager] 🚨 Failed to get SignificantMoment entity description")
-            return
+    
+    func performAnalysisForUnguidedEntry(transcript: String) {
+        let metrics = calculateQuantitativeMetrics(transcript)
+        let today = Calendar.current.startOfDay(for: Date()) // Get the start of the current day
+
+        print("[AnalysisManager] Starting to update metrics in Core Data")
+
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DayMetrics")
+        fetchRequest.predicate = NSPredicate(format: "date == %@", today as NSDate)
+        fetchRequest.fetchLimit = 1
+
+        do {
+            if let existingMetrics = try context.fetch(fetchRequest).first {
+                // Update existing metrics
+                let currentWords = existingMetrics.value(forKey: "totalWords") as? Int ?? 0
+                let currentDuration = existingMetrics.value(forKey: "totalDuration") as? Double ?? 0
+                let currentEntryCount = existingMetrics.value(forKey: "entryCount") as? Int ?? 0
+
+                existingMetrics.setValue(currentWords + metrics.totalWordCount, forKey: "totalWords")
+                existingMetrics.setValue(currentDuration + metrics.totalDurationSeconds, forKey: "totalDuration")
+                existingMetrics.setValue(currentEntryCount + 1, forKey: "entryCount")
+
+                try context.save()
+                print("[AnalysisManager] ✅ Successfully updated metrics in Core Data")
+            } else {
+                // Create new metrics for today
+                guard let dayMetricsEntity = NSEntityDescription.entity(forEntityName: "DayMetrics", in: context) else {
+                    print("[AnalysisManager] 🚨 Failed to get DayMetrics entity description")
+                    return
+                }
+
+                let newMetrics = NSManagedObject(entity: dayMetricsEntity, insertInto: context)
+                newMetrics.setValue(today, forKey: "date")
+                newMetrics.setValue(metrics.totalWordCount, forKey: "totalWords")
+                newMetrics.setValue(metrics.totalDurationSeconds, forKey: "totalDuration")
+                newMetrics.setValue(1, forKey: "entryCount")
+
+                try context.save()
+                print("[AnalysisManager] ✅ Successfully created new metrics in Core Data")
+            }
+        } catch {
+            print("[AnalysisManager] 🚨 Failed to update metrics in Core Data: \(error)")
         }
-        
-        elements.forEach { element in
-            print("The content: \(element.content) and type \(element.type)")
-            let moment = NSManagedObject(entity: momentEntity, insertInto: context)
-            moment.setValue(Date(), forKey: "date")
-            moment.setValue(element.content, forKey: "content")
-            moment.setValue(element.type.rawValue, forKey: "momentType")
-            moment.setValue(Double(mood), forKey: "associatedMood")
-            moment.setValue(element.type.rawValue, forKey: "topic")
-            moment.setValue(element.type == .win, forKey: "isWin")
-            print("[AnalysisManager] Saved notable element of type: \(element.type.rawValue)")
+    }
+
+    func saveDayMetricsToCoreData(analysis: DailyAnalysis) {
+        let today = Calendar.current.startOfDay(for: Date()) // Get the start of the current day
+
+        print("[AnalysisManager] Starting to save metrics to Core Data")
+
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DayMetrics")
+        fetchRequest.predicate = NSPredicate(format: "date == %@", today as NSDate)
+        fetchRequest.fetchLimit = 1
+
+        do {
+            if let existingMetrics = try context.fetch(fetchRequest).first {
+                // Update existing metrics
+                existingMetrics.setValue(analysis.aiAnalysis.moodData?.rating, forKey: "moodRating")
+                existingMetrics.setValue(analysis.aiAnalysis.sleepData?.hours, forKey: "sleepHours")
+                existingMetrics.setValue(analysis.quantitativeMetrics.totalWordCount, forKey: "totalWords")
+                existingMetrics.setValue(analysis.quantitativeMetrics.totalDurationSeconds, forKey: "totalDuration")
+                existingMetrics.setValue(analysis.aiAnalysis.fillerAnalysis.totalCount, forKey: "fillerWordCount")
+                existingMetrics.setValue(Date(), forKey: "timeOfEntry")
+                existingMetrics.setValue(analysis.aiAnalysis.standoutAnalysis?.primaryTopic?.rawValue, forKey: "primaryTopic")
+                existingMetrics.setValue(!ReflectionSessionManager.shared.getTodaysCachedResponses().isEmpty, forKey: "isCompleted")
+                existingMetrics.setValue(ReflectionSessionManager.shared.getTodaysCachedResponses().count, forKey: "entryCount")
+
+                if let standoutAnalysis = analysis.aiAnalysis.standoutAnalysis,
+                   let keyMoment = standoutAnalysis.keyMoment,
+                   let momentEntity = NSEntityDescription.entity(forEntityName: "KeyMoment", in: context) {
+                    
+                    let moment = NSManagedObject(entity: momentEntity, insertInto: context)
+                    moment.setValue(Date(), forKey: "date")
+                    moment.setValue(keyMoment, forKey: "content")
+                    moment.setValue(analysis.aiAnalysis.moodData?.rating, forKey: "associatedMood")
+                    moment.setValue(standoutAnalysis.primaryTopic?.rawValue, forKey: "topic")
+                    moment.setValue(standoutAnalysis.sentiment?.rawValue, forKey: "sentiment")
+                }
+                
+                try context.save()
+                print("[AnalysisManager] ✅ Successfully updated metrics in Core Data")
+            } else {
+                // Create new metrics for today
+                guard let dayMetricsEntity = NSEntityDescription.entity(forEntityName: "DayMetrics", in: context) else {
+                    print("[AnalysisManager] 🚨 Failed to get DayMetrics entity description")
+                    return
+                }
+
+                let metrics = NSManagedObject(entity: dayMetricsEntity, insertInto: context)
+
+                let responses = ReflectionSessionManager.shared.getTodaysCachedResponses()
+
+                metrics.setValue(today, forKey: "date")
+                metrics.setValue(analysis.aiAnalysis.moodData?.rating, forKey: "moodRating")
+                metrics.setValue(analysis.aiAnalysis.sleepData?.hours, forKey: "sleepHours")
+                metrics.setValue(analysis.quantitativeMetrics.totalWordCount, forKey: "totalWords")
+                metrics.setValue(analysis.quantitativeMetrics.totalDurationSeconds, forKey: "totalDuration")
+                metrics.setValue(analysis.aiAnalysis.fillerAnalysis.totalCount, forKey: "fillerWordCount")
+                metrics.setValue(Date(), forKey: "timeOfEntry")
+                metrics.setValue(analysis.aiAnalysis.standoutAnalysis?.primaryTopic?.rawValue, forKey: "primaryTopic")
+                metrics.setValue(!responses.isEmpty, forKey: "isCompleted")
+                metrics.setValue(responses.count, forKey: "entryCount")
+
+                if let standoutAnalysis = analysis.aiAnalysis.standoutAnalysis,
+                   let keyMoment = standoutAnalysis.keyMoment,
+                   let momentEntity = NSEntityDescription.entity(forEntityName: "KeyMoment", in: context) {
+                    
+                    let moment = NSManagedObject(entity: momentEntity, insertInto: context)
+                    moment.setValue(Date(), forKey: "date")
+                    moment.setValue(keyMoment, forKey: "content")
+                    moment.setValue(analysis.aiAnalysis.moodData?.rating, forKey: "associatedMood")
+                    moment.setValue(standoutAnalysis.primaryTopic?.rawValue, forKey: "topic")
+                    moment.setValue(standoutAnalysis.sentiment?.rawValue, forKey: "sentiment")
+                }
+                
+                try context.save()
+                print("[AnalysisManager] ✅ Successfully created new metrics in Core Data")
+            }
+        } catch {
+            print("[AnalysisManager] 🚨 Failed to save or update metrics in Core Data: \(error)")
         }
-        print("[AnalysisManager] ✅ Completed saving all notable elements")
     }
     
     func markFollowUpComplete() {

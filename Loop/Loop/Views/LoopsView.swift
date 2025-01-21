@@ -280,7 +280,7 @@ struct YearSection: View {
                         withAnimation {
                             selectedMonthId = monthId
                             Task {
-                                await loopManager.loadMonthData(monthId: monthId)
+                                let _  = await loopManager.loadMonthData(monthId: monthId)
                             }
                         }
                     }
@@ -366,7 +366,7 @@ struct MonthCard: View {
     
     private func loadSummary() async {
         do {
-            summary = try await LoopCloudKitUtility.fetchMonthData(monthId: monthId)
+            self.summary = await LoopManager.shared.loadMonthData(monthId: monthId)
         } catch {
             print("Error loading month summary: \(error)")
         }

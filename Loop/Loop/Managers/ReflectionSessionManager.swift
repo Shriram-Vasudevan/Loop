@@ -87,7 +87,7 @@ class ReflectionSessionManager: ObservableObject {
                 return ReflectionPrompt(
                     text: "What moment from today stands out most to you?",
                     type: .recording,
-                    description: "Was there something unique, surprising, or memorable about your day? It could be big or small—whatever stuck with you."
+                    description: "Share whatever you're thinking about today - perhaps a memorable event, realization, success, or even a challenge. Focus in on something that matters to you."
                 )
             case .aiGenerated:
                 return ReflectionPrompt(

@@ -302,6 +302,8 @@ struct RecordThematicLoopPromptsView: View {
                     prompt: currentPrompt,
                     isDailyLoop: false, isFollowUp: false, isSuccess: false, isUnguided: false
                 )
+                
+                AnalysisManager.shared.performAnalysisForUnguidedEntry(transcript: loop.1)
             }
             
             withAnimation {

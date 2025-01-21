@@ -69,9 +69,9 @@ struct AddSuccessView: View {
                         .font(.system(size: 16, weight: .regular))
                         .foregroundColor(.gray)
                 }
-            }
+            }.padding(.horizontal, 32)
             Spacer()
-            
+                                                                                                                                                                  
             Text("successes")
                 .font(.custom("PPNeueMontreal-Bold", size: 36))
                 .foregroundColor(textColor)
@@ -342,6 +342,8 @@ struct AddSuccessView: View {
                     isSuccess: true,
                     isUnguided: true
                 )
+                
+                AnalysisManager.shared.performAnalysisForUnguidedEntry(transcript: loop.1)
             }
         }
         

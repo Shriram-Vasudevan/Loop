@@ -252,6 +252,8 @@ struct RecordFreeResponseView: View {
                     isDailyLoop: true,
                     isFollowUp: false, isSuccess: false, isUnguided: true
                 )
+                
+                AnalysisManager.shared.performAnalysisForUnguidedEntry(transcript: loop.1)
             }
         }
     }

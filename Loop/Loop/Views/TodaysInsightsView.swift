@@ -86,24 +86,24 @@ struct TodaysInsightsView: View {
                 }
             }
             
-            // Mood Section
-            if let mood = analysis.aiAnalysis.mood.rating {
-                MoodInsightCard(rating: mood, sleep: analysis.aiAnalysis.mood.sleep)
-            }
-            
-            FollowUpCard(followUp: analysis.aiAnalysis.followUp)
-            
-            // Expression Analysis
-            if !analysis.aiAnalysis.expression.topics.isEmpty {
-                TopicsCard(topics: analysis.aiAnalysis.expression.topics)
-            }
-            
-            // Key Moments Section
-            if !analysis.aiAnalysis.notableElements.isEmpty {
-                KeyMomentsCard(elements: analysis.aiAnalysis.notableElements)
-            } else {
-                EmptyKeyMomentsCard()
-            }
+//            // Mood Section
+//            if let mood = analysis.aiAnalysis.mood.rating {
+//                MoodInsightCard(rating: mood, sleep: analysis.aiAnalysis.mood.sleep)
+//            }
+//            
+//            FollowUpCard(followUp: analysis.aiAnalysis.followUp)
+//            
+//            // Expression Analysis
+//            if !analysis.aiAnalysis.expression.topics.isEmpty {
+//                TopicsCard(topics: analysis.aiAnalysis.expression.topics)
+//            }
+//            
+//            // Key Moments Section
+//            if !analysis.aiAnalysis.notableElements.isEmpty {
+//                KeyMomentsCard(elements: analysis.aiAnalysis.notableElements)
+//            } else {
+//                EmptyKeyMomentsCard()
+//            }
 
         }
     }
@@ -287,51 +287,51 @@ struct TopicsCard: View {
     }
 }
 
-struct KeyMomentsCard: View {
-    let elements: [NotableElement]
-    private let textColor = Color(hex: "2C3E50")
-    private let accentColor = Color(hex: "A28497")
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            HStack {
-                Text("KEY MOMENTS")
-                    .font(.system(size: 13, weight: .medium))
-                    .tracking(1.5)
-                    .foregroundColor(textColor.opacity(0.5))
-                
-                Spacer()
-            }
-            
-            VStack(alignment: .leading, spacing: 0) {
-                ForEach(Array(elements.enumerated()), id: \.element.content) { index, element in
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(element.type.rawValue.uppercased())
-                            .font(.system(size: 11, weight: .medium))
-                            .tracking(1.5)
-                            .foregroundColor(accentColor)
-                        
-                        Text(element.content)
-                            .font(.system(size: 16))
-                            .foregroundColor(textColor)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .padding(.vertical, 12)
-                    
-                    if index < elements.count - 1 {
-                        Divider()
-                    }
-                }
-            }
-        }
-        .padding(24)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.05), radius: 15, x: 0, y: 4)
-        )
-    }
-}
+//struct KeyMomentsCard: View {
+//    let elements: [NotableElement]
+//    private let textColor = Color(hex: "2C3E50")
+//    private let accentColor = Color(hex: "A28497")
+//    
+//    var body: some View {
+//        VStack(alignment: .leading, spacing: 24) {
+//            HStack {
+//                Text("KEY MOMENTS")
+//                    .font(.system(size: 13, weight: .medium))
+//                    .tracking(1.5)
+//                    .foregroundColor(textColor.opacity(0.5))
+//                
+//                Spacer()
+//            }
+//            
+//            VStack(alignment: .leading, spacing: 0) {
+//                ForEach(Array(elements.enumerated()), id: \.element.content) { index, element in
+//                    VStack(alignment: .leading, spacing: 8) {
+//                        Text(element.type.rawValue.uppercased())
+//                            .font(.system(size: 11, weight: .medium))
+//                            .tracking(1.5)
+//                            .foregroundColor(accentColor)
+//                        
+//                        Text(element.content)
+//                            .font(.system(size: 16))
+//                            .foregroundColor(textColor)
+//                            .fixedSize(horizontal: false, vertical: true)
+//                    }
+//                    .padding(.vertical, 12)
+//                    
+//                    if index < elements.count - 1 {
+//                        Divider()
+//                    }
+//                }
+//            }
+//        }
+//        .padding(24)
+//        .background(
+//            RoundedRectangle(cornerRadius: 10)
+//                .fill(Color.white)
+//                .shadow(color: Color.black.opacity(0.05), radius: 15, x: 0, y: 4)
+//        )
+//    }
+//}
 
 struct EmptyKeyMomentsCard: View {
     private let textColor = Color(hex: "2C3E50")
@@ -369,153 +369,153 @@ struct EmptyKeyMomentsCard: View {
     }
 }
 
-struct FollowUpCard: View {
-    let followUp: FollowUp
-    private let textColor = Color(hex: "2C3E50")
-    private let accentColor = Color(hex: "A28497")
-    
-    @State private var selectedFollowUp: FollowUp?
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 8) {
-                Image(systemName: "arrow.right.circle.fill")
-                    .foregroundColor(accentColor)
-                
-                Text("NEXT REFLECTION")
-                    .font(.system(size: 11, weight: .medium))
-                    .tracking(1.5)
-                    .foregroundColor(textColor.opacity(0.5))
-            }
-            
-            Text(followUp.question)
-                .font(.system(size: 18, weight: .medium))
-                .foregroundColor(textColor)
-            
-            Text(followUp.purpose)
-                .font(.system(size: 14))
-                .foregroundColor(textColor.opacity(0.8))
-                .lineSpacing(8)
-        }
-        .disabled(AnalysisManager.shared.isFollowUpCompletedToday)
-        .opacity(AnalysisManager.shared.isFollowUpCompletedToday == true ? 0.5 : 1.0)
-        .onTapGesture {
-            selectedFollowUp = followUp
-        }
-        .padding(24)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            Color.white
-                .cornerRadius(16)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(accentColor.opacity(0.1), lineWidth: 1)
-                )
-        )
-        .fullScreenCover(item: $selectedFollowUp) { followUp in
-            RecordFollowUpLoopView(prompt: followUp.question)
-       }
-    }
-}
+//struct FollowUpCard: View {
+//    let followUp: FollowUp
+//    private let textColor = Color(hex: "2C3E50")
+//    private let accentColor = Color(hex: "A28497")
+//    
+//    @State private var selectedFollowUp: FollowUp?
+//    
+//    var body: some View {
+//        VStack(alignment: .leading, spacing: 16) {
+//            HStack(spacing: 8) {
+//                Image(systemName: "arrow.right.circle.fill")
+//                    .foregroundColor(accentColor)
+//                
+//                Text("NEXT REFLECTION")
+//                    .font(.system(size: 11, weight: .medium))
+//                    .tracking(1.5)
+//                    .foregroundColor(textColor.opacity(0.5))
+//            }
+//            
+//            Text(followUp.question)
+//                .font(.system(size: 18, weight: .medium))
+//                .foregroundColor(textColor)
+//            
+//            Text(followUp.purpose)
+//                .font(.system(size: 14))
+//                .foregroundColor(textColor.opacity(0.8))
+//                .lineSpacing(8)
+//        }
+//        .disabled(AnalysisManager.shared.isFollowUpCompletedToday)
+//        .opacity(AnalysisManager.shared.isFollowUpCompletedToday == true ? 0.5 : 1.0)
+//        .onTapGesture {
+//            selectedFollowUp = followUp
+//        }
+//        .padding(24)
+//        .frame(maxWidth: .infinity, alignment: .leading)
+//        .background(
+//            Color.white
+//                .cornerRadius(16)
+//                .overlay(
+//                    RoundedRectangle(cornerRadius: 16)
+//                        .stroke(accentColor.opacity(0.1), lineWidth: 1)
+//                )
+//        )
+//        .fullScreenCover(item: $selectedFollowUp) { followUp in
+//            RecordFollowUpLoopView(prompt: followUp.question)
+//       }
+//    }
+//}
 
-struct TodaysInsightsView_Previews: PreviewProvider {
-    static var previews: some View {
-        Group {
-            // Empty State
-            TodaysInsightsView(analysisManager: mockManager(with: .notStarted))
-                .previewDisplayName("Empty State")
-            
-            // Processing State
-            TodaysInsightsView(analysisManager: mockManager(with: .analyzingAI))
-                .previewDisplayName("Processing")
-            
-            // Completed State with Full Data
-            TodaysInsightsView(analysisManager: mockManager(with: .completed(mockAnalysis())))
-                .previewDisplayName("Complete - Full Data")
-            
-            // Completed State with Partial Data
-            TodaysInsightsView(analysisManager: mockManager(with: .completed(mockPartialAnalysis())))
-                .previewDisplayName("Complete - Partial Data")
-            
-            // Error State
-            TodaysInsightsView(analysisManager: mockManager(with: .failed(.noResponses)))
-                .previewDisplayName("Error")
-        }
-    }
-    
-    static func mockManager(with state: AnalysisState) -> AnalysisManager {
-        let manager = MockAnalysisManager()
-        manager.setState(state)
-        return manager
-    }
-    
-    static func mockAnalysis() -> DailyAnalysis {
-        DailyAnalysis(
-            date: Date(),
-            quantitativeMetrics: QuantitativeMetrics(
-                totalWordCount: 856,
-                totalDurationSeconds: 425,
-                averageWordsPerRecording: 171.2,
-                averageDurationPerRecording: 85
-            ),
-            aiAnalysis: DailyAIAnalysisResult(
-                date: Date(),
-                expression: DailyExpression(
-                    style: .reflective,
-                    topics: [.growth, .wellbeing, .purpose, .creativity],
-                    tone: .positive
-                ),
-                notableElements: [
-                    NotableElement(type: .insight, content: "Morning routines significantly impact daily energy"),
-                    NotableElement(type: .win, content: "Successfully implemented new project methodology"),
-                    NotableElement(type: .challenge, content: "Balancing deep work with team collaboration"),
-                    NotableElement(type: .strategy, content: "Breaking large tasks into manageable chunks")
-                ],
-                mood: MoodCorrelation(rating: 8.5, sleep: 7),
-                followUp: FollowUp(
-                    question: "How might you build on today's progress?",
-                    purpose: "Reinforcing positive patterns"
-                )
-            )
-        )
-    }
-    
-    static func mockPartialAnalysis() -> DailyAnalysis {
-        DailyAnalysis(
-            date: Date(),
-            quantitativeMetrics: QuantitativeMetrics(
-                totalWordCount: 856,
-                totalDurationSeconds: 425,
-                averageWordsPerRecording: 171.2,
-                averageDurationPerRecording: 85
-            ),
-            aiAnalysis: DailyAIAnalysisResult(
-                date: Date(),
-                expression: DailyExpression(
-                    style: .reflective,
-                    topics: [], // Empty topics
-                    tone: .neutral
-                ),
-                notableElements: [], // Empty elements
-                mood: MoodCorrelation(rating: 7.0, sleep: nil), // No sleep data
-                followUp: FollowUp(
-                    question: "What would you like to reflect on?",
-                    purpose: "Open reflection"
-                )
-            )
-        )
-    }
-}
-
-class MockAnalysisManager: AnalysisManager {
-    private var _mockState: AnalysisState = .notStarted
-    
-    override var analysisState: AnalysisState {
-        get { _mockState }
-        set { _mockState = newValue }
-    }
-    
-    func setState(_ state: AnalysisState) {
-        _mockState = state
-    }
-}
+//struct TodaysInsightsView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        Group {
+//            // Empty State
+//            TodaysInsightsView(analysisManager: mockManager(with: .notStarted))
+//                .previewDisplayName("Empty State")
+//            
+//            // Processing State
+//            TodaysInsightsView(analysisManager: mockManager(with: .analyzingAI))
+//                .previewDisplayName("Processing")
+//            
+//            // Completed State with Full Data
+//            TodaysInsightsView(analysisManager: mockManager(with: .completed(mockAnalysis())))
+//                .previewDisplayName("Complete - Full Data")
+//            
+//            // Completed State with Partial Data
+//            TodaysInsightsView(analysisManager: mockManager(with: .completed(mockPartialAnalysis())))
+//                .previewDisplayName("Complete - Partial Data")
+//            
+//            // Error State
+//            TodaysInsightsView(analysisManager: mockManager(with: .failed(.noResponses)))
+//                .previewDisplayName("Error")
+//        }
+//    }
+//    
+//    static func mockManager(with state: AnalysisState) -> AnalysisManager {
+//        let manager = MockAnalysisManager()
+//        manager.setState(state)
+//        return manager
+//    }
+//    
+//    static func mockAnalysis() -> DailyAnalysis {
+//        DailyAnalysis(
+//            date: Date(),
+//            quantitativeMetrics: QuantitativeMetrics(
+//                totalWordCount: 856,
+//                totalDurationSeconds: 425,
+//                averageWordsPerRecording: 171.2,
+//                averageDurationPerRecording: 85
+//            ),
+//            aiAnalysis: DailyAIAnalysisResult(
+//                date: Date(),
+//                expression: DailyExpression(
+//                    style: .reflective,
+//                    topics: [.growth, .wellbeing, .purpose, .creativity],
+//                    tone: .positive
+//                ),
+//                notableElements: [
+//                    NotableElement(type: .insight, content: "Morning routines significantly impact daily energy"),
+//                    NotableElement(type: .win, content: "Successfully implemented new project methodology"),
+//                    NotableElement(type: .challenge, content: "Balancing deep work with team collaboration"),
+//                    NotableElement(type: .strategy, content: "Breaking large tasks into manageable chunks")
+//                ],
+//                mood: MoodCorrelation(rating: 8.5, sleep: 7),
+//                followUp: FollowUp(
+//                    question: "How might you build on today's progress?",
+//                    purpose: "Reinforcing positive patterns"
+//                )
+//            )
+//        )
+//    }
+//    
+//    static func mockPartialAnalysis() -> DailyAnalysis {
+//        DailyAnalysis(
+//            date: Date(),
+//            quantitativeMetrics: QuantitativeMetrics(
+//                totalWordCount: 856,
+//                totalDurationSeconds: 425,
+//                averageWordsPerRecording: 171.2,
+//                averageDurationPerRecording: 85
+//            ),
+//            aiAnalysis: DailyAIAnalysisResult(
+//                date: Date(),
+//                expression: DailyExpression(
+//                    style: .reflective,
+//                    topics: [], // Empty topics
+//                    tone: .neutral
+//                ),
+//                notableElements: [], // Empty elements
+//                mood: MoodCorrelation(rating: 7.0, sleep: nil), // No sleep data
+//                followUp: FollowUp(
+//                    question: "What would you like to reflect on?",
+//                    purpose: "Open reflection"
+//                )
+//            )
+//        )
+//    }
+//}
+//
+//class MockAnalysisManager: AnalysisManager {
+//    private var _mockState: AnalysisState = .notStarted
+//    
+//    override var analysisState: AnalysisState {
+//        get { _mockState }
+//        set { _mockState = newValue }
+//    }
+//    
+//    func setState(_ state: AnalysisState) {
+//        _mockState = state
+//    }
+//}
