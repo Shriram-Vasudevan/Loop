@@ -53,6 +53,8 @@ struct RecordLoopsView: View {
 
     @State private var sleepHours: Double = 7.0
     
+    @State private var isSaving = false
+    
     var body: some View {
         ZStack {
             if !UserDefaults.standard.hasSetupDailyReflection {
@@ -353,7 +355,7 @@ struct RecordLoopsView: View {
         case .guided:
             return AnyView(
                 ZStack {
-                    if reflectionSessionManager.needCategorySelection() {
+                    if !reflectionSessionManager.isLoadingAIPrompt && reflectionSessionManager.needCategorySelection() {
                         CategorySelectionView(
                             reflectionSessionManager: reflectionSessionManager,
                             onCategorySelected: { category, isAI in
@@ -410,13 +412,7 @@ struct RecordLoopsView: View {
                             }
                         )
                     } else if reflectionSessionManager.isLoadingAIPrompt {
-                        VStack(spacing: 16) {
-                            ProgressView()
-                                .scaleEffect(1.5)
-                            Text("Generating thoughtful question...")
-                                .font(.system(size: 14))
-                                .foregroundColor(textColor.opacity(0.6))
-                        }
+                        LoadingPromptView()
                     } else {
                         VStack(spacing: 24) {
                             Spacer()
@@ -786,12 +782,15 @@ struct RecordLoopsView: View {
     }
     
     private func completeRecording() {
+        guard !isSaving else { return }
+        isSaving = true
+        
         guard let audioFileURL = audioManager.getRecordedAudioFile() else {
             print("Audio file not found.")
             return
         }
         
-        // Mark the current prompt as completed
+        // Mark the current prompt as completed and move to next prompt immediately
         recordedTabs.insert(currentTab)
         recordedAudioURLs[currentTab] = audioFileURL
         
@@ -803,9 +802,18 @@ struct RecordLoopsView: View {
         
         let currentPrompt = reflectionSessionManager.prompts[currentPromptIndex]
         
-        // Save the loop data
+        // Move to next prompt immediately
+        if let nextPromptIndex = reflectionSessionManager.prompts.firstIndex(where: { !reflectionSessionManager.completedPrompts.contains(reflectionSessionManager.prompts.firstIndex(of: $0) ?? -1) }) {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                isPostRecording = false
+                currentTab = nextPromptIndex
+            }
+        }
+        
         Task {
-            let loopSaved = await loopManager.addLoop(
+            defer { isSaving = false }
+            
+            let (loop, transcript) = try await loopManager.addLoop(
                 mediaURL: audioFileURL,
                 isVideo: false,
                 prompt: currentPrompt.text,
@@ -814,29 +822,30 @@ struct RecordLoopsView: View {
                 isSuccess: false,
                 isUnguided: false
             )
+      
+            reflectionSessionManager.markPromptComplete(at: currentPromptIndex)
             
-            if loopSaved != nil {
-                reflectionSessionManager.markPromptComplete(at: currentPromptIndex)
-                reflectionSessionManager.saveRecordingCache(prompt: currentPrompt.text, transcript: loopSaved.1)
-            }
-            
-            // Handle navigation based on completion state
-            if reflectionSessionManager.hasCompletedForToday {
-                // All prompts completed
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                    isShowingMemory = false
-                    audioManager.cleanup()
-                    dismiss() // Dismiss view since all prompts are completed
-                }
-            } else {
-                // Move to the next incomplete prompt
-                if let nextPromptIndex = reflectionSessionManager.prompts.firstIndex(where: { !reflectionSessionManager.completedPrompts.contains(reflectionSessionManager.prompts.firstIndex(of: $0) ?? -1) }) {
+            reflectionSessionManager.saveRecordingCache(prompt: currentPrompt.text, transcript: transcript)
+
+            await MainActor.run {
+                if let nextPromptIndex = reflectionSessionManager.prompts.firstIndex(where: {
+                    !reflectionSessionManager.completedPrompts.contains(
+                        reflectionSessionManager.prompts.firstIndex(of: $0) ?? -1
+                    )
+                }) {
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                         isPostRecording = false
                         currentTab = nextPromptIndex
                     }
-                } else {
-                    print("No next prompt found.")
+                }
+                
+                // If all prompts are complete, dismiss the view
+                if reflectionSessionManager.hasCompletedForToday {
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                        isShowingMemory = false
+                        audioManager.cleanup()
+                        dismiss()
+                    }
                 }
             }
         }
@@ -886,6 +895,42 @@ struct RecordLoopsView: View {
         formattedDate.append(suffix)
         
         return formattedDate
+    }
+}
+
+struct LoadingPromptView: View {
+    let textColor = Color(hex: "2C3E50")
+    @State private var dotOffset: CGFloat = 0
+    
+    var body: some View {
+        VStack(spacing: 24) {
+            // Animated dots
+            HStack(spacing: 8) {
+                ForEach(0..<3) { index in
+                    Circle()
+                        .fill(textColor.opacity(0.6))
+                        .frame(width: 8, height: 8)
+                        .offset(y: index == 1 ? -dotOffset : 0)
+                }
+            }
+            .onAppear {
+                withAnimation(Animation.easeInOut(duration: 0.5).repeatForever()) {
+                    dotOffset = 8
+                }
+            }
+            
+            VStack(spacing: 12) {
+                Text("Crafting your reflection prompt")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(textColor)
+                
+                Text("Based on your previous reflections")
+                    .font(.system(size: 14))
+                    .foregroundColor(textColor.opacity(0.6))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(hex: "F5F5F5"))
     }
 }
 

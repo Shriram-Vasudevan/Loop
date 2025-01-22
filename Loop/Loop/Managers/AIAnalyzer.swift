@@ -24,7 +24,7 @@ class AIAnalyzer {
             .joined(separator: "\n\n")
         
         let prompt = """
-            Analyze these daily reflection responses while maintaining privacy. Group analysis by question type.
+            Analyze these daily reflection responses while maintaining privacy. Group analysis by question type. If a question does not exist, you would make the exists property "NO".
             
             [Format: Each response has "question" and "answer" fields]
             
@@ -41,71 +41,88 @@ class AIAnalyzer {
                 hours: [EXTRACT NUMBER if exists]
             }
             
-            2. Topic & Content Analysis
+            2. Key Moments & Analysis
             [FROM "What moment from today stands out"]
             standout_analysis: {
                 exists: [YES/NO],
-                primary_topic: [IF EXISTS: work, relationships, health, growth, creativity, purpose],
+                category: [IF EXISTS: realization, learning, success, challenge, connection, decision, plan],
                 sentiment: [positive/neutral/negative],
                 key_moment: [IF contains a meaningful realization, important event, or significant insight, extract it cleanly. Use ellipses for brevity. Limit to 1-2 sentences. If no truly significant moment, output NONE]
+            }
+            
+            [FROM ALL OTHER RESPONSES, EXCLUDING CONTENT FROM STANDOUT]
+            additional_key_moments: {
+                exists: [YES/NO],
+                moments: [Array of unique key moments not mentioned in standout, each with:
+                    - key_moment: [1-2 sentence extract, use ellipses for brevity],
+                    - category: [realization, learning, success, challenge, connection, decision, plan],
+                    - source_type: [summary, freeform]
+                ]
+            }
+            
+            3. Topic Analysis
+            [ANALYZE ALL RESPONSES]
+            recurring_themes: {
+                exists: [YES/NO],
+                themes: [List ONLY topics/themes that appear in multiple different responses]
             }
             
             [FROM "Give a short summary"]
             summary_analysis: {
                 exists: [YES/NO],
-                primary_topic: [IF EXISTS and no standout: same topic categories as above],
+                primary_topic: [work, relationships, health, growth, creativity, purpose],
                 sentiment: [positive/neutral/negative]
             }
             
             [FROM "Share anything on your mind"]
             freeform_analysis: {
                 exists: [YES/NO],
-                primary_topic: [IF EXISTS and no standout: same topic categories as above],
+                primary_topic: [work, relationships, health, growth, creativity, purpose],
                 sentiment: [positive/neutral/negative]
             }
             
-            3. Language Analysis
+            4. Language Analysis
             [ANALYZE ALL RESPONSES]
             filler_analysis: {
                 total_count: [COUNT of: um, uh, like, you know, kind of, sort of]
             }
             """
-    
-        let requestBody: [String: Any] = [
-            "model": "gpt-4",
-            "messages": [
-                ["role": "system", "content": "You are an expert at analyzing personal reflections while maintaining privacy. Focus on finding clear elements rather than forcing insights. Assign each response to only one category to avoid redundancy."],
-                ["role": "user", "content": prompt]
-            ],
-            "temperature": 0.3,
-            "max_tokens": 1500
-        ]
         
-        var request = URLRequest(url: URL(string: endpoint)!)
-        request.httpMethod = "POST"
-        request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
-        
-        let (data, _) = try await URLSession.shared.data(for: request)
-        let response = try JSONDecoder().decode(OpenAIResponse.self, from: data)
-        
-        guard let content = response.choices.first?.message.content else {
-            throw AnalysisError.aiAnalysisFailed("No content in response")
+            let requestBody: [String: Any] = [
+                "model": "gpt-4",
+                "messages": [
+                    ["role": "system", "content": "You are an expert at analyzing personal reflections while maintaining privacy. Focus on finding clear elements rather than forcing insights. For key moments, never repeat content or topics between standout and additional moments. Ensure recurring themes are genuinely mentioned multiple times."],
+                    ["role": "user", "content": prompt]
+                ],
+                "temperature": 0.3,
+                "max_tokens": 1000
+            ]
+            
+            // Rest of the API call code remains the same
+            var request = URLRequest(url: URL(string: endpoint)!)
+            request.httpMethod = "POST"
+            request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+            
+            let (data, _) = try await URLSession.shared.data(for: request)
+            let response = try JSONDecoder().decode(OpenAIResponse.self, from: data)
+            
+            guard let content = response.choices.first?.message.content else {
+                throw AnalysisError.aiAnalysisFailed("No content in response")
+            }
+            
+            return try AIAnalyzer.parseFromAIResponse(content)
         }
-        
-        return try AIAnalyzer.parseFromAIResponse(content)
-    }
 
-    
     static func parseFromAIResponse(_ response: String) throws -> DailyAIAnalysisResult {
-        // Split response into sections
         let sections = response.components(separatedBy: "\n\n")
-        
-        // Extract each analysis section
+
         let moodData = try parseMoodData(from: sections)
         let sleepData = try parseSleepData(from: sections)
         let standoutAnalysis = try parseStandoutAnalysis(from: sections)
+        let additionalKeyMoments = try parseAdditionalKeyMoments(from: sections)
+        let recurringThemes = try parseRecurringThemes(from: sections)
         let summaryAnalysis = try parseSummaryAnalysis(from: sections)
         let freeformAnalysis = try parseFreeformAnalysis(from: sections)
         let fillerAnalysis = try parseFillerAnalysis(from: sections)
@@ -115,6 +132,8 @@ class AIAnalyzer {
             moodData: moodData,
             sleepData: sleepData,
             standoutAnalysis: standoutAnalysis,
+            additionalKeyMoments: additionalKeyMoments,
+            recurringThemes: recurringThemes,
             summaryAnalysis: summaryAnalysis,
             freeformAnalysis: freeformAnalysis,
             fillerAnalysis: fillerAnalysis
@@ -122,90 +141,137 @@ class AIAnalyzer {
     }
     
     private static func parseMoodData(from sections: [String]) throws -> MoodData? {
-        guard let moodSection = sections.first(where: { $0.contains("mood_data:") }) else {
+        guard let section = sections.first(where: { $0.contains("mood_data:") }) else {
             return nil
         }
         
-        let exists = moodSection.contains("exists: YES")
-        let rating = try? extractDouble(from: moodSection, field: "rating:")
+        let exists = section.contains("exists: YES")
+        let rating = try? extractDouble(from: section, field: "rating:")
         
         return MoodData(exists: exists, rating: rating)
     }
     
     private static func parseSleepData(from sections: [String]) throws -> SleepData? {
-        guard let sleepSection = sections.first(where: { $0.contains("sleep_data:") }) else {
+        guard let section = sections.first(where: { $0.contains("sleep_data:") }) else {
             return nil
         }
         
-        let exists = sleepSection.contains("exists: YES")
-        let hours = try? extractDouble(from: sleepSection, field: "hours:")
+        let exists = section.contains("exists: YES")
+        let hours = try? extractDouble(from: section, field: "hours:")
         
         return SleepData(exists: exists, hours: hours)
     }
     
     private static func parseStandoutAnalysis(from sections: [String]) throws -> StandoutAnalysis? {
-        guard let standoutSection = sections.first(where: { $0.contains("standout_analysis:") }) else {
+        guard let section = sections.first(where: { $0.contains("standout_analysis:") }) else {
             return nil
         }
         
-        let exists = standoutSection.contains("exists: YES")
-        let topic = try? extractTopic(from: standoutSection, field: "primary_topic:")
-        let sentiment = try? extractSentiment(from: standoutSection, field: "sentiment:")
-        let keyMoment = try? extractString(from: standoutSection, field: "key_moment:")
+        let exists = section.contains("exists: YES")
+        let topic = try? extractTopic(from: section, field: "primary_topic:")
+        let category = try? extractMomentCategory(from: section, field: "category:")
+        let sentiment = try? extractSentiment(from: section, field: "sentiment:")
+        let keyMoment = try? extractString(from: section, field: "key_moment:")
         
-        // If key_moment is "NONE", set to nil
         let finalKeyMoment = keyMoment == "NONE" ? nil : keyMoment
         
         return StandoutAnalysis(
             exists: exists,
             primaryTopic: topic,
+            category: category,
             sentiment: sentiment,
             keyMoment: finalKeyMoment
         )
     }
     
-    private static func parseSummaryAnalysis(from sections: [String]) throws -> SummaryAnalysis? {
-        guard let summarySection = sections.first(where: { $0.contains("summary_analysis:") }) else {
+    private static func parseAdditionalKeyMoments(from sections: [String]) throws -> AdditionalKeyMoments? {
+        guard let section = sections.first(where: { $0.contains("additional_key_moments:") }) else {
             return nil
         }
         
-        let exists = summarySection.contains("exists: YES")
-        let topic = try? extractTopic(from: summarySection, field: "primary_topic:")
-        let sentiment = try? extractSentiment(from: summarySection, field: "sentiment:")
+        let exists = section.contains("exists: YES")
+        if !exists {
+            return AdditionalKeyMoments(exists: false, moments: nil)
+        }
         
-        return SummaryAnalysis(
-            exists: exists,
-            primaryTopic: topic,
-            sentiment: sentiment
-        )
+
+        var moments: [KeyMomentModel] = []
+        if let momentsText = try? extractString(from: section, field: "moments:") {
+            let momentEntries = momentsText.components(separatedBy: "- key_moment:")
+                .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+            
+            for entry in momentEntries {
+                if let keyMoment = try? extractString(from: entry, field: ""),
+                   let category = try? extractMomentCategory(from: entry, field: "category:"),
+                   let sourceType = try? extractSourceType(from: entry, field: "source_type:") {
+                    
+                    let moment = KeyMomentModel(
+                        keyMoment: keyMoment.trimmingCharacters(in: .whitespaces),
+                        category: category,
+                        sourceType: sourceType
+                    )
+                    moments.append(moment)
+                }
+            }
+        }
+        
+        return AdditionalKeyMoments(exists: true, moments: moments.isEmpty ? nil : moments)
+    }
+    
+    private static func parseRecurringThemes(from sections: [String]) throws -> RecurringThemes? {
+        guard let section = sections.first(where: { $0.contains("recurring_themes:") }) else {
+            return nil
+        }
+        
+        let exists = section.contains("exists: YES")
+        if !exists {
+            return RecurringThemes(exists: false, themes: nil)
+        }
+        
+        var themes: [String] = []
+        if let themesText = try? extractString(from: section, field: "themes:") {
+            themes = themesText
+                .components(separatedBy: ",")
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty }
+        }
+        
+        return RecurringThemes(exists: true, themes: themes.isEmpty ? nil : themes)
+    }
+    
+    private static func parseSummaryAnalysis(from sections: [String]) throws -> SummaryAnalysis? {
+        guard let section = sections.first(where: { $0.contains("summary_analysis:") }) else {
+            return nil
+        }
+        
+        let exists = section.contains("exists: YES")
+        let topic = try? extractTopic(from: section, field: "primary_topic:")
+        let sentiment = try? extractSentiment(from: section, field: "sentiment:")
+        
+        return SummaryAnalysis(exists: exists, primaryTopic: topic, sentiment: sentiment)
     }
     
     private static func parseFreeformAnalysis(from sections: [String]) throws -> FreeformAnalysis? {
-        guard let freeformSection = sections.first(where: { $0.contains("freeform_analysis:") }) else {
+        guard let section = sections.first(where: { $0.contains("freeform_analysis:") }) else {
             return nil
         }
         
-        let exists = freeformSection.contains("exists: YES")
-        let topic = try? extractTopic(from: freeformSection, field: "primary_topic:")
-        let sentiment = try? extractSentiment(from: freeformSection, field: "sentiment:")
+        let exists = section.contains("exists: YES")
+        let topic = try? extractTopic(from: section, field: "primary_topic:")
+        let sentiment = try? extractSentiment(from: section, field: "sentiment:")
         
-        return FreeformAnalysis(
-            exists: exists,
-            primaryTopic: topic,
-            sentiment: sentiment
-        )
+        return FreeformAnalysis(exists: exists, primaryTopic: topic, sentiment: sentiment)
     }
     
     private static func parseFillerAnalysis(from sections: [String]) throws -> FillerAnalysis {
-        guard let fillerSection = sections.first(where: { $0.contains("filler_analysis:") }) else {
+        guard let section = sections.first(where: { $0.contains("filler_analysis:") }) else {
             return FillerAnalysis(totalCount: 0)
         }
         
-        let totalCount = try extractInt(from: fillerSection, field: "total_count:") ?? 0
+        let totalCount = try extractInt(from: section, field: "total_count:") ?? 0
         return FillerAnalysis(totalCount: totalCount)
     }
-    
-    // Helper Extraction Methods
+
     private static func extractDouble(from text: String, field: String) throws -> Double? {
         guard let value = try extractString(from: text, field: field) else { return nil }
         return Double(value.trimmingCharacters(in: .whitespaces))
@@ -217,16 +283,29 @@ class AIAnalyzer {
     }
     
     private static func extractString(from text: String, field: String) throws -> String? {
-        guard let range = text.range(of: field) else { return nil }
+        let searchText = field.isEmpty ? text : field
+        guard let range = text.range(of: searchText) else { return nil }
+        
         let afterField = String(text[range.upperBound...])
         let lines = afterField.components(separatedBy: .newlines)
         let value = lines[0].trimmingCharacters(in: .whitespaces)
+        
         return value.isEmpty ? nil : value
     }
     
     private static func extractTopic(from text: String, field: String) throws -> TopicCategory? {
         guard let value = try extractString(from: text, field: field)?.lowercased() else { return nil }
         return TopicCategory(rawValue: value)
+    }
+    
+    private static func extractMomentCategory(from text: String, field: String) throws -> MomentCategory? {
+        guard let value = try extractString(from: text, field: field)?.lowercased() else { return nil }
+        return MomentCategory(rawValue: value)
+    }
+    
+    private static func extractSourceType(from text: String, field: String) throws -> SourceType? {
+        guard let value = try extractString(from: text, field: field)?.lowercased() else { return nil }
+        return SourceType(rawValue: value)
     }
     
     private static func extractSentiment(from text: String, field: String) throws -> SentimentCategory? {

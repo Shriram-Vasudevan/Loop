@@ -307,9 +307,7 @@ class LoopManager: ObservableObject {
         }
 
         if UserDefaults.standard.bool(forKey: "iCloudBackupEnabled") {
-            Task {
-                await LoopCloudKitUtility.addLoop(loop: loop)
-            }
+            try await LoopCloudKitUtility.addLoop(loop: loop)
         } else {
             await localStorage.addLoop(loop: loop)
         }

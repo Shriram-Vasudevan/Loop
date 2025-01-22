@@ -183,7 +183,7 @@ class AnalysisManager: ObservableObject {
 
         print("[AnalysisManager] Starting to update metrics in Core Data")
 
-        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DayMetrics")
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DayMetricsEntity")
         fetchRequest.predicate = NSPredicate(format: "date == %@", today as NSDate)
         fetchRequest.fetchLimit = 1
 
@@ -202,7 +202,7 @@ class AnalysisManager: ObservableObject {
                 print("[AnalysisManager] ✅ Successfully updated metrics in Core Data")
             } else {
                 // Create new metrics for today
-                guard let dayMetricsEntity = NSEntityDescription.entity(forEntityName: "DayMetrics", in: context) else {
+                guard let dayMetricsEntity = NSEntityDescription.entity(forEntityName: "DayMetricsEntity", in: context) else {
                     print("[AnalysisManager] 🚨 Failed to get DayMetrics entity description")
                     return
                 }
@@ -222,11 +222,10 @@ class AnalysisManager: ObservableObject {
     }
 
     func saveDayMetricsToCoreData(analysis: DailyAnalysis) {
-        let today = Calendar.current.startOfDay(for: Date()) // Get the start of the current day
-
+        let today = Calendar.current.startOfDay(for: Date())
         print("[AnalysisManager] Starting to save metrics to Core Data")
 
-        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DayMetrics")
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DayMetricsEntity")
         fetchRequest.predicate = NSPredicate(format: "date == %@", today as NSDate)
         fetchRequest.fetchLimit = 1
 
@@ -239,33 +238,27 @@ class AnalysisManager: ObservableObject {
                 existingMetrics.setValue(analysis.quantitativeMetrics.totalDurationSeconds, forKey: "totalDuration")
                 existingMetrics.setValue(analysis.aiAnalysis.fillerAnalysis.totalCount, forKey: "fillerWordCount")
                 existingMetrics.setValue(Date(), forKey: "timeOfEntry")
-                existingMetrics.setValue(analysis.aiAnalysis.standoutAnalysis?.primaryTopic?.rawValue, forKey: "primaryTopic")
                 existingMetrics.setValue(!ReflectionSessionManager.shared.getTodaysCachedResponses().isEmpty, forKey: "isCompleted")
                 existingMetrics.setValue(ReflectionSessionManager.shared.getTodaysCachedResponses().count, forKey: "entryCount")
-
-                if let standoutAnalysis = analysis.aiAnalysis.standoutAnalysis,
-                   let keyMoment = standoutAnalysis.keyMoment,
-                   let momentEntity = NSEntityDescription.entity(forEntityName: "KeyMoment", in: context) {
-                    
-                    let moment = NSManagedObject(entity: momentEntity, insertInto: context)
-                    moment.setValue(Date(), forKey: "date")
-                    moment.setValue(keyMoment, forKey: "content")
-                    moment.setValue(analysis.aiAnalysis.moodData?.rating, forKey: "associatedMood")
-                    moment.setValue(standoutAnalysis.primaryTopic?.rawValue, forKey: "topic")
-                    moment.setValue(standoutAnalysis.sentiment?.rawValue, forKey: "sentiment")
+                
+                // Add recurring themes if they exist
+                if let themes = analysis.aiAnalysis.recurringThemes?.themes {
+                    existingMetrics.setValue(themes.joined(separator: ","), forKey: "recurringThemes")
                 }
+                
+                // Save key moments
+                saveKeyMoments(analysis: analysis)
                 
                 try context.save()
                 print("[AnalysisManager] ✅ Successfully updated metrics in Core Data")
             } else {
                 // Create new metrics for today
-                guard let dayMetricsEntity = NSEntityDescription.entity(forEntityName: "DayMetrics", in: context) else {
+                guard let dayMetricsEntity = NSEntityDescription.entity(forEntityName: "DayMetricsEntity", in: context) else {
                     print("[AnalysisManager] 🚨 Failed to get DayMetrics entity description")
                     return
                 }
 
                 let metrics = NSManagedObject(entity: dayMetricsEntity, insertInto: context)
-
                 let responses = ReflectionSessionManager.shared.getTodaysCachedResponses()
 
                 metrics.setValue(today, forKey: "date")
@@ -275,27 +268,54 @@ class AnalysisManager: ObservableObject {
                 metrics.setValue(analysis.quantitativeMetrics.totalDurationSeconds, forKey: "totalDuration")
                 metrics.setValue(analysis.aiAnalysis.fillerAnalysis.totalCount, forKey: "fillerWordCount")
                 metrics.setValue(Date(), forKey: "timeOfEntry")
-                metrics.setValue(analysis.aiAnalysis.standoutAnalysis?.primaryTopic?.rawValue, forKey: "primaryTopic")
                 metrics.setValue(!responses.isEmpty, forKey: "isCompleted")
                 metrics.setValue(responses.count, forKey: "entryCount")
-
-                if let standoutAnalysis = analysis.aiAnalysis.standoutAnalysis,
-                   let keyMoment = standoutAnalysis.keyMoment,
-                   let momentEntity = NSEntityDescription.entity(forEntityName: "KeyMoment", in: context) {
-                    
-                    let moment = NSManagedObject(entity: momentEntity, insertInto: context)
-                    moment.setValue(Date(), forKey: "date")
-                    moment.setValue(keyMoment, forKey: "content")
-                    moment.setValue(analysis.aiAnalysis.moodData?.rating, forKey: "associatedMood")
-                    moment.setValue(standoutAnalysis.primaryTopic?.rawValue, forKey: "topic")
-                    moment.setValue(standoutAnalysis.sentiment?.rawValue, forKey: "sentiment")
+                
+                // Add recurring themes if they exist
+                if let themes = analysis.aiAnalysis.recurringThemes?.themes {
+                    metrics.setValue(themes.joined(separator: ","), forKey: "recurringThemes")
                 }
+                
+                // Save key moments
+                saveKeyMoments(analysis: analysis)
                 
                 try context.save()
                 print("[AnalysisManager] ✅ Successfully created new metrics in Core Data")
             }
         } catch {
             print("[AnalysisManager] 🚨 Failed to save or update metrics in Core Data: \(error)")
+        }
+    }
+
+    private func saveKeyMoments(analysis: DailyAnalysis) {
+        guard let momentEntity = NSEntityDescription.entity(forEntityName: "KeyMomentEntity", in: context) else {
+            print("[AnalysisManager] 🚨 Failed to get KeyMoment entity description")
+            return
+        }
+        
+        // Save standout moment if exists
+        if let standoutAnalysis = analysis.aiAnalysis.standoutAnalysis,
+           let keyMoment = standoutAnalysis.keyMoment {
+            let standoutMoment = NSManagedObject(entity: momentEntity, insertInto: context)
+            standoutMoment.setValue(Date(), forKey: "date")
+            standoutMoment.setValue(keyMoment, forKey: "content")
+            standoutMoment.setValue(analysis.aiAnalysis.moodData?.rating, forKey: "associatedMood")
+            standoutMoment.setValue(standoutAnalysis.category?.rawValue, forKey: "category")
+            standoutMoment.setValue(standoutAnalysis.sentiment?.rawValue, forKey: "sentiment")
+            standoutMoment.setValue("standout", forKey: "momentType")
+        }
+        
+        // Save additional moments if they exist
+        if let additionalMoments = analysis.aiAnalysis.additionalKeyMoments?.moments {
+            for moment in additionalMoments {
+                let additionalMoment = NSManagedObject(entity: momentEntity, insertInto: context)
+                additionalMoment.setValue(Date(), forKey: "date")
+                additionalMoment.setValue(moment.keyMoment, forKey: "content")
+                additionalMoment.setValue(analysis.aiAnalysis.moodData?.rating, forKey: "associatedMood")
+                additionalMoment.setValue(moment.category.rawValue, forKey: "category")
+                additionalMoment.setValue(moment.sourceType.rawValue, forKey: "sourceType")
+                additionalMoment.setValue("additional", forKey: "momentType")
+            }
         }
     }
     

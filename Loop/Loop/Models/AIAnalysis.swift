@@ -7,15 +7,20 @@
 
 import Foundation
 
+import Foundation
+
 struct DailyAIAnalysisResult: Codable {
     let date: Date
     let moodData: MoodData?
     let sleepData: SleepData?
     let standoutAnalysis: StandoutAnalysis?
+    let additionalKeyMoments: AdditionalKeyMoments?
+    let recurringThemes: RecurringThemes?
     let summaryAnalysis: SummaryAnalysis?
     let freeformAnalysis: FreeformAnalysis?
     let fillerAnalysis: FillerAnalysis
 }
+
 struct MoodData: Codable {
     let exists: Bool
     let rating: Double?
@@ -29,8 +34,31 @@ struct SleepData: Codable {
 struct StandoutAnalysis: Codable {
     let exists: Bool
     let primaryTopic: TopicCategory?
+    let category: MomentCategory?
     let sentiment: SentimentCategory?
     let keyMoment: String?
+}
+
+struct AdditionalKeyMoments: Codable {
+    let exists: Bool
+    let moments: [KeyMomentModel]?
+}
+
+struct KeyMomentModel: Codable {
+    let keyMoment: String
+    let category: MomentCategory
+    let sourceType: SourceType
+    
+    enum CodingKeys: String, CodingKey {
+        case keyMoment = "key_moment"
+        case category
+        case sourceType = "source_type"
+    }
+}
+
+struct RecurringThemes: Codable {
+    let exists: Bool
+    let themes: [String]?
 }
 
 struct SummaryAnalysis: Codable {
@@ -56,6 +84,21 @@ enum TopicCategory: String, Codable {
     case growth
     case creativity
     case purpose
+}
+
+enum MomentCategory: String, Codable {
+    case realization
+    case learning
+    case success
+    case challenge
+    case connection
+    case decision
+    case plan
+}
+
+enum SourceType: String, Codable {
+    case summary
+    case freeform
 }
 
 enum SentimentCategory: String, Codable {

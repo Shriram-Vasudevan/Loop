@@ -57,7 +57,7 @@ struct MoodCheckInView: View {
                     
                     Spacer()
                 }
-                Spacer()
+                .padding(.bottom, 30)
             }
             VStack(spacing: 8) {
                 Text("HOW ARE YOU FEELING TODAY?")
@@ -81,7 +81,6 @@ struct MoodCheckInView: View {
                     )
                     .shadow(color: getColor(for: dayRating).opacity(0.2), radius: 15, x: 0, y: 8)
                     .scaleEffect(isAnimating ? 1.05 : 1.0)
-//                    .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: isAnimating)
             }
             .padding(.vertical, 20)
             
@@ -137,6 +136,20 @@ struct MoodCheckInView: View {
                 .padding(.horizontal, 20)
             }
             
+            Button(action: {
+                withAnimation (.smooth(duration: 0.4)) {
+                    dismiss()
+                }
+            }) {
+                Text("complete")
+                    .font(.system(size: 18, weight: .regular))
+                    .foregroundColor(.white)
+                    .frame(height: 56)
+                    .frame(maxWidth: .infinity)
+                    .background(accentColor)
+                    .cornerRadius(28)
+            }
+            
             if isOpenedFromPlus {
                 Spacer()
             }
@@ -147,7 +160,7 @@ struct MoodCheckInView: View {
             if let savedRating = checkinManager.checkIfCheckinCompleted() {
                 dayRating = savedRating
             } else {
-                dayRating = 5.0  // <-- Add this line to set middle position by default
+                dayRating = 5.0
             }
         }
     }
