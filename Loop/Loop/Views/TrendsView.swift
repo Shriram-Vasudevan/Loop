@@ -11,196 +11,176 @@ import SwiftUI
 
 import SwiftUI
 
-struct MoodTrendsSection: View {
+struct TrendsView: View {
+    @State private var timeframe: Timeframe = .week
+    @ObservedObject var trendsManager = TrendsManager.shared
+    
+    // Colors from Loop
+    let accentColor = Color(hex: "A28497")
+    let textColor = Color(hex: "2C3E50")
     let sadColor = Color(hex: "1E3D59")
     let neutralColor = Color(hex: "94A7B7")
     let happyColor = Color(hex: "B784A7")
+    
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                // Header and timeframe selector
+                VStack(spacing: 16) {
+                    HStack {
+                        Text("insights")
+                            .font(.system(size: 28, weight: .light))
+                            .foregroundColor(textColor)
+                        Spacer()
+                    }
+                    
+                    TimeframeSelector(selection: $timeframe)
+                }
+                .padding(.horizontal, 24)
+                
+                // Mood section
+                VStack(spacing: 16) {
+                    HStack {
+                        Text("MOOD TRENDS")
+                            .font(.system(size: 13, weight: .medium))
+                            .tracking(1.5)
+                            .foregroundColor(textColor.opacity(0.5))
+                        Spacer()
+                    }
+                    
+                    HStack(spacing: 16) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("feeling good")
+                                .font(.system(size: 24, weight: .light))
+                                .foregroundColor(getColor(for: 7.8))
+                            
+                            Text("your average mood")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(textColor.opacity(0.5))
+                        }
+                        
+                        Spacer()
+                        
+                        // Simple circular indicator
+                        Circle()
+                            .trim(from: 0, to: 0.78)
+                            .stroke(getColor(for: 7.8), style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                            .frame(width: 50, height: 50)
+                    }
+                    .padding(24)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(.white)
+                    )
+                }
+                .padding(.horizontal, 24)
+                
+                // Other insights section
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("THIS WEEK")
+                        .font(.system(size: 13, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(textColor.opacity(0.5))
+                    
+                    // Example insight cards
+                    InsightCard(text: "Your reflections tend to be more positive around 8pm", backgroundColor: accentColor)
+                    InsightCard(text: "You write about work most often", backgroundColor: neutralColor)
+                    InsightCard(text: "You complete 40% more entries on good days", backgroundColor: happyColor)
+                }
+                .padding(.horizontal, 24)
+            }
+            .padding(.vertical, 32)
+        }
+        .background(Color(hex: "F5F5F5"))
+    }
+    
+    private func getColor(for rating: Double) -> Color {
+        if rating <= 5 {
+            let t = (rating - 1) / 4
+            return interpolateColor(from: sadColor, to: neutralColor, with: t)
+        } else {
+            let t = (rating - 5) / 5
+            return interpolateColor(from: neutralColor, to: happyColor, with: t)
+        }
+    }
+    
+    private func interpolateColor(from: Color, to: Color, with percentage: Double) -> Color {
+        let fromUIColor = UIColor(from)
+        let toUIColor = UIColor(to)
+        
+        var fromR: CGFloat = 0
+        var fromG: CGFloat = 0
+        var fromB: CGFloat = 0
+        var fromA: CGFloat = 0
+        fromUIColor.getRed(&fromR, green: &fromG, blue: &fromB, alpha: &fromA)
+        
+        var toR: CGFloat = 0
+        var toG: CGFloat = 0
+        var toB: CGFloat = 0
+        var toA: CGFloat = 0
+        toUIColor.getRed(&toR, green: &toG, blue: &toB, alpha: &toA)
+        
+        let r = fromR + (toR - fromR) * CGFloat(percentage)
+        let g = fromG + (toG - fromG) * CGFloat(percentage)
+        let b = fromB + (toB - fromB) * CGFloat(percentage)
+        let a = fromA + (toA - fromA) * CGFloat(percentage)
+        
+        return Color(UIColor(red: r, green: g, blue: b, alpha: a))
+    }
+}
+
+struct TimeframeSelector: View {
+    @Binding var selection: Timeframe
     let textColor = Color(hex: "2C3E50")
     
-    // Mock data for preview
-    let averageMood: Double = 7.8
-    let moodLabel: String = "optimistic"
-    
     var body: some View {
-        VStack(alignment: .leading, spacing: 32) {
-            // Title area
-            VStack(alignment: .leading, spacing: 8) {
-                Text("YOUR HEADSPACE")
-                    .font(.system(size: 13, weight: .medium))
-                    .tracking(1.5)
-                    .foregroundColor(textColor.opacity(0.5))
-                
-                Text("Weekly Overview")
-                    .font(.system(size: 28, weight: .light))
-                    .foregroundColor(textColor)
-            }
-            
-            // Main mood visualization
-            HStack(alignment: .bottom, spacing: 24) {
-                // Large mood indicator
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(moodLabel)
-                        .font(.system(size: 32, weight: .light))
-                        .foregroundColor(getMoodColor())
-                    
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text(String(format: "%.1f", averageMood))
-                            .font(.system(size: 48, weight: .light))
-                        Text("/ 10")
-                            .font(.system(size: 24, weight: .light))
-                            .foregroundColor(textColor.opacity(0.5))
+        HStack {
+            ForEach([Timeframe.week, .month, .year], id: \.self) { timeframe in
+                Button(action: {
+                    withAnimation {
+                        selection = timeframe
                     }
+                }) {
+                    Text(timeframe.displayText)
+                        .font(.system(size: 13, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(selection == timeframe ? textColor : textColor.opacity(0.5))
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(selection == timeframe ? Color.white : Color.clear)
+                        )
                 }
-                
-                Spacer()
-                
-                // Vertical mood scale with current position
-                GeometryReader { geometry in
-                    VStack(spacing: 0) {
-                        // Scale lines
-                        ForEach((1...10).reversed(), id: \.self) { value in
-                            HStack(spacing: 8) {
-                                // Scale line
-                                Rectangle()
-                                    .fill(getScaleColor(for: Double(value)))
-                                    .frame(width: value == Int(averageMood.rounded()) ? 24 : 16, height: 2)
-                                
-                                // Value label for every other number
-                                if value % 2 == 0 {
-                                    Text("\(value)")
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(textColor.opacity(0.5))
-                                }
-                            }
-                            .frame(height: geometry.size.height / 10)
-                        }
-                    }
-                }
-                .frame(width: 60)
             }
-            .padding(24)
-            .background(
-                ZStack {
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(.white)
-                    
-                    // Decorative pattern
-                    MoodPattern(currentMood: averageMood)
-                        .fill(getMoodColor().opacity(0.05))
-                }
-            )
-            
-            // Additional mood insights
-            HStack(spacing: 16) {
-                MoodInsightTile(
-                    title: "BEST TIME",
-                    value: "8 PM",
-                    description: "avg. rating"
-                )
-                
-                MoodInsightTile(
-                    title: "SLEEP IMPACT",
-                    value: "+24%",
-                    description: "mood increase"
-                )
-            }
-        }
-        .padding(24)
-    }
-    
-    private func getMoodColor() -> Color {
-        if averageMood <= 4 {
-            return sadColor
-        } else if averageMood <= 7 {
-            return neutralColor
-        } else {
-            return happyColor
-        }
-    }
-    
-    private func getScaleColor(for value: Double) -> Color {
-        if value <= 4 {
-            return sadColor.opacity(value == averageMood.rounded() ? 1 : 0.3)
-        } else if value <= 7 {
-            return neutralColor.opacity(value == averageMood.rounded() ? 1 : 0.3)
-        } else {
-            return happyColor.opacity(value == averageMood.rounded() ? 1 : 0.3)
+            Spacer()
         }
     }
 }
 
-struct MoodPattern: Shape {
-    let currentMood: Double
-    
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let width = rect.width
-        let height = rect.height
-        
-        // Create a pattern that changes based on mood
-        // Higher mood = more upward waves, lower mood = more downward waves
-        let waveHeight = height * 0.1
-        let frequency = currentMood > 5 ? 6 : 4
-        
-        path.move(to: CGPoint(x: 0, y: height))
-        
-        for x in stride(from: 0, through: width, by: 1) {
-            let relativeX = CGFloat(x) / width
-            let angle = relativeX * .pi * CGFloat(frequency)
-            let multiplier: CGFloat = currentMood > 5 ? 1 : -1
-            let y = height - (sin(angle) * waveHeight * multiplier)
-            
-            if x == 0 {
-                path.move(to: CGPoint(x: CGFloat(x), y: y))
-            } else {
-                path.addLine(to: CGPoint(x: CGFloat(x), y: y))
-            }
-        }
-        
-        path.addLine(to: CGPoint(x: width, y: height))
-        path.addLine(to: CGPoint(x: 0, y: height))
-        path.closeSubpath()
-        
-        return path
-    }
-}
-
-struct MoodInsightTile: View {
-    let title: String
-    let value: String
-    let description: String
+struct InsightCard: View {
+    let text: String
+    let backgroundColor: Color
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .font(.system(size: 11, weight: .medium))
-                .tracking(1.5)
-                .foregroundColor(Color(hex: "2C3E50").opacity(0.5))
-            
-            Text(value)
-                .font(.system(size: 24, weight: .light))
+        HStack {
+            Text(text)
+                .font(.system(size: 16, weight: .regular))
                 .foregroundColor(Color(hex: "2C3E50"))
-            
-            Text(description)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(Color(hex: "2C3E50").opacity(0.5))
+            Spacer()
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 12)
                 .fill(.white)
         )
     }
 }
 
 // Preview
-struct MoodTrendsSection_Previews: PreviewProvider {
+struct TrendsView_Previews: PreviewProvider {
     static var previews: some View {
-        ZStack {
-            Color(hex: "F5F5F5").ignoresSafeArea()
-            
-            MoodTrendsSection()
-        }
+        TrendsView()
     }
 }

@@ -554,6 +554,14 @@ enum Timeframe {
             return DateComponents(year: -1)
         }
     }
+    
+    var displayText: String {
+        switch self {
+        case .week: return "WEEK"
+        case .month: return "MONTH"
+        case .year: return "YEAR"
+        }
+    }
 }
 
 struct MetricData {
