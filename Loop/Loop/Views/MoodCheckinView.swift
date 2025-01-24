@@ -100,7 +100,9 @@ struct MoodCheckInView: View {
                             .onTapGesture { location in
                                 let ratio = max(0, min(1, location.x / geometry.size.width))
                                 dayRating = 1 + (9 * ratio)
-                                checkinManager.saveDailyCheckin(rating: dayRating)
+                                if !isOpenedFromPlus {
+                                    checkinManager.saveDailyCheckin(rating: dayRating, isThroughDailySession: true)
+                                }
                                 onCompletion?()
                             }
                             
@@ -113,7 +115,9 @@ struct MoodCheckInView: View {
                                         .onChanged { value in
                                             let ratio = max(0, min(1, (value.location.x + 18) / geometry.size.width))
                                             dayRating = 10 * ratio
-                                            checkinManager.saveDailyCheckin(rating: dayRating)
+                                            if !isOpenedFromPlus {
+                                                checkinManager.saveDailyCheckin(rating: dayRating, isThroughDailySession: true)
+                                            }
                                             
                                             onCompletion?()
                                         }
@@ -135,30 +139,37 @@ struct MoodCheckInView: View {
                 }
                 .padding(.horizontal, 20)
             }
-            
-            Button(action: {
-                withAnimation (.smooth(duration: 0.4)) {
-                    dismiss()
-                }
-            }) {
-                Text("complete")
-                    .font(.system(size: 18, weight: .regular))
-                    .foregroundColor(.white)
-                    .frame(height: 56)
-                    .frame(maxWidth: .infinity)
-                    .background(accentColor)
-                    .cornerRadius(28)
-            }
-            
+
             if isOpenedFromPlus {
+                
+                Button(action: {
+                    withAnimation (.smooth(duration: 0.4)) {
+                        checkinManager.saveDailyCheckin(rating: dayRating, isThroughDailySession: false)
+                        dismiss()
+                    }
+                }) {
+                    Text("complete")
+                        .font(.system(size: 18, weight: .regular))
+                        .foregroundColor(.white)
+                        .frame(height: 56)
+                        .frame(maxWidth: .infinity)
+                        .background(accentColor)
+                        .cornerRadius(28)
+                }
+                
+                
                 Spacer()
             }
         }
         .padding(32)
         .onAppear {
             isAnimating = true
-            if let savedRating = checkinManager.checkIfCheckinCompleted() {
-                dayRating = savedRating
+            if !isOpenedFromPlus {
+                if let savedRating = checkinManager.checkIfDailyCheckinCompleted() {
+                    dayRating = savedRating
+                } else {
+                    dayRating = 5.0
+                }
             } else {
                 dayRating = 5.0
             }
@@ -224,12 +235,12 @@ class PreviewDailyCheckinManager: DailyCheckinManager {
         super.init()
     }
     
-    override func checkIfCheckinCompleted() -> Double? {
+    override func checkIfDailyCheckinCompleted() -> Double? {
         return 5.0 // Always return middle value for preview
     }
     
-    override func saveDailyCheckin(rating: Double) {
-        print("Preview: Would save rating \(rating)") // Just print instead of saving
+    override func saveDailyCheckin(rating: Double, isThroughDailySession status: Bool) {
+        print("Preview: Would save rating \(rating)")
     }
 }
 

@@ -16,19 +16,27 @@ import CoreData
 class TrendsManager: ObservableObject {
     static let shared = TrendsManager()
     
-    private struct Constants {
-        static let moodThreshold = 6.0
-        static let minimumDataPoints = 3
-        static let significantCorrelation = 0.3
-        static let sadColor = "1E3D59"
-        static let neutralColor = "94A7B7"
-        static let happyColor = "B784A7"
-        static let significantChangeThreshold = 15.0
+    struct CorrelationData: Equatable {
+        let name: String
+        let effect: Double
+        let color: Color
+        
+        static func == (lhs: CorrelationData, rhs: CorrelationData) -> Bool {
+            return lhs.name == rhs.name && lhs.effect == rhs.effect
+        }
     }
     
-    @Published private(set) var insights: [ReflectionInsight] = []
-    @Published private(set) var topicStats: [TopicStat] = []
-    @Published private(set) var trendStats: TrendStats?
+    struct TimeframedCorrelations {
+        var topics: [CorrelationData]?
+        var sleep: [CorrelationData]?
+        var timeOfDay: [CorrelationData]?
+        var wordCount: [CorrelationData]?
+    }
+
+    @Published private(set) var weekCorrelations = TimeframedCorrelations()
+    @Published private(set) var monthCorrelations = TimeframedCorrelations()
+    @Published private(set) var yearCorrelations = TimeframedCorrelations()
+    
     
     private lazy var persistentContainer: NSPersistentContainer = {
         let container = NSPersistentContainer(name: "LoopData")
@@ -44,458 +52,482 @@ class TrendsManager: ObservableObject {
         return persistentContainer.viewContext
     }
     
+    func fetchAllCorrelations(for timeframe: Timeframe) {
+        fetchSleepCorrelations(for: timeframe)
+        fetchWordCountCorrelations(for: timeframe)
+        fetchTimeCorrelations(for: timeframe)
+        fetchTopicCorrelations(for: timeframe)
+    }
+
+    func fetchAllCorrelations() {
+        for timeframe in Timeframe.allCases {
+            fetchAllCorrelations(for: timeframe)
+        }
+    }
+    
+    func getCorrelations(for timeframe: Timeframe) -> TimeframedCorrelations {
+        switch timeframe {
+        case .week:
+            return weekCorrelations
+        case .month:
+            return monthCorrelations
+        case .year:
+            return yearCorrelations
+        }
+    }
+    
+    private func needsToFetchData(for timeframe: Timeframe, category: String) -> Bool {
+        let correlations = getCorrelations(for: timeframe)
+        switch category {
+        case "topics":
+            return correlations.topics == nil
+        case "sleep":
+            return correlations.sleep == nil
+        case "timeOfDay":
+            return correlations.timeOfDay == nil
+        case "wordCount":
+            return correlations.wordCount == nil
+        default:
+            return false
+        }
+    }
+    
+    private func updateCorrelations(for timeframe: Timeframe, category: String, data: [CorrelationData]) {
+        DispatchQueue.main.async {
+            switch timeframe {
+            case .week:
+                switch category {
+                case "topics":
+                    self.weekCorrelations.topics = data
+                case "sleep":
+                    self.weekCorrelations.sleep = data
+                case "timeOfDay":
+                    self.weekCorrelations.timeOfDay = data
+                case "wordCount":
+                    self.weekCorrelations.wordCount = data
+                default:
+                    break
+                }
+            case .month:
+                switch category {
+                case "topics":
+                    self.monthCorrelations.topics = data
+                case "sleep":
+                    self.monthCorrelations.sleep = data
+                case "timeOfDay":
+                    self.monthCorrelations.timeOfDay = data
+                case "wordCount":
+                    self.monthCorrelations.wordCount = data
+                default:
+                    break
+                }
+            case .year:
+                switch category {
+                case "topics":
+                    self.yearCorrelations.topics = data
+                case "sleep":
+                    self.yearCorrelations.sleep = data
+                case "timeOfDay":
+                    self.yearCorrelations.timeOfDay = data
+                case "wordCount":
+                    self.yearCorrelations.wordCount = data
+                default:
+                    break
+                }
+            }
+        }
+    }
+
     func refreshInsights() {
         let timeframes: [Timeframe] = [.week, .month, .year]
         var newInsights: [ReflectionInsight] = []
         
-        for timeframe in timeframes {
-            if let moodTrend = analyzeMoodTrend(timeframe) {
-                newInsights.append(moodTrend)
-            }
-            
-            if let sleepCorrelation = analyzeSleepCorrelation(timeframe) {
-                newInsights.append(sleepCorrelation)
-            }
-            
-            if let topicMood = analyzeTopicMoodCorrelation(timeframe) {
-                newInsights.append(topicMood)
-            }
-            
-            if let completionPattern = analyzeCompletionPattern(timeframe) {
-                newInsights.append(completionPattern)
-            }
-            
-            if let fillerPattern = analyzeFillerWordPattern(timeframe) {
-                newInsights.append(fillerPattern)
-            }
-            
-            if let timePattern = analyzeTimeOfDayPattern(timeframe) {
-                newInsights.append(timePattern)
-            }
-            
-            if let wordCountTrend = analyzeWordCountTrend(timeframe) {
-                newInsights.append(wordCountTrend)
-            }
-            
-            if let momentPattern = analyzeKeyMomentPattern(timeframe) {
-                newInsights.append(momentPattern)
-            }
-            
-            if let lengthPattern = analyzeReflectionLength(timeframe) {
-                newInsights.append(lengthPattern)
-            }
-            
-            if let detailedTopics = analyzeDetailedTopics(timeframe) {
-                newInsights.append(detailedTopics)
-            }
-            
-            if let commonTimes = analyzeMostCommonTimes(timeframe) {
-                newInsights.append(commonTimes)
-            }
+//        for timeframe in timeframes {
+//            if let moodTrend = analyzeMoodTrend(timeframe) {
+//                newInsights.append(moodTrend)
+//            }
+//            
+//            if let sleepCorrelation = analyzeSleepCorrelation(timeframe) {
+//                newInsights.append(sleepCorrelation)
+//            }
+//            
+//            if let topicMood = analyzeTopicMoodCorrelation(timeframe) {
+//                newInsights.append(topicMood)
+//            }
+//            
+//            if let completionPattern = analyzeCompletionPattern(timeframe) {
+//                newInsights.append(completionPattern)
+//            }
+//            
+//            if let fillerPattern = analyzeFillerWordPattern(timeframe) {
+//                newInsights.append(fillerPattern)
+//            }
+//            
+//            if let timePattern = analyzeTimeOfDayPattern(timeframe) {
+//                newInsights.append(timePattern)
+//            }
+//            
+//            if let wordCountTrend = analyzeWordCountTrend(timeframe) {
+//                newInsights.append(wordCountTrend)
+//            }
+//            
+//            if let momentPattern = analyzeKeyMomentPattern(timeframe) {
+//                newInsights.append(momentPattern)
+//            }
+//            
+//            if let lengthPattern = analyzeReflectionLength(timeframe) {
+//                newInsights.append(lengthPattern)
+//            }
+//            
+//            if let detailedTopics = analyzeDetailedTopics(timeframe) {
+//                newInsights.append(detailedTopics)
+//            }
+//            
+//            if let commonTimes = analyzeMostCommonTimes(timeframe) {
+//                newInsights.append(commonTimes)
+//            }
+//    
+//        }
+//        
+//        analyzeTopicFrequency()
+//        calculateTrendStats()
+        
+    }
     
+    private func getAverageMoodRating(for date: Date) -> Double? {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date)
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
+            return nil
         }
         
-        analyzeTopicFrequency()
-        calculateTrendStats()
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "ReflectionEntity")
+        fetchRequest.predicate = NSPredicate(format: "date >= %@ AND date < %@ AND moodRating != nil",
+                                           startOfDay as NSDate,
+                                           endOfDay as NSDate)
         
-        DispatchQueue.main.async {
-            self.insights = newInsights.filter { $0.isSignificant }
+        do {
+            let results = try context.fetch(fetchRequest)
+            let ratings = results.compactMap { entity -> Double? in
+                return entity.value(forKey: "moodRating") as? Double
+            }
+            
+            guard !ratings.isEmpty else { return nil }
+            return ratings.reduce(0, +) / Double(ratings.count)
+        } catch {
+            print("Error fetching mood ratings: \(error)")
+            return nil
         }
     }
     
-    private func analyzeMoodTrend(_ timeframe: Timeframe) -> ReflectionInsight? {
-        let ratings = fetchDayRatings(timeframe)
-        guard ratings.count >= Constants.minimumDataPoints else { return nil }
+    private func getAverageMoodRatings(_ timeframe: Timeframe) -> [Date: Double] {
+        let calendar = Calendar.current
+        let now = Date()
         
-        let averageRating = ratings.map(\.rating).reduce(0, +) / Double(ratings.count)
-        let moodLabel = getMoodLabel(for: averageRating)
-        
-        return ReflectionInsight(
-            type: .moodTrend,
-            message: "You've been feeling \(moodLabel)",
-            value: averageRating,
-            timeframe: timeframe,
-            isSignificant: true
-        )
-    }
-    
-    private func analyzeSleepCorrelation(_ timeframe: Timeframe) -> ReflectionInsight? {
-        let metrics = fetchMetricsWithRatings(timeframe)
-        let sleepData = metrics.compactMap { metric -> (sleep: Double, rating: Double)? in
-            guard let sleep = metric.sleepHours else { return nil }
-            return (sleep, metric.rating)
+        guard let startDate = calendar.date(byAdding: timeframe.dateComponent, to: now) else {
+            return [:]
         }
         
-        guard sleepData.count >= Constants.minimumDataPoints else { return nil }
+        var currentDate = startDate
+        var moodsByDate: [Date: Double] = [:]
         
-        let correlation = calculateCorrelation(
-            sleepData.map(\.sleep),
-            sleepData.map(\.rating)
-        )
+        while currentDate <= now {
+            if let averageMood = getAverageMoodRating(for: currentDate) {
+                let normalizedDate = calendar.startOfDay(for: currentDate)
+                moodsByDate[normalizedDate] = averageMood
+            }
+            
+            // Advance to next day
+            guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else {
+                break
+            }
+            currentDate = nextDate
+        }
         
-        guard correlation > Constants.significantCorrelation else { return nil }
-        
-        return ReflectionInsight(
-            type: .sleepPattern,
-            message: "Your outlook tends to improve with more sleep",
-            value: correlation,
-            timeframe: timeframe,
-            isSignificant: true
-        )
+        return moodsByDate
     }
     
-    private func analyzeTopicMoodCorrelation(_ timeframe: Timeframe) -> ReflectionInsight? {
-        let keyMoments = fetchKeyMoments(timeframe)
-        var topicRatings: [String: [Double]] = [:]
+    private func getDailyMetrics(for timeframe: Timeframe) -> [(date: Date, mood: Double, sleep: Double?, wordCount: Int, topic: String?)] {
+        let calendar = Calendar.current
+        let now = Date()
+        guard let startDate = calendar.date(byAdding: timeframe.dateComponent, to: now) else {
+            return []
+        }
         
-        for moment in keyMoments where moment.type == "standout" {
-            guard let topic = moment.topic else { continue }
-            if let rating = moment.associatedMood {
-                topicRatings[topic, default: []].append(rating)
+        var metrics: [(date: Date, mood: Double, sleep: Double?, wordCount: Int, topic: String?)] = []
+        var currentDate = startDate
+        
+        while currentDate <= now {
+            if let averageMood = getAverageMoodRating(for: currentDate) {
+
+                let startOfDay = calendar.startOfDay(for: currentDate)
+                guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
+                    continue
+                }
+                
+                let dayMetricsFetch = NSFetchRequest<NSManagedObject>(entityName: "DayMetricsEntity")
+                dayMetricsFetch.predicate = NSPredicate(format: "date >= %@ AND date < %@",
+                                                   startOfDay as NSDate,
+                                                   endOfDay as NSDate)
+                
+                // Fetch StandoutTopic
+                let topicFetch = NSFetchRequest<NSManagedObject>(entityName: "StandoutTopicMetric")
+                topicFetch.predicate = NSPredicate(format: "date >= %@ AND date < %@",
+                                                 startOfDay as NSDate,
+                                                 endOfDay as NSDate)
+                
+                do {
+                    let dayResults = try context.fetch(dayMetricsFetch)
+                    let topicResults = try context.fetch(topicFetch)
+                    
+                    let sleep = dayResults.first?.value(forKey: "sleepHours") as? Double
+                    let wordCount = dayResults.first?.value(forKey: "totalWords") as? Int ?? 0
+                    let topic = topicResults.first?.value(forKey: "topic") as? String
+                    
+                    metrics.append((
+                        date: startOfDay,
+                        mood: averageMood,
+                        sleep: sleep,
+                        wordCount: wordCount,
+                        topic: topic
+                    ))
+                } catch {
+                    print("Error fetching metrics: \(error)")
+                }
+                
+                guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else {
+                    break
+                }
+                currentDate = nextDate
             }
         }
         
-        var highestTopic = ""
-        var highestAvg = 0.0
-        
-        for (topic, ratings) in topicRatings where ratings.count >= Constants.minimumDataPoints {
-            let avg = ratings.reduce(0, +) / Double(ratings.count)
-            if avg > highestAvg {
-                highestAvg = avg
-                highestTopic = topic
-            }
+        return metrics
+    }
+    
+    // MARK: - Correlation Analysis Methods
+    private func fetchSleepCorrelations(for timeframe: Timeframe) {
+        guard needsToFetchData(for: timeframe, category: "sleep") else {
+            return
         }
         
-        guard !highestTopic.isEmpty else { return nil }
+        let metrics = getDailyMetrics(for: timeframe)
         
-        return ReflectionInsight(
-            type: .topicCorrelation,
-            message: "Your reflections tend to be more positive when discussing \(highestTopic)",
-            value: highestAvg,
-            timeframe: timeframe,
-            isSignificant: true
-        )
-    }
-    
-    private func analyzeCompletionPattern(_ timeframe: Timeframe) -> ReflectionInsight? {
-        let metrics = fetchMetricsWithRatings(timeframe)
-        let aboveThreshold = metrics.filter { $0.rating > Constants.moodThreshold }
-        let belowThreshold = metrics.filter { $0.rating <= Constants.moodThreshold }
-        
-        guard aboveThreshold.count >= Constants.minimumDataPoints,
-              belowThreshold.count >= Constants.minimumDataPoints else { return nil }
-        
-        let aboveAvg = Double(aboveThreshold.map(\.entryCount).reduce(0, +)) / Double(aboveThreshold.count)
-        let belowAvg = Double(belowThreshold.map(\.entryCount).reduce(0, +)) / Double(belowThreshold.count)
-        
-        let percentChange = ((aboveAvg - belowAvg) / belowAvg) * 100
-        
-        guard percentChange > Constants.significantChangeThreshold else { return nil }
-        
-        return ReflectionInsight(
-            type: .completionPattern,
-            message: "You tend to reflect more thoroughly when feeling better",
-            value: percentChange,
-            timeframe: timeframe,
-            isSignificant: true
-        )
-    }
-    
-    private func analyzeFillerWordPattern(_ timeframe: Timeframe) -> ReflectionInsight? {
-        let metrics = fetchMetricsWithRatings(timeframe)
-        guard metrics.count >= Constants.minimumDataPoints else { return nil }
-        
-        let averageFillers = Double(metrics.map(\.fillerWordCount).reduce(0, +)) / Double(metrics.count)
-        
-        return ReflectionInsight(
-            type: .fillerPattern,
-            message: "Average of \(Int(round(averageFillers))) filler words per reflection",
-            value: averageFillers,
-            timeframe: timeframe,
-            isSignificant: true
-        )
-    }
-    
-    private func analyzeTimeOfDayPattern(_ timeframe: Timeframe) -> ReflectionInsight? {
-        let metrics = fetchMetricsWithRatings(timeframe)
-        var timeRatings: [Int: [Double]] = [:]
+        // Group metrics by sleep duration categories
+        var lessThan5: [Double] = []
+        var between6And8: [Double] = []
+        var moreThan9: [Double] = []
         
         for metric in metrics {
-            let hour = Calendar.current.component(.hour, from: metric.timeOfEntry ?? Date())
-            timeRatings[hour, default: []].append(metric.rating)
-        }
-        
-        var bestHour = 0
-        var bestAvg = 0.0
-        
-        for (hour, ratings) in timeRatings where ratings.count >= Constants.minimumDataPoints {
-            let avg = ratings.reduce(0, +) / Double(ratings.count)
-            if avg > bestAvg {
-                bestAvg = avg
-                bestHour = hour
+            guard let sleep = metric.sleep else { continue }
+            
+            if sleep < 5 {
+                lessThan5.append(metric.mood)
+            } else if sleep >= 6 && sleep <= 8 {
+                between6And8.append(metric.mood)
+            } else if sleep > 9 {
+                moreThan9.append(metric.mood)
             }
         }
         
-        let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "ha"
-        let hourDate = Calendar.current.date(bySettingHour: bestHour, minute: 0, second: 0, of: Date()) ?? Date()
-        let timeString = timeFormatter.string(from: hourDate).lowercased()
-        
-        return ReflectionInsight(
-            type: .timePattern,
-            message: "Your reflections tend to be more positive around \(timeString)",
-            value: Double(bestHour),
-            timeframe: timeframe,
-            isSignificant: true
-        )
-    }
-    
-    private func analyzeWordCountTrend(_ timeframe: Timeframe) -> ReflectionInsight? {
-        let metrics = fetchMetricsWithRatings(timeframe)
-        guard metrics.count >= Constants.minimumDataPoints else { return nil }
-        
-        let averageWords = Double(metrics.map(\.totalWords).reduce(0, +)) / Double(metrics.count)
-        
-        return ReflectionInsight(
-            type: .wordCount,
-            message: "Average reflection length: \(Int(round(averageWords))) words",
-            value: averageWords,
-            timeframe: timeframe,
-            isSignificant: true
-        )
-    }
-    
-    private func analyzeKeyMomentPattern(_ timeframe: Timeframe) -> ReflectionInsight? {
-        let moments = fetchKeyMoments(timeframe)
-        var categoryCount: [String: Int] = [:]
-        
-        for moment in moments where moment.type == "standout" {
-            if let category = moment.category {
-                categoryCount[category, default: 0] += 1
-            }
-        }
-        
-        guard let (topCategory, count) = categoryCount.max(by: { $0.value < $1.value }) else { return nil }
-        
-        return ReflectionInsight(
-            type: .momentPattern,
-            message: "Your significant moments often involve \(topCategory)",
-            value: Double(count),
-            timeframe: timeframe,
-            isSignificant: true
-        )
-    }
-    
-    private func analyzeTopicFrequency() {
-        let moments = fetchKeyMoments(.month)
-        var topicFrequency: [String: Int] = [:]
-        
-        for moment in moments {
-            if let topic = moment.topic {
-                topicFrequency[topic, default: 0] += 1
-            }
-        }
-        
-        let sortedTopics = topicFrequency.sorted { $0.value > $1.value }
-        
-        DispatchQueue.main.async {
-            self.topicStats = sortedTopics.map { topic, count in
-                TopicStat(name: topic, frequency: count)
-            }
-        }
-    }
-    
-    private func calculateTrendStats() {
-        let metrics = fetchMetricsWithRatings(.month)
-        let totalEntries = metrics.count
-        let totalWords = metrics.map(\.totalWords).reduce(0, +)
-        let averageDuration = metrics.map(\.totalDuration).reduce(0, +) / Double(max(1, totalEntries))
-        
-        DispatchQueue.main.async {
-            self.trendStats = TrendStats(
-                totalEntries: totalEntries,
-                totalWords: totalWords,
-                averageDuration: averageDuration
+        // Calculate average mood effect for each category
+        let correlations = [
+            CorrelationData(
+                name: "< 5 hours",
+                effect: lessThan5.isEmpty ? 0 : (lessThan5.reduce(0, +) / Double(lessThan5.count) - 7),
+                color: Color(hex: "B5D5E2")
+            ),
+            CorrelationData(
+                name: "6-8 hours",
+                effect: between6And8.isEmpty ? 0 : (between6And8.reduce(0, +) / Double(between6And8.count) - 7),
+                color: Color(hex: "A28497")
+            ),
+            CorrelationData(
+                name: "9+ hours",
+                effect: moreThan9.isEmpty ? 0 : (moreThan9.reduce(0, +) / Double(moreThan9.count) - 7),
+                color: Color(hex: "93A7BB")
             )
-        }
+        ]
+        
+        updateCorrelations(for: timeframe, category: "sleep", data: correlations)
     }
     
-    private func fetchDayRatings(_ timeframe: Timeframe) -> [(rating: Double, date: Date)] {
-        let startDate = Calendar.current.date(byAdding: timeframe.dateComponent, to: Date()) ?? Date()
-        
-        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DayMetricsEntity")
-        fetchRequest.predicate = NSPredicate(format: "date >= %@", startDate as NSDate)
-        
-        do {
-            let results = try context.fetch(fetchRequest)
-            return results.compactMap { entity -> (Double, Date)? in
-                guard let date = entity.value(forKey: "date") as? Date,
-                      let rating = entity.value(forKey: "moodRating") as? Double else { return nil }
-                return (rating, date)
-            }
-        } catch {
-            return []
-        }
-    }
-    
-    private func fetchMetricsWithRatings(_ timeframe: Timeframe) -> [MetricData] {
-        let startDate = Calendar.current.date(byAdding: timeframe.dateComponent, to: Date()) ?? Date()
-        
-        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DayMetricsEntity")
-        fetchRequest.predicate = NSPredicate(format: "date >= %@", startDate as NSDate)
-        
-        do {
-            let results = try context.fetch(fetchRequest)
-            return results.compactMap { entity -> MetricData? in
-                guard let date = entity.value(forKey: "date") as? Date,
-                      let rating = entity.value(forKey: "moodRating") as? Double else { return nil }
-                
-                return MetricData(
-                    date: date,
-                    rating: rating,
-                    sleepHours: entity.value(forKey: "sleepHours") as? Double,
-                    entryCount: entity.value(forKey: "entryCount") as? Int ?? 0,
-                    totalWords: entity.value(forKey: "totalWords") as? Int ?? 0,
-                    totalDuration: entity.value(forKey: "totalDuration") as? Double ?? 0,
-                    fillerWordCount: entity.value(forKey: "fillerWordCount") as? Int ?? 0,
-                    timeOfEntry: entity.value(forKey: "timeOfEntry") as? Date
-                )
-            }
-        } catch {
-            return []
-        }
-    }
-    
-    private func fetchKeyMoments(_ timeframe: Timeframe) -> [KeyMomentData] {
-        let startDate = Calendar.current.date(byAdding: timeframe.dateComponent, to: Date()) ?? Date()
-        
-        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "KeyMomentEntity")
-        fetchRequest.predicate = NSPredicate(format: "date >= %@", startDate as NSDate)
-        
-        do {
-            let results = try context.fetch(fetchRequest)
-            return results.compactMap { entity -> KeyMomentData? in
-                guard let date = entity.value(forKey: "date") as? Date else { return nil }
-                
-                return KeyMomentData(
-                    date: date,
-                    content: entity.value(forKey: "content") as? String,
-                    associatedMood: entity.value(forKey: "associatedMood") as? Double,
-                    topic: entity.value(forKey: "topic") as? String,
-                    category: entity.value(forKey: "category") as? String,
-                    type: entity.value(forKey: "momentType") as? String ?? ""
-                )
-            }
-        } catch {
-            return []
-        }
-    }
-    
-    private func analyzeReflectionLength(_ timeframe: Timeframe) -> ReflectionInsight? {
-        let metrics = fetchMetricsWithRatings(timeframe)
-        let aboveThreshold = metrics.filter { $0.rating > Constants.moodThreshold }
-        let belowThreshold = metrics.filter { $0.rating <= Constants.moodThreshold }
-        
-        guard aboveThreshold.count >= Constants.minimumDataPoints,
-              belowThreshold.count >= Constants.minimumDataPoints else { return nil }
-        
-        let aboveAvgWords = Double(aboveThreshold.map(\.totalWords).reduce(0, +)) / Double(aboveThreshold.count)
-        let belowAvgWords = Double(belowThreshold.map(\.totalWords).reduce(0, +)) / Double(belowThreshold.count)
-        
-        let percentChange = ((aboveAvgWords - belowAvgWords) / belowAvgWords) * 100
-        
-        // Only return insight if reflections are longer during better moods
-        guard percentChange > Constants.significantChangeThreshold else { return nil }
-        
-        return ReflectionInsight(
-            type: .reflectionLength,
-            message: "Your reflections tend to be more detailed when feeling better",
-            value: percentChange,
-            timeframe: timeframe,
-            isSignificant: true
-        )
-    }
-
-    private func analyzeDetailedTopics(_ timeframe: Timeframe) -> ReflectionInsight? {
-        let metrics = fetchMetricsWithRatings(timeframe)
-        let moments = fetchKeyMoments(timeframe)
-        var topicWordCounts: [String: [Int]] = [:]
-        
-        // Match moments with their corresponding metrics
-        for moment in moments {
-            guard let topic = moment.topic else { continue }
-            if let metric = metrics.first(where: { Calendar.current.isDate($0.date, inSameDayAs: moment.date) }) {
-                topicWordCounts[topic, default: []].append(metric.totalWords)
-            }
+    private func fetchWordCountCorrelations(for timeframe: Timeframe) {
+        guard needsToFetchData(for: timeframe, category: "wordCount") else {
+            return
         }
         
-        var mostDetailedTopic = ""
-        var highestAvgWords = 0.0
+        let metrics = getDailyMetrics(for: timeframe)
         
-        for (topic, wordCounts) in topicWordCounts where wordCounts.count >= Constants.minimumDataPoints {
-            let avg = Double(wordCounts.reduce(0, +)) / Double(wordCounts.count)
-            if avg > highestAvgWords {
-                highestAvgWords = avg
-                mostDetailedTopic = topic
-            }
-        }
+        // Group metrics by word count categories
+        var shortEntries: [Double] = []
+        var mediumEntries: [Double] = []
+        var longEntries: [Double] = []
         
-        guard !mostDetailedTopic.isEmpty else { return nil }
+        // First find percentile thresholds for better categorization
+        let wordCounts = metrics.map { $0.wordCount }.sorted()
+        guard !wordCounts.isEmpty else { return }
         
-        return ReflectionInsight(
-            type: .topicDetail,
-            message: "You share most thoroughly when reflecting on \(mostDetailedTopic)",
-            value: highestAvgWords,
-            timeframe: timeframe,
-            isSignificant: true
-        )
-    }
-
-    private func analyzeMostCommonTimes(_ timeframe: Timeframe) -> ReflectionInsight? {
-        let metrics = fetchMetricsWithRatings(timeframe)
-        var hourCounts: [Int: Int] = [:]
+        let thirtyThreePercentile = wordCounts[wordCounts.count / 3]
+        let sixtySevenPercentile = wordCounts[2 * wordCounts.count / 3]
         
         for metric in metrics {
-            let hour = Calendar.current.component(.hour, from: metric.timeOfEntry ?? Date())
-            hourCounts[hour, default: 0] += 1
+            // Categorize based on percentiles for more even distribution
+            if metric.wordCount <= thirtyThreePercentile {
+                shortEntries.append(metric.mood)
+            } else if metric.wordCount <= sixtySevenPercentile {
+                mediumEntries.append(metric.mood)
+            } else {
+                longEntries.append(metric.mood)
+            }
         }
         
-        guard let (mostCommonHour, _) = hourCounts.max(by: { $0.value < $1.value }) else { return nil }
+        // Calculate average mood effect for each category (relative to neutral mood of 7)
+        let correlations = [
+            CorrelationData(
+                name: "Brief",
+                effect: shortEntries.isEmpty ? 0 : (shortEntries.reduce(0, +) / Double(shortEntries.count) - 7),
+                color: Color(hex: "B5D5E2")
+            ),
+            CorrelationData(
+                name: "Medium",
+                effect: mediumEntries.isEmpty ? 0 : (mediumEntries.reduce(0, +) / Double(mediumEntries.count) - 7),
+                color: Color(hex: "A28497")
+            ),
+            CorrelationData(
+                name: "Detailed",
+                effect: longEntries.isEmpty ? 0 : (longEntries.reduce(0, +) / Double(longEntries.count) - 7),
+                color: Color(hex: "93A7BB")
+            )
+        ]
         
-        let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "ha"
-        let hourDate = Calendar.current.date(bySettingHour: mostCommonHour, minute: 0, second: 0, of: Date()) ?? Date()
-        let timeString = timeFormatter.string(from: hourDate).lowercased()
-        
-        return ReflectionInsight(
-            type: .commonTime,
-            message: "You most often reflect around \(timeString)",
-            value: Double(mostCommonHour),
-            timeframe: timeframe,
-            isSignificant: true
-        )
+        updateCorrelations(for: timeframe, category: "wordCount", data: correlations)
     }
     
-    
-    private func calculateCorrelation(_ x: [Double], _ y: [Double]) -> Double {
-        guard x.count == y.count, x.count > 1 else { return 0 }
-        
-        let mx = x.reduce(0, +) / Double(x.count)
-        let my = y.reduce(0, +) / Double(y.count)
-        
-        var num = 0.0
-        var denx = 0.0
-        var deny = 0.0
-        
-        for i in 0..<x.count {
-            let dx = x[i] - mx
-            let dy = y[i] - my
-            num += dx * dy
-            denx += dx * dx
-            deny += dy * dy
+    private func fetchTimeCorrelations(for timeframe: Timeframe) {
+        guard needsToFetchData(for: timeframe, category: "timeOfDay") else {
+            return
         }
         
-        return num / (sqrt(denx) * sqrt(deny))
+        let metrics = getDailyMetrics(for: timeframe)
+        var hourlyMoods: [Int: [Double]] = [:]
+        
+        for metric in metrics {
+            let timeOfEntry = metric.date
+            
+            // Round to nearest hour (0-23)
+            let calendar = Calendar.current
+            let hour = calendar.component(.hour, from: timeOfEntry)
+            let minute = calendar.component(.minute, from: timeOfEntry)
+            let roundedHour = (minute >= 30) ?
+                (hour + 1) % 24 :
+                hour
+            
+            hourlyMoods[roundedHour, default: []].append(metric.mood)
+        }
+        
+        // Calculate average mood for each hour
+        var hourlyEffects: [(hour: Int, effect: Double)] = []
+        for (hour, moods) in hourlyMoods {
+            let avgMood = moods.reduce(0, +) / Double(moods.count)
+            let effect = avgMood - 7  // Effect relative to neutral mood
+            hourlyEffects.append((hour: hour, effect: effect))
+        }
+        
+        // Sort by effect
+        hourlyEffects.sort { $0.effect < $1.effect }
+        
+        guard !hourlyEffects.isEmpty else { return }
+        
+        // Get worst, middle, and best times
+        let worst = hourlyEffects.first!
+        let best = hourlyEffects.last!
+        let middle = hourlyEffects[hourlyEffects.count / 2]
+        
+        // Format hours for display
+        let formatter = DateFormatter()
+        formatter.dateFormat = "ha"
+        
+        func formatHour(_ hour: Int) -> String {
+            let date = Calendar.current.date(from: DateComponents(hour: hour))!
+            return formatter.string(from: date).lowercased()
+        }
+        
+        let correlations = [
+            CorrelationData(
+                name: formatHour(worst.hour),
+                effect: worst.effect,
+                color: Color(hex: "B5D5E2")
+            ),
+            CorrelationData(
+                name: formatHour(middle.hour),
+                effect: middle.effect,
+                color: Color(hex: "A28497")
+            ),
+            CorrelationData(
+                name: formatHour(best.hour),
+                effect: best.effect,
+                color: Color(hex: "93A7BB")
+            )
+        ]
+        
+        updateCorrelations(for: timeframe, category: "timeOfDay", data: correlations)
+    }
+    
+    private func fetchTopicCorrelations(for timeframe: Timeframe) {
+        guard needsToFetchData(for: timeframe, category: "topics") else {
+            return
+        }
+        
+        let metrics = getDailyMetrics(for: timeframe)
+        var topicMoods: [String: [Double]] = [:] // [topic: [moods]]
+        
+        // Collect moods for each topic
+        for metric in metrics {
+            guard let topic = metric.topic else { continue }
+            topicMoods[topic, default: []].append(metric.mood)
+        }
+        
+        // Calculate average effect for each topic
+        var topicEffects: [(topic: String, effect: Double)] = []
+        for (topic, moods) in topicMoods {
+            guard moods.count >= 3 else { continue } // Need minimum sample size
+            let avgMood = moods.reduce(0, +) / Double(moods.count)
+            let effect = avgMood - 7  // Effect relative to neutral mood
+            topicEffects.append((topic: topic, effect: effect))
+        }
+        
+        // Sort by effect
+        topicEffects.sort { $0.effect < $1.effect }
+        
+        guard topicEffects.count >= 3 else { return }
+        
+        // Get worst, middle, and best topics
+        let worst = topicEffects.first!
+        let best = topicEffects.last!
+        
+        // For middle, find the topic with effect closest to 0 (neutral)
+        let middle = topicEffects.min { abs($0.effect) < abs($1.effect) } ?? topicEffects[topicEffects.count / 2]
+        
+        let correlations = [
+            CorrelationData(
+                name: worst.topic,
+                effect: worst.effect,
+                color: Color(hex: "B5D5E2")
+            ),
+            CorrelationData(
+                name: middle.topic,
+                effect: middle.effect,
+                color: Color(hex: "A28497")
+            ),
+            CorrelationData(
+                name: best.topic,
+                effect: best.effect,
+                color: Color(hex: "93A7BB")
+            )
+        ]
+        
+        updateCorrelations(for: timeframe, category: "topics", data: correlations)
     }
     
     private func getMoodLabel(for rating: Double) -> String {
@@ -539,7 +571,7 @@ enum InsightType {
     case commonTime
 }
 
-enum Timeframe {
+enum Timeframe: CaseIterable {
     case week
     case month
     case year
@@ -557,9 +589,9 @@ enum Timeframe {
     
     var displayText: String {
         switch self {
-        case .week: return "WEEK"
-        case .month: return "MONTH"
-        case .year: return "YEAR"
+        case .week: return "Week"
+        case .month: return "Month"
+        case .year: return "Year"
         }
     }
 }

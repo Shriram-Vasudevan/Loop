@@ -45,7 +45,7 @@ class AIAnalyzer {
             [FROM "What moment from today stands out"]
             standout_analysis: {
                 exists: [YES/NO],
-                category: [IF EXISTS: realization, learning, success, challenge, connection, decision, plan],
+                category: [IF EXISTS: work, relationships, health, learning, creativity, purpose, relaxation, leisure],
                 sentiment: [positive/neutral/negative],
                 key_moment: [IF contains a meaningful realization, important event, or significant insight, extract it cleanly. Use ellipses for brevity. Limit to 1-2 sentences. If no truly significant moment, output NONE]
             }
@@ -89,7 +89,7 @@ class AIAnalyzer {
             """
         
             let requestBody: [String: Any] = [
-                "model": "gpt-4",
+                "model": "gpt-4o-mini",
                 "messages": [
                     ["role": "system", "content": "You are an expert at analyzing personal reflections while maintaining privacy. Focus on finding clear elements rather than forcing insights. For key moments, never repeat content or topics between standout and additional moments. Ensure recurring themes are genuinely mentioned multiple times."],
                     ["role": "user", "content": prompt]

@@ -41,7 +41,7 @@ class DailyCheckinManager: ObservableObject {
     }
     
     init() {
-        checkIfCheckinCompleted()
+        checkIfDailyCheckinCompleted()
     }
     
     private func fetchTodaysCheckin() -> NSManagedObject? {
@@ -53,9 +53,9 @@ class DailyCheckinManager: ObservableObject {
         
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyCheckinEntity")
         fetchRequest.predicate = NSPredicate(
-            format: "date >= %@ AND date < %@",
+            format: "date >= %@ AND date < %@ AND isDailySession == %@",
             startOfDay as NSDate,
-            endOfDay as NSDate
+            endOfDay as NSDate, true
         )
         
         do {
@@ -67,27 +67,32 @@ class DailyCheckinManager: ObservableObject {
         }
     }
     
-    func saveDailyCheckin(rating: Double) {
+    func saveDailyCheckin(rating: Double, isThroughDailySession: Bool) {
         print("\n💾 Starting to save daily check-in...")
         print("Rating to save: \(rating)")
         
         do {
-            // Check if we already have an entry for today
-            if let existingCheckin = fetchTodaysCheckin() {
-                print("📝 Found existing check-in for today, updating...")
-                existingCheckin.setValue(rating, forKey: "rating")
-                existingCheckin.setValue(Date(), forKey: "date")
-            } else {
-                print("➕ No existing check-in found, creating new entry...")
-                guard let entityDescription = NSEntityDescription.entity(forEntityName: "DailyCheckinEntity", in: context) else {
-                    print("❌ Failed to get DailyCheckinEntity description")
-                    return
+            if isThroughDailySession {
+                if let existingCheckin = fetchTodaysCheckin() {
+                    print("📝 Found existing check-in for today, updating...")
+                    existingCheckin.setValue(rating, forKey: "rating")
+                    existingCheckin.setValue(Date(), forKey: "date")
+                    existingCheckin.setValue(isThroughDailySession, forKey: "isDailySession")
                 }
                 
-                let entity = NSManagedObject(entity: entityDescription, insertInto: context)
-                entity.setValue(rating, forKey: "rating")
-                entity.setValue(Date(), forKey: "date")
+                return
             }
+            
+            print("➕ No existing check-in found, creating new entry...")
+            guard let entityDescription = NSEntityDescription.entity(forEntityName: "DailyCheckinEntity", in: context) else {
+                print("❌ Failed to get DailyCheckinEntity description")
+                return
+            }
+            
+            let entity = NSManagedObject(entity: entityDescription, insertInto: context)
+            entity.setValue(rating, forKey: "rating")
+            entity.setValue(Date(), forKey: "date")
+            entity.setValue(isThroughDailySession, forKey: "isDailySession")
             
             try context.save()
             print("✅ Successfully saved to Core Data")
@@ -136,7 +141,7 @@ class DailyCheckinManager: ObservableObject {
         }
     }
 
-    func checkIfCheckinCompleted() -> Double? {
+    func checkIfDailyCheckinCompleted() -> Double? {
         print("\n🔍 Checking if check-in is completed for today...")
         
         do {

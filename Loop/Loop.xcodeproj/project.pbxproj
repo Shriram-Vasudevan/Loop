@@ -142,6 +142,7 @@
 		99F00AB92D3DA794008F1228 /* SleepCheckinManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F00AB82D3DA794008F1228 /* SleepCheckinManager.swift */; };
 		99F00ABB2D3DC159008F1228 /* TrendsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F00ABA2D3DC159008F1228 /* TrendsManager.swift */; };
 		99F00AF42D3F3DB7008F1228 /* DayMetrics .swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F00AF32D3F3DB6008F1228 /* DayMetrics .swift */; };
+		99F00AF72D432417008F1228 /* TopicMoodGraph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F00AF62D432417008F1228 /* TopicMoodGraph.swift */; };
 		99F31CA72D0F2DA300330180 /* RecordFollowUpLoopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CA62D0F2DA300330180 /* RecordFollowUpLoopView.swift */; };
 		99F31CA92D0F31AF00330180 /* FollowUp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CA82D0F31AF00330180 /* FollowUp.swift */; };
 		99F31CAB2D0F477500330180 /* Graph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F31CAA2D0F477500330180 /* Graph.swift */; };
@@ -313,6 +314,7 @@
 		99F00ABA2D3DC159008F1228 /* TrendsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsManager.swift; sourceTree = "<group>"; };
 		99F00AF32D3F3DB6008F1228 /* DayMetrics .swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DayMetrics .swift"; sourceTree = "<group>"; };
 		99F00AF52D3F61FD008F1228 /* LoopDataNew.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = LoopDataNew.xcdatamodel; sourceTree = "<group>"; };
+		99F00AF62D432417008F1228 /* TopicMoodGraph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopicMoodGraph.swift; sourceTree = "<group>"; };
 		99F31CA62D0F2DA300330180 /* RecordFollowUpLoopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordFollowUpLoopView.swift; sourceTree = "<group>"; };
 		99F31CA82D0F31AF00330180 /* FollowUp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FollowUp.swift; sourceTree = "<group>"; };
 		99F31CAA2D0F477500330180 /* Graph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Graph.swift; sourceTree = "<group>"; };
@@ -411,6 +413,7 @@
 				9935CEEF2D2C75DA00AF0C16 /* FullDayActivityView.swift */,
 				999DAC772D1FA82000A6626B /* TodaysInsightsView.swift */,
 				999DAC852D20994400A6626B /* TrendsView.swift */,
+				99F00AF62D432417008F1228 /* TopicMoodGraph.swift */,
 				999DAC872D209AA100A6626B /* TrendGraph.swift */,
 				99AC6DDB2CE0226500B0D0D6 /* SettingsView.swift */,
 				99AC6DD52CDFFAFA00B0D0D6 /* LoopChatView.swift */,
@@ -715,6 +718,7 @@
 				9935CEF82D2CA6BD00AF0C16 /* AITrendAnalysisModels.swift in Sources */,
 				999DAC802D2078C400A6626B /* QuantitativeTrendsManager.swift in Sources */,
 				99F7F6EB2CAC7935009858AC /* AudioManager.swift in Sources */,
+				99F00AF72D432417008F1228 /* TopicMoodGraph.swift in Sources */,
 				9953BE082CFCB92600348AC3 /* StoragePreference.swift in Sources */,
 				990E4A8C2CB48BAF009F88A0 /* PagesHolderView.swift in Sources */,
 				99F31CAB2D0F477500330180 /* Graph.swift in Sources */,

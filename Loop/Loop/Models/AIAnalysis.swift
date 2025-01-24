@@ -81,10 +81,13 @@ enum TopicCategory: String, Codable {
     case work
     case relationships
     case health
-    case growth
+    case learning
     case creativity
     case purpose
+    case relaxation
+    case leisure
 }
+
 
 enum MomentCategory: String, Codable {
     case realization

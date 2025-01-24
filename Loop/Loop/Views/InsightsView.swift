@@ -1,154 +1,116 @@
-////
-////  InsightsView.swift
-////  Loop
-////
-////  Created by Shriram Vasudevan on 10/7/24.
-////
 //
-//import SwiftUI
-//import Charts
+//  InsightsView.swift
+//  Loop
 //
-//struct InsightsView: View {
-//    @ObservedObject var analysisManager = AnalysisManager.shared
-//    
-//    @State private var selectedTab = "today"
-//    
-//    private let accentColor = Color(hex: "A28497")
-//    private let backgroundColor = Color(hex: "FAFBFC")
-//    private let textColor = Color(hex: "2C3E50")
-//    private let surfaceColor = Color(hex: "F8F5F7")
-//    
-//    @State var timeFrame: Timeframe = .week
-//    
-//    var body: some View {
-//        ZStack {
-//            Color(hex: "F5F5F5")
-//                .ignoresSafeArea()
-//            VStack(spacing: 0) {
-//                tabView
-//                    .padding(.top, 24)
-//                
-//                contentView
-//                    .padding(.top, selectedTab == "today" ? 32 : 0)
-//            }
-//        }
-//    }
-//    
-//    private var tabView: some View {
-//        Menu {
-//            Button {
-//                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-//                    selectedTab = "today"
-//                }
-//            } label: {
-//                HStack {
-//                    Text("Today")
-//                        .font(.system(size: 14, weight: .medium))
-//                        .tracking(1.5)
-//                }
-//            }
-//            
-//            Button {
-//                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-//                    selectedTab = "trends"
-//                }
-//            } label: {
-//                HStack {
-//                    Text("Trends")
-//                        .font(.system(size: 14, weight: .medium))
-//                        .tracking(1.5)
-//                }
-//            }
-//        } label: {
-//            ZStack {
-//                VStack(alignment: .center, spacing: 4) {
-//                    Text(selectedTab == "today" ? "TODAY" : "TRENDS")
-//                        .font(.system(size: 13, weight: .medium))
-//                        .tracking(1.5)
-//                        .foregroundColor(textColor.opacity(0.6))
-//                    
-//                    Text(selectedTab == "today"
-//                        ? formattedTodayDate()
-//                        : {
-//                            switch timeFrame {
-//                            case .week:
-//                                return formattedWeekDateRange()
-//                            case .month:
-//                                return currentMonth()
-//                            case .year:
-//                                return currentYear()
-//                            }
-//                        }()
-//                    )
-//                    .font(.system(size: 12))
-//                    .foregroundColor(textColor.opacity(0.6))
-//                }
-//                
-//                HStack {
-//                    
-//                    Spacer()
-//                    
-//                    Image(systemName: "chevron.down")
-//                        .font(.system(size: 12, weight: .medium))
-//                        .foregroundColor(textColor.opacity(0.6))
-//                }
-//            }
-//            .padding(.horizontal, 16)
-//            .padding(.vertical, 12)
-//            .background(
-//                RoundedRectangle(cornerRadius: 10)
-//                    .fill(.white)
-//            )
-//        }
-//        .padding(.horizontal, 24)
-//    }
-//    
-//    private func formattedWeekDateRange() -> String {
-//        let calendar = Calendar.current
-//        let today = Date()
-//        
-//        let weekday = calendar.component(.weekday, from: today)
-//        let daysToSubtract = weekday - 1
-//        guard let weekStart = calendar.date(byAdding: .day, value: -daysToSubtract, to: today),
-//              let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) else {
-//            return ""
-//        }
-//        
-//        let dateFormatter = DateFormatter()
-//        dateFormatter.dateFormat = "MMM d"
-//        
-//        return "\(dateFormatter.string(from: weekStart)) - \(dateFormatter.string(from: weekEnd))"
-//    }
-//    
+//  Created by Shriram Vasudevan on 10/7/24.
 //
-//    private func formattedTodayDate() -> String {
-//        let formatter = DateFormatter()
-//        formatter.dateFormat = "MMM d"
-//        return formatter.string(from: Date())
-//    }
-//    
-//    private func currentMonth() -> String {
-//        let formatter = DateFormatter()
-//        formatter.dateFormat = "MMMM"
-//        return formatter.string(from: Date())
-//    }
-//    
-//    private func currentYear() -> String {
-//        let formatter = DateFormatter()
-//        formatter.dateFormat = "YYYY"
-//        return formatter.string(from: Date())
-//    }
-//    
-//    @ViewBuilder
-//    private var contentView: some View {
-//        if selectedTab == "today" {
-//            TodaysInsightsView(analysisManager: analysisManager)
-//        } else {
-//            TrendsView(selectedTimeframe: timeFrame, previewData: nil)
-//        }
-//    }
-//}
-//
+
+import SwiftUI
+import Charts
+
+struct InsightsView: View {
+    @ObservedObject var analysisManager = AnalysisManager.shared
+    
+    @State private var selectedTab = "today"
+    
+    private let accentColor = Color(hex: "A28497")
+    private let backgroundColor = Color(hex: "FAFBFC")
+    private let textColor = Color(hex: "2C3E50")
+    private let surfaceColor = Color(hex: "F8F5F7")
+        
+    var body: some View {
+        ZStack {
+            Color(hex: "F5F5F5")
+                .ignoresSafeArea()
+            VStack(spacing: 0) {
+                tabView
+                    .padding(.top, 24)
+                
+                contentView
+                    .padding(.top, 32)
+            }
+        }
+    }
+    
+    private var tabView: some View {
+        HStack {
+            HStack (spacing: 12) {
+                Button {
+                    withAnimation {
+                        selectedTab = "today"
+                    }
+                } label: {
+                    Text("TODAY")
+                        .font(.system(size: 20, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(selectedTab == "today" ? textColor : textColor.opacity(0.6))
+                }
+                
+                Button {
+                    withAnimation {
+                        selectedTab = "trends"
+                    }
+                } label: {
+                    Text("TRENDS")
+                        .font(.system(size: 20, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(selectedTab == "trends" ? textColor : textColor.opacity(0.6))
+                }
+                   
+                Spacer()
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal)
+    }
+    
+    private func formattedWeekDateRange() -> String {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        let weekday = calendar.component(.weekday, from: today)
+        let daysToSubtract = weekday - 1
+        guard let weekStart = calendar.date(byAdding: .day, value: -daysToSubtract, to: today),
+              let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) else {
+            return ""
+        }
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM d"
+        
+        return "\(dateFormatter.string(from: weekStart)) - \(dateFormatter.string(from: weekEnd))"
+    }
+    
+
+    private func formattedTodayDate() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter.string(from: Date())
+    }
+    
+    private func currentMonth() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM"
+        return formatter.string(from: Date())
+    }
+    
+    private func currentYear() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "YYYY"
+        return formatter.string(from: Date())
+    }
+    
+    @ViewBuilder
+    private var contentView: some View {
+        if selectedTab == "today" {
+            TodaysInsightsView(analysisManager: analysisManager)
+        } else {
+            TrendsView()
+        }
+    }
+}
+
 //struct FlowLayout: Layout {
 //    var spacing: CGFloat = 8
 //    
@@ -240,11 +202,11 @@
 //        }
 //    }
 //}
-//
-//#if DEBUG
-//struct InsightsView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        InsightsView(analysisManager: .preview)
-//    }
-//}
-//#endif
+
+#if DEBUG
+struct InsightsView_Previews: PreviewProvider {
+    static var previews: some View {
+        InsightsView()
+    }
+}
+#endif

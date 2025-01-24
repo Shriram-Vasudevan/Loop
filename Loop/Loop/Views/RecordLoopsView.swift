@@ -174,6 +174,17 @@ struct RecordLoopsView: View {
         VStack(spacing: 24) {
             VStack (spacing: 10) {
                 HStack {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 20, weight: .light))
+                            .foregroundColor(.black)
+                    }
+                    
+                    Spacer()
+                }
+                HStack {
                     Text("daily reflection for \(formatDate())")
                         .font(.custom("PPNeueMontreal-Bold", size: 35))
                         .foregroundColor(textColor)
@@ -222,7 +233,7 @@ struct RecordLoopsView: View {
             }
             .padding(.top, 10)
         }
-        .padding(.top, 45)
+        .padding(.top, 30)
         .padding(.bottom, 40)
     }
    

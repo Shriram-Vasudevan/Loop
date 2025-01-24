@@ -1,12 +1,178 @@
-////
-////  TrendGraph.swift
-////  Loop
-////
-////  Created by Shriram Vasudevan on 12/28/24.
-////
 //
-//import SwiftUI
+//  TrendGraph.swift
+//  Loop
 //
+//  Created by Shriram Vasudevan on 12/28/24.
+//
+
+import SwiftUI
+
+struct MoodTrendView: View {
+    @Binding var timeframe: Timeframe
+    @State private var animateGraph = false
+    
+    private let sadColor = Color(hex: "1E3D59")
+    private let neutralColor = Color(hex: "94A7B7")
+    private let happyColor = Color(hex: "B784A7")
+    private let textColor = Color(hex: "2C3E50")
+    
+    private let weekData = [7.0, 6.5, 8.0, 7.5, 8.5, 7.0, 8.0]
+    
+    var body: some View {
+        VStack(alignment: .center, spacing: 16) {
+            VStack(alignment: .center, spacing: 5) {
+                Text("THIS WEEK YOU'VE BEEN")
+                    .font(.system(size: 13))
+                    .foregroundColor(textColor.opacity(0.6))
+                
+                Text(getMoodLabel(for: 5.0))
+                    .font(.system(size: 28, weight: .medium))
+                    .foregroundColor(getColor(for: 5.0))
+            }
+            
+            ZStack {
+                if weekData.count < 3 {
+                    GraphView(data: [4.5, 3.2, 5.4, 6.5],
+                            labels: ["S", "M", "T", "W", "T", "F", "S"],
+                            animate: animateGraph)
+                        .blur(radius: 3)
+                        .opacity(0.3)
+                    
+                    Text("REFLECT FOR 3 DAYS TO SEE TRENDS")
+                        .multilineTextAlignment(.center)
+                        .font(.system(size: 13, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(textColor.opacity(0.5))
+                } else {
+                    GraphView(data: weekData,
+                            labels: ["S", "M", "T", "W", "T", "F", "S"],
+                            animate: animateGraph)
+                }
+            }
+            .frame(height: 180)
+            
+            
+            HStack(spacing: 0) {
+                ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { label in
+                    Text(label)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(textColor.opacity(0.6))
+                        .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        .onAppear {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                animateGraph = true
+            }
+        }
+    }
+    
+    private func getMoodLabel(for rating: Double) -> String {
+        switch rating {
+        case 0...3: return "feeling down"
+        case 3...4: return "not great"
+        case 4...6: return "okay"
+        case 6...8: return "pretty good"
+        case 8...10: return "feeling great"
+        default: return "okay"
+        }
+    }
+    
+    private func getColor(for rating: Double) -> Color {
+        if rating <= 5 {
+            let t = (rating - 1) / 4
+            return interpolateColor(from: sadColor, to: neutralColor, with: t)
+        } else {
+            let t = (rating - 5) / 5
+            return interpolateColor(from: neutralColor, to: happyColor, with: t)
+        }
+    }
+    
+    private func interpolateColor(from: Color, to: Color, with percentage: Double) -> Color {
+        let fromUIColor = UIColor(from)
+        let toUIColor = UIColor(to)
+        
+        var fromR: CGFloat = 0
+        var fromG: CGFloat = 0
+        var fromB: CGFloat = 0
+        var fromA: CGFloat = 0
+        fromUIColor.getRed(&fromR, green: &fromG, blue: &fromB, alpha: &fromA)
+        
+        var toR: CGFloat = 0
+        var toG: CGFloat = 0
+        var toB: CGFloat = 0
+        var toA: CGFloat = 0
+        toUIColor.getRed(&toR, green: &toG, blue: &toB, alpha: &toA)
+        
+        let r = fromR + (toR - fromR) * CGFloat(percentage)
+        let g = fromG + (toG - fromG) * CGFloat(percentage)
+        let b = fromB + (toB - fromB) * CGFloat(percentage)
+        let a = fromA + (toA - fromA) * CGFloat(percentage)
+        
+        return Color(UIColor(red: r, green: g, blue: b, alpha: a))
+    }
+}
+
+struct GraphView: View {
+    let data: [Double]
+    let labels: [String]
+    let animate: Bool
+    
+    private let accentColor = Color(hex: "A28497")
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                linePath(in: geometry)
+                    .trim(from: 0, to: animate ? 1 : 0)
+                    .stroke(accentColor, lineWidth: 10)
+                    .animation(.easeInOut(duration: 1.2), value: animate)
+            }
+        }
+    }
+    
+    private func linePath(in geometry: GeometryProxy) -> Path {
+        Path { path in
+            let points = calculatePoints(in: geometry)
+            guard !points.isEmpty else { return }
+            
+            path.move(to: points[0])
+            for i in 1..<points.count {
+                let control1 = CGPoint(
+                    x: points[i-1].x + (points[i].x - points[i-1].x) * 0.5,
+                    y: points[i-1].y
+                )
+                let control2 = CGPoint(
+                    x: points[i-1].x + (points[i].x - points[i-1].x) * 0.5,
+                    y: points[i].y
+                )
+                path.addCurve(
+                    to: points[i],
+                    control1: control1,
+                    control2: control2
+                )
+            }
+        }
+    }
+    
+    private func calculatePoints(in geometry: GeometryProxy) -> [CGPoint] {
+        guard let max = data.max(), let min = data.min(), !data.isEmpty else { return [] }
+        let range = max - min
+        let availableHeight = geometry.size.height - 40
+        let width = geometry.size.width
+        let xStep = width / CGFloat(data.count - 1)
+        
+        return data.enumerated().map { index, value in
+            let x = CGFloat(index) * xStep
+            let normalizedY = range != 0 ? (value - min) / range : 0
+            let y = availableHeight - (normalizedY * availableHeight * 0.8)
+            return CGPoint(x: x, y: y)
+        }
+    }
+}
+
+
 //
 ////struct TrendGraphCard: View {
 ////    @Binding var selectedMetric: MetricType

@@ -86,7 +86,7 @@ class ScheduleManager: ObservableObject {
         return Color(UIColor(red: r, green: g, blue: b, alpha: a))
     }
     
-    private func fetchRatingsInDateRange(startDate: Date, endDate: Date) throws -> [Date: Double] {
+    private func fetchRatingsInDateRange(startDate: Date, endDate: Date) throws -> [Date: [Double]] {
         print("📊 Fetching ratings from \(startDate) to \(endDate)")
         
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyCheckinEntity")
@@ -101,7 +101,7 @@ class ScheduleManager: ObservableObject {
             let results = try context.fetch(fetchRequest)
             print("📝 Fetched \(results.count) raw results")
             
-            var dailyRatings: [Date: Double] = [:]
+            var dailyRatings: [Date: [Double]] = [:]
             let calendar = Calendar.current
             
             for result in results {
@@ -112,9 +112,7 @@ class ScheduleManager: ObservableObject {
                 }
                 
                 let dayStart = calendar.startOfDay(for: date)
-                if dailyRatings[dayStart] == nil {
-                    dailyRatings[dayStart] = rating
-                }
+                dailyRatings[dayStart]?.append(rating)
             }
             
             print("✅ Processed \(dailyRatings.count) unique daily ratings")
@@ -140,7 +138,14 @@ class ScheduleManager: ObservableObject {
         
         let ratings = try fetchRatingsInDateRange(startDate: startDate, endDate: endDate)
         print("✅ Fetched \(ratings.count) ratings for past year")
-        return ratings
+        
+        let formattedRatings = ratings.reduce(into: [Date: Double]()) { result, entry in
+            let (key, value) = entry
+            let average = value.reduce(0.0, +) / Double(value.count)
+            result[key] = average
+        }
+        
+        return formattedRatings
     }
     
     func fetchRatingsForPastWeek() async throws -> [Date: Double] {
@@ -155,7 +160,13 @@ class ScheduleManager: ObservableObject {
         let endDate = calendar.date(byAdding: .day, value: 1, to: now) ?? now
         let ratings = try fetchRatingsInDateRange(startDate: startDate, endDate: endDate)
         print("✅ Fetched \(ratings.count) ratings for past week")
-        return ratings
+        
+        let formattedRatings = ratings.reduce(into: [Date: Double]()) { partialResult, element in
+            let average = element.value.reduce(0.0, +) / Double(element.value.count)
+            partialResult[element.key] = average
+        }
+        
+        return formattedRatings
     }
     
     func calculateStreak() async {

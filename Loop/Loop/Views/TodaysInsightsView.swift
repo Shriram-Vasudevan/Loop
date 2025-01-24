@@ -328,7 +328,7 @@ struct TodaysInsightsView_Previews: PreviewProvider {
                 sleepData: SleepData(exists: true, hours: 7.5),
                 standoutAnalysis: StandoutAnalysis(
                     exists: true,
-                    primaryTopic: .growth,
+                    primaryTopic: .creativity,
                     category: .realization,
                     sentiment: .positive,
                     keyMoment: "Realized the importance of morning routines"

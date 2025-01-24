@@ -276,8 +276,8 @@ class AnalysisManager: ObservableObject {
                     metrics.setValue(themes.joined(separator: ","), forKey: "recurringThemes")
                 }
                 
-                // Save key moments
                 saveKeyMoments(analysis: analysis)
+                saveTopic(analysis: analysis)
                 
                 try context.save()
                 print("[AnalysisManager] ✅ Successfully created new metrics in Core Data")
@@ -287,13 +287,25 @@ class AnalysisManager: ObservableObject {
         }
     }
 
+    private func saveTopic(analysis: DailyAnalysis) {
+        guard let standoutTopicEntity = NSEntityDescription.entity(forEntityName: "StandoutTopicMetric", in: context) else { return }
+        
+        let entity = NSManagedObject(entity: standoutTopicEntity, insertInto: context)
+        
+        if let standoutAnalysis = analysis.aiAnalysis.standoutAnalysis {
+            if let category = standoutAnalysis.category {
+                entity.setValue(Date(), forKey: "date")
+                entity.setValue(category.rawValue, forKey: "topic")
+            }
+        }
+    }
+    
     private func saveKeyMoments(analysis: DailyAnalysis) {
         guard let momentEntity = NSEntityDescription.entity(forEntityName: "KeyMomentEntity", in: context) else {
             print("[AnalysisManager] 🚨 Failed to get KeyMoment entity description")
             return
         }
         
-        // Save standout moment if exists
         if let standoutAnalysis = analysis.aiAnalysis.standoutAnalysis,
            let keyMoment = standoutAnalysis.keyMoment {
             let standoutMoment = NSManagedObject(entity: momentEntity, insertInto: context)
@@ -305,7 +317,6 @@ class AnalysisManager: ObservableObject {
             standoutMoment.setValue("standout", forKey: "momentType")
         }
         
-        // Save additional moments if they exist
         if let additionalMoments = analysis.aiAnalysis.additionalKeyMoments?.moments {
             for moment in additionalMoments {
                 let additionalMoment = NSManagedObject(entity: momentEntity, insertInto: context)

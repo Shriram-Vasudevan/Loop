@@ -220,7 +220,7 @@ struct RecordFreeResponseView: View {
     private func startRecordingWithTimer() {
         try? audioManager.prepareForNewRecording()
         audioManager.startRecording()
-        timeRemaining = 30
+        timeRemaining = 60
         startTimer()
     }
     
