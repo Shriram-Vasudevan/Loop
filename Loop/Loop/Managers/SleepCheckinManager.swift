@@ -30,7 +30,9 @@ class SleepCheckinManager: ObservableObject {
     }
     
     init() {
-        checkIfCheckinCompleted()
+        if let hours = checkIfCheckinCompleted() {
+            self.todaysSleep = SleepRating(hours: hours, date: Date())
+        }
     }
     
     private func fetchTodaysCheckin() -> NSManagedObject? {

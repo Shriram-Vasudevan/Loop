@@ -47,6 +47,10 @@ struct AddSuccessView: View {
                     }
                     .edgesIgnoringSafeArea(.all)
             }
+            else {
+                SuccessBackground()
+                    .edgesIgnoringSafeArea(.all)
+            }
             
             if showIntro && !hideSuccessIntro {
                 introView
@@ -340,7 +344,7 @@ struct AddSuccessView: View {
                     isDailyLoop: false,
                     isFollowUp: false,
                     isSuccess: true,
-                    isUnguided: true
+                    isUnguided: true, isDream: false
                 )
                 
                 AnalysisManager.shared.performAnalysisForUnguidedEntry(transcript: loop.1)
@@ -596,6 +600,78 @@ struct CustomAudioConfirmationView: View {
     }
 }
 
+struct SuccessBackground: View {
+    private let accentColor = Color(hex: "A28497")
+    private let secondaryColor = Color(hex: "B7A284")
+    
+    var body: some View {
+        ZStack {
+            // Base gradient
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color.white,
+                    Color(hex: "FAFBFC")
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            
+            // Visual elements
+            GeometryReader { geometry in
+                ZStack {
+                    ForEach(0..<3) { index in
+                        RisingPath()
+                            .stroke(
+                                accentColor.opacity(0.08),
+                                lineWidth: 1.5
+                            )
+                            .frame(
+                                width: geometry.size.width * 0.7,
+                                height: geometry.size.height * 0.4
+                            )
+                            .offset(
+                                x: CGFloat(index * 40) - 40,
+                                y: geometry.size.height * 0.3
+                            )
+                    }
+                    
+                    ForEach(0..<3) { index in
+                        Circle()
+                            .fill(accentColor.opacity(0.05))
+                            .frame(width: 200 + CGFloat(index * 100))
+                            .offset(x: geometry.size.width * 0.3, y: geometry.size.height * 0.6)
+                    }
+                }
+            }
+        }
+        .ignoresSafeArea()
+    }
+}
+
+struct RisingPath: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        
+        let width = rect.width
+        let height = rect.height
+        
+        // Create a smooth upward curve
+        path.move(to: CGPoint(x: 0, y: height))
+        
+        // Control points for smooth curve
+        let control1 = CGPoint(x: width * 0.5, y: height * 0.8)
+        let control2 = CGPoint(x: width * 0.5, y: height * 0.2)
+        
+        path.addCurve(
+            to: CGPoint(x: width, y: 0),
+            control1: control1,
+            control2: control2
+        )
+        
+        return path
+    }
+}
+
 struct FloatingDots: View {
     @State private var isAnimating = false
     
@@ -619,8 +695,9 @@ struct FloatingDots: View {
         }
     }
 }
-
-
 #Preview {
-    AddSuccessView()
+    SuccessBackground()
 }
+//#Preview {
+//    AddSuccessView()
+//}

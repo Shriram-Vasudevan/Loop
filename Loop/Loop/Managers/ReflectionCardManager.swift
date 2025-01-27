@@ -15,28 +15,31 @@ class ReflectionCardManager: ObservableObject {
         case moodCheckin = 1
         case daySummary = 2
         case standOut = 3
-        case aiGenerated = 4
-        case freeform = 5
+        case success = 4
+        case aiGenerated = 5
+        case freeform = 6
         
         var title: String {
             switch self {
-            case .sleepCheckin: return "Sleep Check-in"
-            case .moodCheckin: return "Mood Check-in"
-            case .daySummary: return "Day Summary"
-            case .standOut: return "What stood out?"
-            case .aiGenerated: return "Guided Question"
-            case .freeform: return "Share Anything"
+                case .sleepCheckin: return "Sleep Check-in"
+                case .moodCheckin: return "Mood Check-in"
+                case .daySummary: return "Day Summary"
+                case .standOut: return "What stood out?"
+                case .success: return "Today's Wins"  // Add title
+                case .aiGenerated: return "Guided Question"
+                case .freeform: return "Share Anything"
             }
         }
         
         var description: String {
             switch self {
-            case .sleepCheckin: return "Track your sleep quality"
-            case .moodCheckin: return "Take a moment to check in with yourself"
-            case .daySummary: return "Give a quick overview of your day"
-            case .standOut: return "What moments caught your attention?"
-            case .aiGenerated: return "A personalized prompt based on your reflections"
-            case .freeform: return "Open space to share what's on your mind"
+                case .sleepCheckin: return "Track your sleep quality"
+                case .moodCheckin: return "Take a moment to check in with yourself"
+                case .daySummary: return "Give a quick overview of your day"
+                case .standOut: return "What moments caught your attention?"
+                case .success: return "Celebrate your achievements, big or small"  // Add description
+                case .aiGenerated: return "A personalized prompt based on your reflections"
+                case .freeform: return "Open space to share what's on your mind"
             }
         }
     }

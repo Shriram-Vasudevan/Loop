@@ -87,40 +87,31 @@ class ScheduleManager: ObservableObject {
     }
     
     private func fetchRatingsInDateRange(startDate: Date, endDate: Date) throws -> [Date: [Double]] {
-        print("📊 Fetching ratings from \(startDate) to \(endDate)")
-        
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyCheckinEntity")
         fetchRequest.predicate = NSPredicate(
-            format: "date >= %@ AND date < %@",
+            format: "date >= %@ AND date < %@ AND rating != nil",
             startDate as NSDate,
             endDate as NSDate
         )
-        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "date", ascending: false)]
         
-        do {
-            let results = try context.fetch(fetchRequest)
-            print("📝 Fetched \(results.count) raw results")
-            
-            var dailyRatings: [Date: [Double]] = [:]
-            let calendar = Calendar.current
-            
-            for result in results {
-                guard let date = result.value(forKey: "date") as? Date,
-                      let rating = result.value(forKey: "rating") as? Double else {
-                    print("⚠️ Invalid data format in fetched result")
-                    continue
-                }
-                
-                let dayStart = calendar.startOfDay(for: date)
-                dailyRatings[dayStart]?.append(rating)
+        let results = try context.fetch(fetchRequest)
+        var dailyRatings: [Date: [Double]] = [:]
+        let calendar = Calendar.current
+        
+        for result in results {
+            guard let date = result.value(forKey: "date") as? Date,
+                  let rating = result.value(forKey: "rating") as? Double else {
+                continue
             }
             
-            print("✅ Processed \(dailyRatings.count) unique daily ratings")
-            return dailyRatings
-        } catch {
-            print("🔴 Failed to fetch ratings: \(error)")
-            throw error
+            let dayStart = calendar.startOfDay(for: date)
+            if dailyRatings[dayStart] == nil {
+                dailyRatings[dayStart] = []
+            }
+            dailyRatings[dayStart]?.append(rating)
         }
+        
+        return dailyRatings
     }
     
     func fetchRatingsForPastYear() async throws -> [Date: Double] {

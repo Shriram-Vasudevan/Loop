@@ -74,7 +74,7 @@ class ReflectionSessionManager: ObservableObject {
         let selectedPrompts = cards.map { card in
             switch card {
             case .sleepCheckin:
-                    return ReflectionPrompt(text: "How many hours did you sleep?", type: .sleepCheckin, description: nil)
+                return ReflectionPrompt(text: "How many hours did you sleep?", type: .sleepCheckin, description: nil)
             case .moodCheckin:
                 return ReflectionPrompt(text: "How are you feeling right now?", type: .moodCheckIn, description: nil)
             case .daySummary:
@@ -89,6 +89,12 @@ class ReflectionSessionManager: ObservableObject {
                     type: .recording,
                     description: "Share whatever you're thinking about today - perhaps a memorable event, realization, success, or even a challenge. Focus in on something that matters to you."
                 )
+            case .success:
+                return ReflectionPrompt(
+                    text: "What success or win would you like to celebrate today?",
+                    type: .recording,
+                    description: "Share a moment of achievement or progress—whether it's completing a task, maintaining a habit, or making someone smile. Every win counts, no matter how small. We'll bring these back for you whenever you need them."
+                )
             case .aiGenerated:
                 return ReflectionPrompt(
                     text: "What question would you like to reflect on?",
@@ -99,7 +105,7 @@ class ReflectionSessionManager: ObservableObject {
                 return ReflectionPrompt(
                     text: "Share anything on your mind.",
                     type: .recording,
-                    description: "Feel free to open up about anything that’s on your mind today—no structure, just your thoughts."
+                    description: "Feel free to open up about anything that's on your mind today—no structure, just your thoughts."
                 )
             }
         }
@@ -114,11 +120,13 @@ class ReflectionSessionManager: ObservableObject {
         guard index >= 0 && index < prompts.count else { return }
         completedPrompts.insert(index)
         if completedPrompts.count == prompts.count {
+            Task {
+                if !hasCompletedForToday {
+                    await AnalysisManager.shared.performAnalysis()
+                }
+            }
             hasCompletedForToday = true
             UserDefaults.standard.set(true, forKey: hasCompletedForTodayKey)
-            Task {
-                await AnalysisManager.shared.performAnalysis()
-            }
         }
         saveState()
     }

@@ -256,7 +256,9 @@ struct RecordLoopsView: View {
                             Spacer()
                             
                             Button {
-                                currentTab += 1
+                                withAnimation {
+                                    currentTab += 1
+                                }
                             } label: {
                                 HStack {
                                     Spacer()
@@ -801,7 +803,6 @@ struct RecordLoopsView: View {
             return
         }
         
-        // Mark the current prompt as completed and move to next prompt immediately
         recordedTabs.insert(currentTab)
         recordedAudioURLs[currentTab] = audioFileURL
         
@@ -813,44 +814,43 @@ struct RecordLoopsView: View {
         
         let currentPrompt = reflectionSessionManager.prompts[currentPromptIndex]
         
-        // Move to next prompt immediately
-        if let nextPromptIndex = reflectionSessionManager.prompts.firstIndex(where: { !reflectionSessionManager.completedPrompts.contains(reflectionSessionManager.prompts.firstIndex(of: $0) ?? -1) }) {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                isPostRecording = false
-                currentTab = nextPromptIndex
-            }
-        }
-        
         Task {
             defer { isSaving = false }
             
+            // First save the recording and mark the prompt as complete
             let (loop, transcript) = try await loopManager.addLoop(
                 mediaURL: audioFileURL,
                 isVideo: false,
                 prompt: currentPrompt.text,
                 isDailyLoop: true,
                 isFollowUp: false,
-                isSuccess: false,
-                isUnguided: false
+                isSuccess: currentPrompt.text.contains("success or win"),
+                isUnguided: false, isDream: false
             )
-      
-            reflectionSessionManager.markPromptComplete(at: currentPromptIndex)
             
+            reflectionSessionManager.markPromptComplete(at: currentPromptIndex)
             reflectionSessionManager.saveRecordingCache(prompt: currentPrompt.text, transcript: transcript)
-
+            
             await MainActor.run {
-                if let nextPromptIndex = reflectionSessionManager.prompts.firstIndex(where: {
+                // Find the next incomplete prompt after the current one
+                let nextPromptIndex = reflectionSessionManager.prompts[currentPromptIndex...].firstIndex(where: { prompt in
                     !reflectionSessionManager.completedPrompts.contains(
-                        reflectionSessionManager.prompts.firstIndex(of: $0) ?? -1
+                        reflectionSessionManager.prompts.firstIndex(of: prompt) ?? -1
                     )
-                }) {
-                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                        isPostRecording = false
-                        currentTab = nextPromptIndex
+                }) ?? reflectionSessionManager.prompts.firstIndex(where: { prompt in
+                    !reflectionSessionManager.completedPrompts.contains(
+                        reflectionSessionManager.prompts.firstIndex(of: prompt) ?? -1
+                    )
+                })
+                
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                    isPostRecording = false
+
+                    if let nextIndex = nextPromptIndex {
+                        currentTab = nextIndex
                     }
                 }
                 
-                // If all prompts are complete, dismiss the view
                 if reflectionSessionManager.hasCompletedForToday {
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                         isShowingMemory = false
@@ -914,34 +914,39 @@ struct LoadingPromptView: View {
     @State private var dotOffset: CGFloat = 0
     
     var body: some View {
-        VStack(spacing: 24) {
-            // Animated dots
-            HStack(spacing: 8) {
-                ForEach(0..<3) { index in
-                    Circle()
-                        .fill(textColor.opacity(0.6))
-                        .frame(width: 8, height: 8)
-                        .offset(y: index == 1 ? -dotOffset : 0)
+        GeometryReader { geometry in
+            VStack(spacing: 24) {
+                Spacer()
+
+                HStack(spacing: 8) {
+                    ForEach(0..<3) { index in
+                        Circle()
+                            .fill(textColor.opacity(0.6))
+                            .frame(width: 8, height: 8)
+                            .offset(y: index == 1 ? -dotOffset : 0)
+                    }
                 }
-            }
-            .onAppear {
-                withAnimation(Animation.easeInOut(duration: 0.5).repeatForever()) {
-                    dotOffset = 8
+                .onAppear {
+                    withAnimation(Animation.easeInOut(duration: 0.5).repeatForever()) {
+                        dotOffset = 8
+                    }
                 }
-            }
-            
-            VStack(spacing: 12) {
-                Text("Crafting your reflection prompt")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(textColor)
                 
-                Text("Based on your previous reflections")
-                    .font(.system(size: 14))
-                    .foregroundColor(textColor.opacity(0.6))
+                VStack(spacing: 12) {
+                    Text("Crafting your reflection prompt")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(textColor)
+                    
+                    Text("Based on your previous reflections")
+                        .font(.system(size: 14))
+                        .foregroundColor(textColor.opacity(0.6))
+                }
+                
+                Spacer()
             }
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(hex: "F5F5F5"))
+        .ignoresSafeArea()
     }
 }
 

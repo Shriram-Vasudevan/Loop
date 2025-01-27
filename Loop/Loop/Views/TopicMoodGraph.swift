@@ -15,25 +15,11 @@ struct MoodAnalysisView: View {
     @StateObject private var trendsManager = TrendsManager.shared
     @Binding var timeframe: Timeframe
     
-    enum AnalysisCategory: String, CaseIterable {
-        case topics = "Topics"
-        case sleep = "Sleep"
-        case wordCount = "Length"
-        case timeOfDay = "Time"
-    }
-    
-    private var hasEnoughData: Bool {
-        let correlations = trendsManager.getCorrelations(for: timeframe)
-        switch selectedCategory {
-        case .topics:
-            return correlations.topics?.isEmpty == false
-        case .sleep:
-            return correlations.sleep?.isEmpty == false
-        case .timeOfDay:
-            return correlations.timeOfDay?.isEmpty == false
-        case .wordCount:
-            return correlations.wordCount?.isEmpty == false
-        }
+    @State private var hasEnoughData: Bool = false
+
+    private func checkDataSufficiency() async {
+        let metrics = await trendsManager.getDailyMetrics(for: timeframe)
+        hasEnoughData = trendsManager.hasEnoughDataPoints(metrics, category: selectedCategory)
     }
     
     // Get current category data
@@ -76,31 +62,51 @@ struct MoodAnalysisView: View {
     }
     
     private func getMockData() -> [CategoryEffect] {
-        [
-            CategoryEffect(name: "Sample 1", effect: -2.0, color: Color(hex: "B5D5E2")),
-            CategoryEffect(name: "Sample 2", effect: 0.0, color: Color(hex: "A28497")),
-            CategoryEffect(name: "Sample 3", effect: 2.0, color: Color(hex: "93A7BB"))
-        ]
+        switch selectedCategory {
+            case .topics:
+                return [
+                    CategoryEffect(name: "Relationships", effect: 2.0, color: Color(hex: "B5D5E2")),
+                    CategoryEffect(name: "Work", effect: -1.5, color: Color(hex: "A28497")),
+                    CategoryEffect(name: "Learning", effect: 1.0, color: Color(hex: "93A7BB"))
+                ]
+            case .sleep:
+                return [
+                    CategoryEffect(name: "Before 10pm", effect: 1.5, color: Color(hex: "B5D5E2")),
+                    CategoryEffect(name: "After midnight", effect: -1.0, color: Color(hex: "A28497")),
+                    CategoryEffect(name: "8+ hours", effect: 2.0, color: Color(hex: "93A7BB"))
+                ]
+            case .timeOfDay:
+                return [
+                    CategoryEffect(name: "Morning", effect: 1.8, color: Color(hex: "B5D5E2")),
+                    CategoryEffect(name: "Afternoon", effect: 0.5, color: Color(hex: "A28497")),
+                    CategoryEffect(name: "Evening", effect: -0.8, color: Color(hex: "93A7BB"))
+                ]
+            case .wordCount:
+                return [
+                    CategoryEffect(name: "Short", effect: -0.5, color: Color(hex: "B5D5E2")),
+                    CategoryEffect(name: "Medium", effect: 1.0, color: Color(hex: "A28497")),
+                    CategoryEffect(name: "Long", effect: 1.5, color: Color(hex: "93A7BB"))
+                ]
+            }
     }
-    
     var body: some View {
         VStack(alignment: .leading, spacing: 32) {
             HStack {
-                Text("EFFECT ON MOOD")
-                    .font(.system(size: 13, weight: .medium))
-                    .tracking(1.5)
-                    .foregroundColor(textColor.opacity(0.5))
+                VStack (alignment: .leading, spacing: 6) {
+                    Text("Mood Patterns")
+                        .font(.system(size: 20, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(textColor)
+                    
+                    Text("How different factors affect your mood")
+                        .font(.system(size: 13, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(textColor.opacity(0.5))
+                }
                 
                 Spacer()
                 
-                Picker("Category", selection: $selectedCategory) {
-                    ForEach(AnalysisCategory.allCases, id: \.self) { category in
-                        Text(category.rawValue)
-                            .tag(category)
-                    }
-                }
-                .pickerStyle(.menu)
-                .tint(accentColor)
+                CategoryPicker(selectedCategory: $selectedCategory)
             }
 
             VStack(spacing: 24) {
@@ -108,7 +114,8 @@ struct MoodAnalysisView: View {
                     HStack(spacing: 16) {
                         YAxisLabels(bounds: yAxisBounds)
                         
-                        CurvesView(categories: categoryData, bounds: yAxisBounds)
+                        CurvesView(categories: hasEnoughData ? categoryData : getMockData(), bounds: yAxisBounds)
+                            .opacity(hasEnoughData ? 1 : 0.3)
                     }
                     .frame(height: 200)
                     
@@ -118,24 +125,34 @@ struct MoodAnalysisView: View {
                     }
                 }
 
-                HStack(spacing: 24) {
-                    ForEach(categoryData, id: \.name) { category in
-                        LegendItem(name: category.name,
-                                 color: category.color,
-                                 effect: category.effect)
+                if hasEnoughData {
+                    HStack(spacing: 24) {
+                        ForEach(categoryData, id: \.name) { category in
+                            LegendItem(name: category.name,
+                                     color: category.color,
+                                     effect: category.effect)
+                        }
                     }
                 }
             }
         }
         .onChange(of: timeframe) { _ in
-            trendsManager.fetchAllCorrelations(for: timeframe)
+            Task {
+                await trendsManager.fetchAllCorrelations(for: timeframe)
+                await checkDataSufficiency()  // Add this
+            }
         }
         .onChange(of: selectedCategory) { _ in
-            // Fetch data if needed when category changes
-            trendsManager.fetchAllCorrelations(for: timeframe)
+            Task {
+                await trendsManager.fetchAllCorrelations(for: timeframe)
+                await checkDataSufficiency()  // Add this
+            }
         }
         .onAppear {
-            trendsManager.fetchAllCorrelations(for: timeframe)
+            Task {
+                await trendsManager.fetchAllCorrelations(for: timeframe)
+                await checkDataSufficiency()  // Add this
+            }
         }
     }
     
@@ -147,23 +164,58 @@ struct MoodAnalysisView: View {
     }
 }
 
+struct CategoryPicker: View {
+    @Binding var selectedCategory: AnalysisCategory
+    let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        Menu {
+            Picker("Category", selection: $selectedCategory) {
+                ForEach(AnalysisCategory.allCases, id: \.self) { category in
+                    Text(category.rawValue)
+                        .tag(category)
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text(selectedCategory.rawValue)
+                    .font(.system(size: 15))
+                    .foregroundColor(textColor)
+                
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(textColor.opacity(0.6))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(textColor.opacity(0.15), lineWidth: 1)
+                    .background(Color.white.cornerRadius(8))
+            )
+        }
+    }
+}
+
 struct EmptyGraphStateOverlay: View {
     var body: some View {
-        ZStack {
-            Color.white.opacity(0.7)
-                .background(.ultraThinMaterial)
-                .blur(radius: 5)
+        VStack(spacing: 8) {
+            Text("Not enough data")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(Color(hex: "2C3E50"))
             
-            VStack(spacing: 8) {
-                Text("Not enough data")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Color(hex: "2C3E50"))
-                
-                Text("Keep reflecting to see patterns")
-                    .font(.system(size: 13))
-                    .foregroundColor(Color(hex: "2C3E50").opacity(0.7))
-            }
+            Text("Keep reflecting to see relationships")
+                .font(.system(size: 13))
+                .foregroundColor(Color(hex: "2C3E50").opacity(0.7))
         }
+        .frame(maxWidth: .infinity)
+        .frame(height: 200)
+        .padding()
+        .background(
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .opacity(0.4)
+        )
     }
 }
 
@@ -223,7 +275,7 @@ struct CurvesView: View {
         context.stroke(
             path,
             with: .color(category.color),
-            lineWidth: 3
+            lineWidth: 5
         )
     }
 }
@@ -252,10 +304,36 @@ struct LegendItem: View {
     }
 }
 
+enum AnalysisCategory: String, CaseIterable {
+    case topics = "Entry Topics"
+    case sleep = "Sleep Schedule"
+    case wordCount = "Journal Length"
+    case timeOfDay = "Time of Day"
+}
+
 // Preview
 struct MoodAnalysisView_Previews: PreviewProvider {
     static var previews: some View {
-        MoodAnalysisView(timeframe: .constant(.week))
-            .padding()
+        // Preview with mock data
+        VStack {
+            MoodAnalysisView(timeframe: .constant(.week))
+                .padding()
+                .previewDisplayName("With Data")
+            
+            Spacer()
+        }
+        .background(Color(hex: "F5F5F5"))
+    }
+}
+
+// Environment key for preview
+private struct HasNoDataKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var hasNoData: Bool {
+        get { self[HasNoDataKey.self] }
+        set { self[HasNoDataKey.self] = newValue }
     }
 }

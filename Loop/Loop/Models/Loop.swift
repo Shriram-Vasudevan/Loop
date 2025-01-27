@@ -21,6 +21,7 @@ struct Loop: Hashable, Identifiable {
     var isDailyLoop: Bool
     var isFollowUp: Bool
     var isSuccessJournal: Bool?
+    var isDream: Bool?
     var mood: String?
     
     static func from(record: CKRecord) -> Loop? {
@@ -38,11 +39,11 @@ struct Loop: Hashable, Identifiable {
             timestamp: timestamp,
             lastRetrieved: record["LastRetrieved"] as? Date,
             promptText: promptText,
-            category: record["Category"] as? String ?? "Share Anything", // Default to freeform
+            category: record["Category"] as? String ?? "Share Anything",
             transcript: record["Transcript"] as? String,
             freeResponse: record["FreeResponse"] as? Bool ?? false,
             isVideo: record["IsVideo"] as? Bool ?? false,
-            isDailyLoop: record["IsDailyLoop"] as? Bool ?? false, isFollowUp: record["isFollowUp"] as? Bool ?? false, mood: record["Mood"] as? String
+            isDailyLoop: record["IsDailyLoop"] as? Bool ?? false, isFollowUp: record["isFollowUp"] as? Bool ?? false, isSuccessJournal: record["IsSuccessJournal"] as? Bool ?? false, isDream: record["IsDreamJournal"] as? Bool ?? false, mood: record["Mood"] as? String
         )
     }
 }

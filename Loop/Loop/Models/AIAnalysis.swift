@@ -19,6 +19,12 @@ struct DailyAIAnalysisResult: Codable {
     let summaryAnalysis: SummaryAnalysis?
     let freeformAnalysis: FreeformAnalysis?
     let fillerAnalysis: FillerAnalysis
+    let followUpSuggestion: FollowUpSuggestion
+}
+
+struct FollowUpSuggestion: Codable {
+    let exists: Bool
+    let suggestion: String?
 }
 
 struct MoodData: Codable {

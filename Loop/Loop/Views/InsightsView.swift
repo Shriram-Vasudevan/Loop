@@ -9,62 +9,133 @@ import SwiftUI
 import Charts
 
 struct InsightsView: View {
-    @ObservedObject var analysisManager = AnalysisManager.shared
+    @Binding var pageType: PageType
     
-    @State private var selectedTab = "today"
+    @State private var selectedTimeframe: Timeframe = .week
+    
+    @ObservedObject var analysisManager = AnalysisManager.shared
+    @ObservedObject var tabManager = TabManager.shared
     
     private let accentColor = Color(hex: "A28497")
     private let backgroundColor = Color(hex: "FAFBFC")
     private let textColor = Color(hex: "2C3E50")
     private let surfaceColor = Color(hex: "F8F5F7")
         
+    private let accentGradient = LinearGradient(
+       colors: [Color(hex: "FF6B6B"), Color(hex: "A28497")],
+       startPoint: .topLeading,
+       endPoint: .bottomTrailing
+   )
+   private let inactiveColor = Color(hex: "2C3E50").opacity(0.2)
+
     var body: some View {
         ZStack {
             Color(hex: "F5F5F5")
                 .ignoresSafeArea()
             VStack(spacing: 0) {
-                tabView
+                TabNavigationView(selectedTimeframe: $selectedTimeframe)
                     .padding(.top, 24)
                 
                 contentView
-                    .padding(.top, 32)
+                    .padding(.top, 16)
             }
         }
     }
     
-    private var tabView: some View {
-        HStack {
-            HStack (spacing: 12) {
-                Button {
-                    withAnimation {
-                        selectedTab = "today"
-                    }
-                } label: {
-                    Text("TODAY")
-                        .font(.system(size: 20, weight: .medium))
-                        .tracking(1.5)
-                        .foregroundColor(selectedTab == "today" ? textColor : textColor.opacity(0.6))
-                }
-                
-                Button {
-                    withAnimation {
-                        selectedTab = "trends"
-                    }
-                } label: {
-                    Text("TRENDS")
-                        .font(.system(size: 20, weight: .medium))
-                        .tracking(1.5)
-                        .foregroundColor(selectedTab == "trends" ? textColor : textColor.opacity(0.6))
-                }
-                   
-                Spacer()
-            }
-            
-            Spacer()
-        }
-        .padding(.horizontal)
-    }
+//    private var tabView: some View {
+//        Menu {
+//            Button {
+//                withAnimation(.easeInOut(duration: 0.2)) {
+//                    tabManager.insightsSelectedTab = "today"
+//                }
+//            } label: {
+//                Label(
+//                    title: {
+//                        Text("Today")
+//                            .font(.custom("PPNeueMontreal-Medium", size: 15))
+//                            .tracking(0.5)
+//                    },
+//                    icon: {
+//                        Image(systemName: "circle.fill")
+//                            .font(.system(size: 4))
+//                            .opacity(tabManager.insightsSelectedTab == "today" ? 1 : 0)
+//                    }
+//                )
+//            }
+//            
+//            Button {
+//                withAnimation(.easeInOut(duration: 0.2)) {
+//                    tabManager.insightsSelectedTab = "trends"
+//                }
+//            } label: {
+//                Label(
+//                    title: {
+//                        Text("Trends")
+//                            .font(.custom("PPNeueMontreal-Medium", size: 15))
+//                            .tracking(0.5)
+//                    },
+//                    icon: {
+//                        Image(systemName: "circle.fill")
+//                            .font(.system(size: 4))
+//                            .opacity(tabManager.insightsSelectedTab == "trends" ? 1 : 0)
+//                    }
+//                )
+//            }
+//        } label: {
+//            HStack {
+//                Spacer()
+//                
+//                VStack(alignment: .center, spacing: 6) {
+//                    HStack {
+//                        Spacer()
+//                        
+//                        Text(tabManager.insightsSelectedTab == "today" ? "TODAY" : "TRENDS")
+//                            .font(.custom("PPNeueMontreal-Medium", size: 13))
+//                            .tracking(1.2)
+//                            .foregroundColor(textColor)
+//                        
+//                        Spacer()
+//                    }
+//                    
+//                    Text(dateText)
+//                        .font(.custom("PPNeueMontreal-Regular", size: 13))
+//                        .foregroundColor(textColor.opacity(0.7))
+//                }
+//                
+//                Spacer()
+//                
+//                Image(systemName: "chevron.down")
+//                    .font(.system(size: 11, weight: .semibold))
+//                    .foregroundColor(textColor.opacity(0.5))
+//                    .padding(.leading, 4)
+//            }
+//            .padding(.horizontal, 16)
+//            .padding(.vertical, 12)
+//            .background(
+//                RoundedRectangle(cornerRadius: 10)
+//                    .fill(.white)
+//                    .shadow(color: Color.black.opacity(0.05), radius: 15, x: 0, y: 2)
+//            )
+//            .padding(.horizontal, 24)
+//        }
+//        .menuStyle(BorderlessButtonMenuStyle())
+//    }
     
+    private var dateText: String {
+        if tabManager.insightsSelectedTab == "today" {
+            return formattedTodayDate()
+        } else {
+            switch selectedTimeframe {
+            case .week:
+                return formattedWeekDateRange()
+            case .month:
+                return currentMonth()
+            case .year:
+                return currentYear()
+            }
+        }
+    }
+
     private func formattedWeekDateRange() -> String {
         let calendar = Calendar.current
         let today = Date()
@@ -103,11 +174,157 @@ struct InsightsView: View {
     
     @ViewBuilder
     private var contentView: some View {
-        if selectedTab == "today" {
+        if tabManager.insightsSelectedTab == "today" {
             TodaysInsightsView(analysisManager: analysisManager)
         } else {
-            TrendsView()
+            TrendsView(pageType: $pageType, selectedTimeframe: $selectedTimeframe)
+//            Text("Hello")
         }
+    }
+}
+
+struct TabNavigationView: View {
+    @ObservedObject var tabManager = TabManager.shared
+    @Binding var selectedTimeframe: Timeframe
+    
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(tabManager.insightsSelectedTab == "today" ? "TODAY" : "TRENDS")
+                    .font(.custom("PPNeueMontreal-Bold", size: 24))
+                    .foregroundColor(textColor)
+                    .tracking(1.2)
+                
+                Text(getDateText())
+                    .font(.custom("PPNeueMontreal-Regular", size: 15))
+                    .foregroundColor(textColor.opacity(0.7))
+            }
+            
+            Spacer()
+            
+            Menu {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        tabManager.insightsSelectedTab = "today"
+                    }
+                } label: {
+                    HStack {
+                        Text("Today")
+                            .font(.custom("PPNeueMontreal-Medium", size: 15))
+                        
+                        if tabManager.insightsSelectedTab == "today" {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 12))
+                        }
+                    }
+                }
+                
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        tabManager.insightsSelectedTab = "trends"
+                    }
+                } label: {
+                    HStack {
+                        Text("Trends")
+                            .font(.custom("PPNeueMontreal-Medium", size: 15))
+                        
+                        if tabManager.insightsSelectedTab == "trends" {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 12))
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Text(tabManager.insightsSelectedTab == "today" ? "Today" : "Trends")
+                        .font(.custom("PPNeueMontreal-Medium", size: 15))
+                        .foregroundColor(textColor)
+                    
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(textColor.opacity(0.5))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    Capsule()
+                        .fill(.white)
+//                        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2) // Added subtle shadow for depth
+                )
+            }
+        }
+        .padding(.horizontal, 24)
+    }
+    
+    private func getDateText() -> String {
+        if tabManager.insightsSelectedTab == "today" {
+            return formattedTodayDate()
+        } else {
+            switch selectedTimeframe {
+            case .week:
+                return formattedWeekDateRange()
+            case .month:
+                return currentMonth()
+            case .year:
+                return formattedYearRange()
+            }
+        }
+    }
+    
+    private func formattedTodayDate() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter.string(from: Date())
+    }
+    
+    private func formattedWeekDateRange() -> String {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        let weekday = calendar.component(.weekday, from: today)
+        let daysToSubtract = weekday - 1
+        guard let weekStart = calendar.date(byAdding: .day, value: -daysToSubtract, to: today),
+              let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) else {
+            return ""
+        }
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM d"
+        
+        return "\(dateFormatter.string(from: weekStart)) - \(dateFormatter.string(from: weekEnd))"
+    }
+    
+    private func currentMonth() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: Date())
+    }
+    
+    private func formattedYearRange() -> String {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        guard let yearStart = calendar.date(from: calendar.dateComponents([.year], from: today)),
+              let yearEnd = calendar.date(byAdding: .year, value: 1, to: yearStart) else {
+            return ""
+        }
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM yyyy"
+        
+        return "\(formatter.string(from: yearStart)) - \(formatter.string(from: yearEnd))"
+    }
+}
+
+struct AnimatedSelectionEffect: ViewModifier {
+    let isSelected: Bool
+    
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(isSelected ? 1.05 : 1)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
 }
 
@@ -206,7 +423,7 @@ struct InsightsView: View {
 #if DEBUG
 struct InsightsView_Previews: PreviewProvider {
     static var previews: some View {
-        InsightsView()
+        InsightsView(pageType: .constant(.trends))
     }
 }
 #endif

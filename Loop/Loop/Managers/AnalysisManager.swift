@@ -18,11 +18,22 @@ class AnalysisManager: ObservableObject {
     
     @Published private(set) var analysisState: AnalysisState = .notStarted
     @Published var currentDailyAnalysis: DailyAnalysis?
+    @Published var currentDayMetrics: DayMetrics?
     
     @Published private(set) var isFollowUpCompletedToday: Bool = false
     
     private let dailyAnalysisKey = "DailyAnalysisStore"
-    
+    private let dailyMetricsKey = "DailyMetricsStore"
+    private static let followUpCompletedKey = "todayFollowUpCompleted"
+       
+   var isFollowUpCompleted: Bool {
+       get {
+           let defaults = UserDefaults.standard
+           let lastCompletedDate = defaults.string(forKey: Self.followUpCompletedKey) ?? ""
+           return lastCompletedDate == Date().formatted(date: .numeric, time: .omitted)
+       }
+   }
+
     lazy var persistentContainer: NSPersistentContainer = {
         print("[AnalysisManager] Initializing persistent container")
         let container = NSPersistentContainer(name: "LoopData")
@@ -74,7 +85,7 @@ class AnalysisManager: ObservableObject {
             async let quantitativeMetrics = calculateQuantitativeMetrics(responses)
             
             await MainActor.run {
-                print("[AnalysisManager] Starting AI analysis")
+                print("[AnalysisManager] Starting AI analysis.")
                 analysisState = .analyzingAI
             }
             
@@ -82,6 +93,7 @@ class AnalysisManager: ObservableObject {
             
             let (metrics, analysis) = try await (quantitativeMetrics, aiAnalysis)
             print("[AnalysisManager] ✅ Completed both quantitative and AI analysis")
+            print("AI analysis \(analysis.standoutAnalysis)")
             
             let dailyAnalysis = DailyAnalysis(
                 date: Date(),
@@ -151,15 +163,33 @@ class AnalysisManager: ObservableObject {
             return
         }
         
+        guard let data = UserDefaults.standard.data(forKey: dailyMetricsKey),
+              let dailyMetrics = try? JSONDecoder().decode(DayMetrics.self, from: data),
+              Calendar.current.isDateInToday(dailyMetrics.date) else {
+            print("[AnalysisManager] ⚠️ No valid analysis found for today")
+            return
+        }
+        
         print("[AnalysisManager] ✅ Successfully loaded today's analysis")
         self.analysisState = .completed(analysis)
         currentDailyAnalysis = analysis
+        currentDayMetrics = dailyMetrics
     }
     
     private func saveDailyAnalysis(_ analysis: DailyAnalysis) {
         print("[AnalysisManager] Attempting to save daily analysis")
         if let encoded = try? JSONEncoder().encode(analysis) {
             UserDefaults.standard.set(encoded, forKey: dailyAnalysisKey)
+            print("[AnalysisManager] ✅ Successfully saved daily analysis to UserDefaults")
+        } else {
+            print("[AnalysisManager] 🚨 Failed to encode and save daily analysis")
+        }
+    }
+    
+    private func saveDailyMetric(_ metric: DayMetrics) {
+        print("[AnalysisManager] Attempting to save daily analysis")
+        if let encoded = try? JSONEncoder().encode(metric) {
+            UserDefaults.standard.set(encoded, forKey: dailyMetricsKey)
             print("[AnalysisManager] ✅ Successfully saved daily analysis to UserDefaults")
         } else {
             print("[AnalysisManager] 🚨 Failed to encode and save daily analysis")
@@ -180,58 +210,80 @@ class AnalysisManager: ObservableObject {
     func performAnalysisForUnguidedEntry(transcript: String) {
         let metrics = calculateQuantitativeMetrics(transcript)
         let today = Calendar.current.startOfDay(for: Date()) // Get the start of the current day
-
+        
         print("[AnalysisManager] Starting to update metrics in Core Data")
-
+        
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DayMetricsEntity")
         fetchRequest.predicate = NSPredicate(format: "date == %@", today as NSDate)
         fetchRequest.fetchLimit = 1
-
+        
         do {
             if let existingMetrics = try context.fetch(fetchRequest).first {
-                // Update existing metrics
                 let currentWords = existingMetrics.value(forKey: "totalWords") as? Int ?? 0
                 let currentDuration = existingMetrics.value(forKey: "totalDuration") as? Double ?? 0
                 let currentEntryCount = existingMetrics.value(forKey: "entryCount") as? Int ?? 0
-
+                
                 existingMetrics.setValue(currentWords + metrics.totalWordCount, forKey: "totalWords")
                 existingMetrics.setValue(currentDuration + metrics.totalDurationSeconds, forKey: "totalDuration")
                 existingMetrics.setValue(currentEntryCount + 1, forKey: "entryCount")
-
+                
                 try context.save()
                 print("[AnalysisManager] ✅ Successfully updated metrics in Core Data")
+                
+                if var currentDayMetrics = self.currentDayMetrics {
+                    currentDayMetrics.totalWords = currentWords + metrics.totalWordCount
+                    currentDayMetrics.totalDuration = currentDuration + metrics.totalDurationSeconds
+                    currentDayMetrics.entryCount = currentEntryCount + 1
+                    
+                    self.currentDayMetrics = currentDayMetrics
+                    self.saveDailyMetric(currentDayMetrics)
+                }
             } else {
-                // Create new metrics for today
                 guard let dayMetricsEntity = NSEntityDescription.entity(forEntityName: "DayMetricsEntity", in: context) else {
                     print("[AnalysisManager] 🚨 Failed to get DayMetrics entity description")
                     return
                 }
-
+                
                 let newMetrics = NSManagedObject(entity: dayMetricsEntity, insertInto: context)
                 newMetrics.setValue(today, forKey: "date")
                 newMetrics.setValue(metrics.totalWordCount, forKey: "totalWords")
                 newMetrics.setValue(metrics.totalDurationSeconds, forKey: "totalDuration")
                 newMetrics.setValue(1, forKey: "entryCount")
-
+                
                 try context.save()
                 print("[AnalysisManager] ✅ Successfully created new metrics in Core Data")
+                
+                if var currentDayMetrics = self.currentDayMetrics {
+                    currentDayMetrics.totalWords = metrics.totalWordCount
+                    currentDayMetrics.totalDuration = metrics.totalDurationSeconds
+                    currentDayMetrics.entryCount = 1
+                    
+                    self.currentDayMetrics = currentDayMetrics
+                    self.saveDailyMetric(currentDayMetrics)
+                }
+                else {
+                    self.currentDayMetrics = DayMetrics(date: Date(), entryCount: 1, totalWords: metrics.totalWordCount, totalDuration: metrics.totalDurationSeconds, fillerWordCount: 0)
+                    if let currentDayMetrics = self.currentDayMetrics {
+                        self.saveDailyMetric(currentDayMetrics)
+                    }
+
+                }
             }
         } catch {
             print("[AnalysisManager] 🚨 Failed to update metrics in Core Data: \(error)")
         }
     }
-
+    
     func saveDayMetricsToCoreData(analysis: DailyAnalysis) {
         let today = Calendar.current.startOfDay(for: Date())
         print("[AnalysisManager] Starting to save metrics to Core Data")
-
+        
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DayMetricsEntity")
         fetchRequest.predicate = NSPredicate(format: "date == %@", today as NSDate)
         fetchRequest.fetchLimit = 1
-
+        
         do {
             if let existingMetrics = try context.fetch(fetchRequest).first {
-                // Update existing metrics
                 existingMetrics.setValue(analysis.aiAnalysis.moodData?.rating, forKey: "moodRating")
                 existingMetrics.setValue(analysis.aiAnalysis.sleepData?.hours, forKey: "sleepHours")
                 existingMetrics.setValue(analysis.quantitativeMetrics.totalWordCount, forKey: "totalWords")
@@ -241,26 +293,58 @@ class AnalysisManager: ObservableObject {
                 existingMetrics.setValue(!ReflectionSessionManager.shared.getTodaysCachedResponses().isEmpty, forKey: "isCompleted")
                 existingMetrics.setValue(ReflectionSessionManager.shared.getTodaysCachedResponses().count, forKey: "entryCount")
                 
-                // Add recurring themes if they exist
                 if let themes = analysis.aiAnalysis.recurringThemes?.themes {
                     existingMetrics.setValue(themes.joined(separator: ","), forKey: "recurringThemes")
                 }
                 
-                // Save key moments
                 saveKeyMoments(analysis: analysis)
                 
                 try context.save()
                 print("[AnalysisManager] ✅ Successfully updated metrics in Core Data")
+                
+                if var currentDayMetrics = self.currentDayMetrics {
+                    currentDayMetrics.entryCount += 1
+                    currentDayMetrics.totalWords += analysis.quantitativeMetrics.totalWordCount
+                    currentDayMetrics.totalDuration += analysis.quantitativeMetrics.totalDurationSeconds
+                    currentDayMetrics.fillerWordCount += analysis.aiAnalysis.fillerAnalysis.totalCount
+                    
+                    if let sleepHours = analysis.aiAnalysis.sleepData?.hours {
+                        currentDayMetrics.sleepHours = sleepHours
+                    }
+                    if let primaryTopic = analysis.aiAnalysis.recurringThemes?.themes?.first {
+                        currentDayMetrics.primaryTopic = primaryTopic
+                    }
+                    
+                    self.currentDayMetrics = currentDayMetrics
+                    self.saveDailyMetric(currentDayMetrics)
+                } else {
+                    let sleepHours = analysis.aiAnalysis.sleepData?.hours
+                    let primaryTopic = analysis.aiAnalysis.recurringThemes?.themes?.first
+                    
+                    self.currentDayMetrics = DayMetrics(
+                        date: Date(),
+                        sleepHours: sleepHours,
+                        entryCount: 1,
+                        totalWords: analysis.quantitativeMetrics.totalWordCount,
+                        totalDuration: analysis.quantitativeMetrics.totalDurationSeconds,
+                        fillerWordCount: analysis.aiAnalysis.fillerAnalysis.totalCount,
+                        primaryTopic: primaryTopic
+                    )
+                    
+                    if let currentDayMetrics = self.currentDayMetrics {
+                        self.saveDailyMetric(currentDayMetrics)
+                    }
+                }
             } else {
                 // Create new metrics for today
                 guard let dayMetricsEntity = NSEntityDescription.entity(forEntityName: "DayMetricsEntity", in: context) else {
                     print("[AnalysisManager] 🚨 Failed to get DayMetrics entity description")
                     return
                 }
-
+                
                 let metrics = NSManagedObject(entity: dayMetricsEntity, insertInto: context)
                 let responses = ReflectionSessionManager.shared.getTodaysCachedResponses()
-
+                
                 metrics.setValue(today, forKey: "date")
                 metrics.setValue(analysis.aiAnalysis.moodData?.rating, forKey: "moodRating")
                 metrics.setValue(analysis.aiAnalysis.sleepData?.hours, forKey: "sleepHours")
@@ -271,7 +355,6 @@ class AnalysisManager: ObservableObject {
                 metrics.setValue(!responses.isEmpty, forKey: "isCompleted")
                 metrics.setValue(responses.count, forKey: "entryCount")
                 
-                // Add recurring themes if they exist
                 if let themes = analysis.aiAnalysis.recurringThemes?.themes {
                     metrics.setValue(themes.joined(separator: ","), forKey: "recurringThemes")
                 }
@@ -281,14 +364,67 @@ class AnalysisManager: ObservableObject {
                 
                 try context.save()
                 print("[AnalysisManager] ✅ Successfully created new metrics in Core Data")
+                
+                if var currentDayMetrics = self.currentDayMetrics {
+                    currentDayMetrics.entryCount += 1
+                    currentDayMetrics.totalWords += analysis.quantitativeMetrics.totalWordCount
+                    currentDayMetrics.totalDuration += analysis.quantitativeMetrics.totalDurationSeconds
+                    currentDayMetrics.fillerWordCount += analysis.aiAnalysis.fillerAnalysis.totalCount
+                    
+                    if let sleepHours = analysis.aiAnalysis.sleepData?.hours {
+                        currentDayMetrics.sleepHours = sleepHours
+                    }
+                    if let primaryTopic = analysis.aiAnalysis.recurringThemes?.themes?.first {
+                        currentDayMetrics.primaryTopic = primaryTopic
+                    }
+                    
+                    self.currentDayMetrics = currentDayMetrics
+                    self.saveDailyMetric(currentDayMetrics)
+                } else {
+                    let sleepHours = analysis.aiAnalysis.sleepData?.hours
+                    let primaryTopic = analysis.aiAnalysis.recurringThemes?.themes?.first
+                    
+                    self.currentDayMetrics = DayMetrics(
+                        date: Date(),
+                        sleepHours: sleepHours,
+                        entryCount: 1,
+                        totalWords: analysis.quantitativeMetrics.totalWordCount,
+                        totalDuration: analysis.quantitativeMetrics.totalDurationSeconds,
+                        fillerWordCount: analysis.aiAnalysis.fillerAnalysis.totalCount,
+                        primaryTopic: primaryTopic
+                    )
+                    
+                    if let currentDayMetrics = self.currentDayMetrics {
+                        self.saveDailyMetric(currentDayMetrics)
+                    }
+                }
             }
         } catch {
             print("[AnalysisManager] 🚨 Failed to save or update metrics in Core Data: \(error)")
         }
     }
-
+    
+    func getTotalEntries() -> Int {
+        guard let entityDescription = NSEntityDescription.entity(forEntityName: "DayMetricsEntity", in: context) else { return 0 }
+        
+        let query = NSFetchRequest<NSManagedObject>(entityName: "DayMetricsEntity")
+        query.predicate = NSPredicate(format: "date == %@", Date() as NSDate)
+        
+        do {
+            if let object = try context.fetch(query).first { 
+                if let count = object.value(forKey: "entryCount") as? Int {
+                    return count
+                }
+            }
+        } catch {
+            print("\(error.localizedDescription)")
+        }
+        
+        return 0
+    }
+    
     private func saveTopic(analysis: DailyAnalysis) {
-        guard let standoutTopicEntity = NSEntityDescription.entity(forEntityName: "StandoutTopicMetric", in: context) else { return }
+        guard let standoutTopicEntity = NSEntityDescription.entity(forEntityName: "StandoutTopicEntity", in: context) else { return }
         
         let entity = NSManagedObject(entity: standoutTopicEntity, insertInto: context)
         
@@ -296,6 +432,7 @@ class AnalysisManager: ObservableObject {
             if let category = standoutAnalysis.category {
                 entity.setValue(Date(), forKey: "date")
                 entity.setValue(category.rawValue, forKey: "topic")
+                
             }
         }
     }
@@ -331,7 +468,15 @@ class AnalysisManager: ObservableObject {
     }
     
     func markFollowUpComplete() {
-        isFollowUpCompletedToday = true
-        UserDefaults.standard.set(true, forKey: "FollowUpCompletedToday")
+        let defaults = UserDefaults.standard
+        defaults.set(Date().formatted(date: .numeric, time: .omitted),
+                    forKey: Self.followUpCompletedKey)
     }
+    
+    func resetFollowUpStatus() {
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: Self.followUpCompletedKey)
+    }
+    
+    
 }

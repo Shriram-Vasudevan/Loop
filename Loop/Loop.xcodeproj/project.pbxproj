@@ -80,6 +80,8 @@
 		996F820E2D39FECD00116F86 /* ReflectionCardManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 996F820D2D39FECD00116F86 /* ReflectionCardManager.swift */; };
 		996F82102D39FF6300116F86 /* TodaysReflectionPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 996F820F2D39FF6300116F86 /* TodaysReflectionPlanView.swift */; };
 		996F82122D3B0B5900116F86 /* ReflectionSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 996F82112D3B0B5900116F86 /* ReflectionSessionManager.swift */; };
+		9986634D2D45CF5100D7406D /* TabManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9986634C2D45CF5100D7406D /* TabManager.swift */; };
+		9986634F2D475DF900D7406D /* DreamJournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9986634E2D475DF900D7406D /* DreamJournalView.swift */; };
 		9988DB852CD9BFAC005628DE /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB842CD9BFAC005628DE /* FriendsView.swift */; };
 		9988DB8B2CD9CAEE005628DE /* SharedLoop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */; };
 		9988DB8D2CDA77C8005628DE /* PrivateUserRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB8C2CDA77C8005628DE /* PrivateUserRecord.swift */; };
@@ -248,6 +250,8 @@
 		996F820D2D39FECD00116F86 /* ReflectionCardManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectionCardManager.swift; sourceTree = "<group>"; };
 		996F820F2D39FF6300116F86 /* TodaysReflectionPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodaysReflectionPlanView.swift; sourceTree = "<group>"; };
 		996F82112D3B0B5900116F86 /* ReflectionSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectionSessionManager.swift; sourceTree = "<group>"; };
+		9986634C2D45CF5100D7406D /* TabManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabManager.swift; sourceTree = "<group>"; };
+		9986634E2D475DF900D7406D /* DreamJournalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DreamJournalView.swift; sourceTree = "<group>"; };
 		9988DB842CD9BFAC005628DE /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
 		9988DB8A2CD9CAEE005628DE /* SharedLoop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedLoop.swift; sourceTree = "<group>"; };
 		9988DB8C2CDA77C8005628DE /* PrivateUserRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateUserRecord.swift; sourceTree = "<group>"; };
@@ -281,6 +285,7 @@
 		99A0C8F72CA9EF2600F9281A /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		99A0C9012CA9F5CA00F9281A /* Loop.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Loop.entitlements; sourceTree = "<group>"; };
 		99A0C9032CA9F70500F9281A /* UserCloudKitUtility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserCloudKitUtility.swift; sourceTree = "<group>"; };
+		99A14AF92D446FD400DD6B78 /* LoopDataNewest.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = LoopDataNewest.xcdatamodel; sourceTree = "<group>"; };
 		99AC6DD32CDED81100B0D0D6 /* LoopsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopsView.swift; sourceTree = "<group>"; };
 		99AC6DD52CDFFAFA00B0D0D6 /* LoopChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopChatView.swift; sourceTree = "<group>"; };
 		99AC6DD72CE0199800B0D0D6 /* FluidParticleBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FluidParticleBackground.swift; sourceTree = "<group>"; };
@@ -425,6 +430,7 @@
 				99F31CA62D0F2DA300330180 /* RecordFollowUpLoopView.swift */,
 				999DAC8D2D2107D000A6626B /* RecordFeaturedLoopView.swift */,
 				9935CEED2D2ADDD100AF0C16 /* RecordFreeResponseView.swift */,
+				9986634E2D475DF900D7406D /* DreamJournalView.swift */,
 				9935CF1A2D30BB8500AF0C16 /* AddSuccessView.swift */,
 				990E4A832CB30EAB009F88A0 /* ThankYouView.swift */,
 				990E4A852CB30EB8009F88A0 /* LoopAudioConfirmationView.swift */,
@@ -505,6 +511,7 @@
 				996F82112D3B0B5900116F86 /* ReflectionSessionManager.swift */,
 				99F00AB82D3DA794008F1228 /* SleepCheckinManager.swift */,
 				99F00ABA2D3DC159008F1228 /* TrendsManager.swift */,
+				9986634C2D45CF5100D7406D /* TabManager.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -739,6 +746,7 @@
 				990E4A882CB30EC0009F88A0 /* WavyBackground.swift in Sources */,
 				9953BDF82CF4101E00348AC3 /* RecordThematicLoopPromptsView.swift in Sources */,
 				9935CEE82D29A3B300AF0C16 /* PreviewScheduleEmotionDay.swift in Sources */,
+				9986634F2D475DF900D7406D /* DreamJournalView.swift in Sources */,
 				9935CEFA2D2DEB4900AF0C16 /* KeyPhraseManager.swift in Sources */,
 				9953BDFC2CF8105200348AC3 /* SettingsModels.swift in Sources */,
 				9935CEEE2D2ADDD100AF0C16 /* RecordFreeResponseView.swift in Sources */,
@@ -785,6 +793,7 @@
 				9953BDF62CF40E4A00348AC3 /* ProgressIndicator.swift in Sources */,
 				99A0C9042CA9F70500F9281A /* UserCloudKitUtility.swift in Sources */,
 				99CCFBBE2D121F2400DA8A55 /* EmptyStateView.swift in Sources */,
+				9986634D2D45CF5100D7406D /* TabManager.swift in Sources */,
 				99F7F6FF2CAF8580009858AC /* Extensions.swift in Sources */,
 				99DC91B52D19C59B002B9A89 /* AudioWaveform.swift in Sources */,
 				9935CEDA2D23A0C200AF0C16 /* WordCountPatternCard.swift in Sources */,
@@ -1048,6 +1057,7 @@
 		9953BE0A2CFCC0FC00348AC3 /* LoopData.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				99A14AF92D446FD400DD6B78 /* LoopDataNewest.xcdatamodel */,
 				99F00AF52D3F61FD008F1228 /* LoopDataNew.xcdatamodel */,
 				9935CF2A2D36373500AF0C16 /* LoopDataNext.xcdatamodel */,
 				9953BE0B2CFCC0FC00348AC3 /* LoopData.xcdatamodel */,

@@ -44,6 +44,46 @@ class DailyCheckinManager: ObservableObject {
         checkIfDailyCheckinCompleted()
     }
     
+    func getAverageDailyRating() -> Double? {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: Date())
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
+            return nil
+        }
+        
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyCheckinEntity")
+        fetchRequest.predicate = NSPredicate(
+            format: "date >= %@ AND date < %@",
+            startOfDay as NSDate,
+            endOfDay as NSDate
+        )
+        
+        do {
+            let results = try context.fetch(fetchRequest)
+            
+            // If no ratings found, return nil
+            guard !results.isEmpty else {
+                print("ℹ️ No ratings found for today")
+                return nil
+            }
+            
+            // Calculate the average
+            let totalRating = results.reduce(0.0) { sum, checkin in
+                sum + (checkin.value(forKey: "rating") as? Double ?? 0.0)
+            }
+            
+            let averageRating = totalRating / Double(results.count)
+            print("📊 Average rating for today: \(averageRating)")
+            
+            return averageRating
+            
+        } catch {
+            print("❌ Failed to fetch daily ratings: \(error)")
+            print("Detailed error: \(error.localizedDescription)")
+            return nil
+        }
+    }
+    
     private func fetchTodaysCheckin() -> NSManagedObject? {
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: Date())
@@ -55,7 +95,7 @@ class DailyCheckinManager: ObservableObject {
         fetchRequest.predicate = NSPredicate(
             format: "date >= %@ AND date < %@ AND isDailySession == %@",
             startOfDay as NSDate,
-            endOfDay as NSDate, true
+            endOfDay as NSDate, NSNumber(value: true)
         )
         
         do {
@@ -78,9 +118,9 @@ class DailyCheckinManager: ObservableObject {
                     existingCheckin.setValue(rating, forKey: "rating")
                     existingCheckin.setValue(Date(), forKey: "date")
                     existingCheckin.setValue(isThroughDailySession, forKey: "isDailySession")
+                    
+                    return
                 }
-                
-                return
             }
             
             print("➕ No existing check-in found, creating new entry...")

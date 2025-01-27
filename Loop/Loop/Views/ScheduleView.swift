@@ -41,9 +41,9 @@ struct ScheduleView: View {
             VStack(spacing: 32) {
                 HStack(spacing: 12) {
                     Text("CALENDAR")
-                        .font(.system(size: 14, weight: .semibold))
-                        .tracking(2)
-                        .foregroundColor(textColor.opacity(0.5))
+                        .font(.custom("PPNeueMontreal-Bold", size: 24))
+                        .foregroundColor(textColor)
+                        .tracking(1.2)
                     
                     Spacer()
                     

@@ -135,6 +135,11 @@ struct ReflectionCard: View {
                 .fill(accentColor)
                 .frame(height: 40)
                 .offset(y: 50)
+        case .success:
+            StarPattern()
+                .fill(accentColor)
+                .frame(height: 40)
+                .offset(y: 50)
         }
     }
 }
@@ -237,6 +242,7 @@ extension ReflectionCardManager.ReflectionCardType {
         case .moodCheckin: return "Quick check-in"
         case .daySummary: return "Reflect on today"
         case .standOut: return "Key moment"
+        case .success: return "Daily win"
         case .aiGenerated: return "Today's prompt"
         case .freeform: return "Open thoughts"
         }

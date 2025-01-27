@@ -56,9 +56,10 @@ struct LoopsView: View {
     
     private var headerView: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("journal")
-                .font(.custom("PPNeueMontreal-Medium", size: 37))
+            Text("JOURNAL")
+                .font(.custom("PPNeueMontreal-Bold", size: 24))
                 .foregroundColor(textColor)
+                .tracking(1.2)
             
             Text("your reflections")
                 .font(.system(size: 18, weight: .regular))
@@ -280,7 +281,7 @@ struct YearSection: View {
                         withAnimation {
                             selectedMonthId = monthId
                             Task {
-                                let _  = await loopManager.loadMonthData(monthId: monthId)
+                                let monthSummary = await loopManager.loadMonthData(monthId: monthId)
                             }
                         }
                     }

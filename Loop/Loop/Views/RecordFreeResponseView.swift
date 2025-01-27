@@ -27,6 +27,8 @@ struct RecordFreeResponseView: View {
     
     var body: some View {
         ZStack {
+            InitialReflectionVisual(index: 0)
+                .edgesIgnoringSafeArea(.all)
             VStack(spacing: 0) {
                 if showingThankYouScreen {
                     thankYouView
@@ -67,8 +69,8 @@ struct RecordFreeResponseView: View {
             }
             .padding(.top, 16)
             
-            Text("New Entry")
-                .font(.system(size: 28, weight: .light))
+            Text(getGreeting())
+                .font(.system(size: 28, weight: .medium))
                 .foregroundColor(textColor)
             
             Text("This is your space. Take a moment to share your thoughts, unfiltered and unguided")
@@ -181,7 +183,7 @@ struct RecordFreeResponseView: View {
     }
     
     private var thankYouView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 8) {
             Spacer()
             
             Text("Entry Saved")
@@ -250,7 +252,7 @@ struct RecordFreeResponseView: View {
                     isVideo: false,
                     prompt: formattedDate(),
                     isDailyLoop: true,
-                    isFollowUp: false, isSuccess: false, isUnguided: true
+                    isFollowUp: false, isSuccess: false, isUnguided: true, isDream: false
                 )
                 
                 AnalysisManager.shared.performAnalysisForUnguidedEntry(transcript: loop.1)
@@ -275,6 +277,21 @@ struct RecordFreeResponseView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM d, yyyy"
         return formatter.string(from: Date())
+    }
+    
+    func getGreeting() -> String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        
+        switch hour {
+            case 0...11:
+                return "Good Morning"
+            case 12...16:
+                return "Good Afternoon"
+        case 17...23:
+            return "Good Evening"
+        default:
+            return "Hey there"
+        }
     }
 }
 

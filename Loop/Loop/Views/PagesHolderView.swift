@@ -39,9 +39,9 @@ struct PagesHolderView: View {
                         case .schedule:
                             ScheduleView(selectedScheduleDate: $selectedScheduleDate)
                         case .trends:
-//                            InsightsView()
-//                            Text("oops")
-                            TodaysInsightsView()
+                            InsightsView(pageType: $pageType)
+////                            Text("oops")
+//                            TodaysInsightsView()
                         }
                     }
                     
@@ -89,7 +89,7 @@ struct PagesHolderView: View {
                         Button {
                             toggleMenu()
                         } label: {
-                            Image(systemName: isMenuOpened ? "xmark" : "plus")
+                            Image(systemName: isMenuOpened ? "xmark" : "mic.fill")
                                 .font(.system(size: 22, weight: .medium))
                                 .foregroundColor(.white)
                                 .frame(width: 62, height: 62)
@@ -119,7 +119,9 @@ struct PagesHolderView: View {
                             }
                         }
                     
-                    FloatingEntryMenu(newEntrySelected: $showNewEntrySheet, successSelected: $showSuccessSheet, moodCheckIn: $showMoodCheckInSheet)
+                    EntryTypeCarousel()
+                    
+//                    FloatingEntryMenu(newEntrySelected: $showNewEntrySheet, successSelected: $showSuccessSheet, moodCheckIn: $showMoodCheckInSheet)
                 }
             }
             .edgesIgnoringSafeArea(.bottom)

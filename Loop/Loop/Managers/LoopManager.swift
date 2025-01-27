@@ -95,7 +95,7 @@ class LoopManager: ObservableObject {
     init() {
         Task {
             await loadThematicPrompts()
-            await checkSevenDayStatus()
+//            await checkSevenDayStatus()
 
             fetchRecentDates(limit: 10, completion: {
                 
@@ -255,7 +255,7 @@ class LoopManager: ObservableObject {
     }
     
     
-    func addLoop(mediaURL: URL, isVideo: Bool, prompt: String, mood: String? = nil, freeResponse: Bool = false, isDailyLoop: Bool, isFollowUp: Bool, isSuccess: Bool, isUnguided: Bool) async -> (Loop, String) {
+    func addLoop(mediaURL: URL, isVideo: Bool, prompt: String, mood: String? = nil, freeResponse: Bool = false, isDailyLoop: Bool, isFollowUp: Bool, isSuccess: Bool, isUnguided: Bool, isDream: Bool) async -> (Loop, String) {
 
         let loopID = UUID().uuidString
         let timestamp = Date()
@@ -286,7 +286,8 @@ class LoopManager: ObservableObject {
             isVideo: isVideo,
             isDailyLoop: isDailyLoop,
             isFollowUp: isFollowUp,
-            isSuccessJournal: isSuccess
+            isSuccessJournal: isSuccess,
+            isDream: isDream
         )
 
         let loopDate = Calendar.current.startOfDay(for: timestamp)
@@ -522,6 +523,8 @@ class LoopManager: ObservableObject {
             let combinedLoops = Set(selectedMonthCloudSummary.loops + selectedMonthLocalSummary.loops)
             
             let selectedMonthSummary = MonthSummary(year: monthId.year, month: monthId.month, totalEntries: selectedMonthCloudSummary.loops.count + selectedMonthLocalSummary.loops.count, completionRate: 0.0, loops: Array(combinedLoops))
+            
+            print("selectedMonthSummary: \(selectedMonthSummary)")
             await MainActor.run {
                 self.selectedMonthSummary = selectedMonthSummary
                 return selectedMonthSummary

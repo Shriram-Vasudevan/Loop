@@ -88,7 +88,8 @@ class LoopLocalStorageUtility {
             loopEntity.setValue(loop.isVideo, forKey: "isVideo")
             loopEntity.setValue(loop.isDailyLoop, forKey: "isDailyLoop")
             loopEntity.setValue(loop.isFollowUp, forKey: "isFollowUp")
-            loopEntity.setValue(loop.isFollowUp, forKey: "isSuccessJournal")
+            loopEntity.setValue(loop.isSuccessJournal, forKey: "isSuccessJournal")
+            loopEntity.setValue(loop.isDream, forKey: "isDreamJournal")
             
             do {
                 try context.save()
@@ -128,6 +129,8 @@ class LoopLocalStorageUtility {
             isVideo: entity.value(forKey: "isVideo") as? Bool ?? false,
             isDailyLoop: entity.value(forKey: "isDailyLoop") as? Bool ?? false, 
             isFollowUp: entity.value(forKey: "isFollowUp") as? Bool ?? false,
+            isSuccessJournal: entity.value(forKey: "isSuccessJournal") as? Bool ?? false,
+            isDream: entity.value(forKey: "isDreamJournal") as? Bool ?? false,
             mood: entity.value(forKey: "mood") as? String
         )
     }

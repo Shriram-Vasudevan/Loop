@@ -7,12 +7,12 @@
 
 import Foundation
 
-struct DayMetrics {
-    let date: Date
-    let sleepHours: Double?
-    let entryCount: Int
-    let totalWords: Int
-    let totalDuration: Double
-    let fillerWordCount: Int
-    let primaryTopic: String?
+struct DayMetrics: Codable {
+    var date: Date
+    var sleepHours: Double?
+    var entryCount: Int
+    var totalWords: Int
+    var totalDuration: Double
+    var fillerWordCount: Int
+    var primaryTopic: String?
 }
