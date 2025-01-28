@@ -54,6 +54,7 @@
         <attribute name="freeResponse" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="id" optional="YES" attributeType="String"/>
         <attribute name="isDailyLoop" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isDreamJournal" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="isFollowUp" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="isSuccessJournal" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="isVideo" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>

@@ -336,6 +336,7 @@
 		99F7F6FE2CAF8580009858AC /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		99F8F68B2D16FF9400F9C8D0 /* Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Configuration.swift; sourceTree = "<group>"; };
 		99F8F68D2D17034900F9C8D0 /* Loop.debug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Loop.debug.entitlements; sourceTree = "<group>"; };
+		99FB9AC12D48326E00ED095D /* LoopCoreData.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = LoopCoreData.xcdatamodel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -476,12 +477,12 @@
 				9935CEFB2D2F1DD000AF0C16 /* TopEmotionsCard.swift */,
 				9935CF212D32D93700AF0C16 /* DarkBlueWave.swift */,
 				9935CF252D3426FF00AF0C16 /* MoodCheckinView.swift */,
+				99F00AB62D3DA3D7008F1228 /* SleepCheckInView.swift */,
 				996F82052D38719100116F86 /* WaveRatingView.swift */,
 				996F82072D393E2800116F86 /* TodaysReflectionWidget.swift */,
 				996F820B2D39F2B200116F86 /* ReflectionCompleteView.swift */,
 				996F820F2D39FF6300116F86 /* TodaysReflectionPlanView.swift */,
 				99F00AB42D3D9C90008F1228 /* WavePattern.swift */,
-				99F00AB62D3DA3D7008F1228 /* SleepCheckInView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -1057,6 +1058,7 @@
 		9953BE0A2CFCC0FC00348AC3 /* LoopData.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				99FB9AC12D48326E00ED095D /* LoopCoreData.xcdatamodel */,
 				99A14AF92D446FD400DD6B78 /* LoopDataNewest.xcdatamodel */,
 				99F00AF52D3F61FD008F1228 /* LoopDataNew.xcdatamodel */,
 				9935CF2A2D36373500AF0C16 /* LoopDataNext.xcdatamodel */,

@@ -134,6 +134,9 @@ class ReflectionSessionManager: ObservableObject {
     func completeSession() {
         guard completedPrompts.count == prompts.count else { return }
         hasCompletedForToday = true
+        Task {
+            await AnalysisManager.shared.performAnalysis()
+        }
         saveState()
     }
     

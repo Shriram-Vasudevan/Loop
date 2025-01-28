@@ -10,14 +10,34 @@ import SwiftUI
 struct MinimalSleepCheckInView: View {
     @Binding var hoursSlept: Double
     let isEditable: Bool
+    let isOpenedFromPlus: Bool
+    
     var onCompletion: (() -> Void)?
     
     private let accentColor = Color(hex: "1E3D59")
     
     @ObservedObject private var checkinManager = SleepCheckinManager.shared
     
+    @Environment(\.dismiss) var dismiss
+    
     var body: some View {
         VStack(spacing: 48) {
+            if isOpenedFromPlus {
+                HStack {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 20, weight: .light))
+                            .foregroundColor(accentColor.opacity(0.8))
+                    }
+                    
+                    
+                    Spacer()
+                }
+                .padding(.bottom, 30)
+            }
+            
             VStack(spacing: 4) {
                 Text("HOW DID YOU SLEEP?")
                     .font(.system(size: 13, weight: .medium))
@@ -90,8 +110,43 @@ struct MinimalSleepCheckInView: View {
                 }
                 .padding(.horizontal, 20)
             }
+            
+            if isOpenedFromPlus {
+                
+                Button(action: {
+                    withAnimation (.smooth(duration: 0.4)) {
+                        checkinManager.saveDailyCheckin(hours: Double(hoursSlept))
+                        dismiss()
+                    }
+                }) {
+                    Text("complete")
+                        .font(.system(size: 18, weight: .regular))
+                        .foregroundColor(.white)
+                        .frame(height: 56)
+                        .frame(maxWidth: .infinity)
+                        .background(accentColor)
+                        .cornerRadius(28)
+                }
+                
+                
+                Spacer()
+            }
+            
         }
         .padding(32)
+        .onAppear {
+            if !isEditable {
+                if let savedSleep = checkinManager.todaysSleep?.hours {
+                    hoursSlept = savedSleep
+                }
+            } else {
+                if let savedSleep = checkinManager.checkIfCheckinCompleted() {
+                    hoursSlept = savedSleep
+                } else {
+                    hoursSlept = 7.0 // Default value if no check-in found
+                }
+            }
+        }
     }
     
     private func getSleepDescription(for hours: Double) -> String {
@@ -113,7 +168,6 @@ struct MinimalSleepCheckInView: View {
         }
     }
 }
-
 struct PreviewMinimalSleepWrapper: View {
     @State private var hoursSlept: Double = 8.0
     
@@ -123,7 +177,7 @@ struct PreviewMinimalSleepWrapper: View {
             
             MinimalSleepCheckInView(
                 hoursSlept: $hoursSlept,
-                isEditable: true
+                isEditable: true, isOpenedFromPlus: false
             )
         }
     }

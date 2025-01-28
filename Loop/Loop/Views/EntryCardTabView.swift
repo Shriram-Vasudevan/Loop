@@ -1,37 +1,129 @@
 import SwiftUI
 
 struct EntryTypeCarousel: View {
-    private let cardWidth: CGFloat = 140
-    private let cardHeight: CGFloat = 230
+    @Binding var newEntrySelected: Bool
+    @Binding var successSelected: Bool
+    @Binding var moodCheckIn: Bool
+    @Binding var sleepCheckIn: Bool
+    @Binding var dreamJournal: Bool
+    
+    private let cardWidth: CGFloat = 160
+    private let cardHeight: CGFloat = 240
+    private let spacing: CGFloat = 16
+    
+    @Binding var isOpen: Bool
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Top row with mood and sleep
-            HStack(spacing: 16) {
-                CarouselReflectionCard(type: .moodCheckIn)
-                    .frame(width: cardWidth, height: cardHeight)
-                CarouselReflectionCard(type: .sleepCheckIn)
-                    .frame(width: cardWidth, height: cardHeight)
-            }
+        ZStack {
+            // Background overlay - moved outside ScrollView
+            Color.black.opacity(0.5)
+                .edgesIgnoringSafeArea(.all)
+                .onTapGesture {
+                    withAnimation {
+                        isOpen = false
+                    }
+                }
             
-            // Middle row with new entry
-            CarouselReflectionCard(type: .newEntry)
-                .frame(width: cardWidth, height: cardHeight)
-            
-            // Bottom row with dream and success
-            HStack(spacing: 16) {
-                CarouselReflectionCard(type: .dreamJournal)
-                    .frame(width: cardWidth, height: cardHeight)
-                CarouselReflectionCard(type: .success)
-                    .frame(width: cardWidth, height: cardHeight)
+            VStack {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    VStack {
+                        Spacer()
+                        
+                        HStack(spacing: spacing) {
+                            CarouselReflectionCard(type: .newEntry)
+                                .frame(width: cardWidth, height: cardHeight)
+                                .onTapGesture { newEntrySelected = true }
+                            
+                            CarouselReflectionCard(type: .moodCheckIn)
+                                .frame(width: cardWidth, height: cardHeight)
+                                .onTapGesture { moodCheckIn = true }
+                            
+                            CarouselReflectionCard(type: .success)
+                                .frame(width: cardWidth, height: cardHeight)
+                                .onTapGesture { successSelected = true }
+                            
+                            CarouselReflectionCard(type: .dreamJournal)
+                                .frame(width: cardWidth, height: cardHeight)
+                                .onTapGesture { dreamJournal = true }
+                            
+                            CarouselReflectionCard(type: .sleepCheckIn)
+                                .frame(width: cardWidth, height: cardHeight)
+                                .onTapGesture { sleepCheckIn = true }
+                        
+                            Spacer()
+                        }
+                        .padding(.leading, 24)
+                        .padding(.bottom, 85)
+                    }
+                }
             }
         }
-        .padding(.horizontal, 16)
+    }
+}
+struct BackgroundEffect: View {
+    @Binding var isMenuOpened: Bool
+    
+    var body: some View {
+        ZStack {
+            // Blur effect
+            Color.white
+                .opacity(0.98)
+                .blur(radius: 3)
+            
+            // Optional: Add subtle animated gradient
+            GeometryReader { geometry in
+                ZStack {
+                    Circle()
+                        .fill(Color(hex: "A28497").opacity(0.1))
+                        .frame(width: geometry.size.width * 0.8)
+                        .blur(radius: 50)
+                        .offset(y: -geometry.size.height * 0.2)
+                    
+                    Circle()
+                        .fill(Color(hex: "B7A284").opacity(0.1))
+                        .frame(width: geometry.size.width * 0.8)
+                        .blur(radius: 50)
+                        .offset(y: geometry.size.height * 0.2)
+                }
+            }
+        }
+        .edgesIgnoringSafeArea(.all)
+        .onTapGesture {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                isMenuOpened = false
+            }
+        }
     }
 }
 
+struct CardWrapper: View {
+    let type: ReflectionType
+    @Binding var isSelected: Bool
+    let isAnimating: Bool
+    let index: Int
+    
+    var body: some View {
+        CarouselReflectionCard(type: type)
+            .frame(width: UIScreen.main.bounds.width * 0.85, height: 230)
+            .scaleEffect(isAnimating ? 1 : 0.8)
+            .opacity(isAnimating ? 1 : 0)
+            .offset(y: isAnimating ? 0 : 50)
+            .animation(
+                .spring(response: 0.6, dampingFraction: 0.8)
+                .delay(Double(index) * 0.1),
+                value: isAnimating
+            )
+            .onTapGesture {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    isSelected = true
+                }
+            }
+    }
+}
+
+
 enum ReflectionType: String, CaseIterable, Hashable {
-    case newEntry = "Share Anything"
+    case newEntry = "New Entry"
     case moodCheckIn = "Mood Check-in"
     case dreamJournal = "Dream Journal"
     case sleepCheckIn = "Sleep Check-in"
@@ -307,6 +399,7 @@ struct MountainRange: Shape {
     }
 }
 
-#Preview {
-    EntryTypeCarousel()
-}
+//#Preview {
+//    EntryTypeCarousel()
+//        .padding()
+//}

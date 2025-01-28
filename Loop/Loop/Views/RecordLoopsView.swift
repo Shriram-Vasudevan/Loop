@@ -245,7 +245,7 @@ struct RecordLoopsView: View {
                     VStack {
                         MinimalSleepCheckInView(
                             hoursSlept: $sleepHours,
-                            isEditable: true
+                            isEditable: true, isOpenedFromPlus: false
                         ) {
                             reflectionSessionManager.markPromptComplete(at: tabIndex)
                         }

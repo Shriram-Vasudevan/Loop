@@ -163,9 +163,9 @@ struct TodaysMoodCard: View {
                     .opacity(0.04)
             }
         )
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 10)
                 .stroke(Color.black.opacity(0.03), lineWidth: 1)
         )
     }
@@ -326,9 +326,9 @@ struct KeyMomentCard: View {
                     .opacity(moment != nil ? 0.04 : 0.02)
             }
         )
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 10)
                 .stroke(Color.black.opacity(0.03), lineWidth: 1)
         )
     }
@@ -441,9 +441,9 @@ struct SleepCard: View {
                     .opacity(0.04)
             }
         )
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 10)
                 .stroke(Color.black.opacity(0.03), lineWidth: 1)
         )
     }
@@ -490,94 +490,112 @@ struct StarryPattern: Shape {
 
 struct ReflectionMetricsCard: View {
     let analysis: DailyAnalysis?
-    private let primaryColor = Color(hex: "1E293B")
     private let accentColor = Color(hex: "94A3B8")
-    private let gradientStart = Color(hex: "F1F5F9")
     
     @State private var isAppearing = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Header
-            HStack(spacing: 10) {
-                Circle()
-                    .fill(accentColor)
-                    .frame(width: 6, height: 6)
+        VStack(spacing: 0) {
+            VStack(spacing: 32) {
+                // Elegant header
+                Text("OVERVIEW")
+                    .font(.system(size: 13, weight: .medium))
+                    .tracking(4)
+                    .foregroundColor(accentColor)
+                    .padding(.top, 28)
                 
-                Text("REFLECTION METRICS")
-                    .font(.system(size: 12, weight: .medium))
-                    .tracking(2)
-                    .foregroundColor(primaryColor.opacity(0.6))
-                
-                Spacer()
-            }
-            .padding(.horizontal, 28)
-            .padding(.top, 28)
-            .padding(.bottom, 36)
-            
-            // Metrics Grid
-            HStack(alignment: .bottom, spacing: 40) {
-                // Entries Metric
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("\(AnalysisManager.shared.currentDayMetrics?.entryCount ?? 0)")
-                        .font(.system(size: 48, weight: .medium))
-                        .foregroundColor(primaryColor)
-                        .opacity(isAppearing ? 1 : 0)
-                        .offset(y: isAppearing ? 0 : 20)
+                // Metrics display
+                HStack(spacing: 45) {
+                    // Entries metric with elegant styling
+                    MetricDisplay(
+                        value: "\(AnalysisManager.shared.currentDayMetrics?.entryCount ?? 0)",
+                        label: "entries",
+                        alignment: .leading,
+                        isAppearing: isAppearing
+                    )
                     
-                    Text("entries")
-                        .font(.system(size: 16))
-                        .foregroundColor(primaryColor.opacity(0.5))
-                        .padding(.leading, 2)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                
-                // Words Metric
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("\(analysis?.quantitativeMetrics.totalWordCount ?? 0)")
-                        .font(.system(size: 48, weight: .medium))
-                        .foregroundColor(accentColor)
-                        .opacity(isAppearing ? 1 : 0)
-                        .offset(y: isAppearing ? 0 : 20)
+                    // Subtle divider
+                    Rectangle()
+                        .fill(accentColor.opacity(0.2))
+                        .frame(width: 1, height: 60)
                     
-                    Text("words")
-                        .font(.system(size: 16))
-                        .foregroundColor(primaryColor.opacity(0.5))
-                        .padding(.trailing, 2)
+                    // Words metric with elegant styling
+                    MetricDisplay(
+                        value: "\(analysis?.quantitativeMetrics.totalWordCount ?? 0)",
+                        label: "words",
+                        alignment: .trailing,
+                        isAppearing: isAppearing
+                    )
                 }
-                .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            .padding(.horizontal, 28)
-            .padding(.bottom, 28)
+            .padding(.horizontal, 32)
+            .padding(.bottom, 32)
         }
         .background(
             ZStack {
-                Color.white
-                
                 // Elegant gradient background
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        gradientStart.opacity(0.8),
-                        .white
+                        Color.white,
+                        Color(hex: "F8FAFC")
                     ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
+                    startPoint: .top,
+                    endPoint: .bottom
                 )
                 
-                // Refined line pattern
-                RefinedLinePattern()
-                    .stroke(accentColor, lineWidth: 0.3)
-                    .opacity(0.08)
+                // Subtle pattern overlay
+                GeometryReader { geometry in
+                    Path { path in
+                        let width = geometry.size.width
+                        let height = geometry.size.height
+                        let spacing: CGFloat = 20
+                        
+                        for x in stride(from: 0, through: width, by: spacing) {
+                            path.move(to: CGPoint(x: x, y: 0))
+                            path.addLine(to: CGPoint(x: x, y: height))
+                        }
+                        
+                        for y in stride(from: 0, through: height, by: spacing) {
+                            path.move(to: CGPoint(x: 0, y: y))
+                            path.addLine(to: CGPoint(x: width, y: y))
+                        }
+                    }
+                    .stroke(accentColor, lineWidth: 0.2)
+                    .opacity(0.1)
+                }
             }
         )
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: Color.black.opacity(0.03), radius: 15, x: 0, y: 5)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .shadow(color: Color.black.opacity(0.03), radius: 20, x: 0, y: 10)
         .shadow(color: Color.black.opacity(0.02), radius: 5, x: 0, y: 2)
         .onAppear {
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                 isAppearing = true
             }
         }
+    }
+}
+
+struct MetricDisplay: View {
+    let value: String
+    let label: String
+    let alignment: HorizontalAlignment
+    let isAppearing: Bool
+    
+    var body: some View {
+        VStack(alignment: alignment, spacing: 8) {
+            Text(value)
+                .font(.system(size: 44, weight: .light))
+                .opacity(isAppearing ? 1 : 0)
+                .offset(y: isAppearing ? 0 : 20)
+            
+            Text(label)
+                .font(.system(size: 15, weight: .regular))
+                .foregroundColor(Color(hex: "94A3B8").opacity(0.8))
+                .opacity(isAppearing ? 1 : 0)
+                .offset(y: isAppearing ? 0 : 10)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -793,9 +811,9 @@ struct FollowUpCard: View {
                     .opacity(0.04)
             }
         )
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 10)
                 .stroke(Color.black.opacity(0.03), lineWidth: 1)
         )
         .fullScreenCover(isPresented: $showingFollowUp) {

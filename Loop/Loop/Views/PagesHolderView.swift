@@ -19,8 +19,12 @@ struct PagesHolderView: View {
     @State private var showNewEntrySheet = false
     @State private var showSuccessSheet = false
     @State private var showMoodCheckInSheet = false
+    @State private var showSleepInSheet = false
+    @State private var showDreamJournalSheet = false
     
     @State private var dayRating: Double = 5.0
+    @State private var hoursSlept: Double = 7.0
+    
     
     var body: some View {
         NavigationStack {
@@ -89,7 +93,7 @@ struct PagesHolderView: View {
                         Button {
                             toggleMenu()
                         } label: {
-                            Image(systemName: isMenuOpened ? "xmark" : "mic.fill")
+                            Image(systemName: isMenuOpened ? "xmark" : "plus")
                                 .font(.system(size: 22, weight: .medium))
                                 .foregroundColor(.white)
                                 .frame(width: 62, height: 62)
@@ -111,15 +115,7 @@ struct PagesHolderView: View {
                 }
                 
                 if isMenuOpened {
-                    Color.black.opacity(0.5)
-                        .edgesIgnoringSafeArea(.all)
-                        .onTapGesture {
-                            withAnimation {
-                                toggleMenu()
-                            }
-                        }
-                    
-                    EntryTypeCarousel()
+                    EntryTypeCarousel(newEntrySelected: $showNewEntrySheet, successSelected: $showSuccessSheet, moodCheckIn: $showMoodCheckInSheet, sleepCheckIn: $showSleepInSheet, dreamJournal: $showDreamJournalSheet, isOpen: $isMenuOpened)
                     
 //                    FloatingEntryMenu(newEntrySelected: $showNewEntrySheet, successSelected: $showSuccessSheet, moodCheckIn: $showMoodCheckInSheet)
                 }
@@ -134,6 +130,12 @@ struct PagesHolderView: View {
             }
             .fullScreenCover(isPresented: $showMoodCheckInSheet) {
                 MoodCheckInView(dayRating: $dayRating, isEditable: true, isOpenedFromPlus: true)
+            }
+            .fullScreenCover(isPresented: $showSleepInSheet) {
+                MinimalSleepCheckInView(hoursSlept: $hoursSlept, isEditable: true, isOpenedFromPlus: true)
+            }
+            .fullScreenCover(isPresented: $showDreamJournalSheet) {
+                DreamJournalView()
             }
         }
     }

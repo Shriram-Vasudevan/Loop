@@ -8,23 +8,17 @@
 import Foundation
 import CoreData
 
-//
-//  DailyCheckinManager.swift
-//  Loop
-//
-//  Created by Shriram Vasudevan on 11/14/24.
-//
-
-import Foundation
-import CoreData
-
 class DailyCheckinManager: ObservableObject {
     static let shared = DailyCheckinManager()
-        
-    @Published var todaysCheckIn: DayRating?
     
-    let dateKey: String = "checkinDateKey"
-    let checkInKey: String = "checkinKey"
+    @Published var todaysCheckIn: DayRating? {
+        didSet {
+            objectWillChange.send()
+        }
+    }
+    
+    private let dateKey = "checkinDateKey"
+    private let checkInKey = "checkinKey"
     
     lazy var persistentContainer: NSPersistentContainer = {
         let container = NSPersistentContainer(name: "LoopData")
@@ -41,47 +35,125 @@ class DailyCheckinManager: ObservableObject {
     }
     
     init() {
-        checkIfDailyCheckinCompleted()
+        loadTodaysCheckin()
     }
     
     func getAverageDailyRating() -> Double? {
-        let calendar = Calendar.current
-        let startOfDay = calendar.startOfDay(for: Date())
-        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
-            return nil
+       let calendar = Calendar.current
+       let startOfDay = calendar.startOfDay(for: Date())
+       guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
+           return nil
+       }
+       
+       let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyCheckinEntity")
+       fetchRequest.predicate = NSPredicate(
+           format: "date >= %@ AND date < %@",
+           startOfDay as NSDate,
+           endOfDay as NSDate
+       )
+       
+       do {
+           let results = try context.fetch(fetchRequest)
+           
+           // If no ratings found, return nil
+           guard !results.isEmpty else {
+               print("ℹ️ No ratings found for today")
+               return nil
+           }
+           
+           // Calculate the average
+           let totalRating = results.reduce(0.0) { sum, checkin in
+               sum + (checkin.value(forKey: "rating") as? Double ?? 0.0)
+           }
+           
+           let averageRating = totalRating / Double(results.count)
+           print("📊 Average rating for today: \(averageRating)")
+           
+           return averageRating
+           
+       } catch {
+           print("❌ Failed to fetch daily ratings: \(error)")
+           print("Detailed error: \(error.localizedDescription)")
+           return nil
+       }
+   }
+    
+    private func loadTodaysCheckin() {
+        if let rating = checkIfDailyCheckinCompleted() {
+            DispatchQueue.main.async {
+                self.todaysCheckIn = DayRating(rating: rating, date: Date())
+            }
         }
-        
-        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyCheckinEntity")
-        fetchRequest.predicate = NSPredicate(
-            format: "date >= %@ AND date < %@",
-            startOfDay as NSDate,
-            endOfDay as NSDate
-        )
-        
+    }
+    
+    func saveDailyCheckin(rating: Double, isThroughDailySession: Bool) {
         do {
-            let results = try context.fetch(fetchRequest)
-            
-            // If no ratings found, return nil
-            guard !results.isEmpty else {
-                print("ℹ️ No ratings found for today")
-                return nil
+            if isThroughDailySession {
+                if let existingCheckin = fetchTodaysCheckin() {
+                    existingCheckin.setValue(rating, forKey: "rating")
+                    existingCheckin.setValue(Date(), forKey: "date")
+                    existingCheckin.setValue(isThroughDailySession, forKey: "isDailySession")
+                } else {
+                    createNewCheckin(rating: rating, isThroughDailySession: isThroughDailySession)
+                }
+            } else {
+                createNewCheckin(rating: rating, isThroughDailySession: isThroughDailySession)
             }
             
-            // Calculate the average
-            let totalRating = results.reduce(0.0) { sum, checkin in
-                sum + (checkin.value(forKey: "rating") as? Double ?? 0.0)
+            try context.save()
+            
+            DispatchQueue.main.async {
+                self.todaysCheckIn = DayRating(rating: rating, date: Date())
             }
             
-            let averageRating = totalRating / Double(results.count)
-            print("📊 Average rating for today: \(averageRating)")
-            
-            return averageRating
+            cacheCheckinCompletion(rating: rating)
             
         } catch {
-            print("❌ Failed to fetch daily ratings: \(error)")
-            print("Detailed error: \(error.localizedDescription)")
-            return nil
+            print("❌ Failed to save daily check-in: \(error)")
         }
+    }
+    
+    private func createNewCheckin(rating: Double, isThroughDailySession: Bool) {
+        guard let entity = NSEntityDescription.entity(forEntityName: "DailyCheckinEntity", in: context) else {
+            return
+        }
+        
+        let newCheckin = NSManagedObject(entity: entity, insertInto: context)
+        newCheckin.setValue(rating, forKey: "rating")
+        newCheckin.setValue(Date(), forKey: "date")
+        newCheckin.setValue(isThroughDailySession, forKey: "isDailySession")
+    }
+    
+    private func cacheCheckinCompletion(rating: Double) {
+        do {
+            let dayRating = DayRating(rating: rating, date: Date())
+            let encoded = try JSONEncoder().encode(dayRating)
+            
+            UserDefaults.standard.set(encoded, forKey: checkInKey)
+            UserDefaults.standard.set(Date(), forKey: dateKey)
+            
+        } catch {
+            print("❌ Failed to cache check-in: \(error)")
+        }
+    }
+    
+    func checkIfDailyCheckinCompleted() -> Double? {
+        if let existingCheckin = fetchTodaysCheckin() {
+            return existingCheckin.value(forKey: "rating") as? Double
+        }
+
+        if let date = UserDefaults.standard.object(forKey: dateKey) as? Date,
+           Calendar.current.isDate(date, equalTo: Date(), toGranularity: .day),
+           let ratingData = UserDefaults.standard.data(forKey: checkInKey) {
+            do {
+                let rating = try JSONDecoder().decode(DayRating.self, from: ratingData)
+                return rating.rating
+            } catch {
+                print("❌ Failed to decode cached rating: \(error)")
+            }
+        }
+        
+        return nil
     }
     
     private func fetchTodaysCheckin() -> NSManagedObject? {
@@ -95,7 +167,8 @@ class DailyCheckinManager: ObservableObject {
         fetchRequest.predicate = NSPredicate(
             format: "date >= %@ AND date < %@ AND isDailySession == %@",
             startOfDay as NSDate,
-            endOfDay as NSDate, NSNumber(value: true)
+            endOfDay as NSDate,
+            NSNumber(value: true)
         )
         
         do {
@@ -105,114 +178,5 @@ class DailyCheckinManager: ObservableObject {
             print("❌ Failed to fetch today's check-in: \(error)")
             return nil
         }
-    }
-    
-    func saveDailyCheckin(rating: Double, isThroughDailySession: Bool) {
-        print("\n💾 Starting to save daily check-in...")
-        print("Rating to save: \(rating)")
-        
-        do {
-            if isThroughDailySession {
-                if let existingCheckin = fetchTodaysCheckin() {
-                    print("📝 Found existing check-in for today, updating...")
-                    existingCheckin.setValue(rating, forKey: "rating")
-                    existingCheckin.setValue(Date(), forKey: "date")
-                    existingCheckin.setValue(isThroughDailySession, forKey: "isDailySession")
-                    
-                    return
-                }
-            }
-            
-            print("➕ No existing check-in found, creating new entry...")
-            guard let entityDescription = NSEntityDescription.entity(forEntityName: "DailyCheckinEntity", in: context) else {
-                print("❌ Failed to get DailyCheckinEntity description")
-                return
-            }
-            
-            let entity = NSManagedObject(entity: entityDescription, insertInto: context)
-            entity.setValue(rating, forKey: "rating")
-            entity.setValue(Date(), forKey: "date")
-            entity.setValue(isThroughDailySession, forKey: "isDailySession")
-            
-            try context.save()
-            print("✅ Successfully saved to Core Data")
-            
-            self.todaysCheckIn = DayRating(rating: rating, date: Date())
-            print("Updated todaysCheckIn in memory")
-            
-            cacheCheckinCompletion(rating: rating)
-            print("✅ Daily check-in save completed")
-            
-        } catch {
-            print("❌ Failed to save daily check-in: \(error)")
-            print("Detailed error: \(error.localizedDescription)")
-        }
-    }
-
-    func cacheCheckinCompletion(rating: Double) {
-        print("\n📦 Starting to cache check-in completion...")
-        print("Rating to cache: \(rating)")
-        
-        do {
-            let dayRating = DayRating(rating: rating, date: Date())
-            print("Created DayRating object")
-            
-            let dayRatingEncoded = try JSONEncoder().encode(dayRating)
-            print("Successfully encoded DayRating")
-            
-            UserDefaults.standard.set(dayRatingEncoded, forKey: checkInKey)
-            print("Saved encoded rating to UserDefaults with key: \(checkInKey)")
-            
-            UserDefaults.standard.set(Date(), forKey: dateKey)
-            print("Saved date to UserDefaults with key: \(dateKey)")
-            
-            print("✅ Successfully cached check-in completion")
-            
-            // Verify cache
-            if let savedData = UserDefaults.standard.data(forKey: checkInKey) {
-                print("Verified: Found cached data")
-            } else {
-                print("⚠️ Warning: Could not verify cached data")
-            }
-            
-        } catch {
-            print("❌ Failed to cache check-in completion: \(error)")
-            print("Detailed error: \(error.localizedDescription)")
-        }
-    }
-
-    func checkIfDailyCheckinCompleted() -> Double? {
-        print("\n🔍 Checking if check-in is completed for today...")
-        
-        do {
-            if let date = UserDefaults.standard.object(forKey: dateKey) as? Date {
-                print("Found saved date: \(date)")
-                
-                let isToday = Calendar.current.isDate(date, equalTo: Date(), toGranularity: .day)
-                print("Is date today? \(isToday)")
-                
-                if isToday {
-                    if let ratingData = UserDefaults.standard.data(forKey: checkInKey) {
-                        print("Found cached rating data")
-                        let rating = try JSONDecoder().decode(DayRating.self, from: ratingData)
-                        print("Successfully decoded rating: \(rating.rating)")
-                        self.todaysCheckIn = rating
-                        print("✅ Updated todaysCheckIn with cached data")
-                        return rating.rating
-                    } else {
-                        print("⚠️ No rating data found for today's date")
-                    }
-                } else {
-                    print("📅 Saved date is not today")
-                }
-            } else {
-                print("ℹ️ No saved date found in UserDefaults")
-            }
-        } catch {
-            print("❌ Error checking completion status: \(error)")
-            print("Detailed error: \(error.localizedDescription)")
-        }
-        
-        return nil
     }
 }

@@ -77,7 +77,7 @@ struct DreamJournalView: View {
                 .font(.system(size: 28, weight: .medium))
                 .foregroundColor(.white)
             
-            Text("Keep track of your dreams from last night. Write down the details, emotions, and moments you remember before they slip away.")
+            Text("Keep track of your dreams from last night. Speak the details, emotions, and moments you remember before they slip away.")
                 .font(.system(size: 16, weight: .regular))
                 .foregroundColor(lightBlue)
                 .padding(.bottom, 8)

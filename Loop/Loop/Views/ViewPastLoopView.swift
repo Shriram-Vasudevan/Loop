@@ -442,6 +442,7 @@ struct TranscriptView: View {
     
     @State var editedTranscript: String
     @State private var isEditing = false
+    @State private var showCopyConfirmation = false
     @Binding var isPresented: Bool
     @Environment(\.dismiss) var dismiss
     
@@ -486,7 +487,9 @@ struct TranscriptView: View {
                                 try? await LoopManager.shared.editTranscript(forLoopId: id, newTranscript: editedTranscript)
                             }
                         }
-                        isEditing.toggle()
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            isEditing.toggle()
+                        }
                     }) {
                         Text(isEditing ? "Save" : "Edit")
                             .font(.system(size: 14, weight: .medium))
@@ -507,19 +510,39 @@ struct TranscriptView: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.top, 15)
                         
-                        // Transcript
-                        if isEditing {
-                            TextEditor(text: $editedTranscript)
-                                .font(.system(size: 18, weight: .regular))
-                                .foregroundColor(textColor.opacity(0.8))
-                                .frame(minHeight: 200)
-                                .padding(.horizontal, -4)
-                        } else {
-                            Text(transcript)
-                                .font(.system(size: 18, weight: .regular))
-                                .foregroundColor(textColor.opacity(0.8))
-                                .lineSpacing(8)
-                                .multilineTextAlignment(.leading)
+                        // Transcript Section
+                        ZStack(alignment: .topTrailing) {
+                            if isEditing {
+                                editingView
+                            } else {
+                                readOnlyView
+                            }
+                            
+                            // Copy button
+                            if !isEditing {
+                                Button(action: {
+                                    UIPasteboard.general.string = transcript
+                                    withAnimation {
+                                        showCopyConfirmation = true
+                                    }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                        withAnimation {
+                                            showCopyConfirmation = false
+                                        }
+                                    }
+                                }) {
+                                    Image(systemName: "doc.on.doc")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(textColor.opacity(0.6))
+                                        .padding(8)
+                                        .background(
+                                            Circle()
+                                                .fill(Color.white.opacity(0.8))
+                                                .shadow(color: Color.black.opacity(0.05), radius: 4, y: 2)
+                                        )
+                                }
+                                .padding(.trailing, 8)
+                            }
                         }
                     }
                     .padding(.horizontal, 24)
@@ -527,11 +550,62 @@ struct TranscriptView: View {
                     .padding(.bottom, 40)
                 }
             }
+            
+            // Copy confirmation toast
+            if showCopyConfirmation {
+                VStack {
+                    Spacer()
+                    Text("Copied to clipboard")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(
+                            Capsule()
+                                .fill(Color.black.opacity(0.8))
+                        )
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .padding(.bottom, 40)
+                }
+            }
         }
         .navigationBarBackButtonHidden()
         .onAppear {
             editedTranscript = transcript
         }
+    }
+    
+    private var editingView: some View {
+        TextEditor(text: $editedTranscript)
+            .font(.system(size: 18, weight: .regular))
+            .foregroundColor(textColor.opacity(0.8))
+            .frame(minHeight: 200)
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white)
+                    .shadow(color: Color.black.opacity(0.05), radius: 8, y: 2)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(accentColor.opacity(0.2), lineWidth: 1)
+            )
+            .transition(.opacity.combined(with: .scale(scale: 0.98)))
+    }
+    
+    private var readOnlyView: some View {
+        Text(transcript)
+            .font(.system(size: 18, weight: .regular))
+            .foregroundColor(textColor.opacity(0.8))
+            .lineSpacing(8)
+            .multilineTextAlignment(.leading)
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white.opacity(0.5))
+            )
+            .transition(.opacity.combined(with: .scale(scale: 1.02)))
     }
 }
 

@@ -21,6 +21,8 @@ struct LoopCard: View {
     private let backgroundColor = Color(hex: "FAFBFC")
     private let textColor = Color(hex: "2C3E50")
     private let surfaceColor = Color(hex: "F8F5F7")
+    private let deepBlue = Color(hex: "1E3D59")
+    private let lightBlue = Color(hex: "94A7B7")
     
     var body: some View {
         Button(action: {
@@ -37,11 +39,11 @@ struct LoopCard: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(formatTime())
                             .font(.custom("PPNeueMontreal-Medium", size: 14))
-                            .foregroundColor(textColor.opacity(0.6))
+                            .foregroundColor(loop.isDream ?? false ? .white.opacity(0.6) : textColor.opacity(0.6))
                         
                         Text(loop.promptText)
                             .font(.system(size: 17, weight: .regular))
-                            .foregroundColor(textColor)
+                            .foregroundColor(loop.isDream ?? false ? .white : textColor)
                             .lineSpacing(4)
                     }
                     
@@ -56,7 +58,7 @@ struct LoopCard: View {
                     } label: {
                         Image(systemName: "ellipsis")
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(textColor.opacity(0.5))
+                            .foregroundColor(loop.isDream ?? false ? .white.opacity(0.5) : textColor.opacity(0.5))
                             .frame(width: 32, height: 32)
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -67,7 +69,7 @@ struct LoopCard: View {
                     Text(transcript)
                         .font(.system(size: 13, weight: .medium))
                         .tracking(1.5)
-                        .foregroundColor(textColor.opacity(0.5))
+                        .foregroundColor(loop.isDream ?? false ? .white.opacity(0.5) : textColor.opacity(0.5))
                         .lineLimit(2)
                 }
                 
@@ -76,22 +78,26 @@ struct LoopCard: View {
                     
                     Spacer()
                     
-                    WaveformPreview(color: accentColor)
+                    WaveformPreview(color: loop.isDream ?? false ? .white.opacity(0.6) : accentColor)
                 }
             }
             .padding(20)
             .background(
                 ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.white)
-                    
-                    DecorativeBackground()
-                        .cornerRadius(10)
+                    if loop.isDream ?? false {
+                        DreamCardBackground()
+                    } else {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.white)
+                        
+                        DecorativeBackground()
+                            .cornerRadius(10)
+                    }
                 }
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(accentColor.opacity(0.08), lineWidth: 0.5)
+                    .stroke(loop.isDream ?? false ? .white.opacity(0.1) : accentColor.opacity(0.08), lineWidth: 0.5)
             )
         }
         .buttonStyle(PlainButtonStyle())
@@ -114,14 +120,92 @@ struct LoopCard: View {
     }
 }
 
+struct DreamCardBackground: View {
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(hex: "1E3D59"),
+                    Color(hex: "4C5B61")
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .cornerRadius(10)
+            
+            // Stars
+            ForEach(0..<15) { _ in
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: CGFloat.random(in: 1...2))
+                    .position(
+                        x: CGFloat.random(in: 0...300),
+                        y: CGFloat.random(in: 0...200)
+                    )
+                    .opacity(Double.random(in: 0.3...0.7))
+            }
+            
+            // Moon glow
+            Circle()
+                .fill(Color.white.opacity(0.1))
+                .frame(width: 60, height: 60)
+                .blur(radius: 20)
+                .offset(x: 100, y: -40)
+            
+            // Clouds
+            ForEach(0..<2) { i in
+                CloudShape()
+                    .fill(Color.white.opacity(0.05))
+                    .frame(width: 100, height: 50)
+                    .offset(
+                        x: CGFloat.random(in: -100...100),
+                        y: CGFloat.random(in: 50...150)
+                    )
+                    .blur(radius: 5)
+            }
+        }
+    }
+}
+
+//struct CloudShape: Shape {
+//    func path(in rect: CGRect) -> Path {
+//        var path = Path()
+//        let width = rect.width
+//        let height = rect.height
+//        
+//        path.move(to: CGPoint(x: width * 0.2, y: height * 0.5))
+//        path.addQuadCurve(
+//            to: CGPoint(x: width * 0.4, y: height * 0.4),
+//            control: CGPoint(x: width * 0.3, y: height * 0.3)
+//        )
+//        path.addQuadCurve(
+//            to: CGPoint(x: width * 0.6, y: height * 0.3),
+//            control: CGPoint(x: width * 0.5, y: height * 0.2)
+//        )
+//        path.addQuadCurve(
+//            to: CGPoint(x: width * 0.8, y: height * 0.4),
+//            control: CGPoint(x: width * 0.7, y: height * 0.3)
+//        )
+//        path.addQuadCurve(
+//            to: CGPoint(x: width * 0.9, y: height * 0.5),
+//            control: CGPoint(x: width * 0.9, y: height * 0.4)
+//        )
+//        path.addLine(to: CGPoint(x: width * 0.2, y: height * 0.5))
+//        path.closeSubpath()
+//        
+//        return path
+//    }
+//}
+
 struct LoopTypeIndicator: View {
     let loop: Loop
     
     private let accentColor = Color(hex: "A28497")
     private let thematicColor = Color(hex: "84A297")
     private let followUpColor = Color(hex: "8497A2")
-    private let successColor = Color(hex: "B5D5E2"
-    )
+    private let successColor = Color(hex: "B5D5E2")
+    private let dreamColor = Color(hex: "94A7B7")
+    
     var body: some View {
         HStack(spacing: 6) {
             Circle()
@@ -135,7 +219,9 @@ struct LoopTypeIndicator: View {
     }
     
     private var typeText: String {
-        if loop.isSuccessJournal ?? false {
+        if loop.isDream ?? false {
+            return "dream"
+        } else if loop.isSuccessJournal ?? false {
             return "success"
         } else if loop.isFollowUp {
             return "follow up"
@@ -146,7 +232,9 @@ struct LoopTypeIndicator: View {
     }
     
     private var indicatorColor: Color {
-        if loop.isSuccessJournal ?? false {
+        if loop.isDream ?? false {
+            return .white
+        } else if loop.isSuccessJournal ?? false {
             return thematicColor
         } else if loop.isFollowUp {
             return followUpColor
@@ -216,7 +304,7 @@ struct DecorativeBackground: View {
         .padding()
         
         LoopCard(
-            loop: Loop(id: "vvevwevwe", data: CKAsset(fileURL: URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("sampleFile.dat")), timestamp: Calendar.current.date(from: DateComponents(year: 2024, month: 9, day: 27))!, promptText: "What's a goal you're working towards?", category: "", transcript: "The transcript button uses the same accent color as the rest of the UI, and the transcript view maintains the app's clean, minimalist aesthetic while providing good readability for the transcript text.", freeResponse: false, isVideo: false, isDailyLoop: false, isFollowUp: false)
+            loop: Loop(id: "vvevwevwe", data: CKAsset(fileURL: URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("sampleFile.dat")), timestamp: Calendar.current.date(from: DateComponents(year: 2024, month: 9, day: 27))!, promptText: "What's a goal you're working towards?", category: "", transcript: "The transcript button uses the same accent color as the rest of the UI, and the transcript view maintains the app's clean, minimalist aesthetic while providing good readability for the transcript text.", freeResponse: false, isVideo: false, isDailyLoop: false, isFollowUp: false, isDream: true)
         ) {
             print("Card tapped")
         }

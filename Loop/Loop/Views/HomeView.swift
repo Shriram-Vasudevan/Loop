@@ -71,16 +71,19 @@ struct HomeView: View {
             ScrollView {
                 VStack(spacing: 32) {
                     VStack (spacing: 12) {
-                        HStack {
-                            StreakIndicator()
-                            
-                            Spacer()
-                        }
-                        .padding(.horizontal, 24)
-                        .padding(.top, 22)
+//                        HStack {
+//                            StreakIndicator()
+//                            
+//                            Spacer()
+//                        }
+//                        .padding(.horizontal, 24)
+//                        .padding(.top, 22)
                         
                         welcomeHeader
                             .padding(.horizontal, 24)
+                            .padding(.top, 30)
+//                        LoopHomeHeader()
+//                            .padding(.horizontal, 24)
 
                         VStack (spacing: 6) {
                             EmotionSchedulePreviewView(pageType: $pageType, selectedScheduleDate: $selectedScheduleDate)
@@ -853,6 +856,159 @@ struct StreakIndicator: View {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(accentColor.opacity(0.08))
             )
+        }
+    }
+}
+
+struct LoopHomeHeader: View {
+    @ObservedObject var scheduleManager = ScheduleManager.shared
+    let accentColor = Color(hex: "A28497")
+    let textColor = Color(hex: "2C3E50")
+    
+    @State private var headerOffset: CGFloat = 0
+    @State private var animateBackground = false
+    
+    private var timeOfDay: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 0..<12: return "morning"
+        case 12..<17: return "afternoon"
+        default: return "evening"
+        }
+    }
+    
+    var body: some View {
+        ZStack {
+            // Animated background elements
+            GeometryReader { geometry in
+                ZStack {
+                    Circle()
+                        .fill(accentColor.opacity(0.06))
+                        .frame(width: 150, height: 150)
+                        .offset(x: animateBackground ? -20 : -10, y: animateBackground ? -30 : -20)
+                        .blur(radius: 20)
+                    
+                    Circle()
+                        .fill(accentColor.opacity(0.04))
+                        .frame(width: 100, height: 100)
+                        .offset(x: animateBackground ? geometry.size.width - 100 : geometry.size.width - 90,
+                                y: animateBackground ? 20 : 30)
+                        .blur(radius: 15)
+                }
+                .animation(.easeInOut(duration: 3).repeatForever(autoreverses: true), value: animateBackground)
+            }
+            
+            VStack(spacing: 24) {
+                // Top row with time icon and streak
+                HStack(alignment: .center) {
+                    // Time of day indicator
+                    HStack(spacing: 8) {
+                        Image(systemName: timeOfDay == "evening" ? "moon.stars.fill" : "sun.max.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(timeOfDay == "evening" ? .purple : .orange)
+//                            .symbolEffect(.bounce, options: .repeat(2))
+                        
+                        Text(getGreeting())
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(textColor)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.white.opacity(0.8))
+                    )
+                    
+                    Spacer()
+                    
+                    // Streak indicator with animation
+                    if scheduleManager.currentStreak > 0 {
+                        HStack(spacing: 6) {
+                            Image(systemName: "flame.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(.orange)
+                               // .symbolEffect(.bounce, options: .repeat(2))
+                            
+                            Text("\(scheduleManager.currentStreak) day streak")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(textColor)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(accentColor.opacity(0.08))
+                        )
+                    }
+                }
+                
+                // Date and insights row
+                HStack(alignment: .bottom) {
+                    Text(formatDate())
+                        .font(.custom("PPNeueMontreal-Bold", size: 35))
+                        .foregroundColor(textColor)
+                    
+                    Spacer()
+                    
+                    // Insights button
+                    Button(action: {
+                        // Add your insights navigation action here
+                    }) {
+                        HStack(spacing: 4) {
+                            Text("insights")
+                                .font(.system(size: 15, weight: .medium))
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 14))
+                        }
+                        .foregroundColor(accentColor)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .stroke(accentColor.opacity(0.2), lineWidth: 1)
+                        )
+                    }
+                }
+            }
+            .padding(24)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color.white.opacity(0.9))
+                    .shadow(color: Color.black.opacity(0.03), radius: 15, x: 0, y: 4)
+            )
+        }
+        .onAppear {
+            withAnimation {
+                animateBackground = true
+            }
+        }
+    }
+    
+    private func formatDate() -> String {
+        let dayNumber = Calendar.current.component(.day, from: Date())
+        let formatString = "MMMM d"
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = formatString
+        var formattedDate = dateFormatter.string(from: Date())
+        
+        let suffix: String
+        switch dayNumber {
+        case 1, 21, 31: suffix = "st"
+        case 2, 22: suffix = "nd"
+        case 3, 23: suffix = "rd"
+        default: suffix = "th"
+        }
+        
+        formattedDate.append(suffix)
+        return formattedDate
+    }
+    
+    private func getGreeting() -> String {
+        switch timeOfDay {
+        case "morning": return "good morning"
+        case "afternoon": return "good afternoon"
+        case "evening": return "good evening"
+        default: return "hello"
         }
     }
 }

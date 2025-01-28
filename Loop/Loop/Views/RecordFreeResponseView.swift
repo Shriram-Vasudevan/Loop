@@ -167,7 +167,7 @@ struct RecordFreeResponseView: View {
     private var postRecordingView: some View {
         FreeResponseAudioConfirmationView(
             audioURL: audioManager.getRecordedAudioFile() ?? URL(fileURLWithPath: ""),
-            waveformData: generateRandomWaveform(count: 40),
+            waveformData: generateRandomWaveform(count: 60),
             onComplete: {
                 withAnimation {
                     isPostRecording = false
@@ -328,17 +328,18 @@ struct FreeResponseAudioConfirmationView: View {
             }
             .frame(height: 60)
             .padding(.horizontal, 32)
+            .padding(.bottom, 12)
             
             // Playback controls
             Button(action: togglePlayback) {
                 ZStack {
                     Circle()
                         .fill(Color.white)
-                        .frame(width: 64)
+                        .frame(width: 65)
                         .shadow(color: accentColor.opacity(0.15), radius: 15, x: 0, y: 6)
                     
                     Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 24))
+                        .font(.system(size: 25))
                         .foregroundColor(accentColor)
                         .offset(x: isPlaying ? 0 : 2)
                 }

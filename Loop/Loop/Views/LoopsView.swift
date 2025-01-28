@@ -7,7 +7,7 @@
 
 import SwiftUI
 import Darwin
-import SwiftUI
+import CoreData
 
 struct LoopsView: View {
     @ObservedObject private var loopManager = LoopManager.shared
@@ -170,15 +170,22 @@ struct DateSection: View {
     let date: Date
     let loops: [Loop]
     @Binding var selectedLoop: Loop?
+    @ObservedObject private var checkinManager = DailyCheckinManager.shared
     
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
     
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
-            Text(formatDate())
-                .font(.custom("PPNeueMontreal-Medium", size: 16))
-                .foregroundColor(textColor)
+            HStack {
+                Text(formatDate())
+                    .font(.custom("PPNeueMontreal-Medium", size: 16))
+                    .foregroundColor(textColor)
+                
+                DayMoodIndicators(date: date)
+                
+                Spacer()
+            }
             
             VStack(spacing: 16) {
                 ForEach(loops) { loop in
@@ -202,6 +209,86 @@ struct DateSection: View {
         }
     }
 }
+
+struct DayMoodIndicators: View {
+    let date: Date
+    @ObservedObject private var checkinManager = DailyCheckinManager.shared
+    
+    private let sadColor = Color(hex: "1E3D59")
+    private let neutralColor = Color(hex: "94A7B7")
+    private let happyColor = Color(hex: "B784A7")
+    
+    // Cache the fetch results
+    @State private var moodRatings: [Double] = []
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(moodRatings, id: \.self) { rating in
+                Circle()
+                    .fill(getColor(for: rating))
+                    .frame(width: 8, height: 8)
+            }
+        }
+        .onAppear {
+            loadMoodRatings()
+        }
+    }
+    
+    private func loadMoodRatings() {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date)
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else { return }
+        
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyCheckinEntity")
+        fetchRequest.predicate = NSPredicate(
+            format: "date >= %@ AND date < %@",
+            startOfDay as NSDate,
+            endOfDay as NSDate
+        )
+        
+        do {
+            let results = try checkinManager.context.fetch(fetchRequest)
+            moodRatings = results.compactMap { $0.value(forKey: "rating") as? Double }
+        } catch {
+            print("❌ Failed to fetch mood ratings: \(error)")
+        }
+    }
+    
+    private func getColor(for rating: Double) -> Color {
+        if rating <= 5 {
+            let t = (rating - 1) / 4
+            return interpolateColor(from: sadColor, to: neutralColor, with: t)
+        } else {
+            let t = (rating - 5) / 5
+            return interpolateColor(from: neutralColor, to: happyColor, with: t)
+        }
+    }
+    
+    private func interpolateColor(from: Color, to: Color, with percentage: Double) -> Color {
+        let fromUIColor = UIColor(from)
+        let toUIColor = UIColor(to)
+        
+        var fromR: CGFloat = 0
+        var fromG: CGFloat = 0
+        var fromB: CGFloat = 0
+        var fromA: CGFloat = 0
+        fromUIColor.getRed(&fromR, green: &fromG, blue: &fromB, alpha: &fromA)
+        
+        var toR: CGFloat = 0
+        var toG: CGFloat = 0
+        var toB: CGFloat = 0
+        var toA: CGFloat = 0
+        toUIColor.getRed(&toR, green: &toG, blue: &toB, alpha: &toA)
+        
+        let r = fromR + (toR - fromR) * CGFloat(percentage)
+        let g = fromG + (toG - fromG) * CGFloat(percentage)
+        let b = fromB + (toB - fromB) * CGFloat(percentage)
+        let a = fromA + (toA - fromA) * CGFloat(percentage)
+        
+        return Color(UIColor(red: r, green: g, blue: b, alpha: a))
+    }
+}
+
 
 struct ScrollViewOffsetPreferenceKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
