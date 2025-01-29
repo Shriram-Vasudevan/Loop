@@ -121,9 +121,7 @@ class ReflectionSessionManager: ObservableObject {
         completedPrompts.insert(index)
         if completedPrompts.count == prompts.count {
             Task {
-                if !hasCompletedForToday {
-                    await AnalysisManager.shared.performAnalysis()
-                }
+                await AnalysisManager.shared.performAnalysis()
             }
             hasCompletedForToday = true
             UserDefaults.standard.set(true, forKey: hasCompletedForTodayKey)

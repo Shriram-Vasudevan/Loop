@@ -15,12 +15,23 @@ struct TodaysInsightsView: View {
     private let accentColor = Color(hex: "A28497")
     private let coolBlue = Color(hex: "B5D5E2")
     
+    var isAnalyzing: Bool {
+        switch analysisManager.analysisState {
+        case .retrievingResponses, .analyzingQuantitative, .analyzingAI:
+            return true
+        default:
+            return false
+        }
+    }
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
                 ReflectionMetricsCard(analysis: analysisManager.currentDailyAnalysis)
 
-                TodaysMoodCard(rating: checkinManager.getAverageDailyRating())
+                if isAnalyzing {
+                    TodaysMoodCard(rating: checkinManager.getAverageDailyRating())
+                }
             
                 if let analysis = analysisManager.currentDailyAnalysis?.aiAnalysis,
                    let standoutAnalysis = analysis.standoutAnalysis {
@@ -1020,5 +1031,77 @@ struct GeometryPattern: Shape {
         }
         
         return path
+    }
+}
+
+struct AnalysisStatusView: View {
+    let state: AnalysisState
+    private let textColor = Color(hex: "2C3E50")
+    private let accentColor = Color(hex: "A28497")
+    
+    @State private var dotOffset: CGFloat = 0
+    
+    var body: some View {
+        switch state {
+        case .notStarted:
+            EmptyView()
+        case .retrievingResponses, .analyzingQuantitative, .analyzingAI:
+            VStack(spacing: 16) {
+                HStack(spacing: 8) {
+                    ForEach(0..<3) { index in
+                        Circle()
+                            .fill(accentColor)
+                            .frame(width: 6, height: 6)
+                            .offset(y: index == 1 ? -dotOffset : 0)
+                    }
+                }
+                .onAppear {
+                    withAnimation(Animation.easeInOut(duration: 0.5).repeatForever()) {
+                        dotOffset = 8
+                    }
+                }
+                
+                Text(stateMessage)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(textColor)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 24)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.white)
+                    .shadow(color: Color.black.opacity(0.03), radius: 10, x: 0, y: 4)
+            )
+            .padding(.bottom, 16)
+            
+        case .completed:
+            EmptyView()
+            
+        case .failed:
+            Text("Analysis couldn't be completed")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(Color.red.opacity(0.8))
+                .padding(.vertical, 12)
+                .padding(.horizontal, 24)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.red.opacity(0.1))
+                )
+                .padding(.bottom, 16)
+        }
+    }
+    
+    private var stateMessage: String {
+        switch state {
+        case .retrievingResponses:
+            return "Gathering your reflections..."
+        case .analyzingQuantitative:
+            return "Analyzing your responses..."
+        case .analyzingAI:
+            return "Finding patterns and insights..."
+        default:
+            return ""
+        }
     }
 }

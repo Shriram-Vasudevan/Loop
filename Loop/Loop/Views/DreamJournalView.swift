@@ -172,7 +172,7 @@ struct DreamJournalView: View {
     private var postRecordingView: some View {
         FreeResponseAudioConfirmationView(
             audioURL: audioManager.getRecordedAudioFile() ?? URL(fileURLWithPath: ""),
-            waveformData: generateRandomWaveform(count: 40),
+            waveformData: generateRandomWaveform(count: 60),
             onComplete: {
                 withAnimation {
                     isPostRecording = false

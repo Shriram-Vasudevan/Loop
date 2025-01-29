@@ -60,6 +60,7 @@ struct RecordLoopsView: View {
             if !UserDefaults.standard.hasSetupDailyReflection {
                 Color(hex: "F5F5F5")
                     .edgesIgnoringSafeArea(.all)
+                    .animation(.easeInOut, value: UserDefaults.standard.hasSetupDailyReflection)
             } else {
                 TransitioningBackground(
                     currentTab: currentTab,
@@ -257,6 +258,7 @@ struct RecordLoopsView: View {
                             
                             Button {
                                 withAnimation {
+                                    SleepCheckinManager.shared.saveDailyCheckin(hours: sleepHours)
                                     currentTab += 1
                                 }
                             } label: {
@@ -298,6 +300,7 @@ struct RecordLoopsView: View {
                             Spacer()
                             
                             Button {
+                                DailyCheckinManager.shared.saveDailyCheckin(rating: dayRating, isThroughDailySession: true)
                                 currentTab += 1
                             } label: {
                                 HStack {
@@ -750,7 +753,6 @@ struct RecordLoopsView: View {
             initialView
                 .transition(.opacity.combined(with: .scale))
         }
-        .animation(.easeInOut(duration: 0.5), value: isFirstLaunch)
     }
 
     private func toggleRecording() {
@@ -800,6 +802,7 @@ struct RecordLoopsView: View {
         
         guard let audioFileURL = audioManager.getRecordedAudioFile() else {
             print("Audio file not found.")
+            isSaving = false
             return
         }
         
@@ -809,55 +812,66 @@ struct RecordLoopsView: View {
         let currentPromptIndex = currentTab
         guard currentPromptIndex < reflectionSessionManager.prompts.count else {
             print("Invalid prompt index.")
+            isSaving = false
             return
         }
         
         let currentPrompt = reflectionSessionManager.prompts[currentPromptIndex]
         
+        // First, handle the UI transition
+        Task { @MainActor in
+            // Find the next incomplete prompt after the current one, excluding mood and sleep check-ins
+            let nextPromptIndex = reflectionSessionManager.prompts[currentPromptIndex...].firstIndex(where: { prompt in
+                let promptIndex = reflectionSessionManager.prompts.firstIndex(of: prompt) ?? -1
+                return !reflectionSessionManager.completedPrompts.contains(promptIndex) &&
+                       prompt.type != .moodCheckIn &&
+                       prompt.type != .sleepCheckin
+            }) ?? reflectionSessionManager.prompts.firstIndex(where: { prompt in
+                let promptIndex = reflectionSessionManager.prompts.firstIndex(of: prompt) ?? -1
+                return !reflectionSessionManager.completedPrompts.contains(promptIndex) &&
+                       prompt.type != .moodCheckIn &&
+                       prompt.type != .sleepCheckin
+            })
+            
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                isPostRecording = false
+                
+                if let nextIndex = nextPromptIndex {
+                    currentTab = nextIndex
+                }
+            }
+        }
+        
+        // Then, handle the data saving in the background
         Task {
             defer { isSaving = false }
             
-            // First save the recording and mark the prompt as complete
-            let (loop, transcript) = try await loopManager.addLoop(
-                mediaURL: audioFileURL,
-                isVideo: false,
-                prompt: currentPrompt.text,
-                isDailyLoop: true,
-                isFollowUp: false,
-                isSuccess: currentPrompt.text.contains("success or win"),
-                isUnguided: false, isDream: false
-            )
-            
-            reflectionSessionManager.markPromptComplete(at: currentPromptIndex)
-            reflectionSessionManager.saveRecordingCache(prompt: currentPrompt.text, transcript: transcript)
-            
-            await MainActor.run {
-                // Find the next incomplete prompt after the current one
-                let nextPromptIndex = reflectionSessionManager.prompts[currentPromptIndex...].firstIndex(where: { prompt in
-                    !reflectionSessionManager.completedPrompts.contains(
-                        reflectionSessionManager.prompts.firstIndex(of: prompt) ?? -1
-                    )
-                }) ?? reflectionSessionManager.prompts.firstIndex(where: { prompt in
-                    !reflectionSessionManager.completedPrompts.contains(
-                        reflectionSessionManager.prompts.firstIndex(of: prompt) ?? -1
-                    )
-                })
+            do {
+                let (loop, transcript) = try await loopManager.addLoop(
+                    mediaURL: audioFileURL,
+                    isVideo: false,
+                    prompt: currentPrompt.text,
+                    isDailyLoop: true,
+                    isFollowUp: false,
+                    isSuccess: currentPrompt.text.contains("success or win"),
+                    isUnguided: false,
+                    isDream: false
+                )
                 
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                    isPostRecording = false
-
-                    if let nextIndex = nextPromptIndex {
-                        currentTab = nextIndex
+                await MainActor.run {
+                    reflectionSessionManager.markPromptComplete(at: currentPromptIndex)
+                    reflectionSessionManager.saveRecordingCache(prompt: currentPrompt.text, transcript: transcript)
+                    
+                    if reflectionSessionManager.hasCompletedForToday {
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                            isShowingMemory = false
+                            audioManager.cleanup()
+                            dismiss()
+                        }
                     }
                 }
-                
-                if reflectionSessionManager.hasCompletedForToday {
-                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                        isShowingMemory = false
-                        audioManager.cleanup()
-                        dismiss()
-                    }
-                }
+            } catch {
+                print("Error saving recording: \(error)")
             }
         }
     }

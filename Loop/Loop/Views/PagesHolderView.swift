@@ -29,6 +29,7 @@ struct PagesHolderView: View {
     var body: some View {
         NavigationStack {
             ZStack {
+            
                 TabBarBackground()
                     .ignoresSafeArea()
                 
@@ -118,6 +119,17 @@ struct PagesHolderView: View {
                     EntryTypeCarousel(newEntrySelected: $showNewEntrySheet, successSelected: $showSuccessSheet, moodCheckIn: $showMoodCheckInSheet, sleepCheckIn: $showSleepInSheet, dreamJournal: $showDreamJournalSheet, isOpen: $isMenuOpened)
                     
 //                    FloatingEntryMenu(newEntrySelected: $showNewEntrySheet, successSelected: $showSuccessSheet, moodCheckIn: $showMoodCheckInSheet)
+                }
+                
+                
+                if isMenuOpened {
+                    Color.black.opacity(0.5)
+                        .edgesIgnoringSafeArea(.all)
+                        .onTapGesture {
+                            withAnimation {
+                                isMenuOpened = false
+                            }
+                        }
                 }
             }
             .edgesIgnoringSafeArea(.bottom)

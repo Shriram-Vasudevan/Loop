@@ -8,6 +8,7 @@
 import SwiftUI
 import SpriteKit
 import Speech
+import Combine
 
 struct OnboardingView: View {
     let onIntroCompletion: () -> Void
@@ -57,13 +58,24 @@ struct OnboardingView: View {
             if currentStep == 0 {
                 InitialReflectionVisual(index: 0)
                     .edgesIgnoringSafeArea(.all)
+                    .animation(.easeInOut, value: currentStep)
+            }
+            else {
+                Color(hex: "F5F5F5").edgesIgnoringSafeArea(.all)
             }
             
             TabView(selection: $currentStep) {
                 welcomeView  // Keep existing welcome view
                     .tag(0)
-                storageView
+                WhyLoopView(currentTab: $currentStep)
+                    .edgesIgnoringSafeArea(.all)
                     .tag(1)
+//                JournalShowcaseView(currentTab: $currentStep)
+//                    .tag(2)
+                PrivacyStorageView(currentTab: $currentStep, onIntroCompletion: {
+                    onIntroCompletion()
+                })
+                    .tag(2)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             
@@ -85,36 +97,33 @@ struct OnboardingView: View {
 //                    Spacer()
 //                }
 //            }
-            
-            if showStorageInfo {
-                StorageInfoOverlay(isShowing: $showStorageInfo)
-            }
-            
-            if showFinalNote {
-                FinalThingToShare(isShowing: $showFinalNote)
-            }
+
         }
         .preferredColorScheme(.light)
     }
-        
+    
     private var welcomeView: some View {
         ZStack {
-            VStack {
-                Spacer()
-                
-                VStack(spacing: 5) {
+            VStack(alignment: .leading, spacing: 32) {
+                VStack(alignment: .leading, spacing: 16) {
                     Text("welcome to loop")
-                        .font(.system(size: 38, weight: .ultraLight))
+                        .font(.system(size: 42, weight: .medium))
                         .foregroundColor(textColor)
-                        .opacity(fadeInOpacity)
                     
-                    Text("start journaling today")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(textColor.opacity(0.6))
-                        .opacity(fadeInOpacity)
+                    Text("your audio journal for\n thoughtful reflection")
+                        .font(.system(size: 28, weight: .regular))
+                        .foregroundColor(textColor.opacity(0.8))
+                        .lineSpacing(8)
                 }
-                .padding(.bottom, 24)
-                
+                .opacity(fadeInOpacity)
+                .padding(.horizontal, 32)
+                .padding(.top, 130)
+                // Context
+                Text("express your thoughts with guided prompts and discover patterns in your journey")
+                    .font(.system(size: 17))
+                    .foregroundColor(textColor.opacity(0.6))
+                    .opacity(fadeInOpacity)
+                    .padding(.horizontal, 32)
                 Spacer()
                 
                 OnboardingButton(text: "begin", icon: "arrow.right") {
@@ -127,228 +136,10 @@ struct OnboardingView: View {
                 .opacity(fadeInOpacity)
             }
             .onAppear {
-                withAnimation(.easeOut(duration: 3)) {
+                withAnimation(.easeOut(duration: 2)) {
                     fadeInOpacity = 1
                 }
             }
-        }
-    }
-    
-    private var storageView: some View {
-        ZStack {
-            VStack(spacing: 16) {
-                
-                Text("ONE NOTE")
-                    .font(.system(size: 14, weight: .medium))
-                    .tracking(1.5)
-                    .foregroundColor(textColor.opacity(0.6))
-                    .padding(.top, 32)
-                
-                Spacer()
-                
-                CloudAnimation()
-                    .frame(height: 120)
-                
-                VStack(spacing: 8) {
-                    Text("your journal is for you")
-                        .font(.system(size: 24, weight: .light))
-                        .foregroundColor(textColor)
-                    
-                    Text("only you can access your loops")
-                        .font(.system(size: 18, weight: .light))
-                        .foregroundColor(textColor.opacity(0.6))
-                }
-                
-                Spacer()
-                
-                Button {
-                    withAnimation(.spring(response: 0.4)) {
-                        showStorageInfo = true
-                    }
-                } label: {
-                    Label("where are my entries stored?", systemImage: "questionmark.circle")
-                        .font(.system(size: 16, weight: .light))
-                        .foregroundColor(accentColor)
-                }
-                
-                OnboardingButton(text: "continue", icon: "arrow.right") {
-                    withAnimation {
-                        saveUserPreferences()
-                        onIntroCompletion()
-                    }
-                }
-                .padding(.bottom, 48)
-            }
-        }
-    }
-
-
-    private func generateWaveform() {
-        waveformData = (0..<60).map { _ in
-            CGFloat.random(in: 12...64)
-        }
-    }
-    
-    struct CloudAnimation: View {
-        @State private var isAnimating = false
-        
-        var body: some View {
-            ZStack {
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 64, weight: .light))
-                    .foregroundColor(Color(hex: "A28497"))
-                
-                ForEach(0..<3) { index in
-                    Circle()
-                        .fill(Color(hex: "A28497").opacity(0.1))
-                        .frame(width: 12, height: 12)
-                        .offset(y: isAnimating ? -40 : 0)
-                        .opacity(isAnimating ? 0 : 1)
-                        .animation(
-                            Animation
-                                .easeInOut(duration: 2)
-                                .repeatForever(autoreverses: false)
-                                .delay(Double(index) * 0.3),
-                            value: isAnimating
-                        )
-                }
-            }
-            .onAppear {
-                isAnimating = true
-            }
-        }
-    }
-    
-    struct FinalThingToShare: View {
-        @Binding var isShowing: Bool
-        
-        var body: some View {
-            ZStack {
-                Color.black.opacity(0.2)
-                    .edgesIgnoringSafeArea(.all)
-                    .onTapGesture {
-                        withAnimation {
-                            isShowing = false
-                        }
-                    }
-                
-                VStack(spacing: 24) {
-                    VStack(spacing: 16) {
-                        Text("We want you to explore loop on your own, but we'd like to share this first.")
-                            .font(.system(size: 16, weight: .light))
-                            .foregroundColor(Color(hex: "2C3E50").opacity(0.8))
-                            .multilineTextAlignment(.center)
-                    }
-                    
-                    Button {
-                        withAnimation {
-                            isShowing = false
-                        }
-                    } label: {
-                        Text("Got it")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(Color(hex: "A28497"))
-                            .frame(width: 100, height: 44)
-                            .background(
-                                RoundedRectangle(cornerRadius: 22)
-                                    .fill(Color(hex: "A28497").opacity(0.1))
-                            )
-                    }
-                }
-                .padding(32)
-                .background(
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(Color.white)
-                        .shadow(color: Color.black.opacity(0.1), radius: 20)
-                )
-                .padding(24)
-            }
-            .transition(.opacity.combined(with: .scale(scale: 1.1)))
-        }
-    }
-    
-    struct StorageInfoOverlay: View {
-        @Binding var isShowing: Bool
-        
-        var body: some View {
-            ZStack {
-                Color.black.opacity(0.2)
-                    .edgesIgnoringSafeArea(.all)
-                    .onTapGesture {
-                        withAnimation {
-                            isShowing = false
-                        }
-                    }
-                
-                VStack(spacing: 24) {
-                    VStack(spacing: 16) {
-                        Image(systemName: "arrow.up.doc.on.clipboard")
-                            .font(.system(size: 32))
-                            .foregroundColor(Color(hex: "A28497"))
-                        
-                        Text("Optimized for You")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(Color(hex: "2C3E50"))
-                        
-                        Text("Your loops are stored on your phone by default, but iCloud backup is available if you'd like to use loop across devices.")
-                            .font(.system(size: 16, weight: .light))
-                            .foregroundColor(Color(hex: "2C3E50").opacity(0.8))
-                            .multilineTextAlignment(.center)
-                        
-                        HStack {
-                            Image(systemName: "sparkles")
-                            Text("We are strongly against third-party storage")
-                                .multilineTextAlignment(.center)
-                        }
-                        .font(.system(size: 14, weight: .light))
-                        .foregroundColor(Color(hex: "A28497"))
-                        .padding(.top, 8)
-                    }
-                    
-                    Button {
-                        withAnimation {
-                            isShowing = false
-                        }
-                    } label: {
-                        Text("Got it")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(Color(hex: "A28497"))
-                            .frame(width: 100, height: 44)
-                            .background(
-                                RoundedRectangle(cornerRadius: 22)
-                                    .fill(Color(hex: "A28497").opacity(0.1))
-                            )
-                    }
-                }
-                .padding(32)
-                .background(
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(Color.white)
-                        .shadow(color: Color.black.opacity(0.1), radius: 20)
-                )
-                .padding(24)
-            }
-            .transition(.opacity.combined(with: .scale(scale: 1.1)))
-        }
-    }
-
-    
-    struct TimeSelectionWheel: View {
-        @Binding var selectedTime: Date
-        
-        var body: some View {
-            DatePicker("", selection: $selectedTime, displayedComponents: .hourAndMinute)
-                .datePickerStyle(.wheel)
-                .labelsHidden()
-                .frame(maxHeight: 180)
-                .accentColor(Color(hex: "A28497"))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(hex: "A28497").opacity(0.05))
-                        .frame(height: 44)
-                        .blendMode(.overlay)
-                )
-                .padding(.horizontal, 32)
         }
     }
     
@@ -425,68 +216,46 @@ struct OnboardingButton: View {
 
 struct PrivacyStorageView: View {
     @Binding var currentTab: Int
+    @State var onIntroCompletion: () -> Void
     
     private let textColor = Color(hex: "2C3E50")
     private let accentColor = Color(hex: "A28497")
-    private let lightMauve = Color(hex: "D5C5CC")
     
     var body: some View {
-        VStack(spacing: 32) {
-            // Header
-            HStack {
-                Text("YOUR PRIVACY")
-                    .font(.system(size: 13, weight: .medium))
-                    .tracking(1.5)
-                    .foregroundColor(textColor.opacity(0.5))
-                
-                Spacer()
-            }
-            
-            // Main content
-            VStack(alignment: .leading, spacing: 40) {
-                // Title and main message
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("your reflections are yours")
+        VStack(spacing: 40) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("your journal is for you")
                         .font(.system(size: 28, weight: .medium))
                         .foregroundColor(textColor)
                     
-                    Text("we take privacy seriously")
-                        .font(.system(size: 14, weight: .medium))
-                        .tracking(1.5)
-                        .foregroundColor(textColor.opacity(0.5))
+                    Spacer()
                 }
                 
-                // Storage cards
-                VStack(spacing: 24) {
-                    // Local Storage Card
-                    StorageFeatureCard(
-                        icon: "iphone",
-                        title: "stored locally",
-                        description: "your loops stay on your device by default"
-                    )
-                    
-                    // iCloud Card
-                    StorageFeatureCard(
-                        icon: "cloud",
-                        title: "optional backup",
-                        description: "enable iCloud backup to sync across devices"
-                    )
-                    
-                    // Security Card
-                    StorageFeatureCard(
-                        icon: "lock.shield",
-                        title: "end-to-end encrypted",
-                        description: "your data is protected and private"
-                    )
-                }
+                Text("we take privacy seriously")
+                    .font(.system(size: 14, weight: .medium))
+                    .tracking(1.5)
+                    .foregroundColor(textColor.opacity(0.5))
+            }
+            .padding(.top, 32)
+            
+            VStack(spacing: 32) {
+                WavePattern()
+                    .fill(accentColor.opacity(0.7))
+                    .frame(height: 90)
                 
-                // Additional info
+                Text("Your journal stays on your device by default. We strongly believe in privacy, which is why your reflections are stored locally and can only be accessed by you.\n\nFor added flexibility, you can enable iCloud backup to sync across your devices – but that's entirely up to you.")
+                    .font(.system(size: 17, weight: .medium))
+                    .tracking(1.5)
+                    .foregroundColor(textColor.opacity(0.5))
+                    .multilineTextAlignment(.center)
+                
+                // Extra assurance
                 HStack(spacing: 8) {
                     Image(systemName: "sparkles")
-                        .font(.system(size: 14))
-                    Text("we never share your data with third parties")
-                        .font(.system(size: 14))
+                    Text("We will never deal with third parties")
                 }
+                .font(.system(size: 14))
                 .foregroundColor(accentColor)
             }
             
@@ -495,7 +264,7 @@ struct PrivacyStorageView: View {
             // Start Button
             Button(action: {
                 withAnimation {
-                    currentTab += 1
+                    onIntroCompletion()
                 }
             }) {
                 HStack(spacing: 12) {
@@ -522,84 +291,81 @@ struct PrivacyStorageView: View {
             }
         }
         .padding(.horizontal, 24)
-        .padding(.top, 16)
         .padding(.bottom, 48)
-        .background(
-            ZStack {
-                Color(hex: "F5F5F5")
-                
-                // Background decoration
-                GeometricShapes()
-                    .fill(lightMauve)
-                    .opacity(0.1)
-                    .frame(height: 200)
-                    .offset(y: 100)
-            }
-        )
+        .background(Color(hex: "F5F5F5"))
     }
 }
 
-struct LoopConceptView: View {
+struct JournalShowcaseView: View {
     @Binding var currentTab: Int
+   @State private var currentJournal = 0
+   @State private var isAnimating = false
+   @State private var timer: Timer.TimerPublisher = Timer.publish(every: 2.5, on: .main, in: .common)
+   @State private var timerCancellable: AnyCancellable?
     
     private let textColor = Color(hex: "2C3E50")
     private let accentColor = Color(hex: "A28497")
     
+    private let journals = [
+        (title: "daily reflection", description: "guided prompts for each day", background: AnyView(InitialReflectionVisual(index: 0))),
+        (title: "dream journal", description: "capture dreams before they fade", background: AnyView(DreamBackground())),
+        (title: "success journal", description: "celebrate your achievements", background: AnyView(SuccessBackground()))
+    ]
+    
     var body: some View {
         VStack(spacing: 32) {
-            // Header
-            HStack {
-                Text("ONE MINUTE")
-                    .font(.system(size: 13, weight: .medium))
-                    .tracking(1.5)
-                    .foregroundColor(textColor.opacity(0.5))
-                
-                Spacer()
-            }
-            
-            // Main content
-            VStack(alignment: .leading, spacing: 24) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("micro-journal your day")
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("find what interests you")
                         .font(.system(size: 28, weight: .medium))
                         .foregroundColor(textColor)
                     
-                    Text("guided prompts help you reflect")
-                        .font(.system(size: 14, weight: .medium))
-                        .tracking(1.5)
-                        .foregroundColor(textColor.opacity(0.5))
+                    Spacer()
+                }
+                    
+                Text("reflect in different ways")
+                    .font(.system(size: 14, weight: .medium))
+                    .tracking(1.5)
+                    .foregroundColor(textColor.opacity(0.5))
+            }
+            .padding(.top, 32)
+
+            ZStack {
+                ForEach(0..<journals.count, id: \.self) { index in
+                    journals[index].background
+                        .opacity(currentJournal == index ? 1 : 0)
                 }
                 
-                VStack(spacing: 12) {
-                    ConceptCard(
-                        text: "speak freely for one minute",
-                        isSelected: true,
-                        onTap: {}
-                    )
+                VStack {
+                    Spacer()
                     
-                    ConceptCard(
-                        text: "get personally tailored prompts",
-                        isSelected: true,
-                        onTap: {}
-                    )
-                    
-                    ConceptCard(
-                        text: "reflect on dreams and successes",
-                        isSelected: true,
-                        onTap: {}
-                    )
-                    
-                    ConceptCard(
-                        text: "build a meaningful practice",
-                        isSelected: true,
-                        onTap: {}
+                    // Title and description
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(journals[currentJournal].title)
+                            .font(.system(size: 24, weight: .medium))
+                            .foregroundColor(.white)
+                            .transition(.opacity)
+                        
+                        Text(journals[currentJournal].description)
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(.white.opacity(0.8))
+                            .transition(.opacity)
+                    }
+                    .padding(24)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        LinearGradient(
+                            colors: [.black.opacity(0.3), .clear],
+                            startPoint: .bottom,
+                            endPoint: .top
+                        )
                     )
                 }
             }
-            
-            Spacer()
-            
-            // Continue Button
+            .clipShape(RoundedRectangle(cornerRadius: 24))
+            .padding(.top, -16)
+
             Button(action: {
                 withAnimation {
                     currentTab += 1
@@ -626,16 +392,133 @@ struct LoopConceptView: View {
                 .foregroundColor(.white)
                 .cornerRadius(28)
                 .shadow(color: accentColor.opacity(0.15), radius: 12, y: 6)
+                .padding(.bottom, 48)
             }
         }
         .padding(.horizontal, 24)
-        .padding(.top, 16)
-        .padding(.bottom, 48)
-        .background(Color(hex: "F5F5F5"))
+        .onAppear {
+            startTimer()
+        }
+        .onDisappear {
+            stopTimer()
+        }
+    }
+    
+    private func startTimer() {
+        timer = Timer.publish(every: 2.5, on: .main, in: .common)
+        timerCancellable = timer.autoconnect().sink { _ in
+            withAnimation(.easeInOut(duration: 0.7)) {
+                currentJournal = (currentJournal + 1) % journals.count
+            }
+        }
+    }
+    
+    private func stopTimer() {
+        timerCancellable?.cancel()
+        timerCancellable = nil
     }
 }
 
-struct ConceptCard: View {
+#Preview("Journal Showcase") {
+    JournalShowcaseView(currentTab: .constant(0))
+        .background(Color(hex: "F5F5F5"))
+}
+
+struct WhyLoopView: View {
+    @Binding var currentTab: Int
+    @State private var selectedPurposes: Set<String> = []
+    
+    private let textColor = Color(hex: "2C3E50")
+    private let accentColor = Color(hex: "A28497")
+    
+    private let purposes = [
+        "process my day",
+        "track my growth",
+        "understand my emotions",
+        "build self-awareness",
+        "find clarity",
+        "other"
+    ]
+    
+    var body: some View {
+        ZStack {
+            VStack(spacing: 32) {
+                // Header
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("why do you want to loop?")
+                            .font(.system(size: 28, weight: .medium))
+                            .foregroundColor(textColor)
+                        
+                        Spacer()
+                    }
+                    
+                    Text("select all that resonate")
+                        .font(.system(size: 14, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(textColor.opacity(0.5))
+                }
+                .padding(.top, 32)
+                
+                // Selection cards
+                VStack(spacing: 12) {
+                    ForEach(purposes, id: \.self) { purpose in
+                        PurposeCard(
+                            text: purpose,
+                            isSelected: selectedPurposes.contains(purpose),
+                            onTap: {
+                                withAnimation(.spring(response: 0.3)) {
+                                    if selectedPurposes.contains(purpose) {
+                                        selectedPurposes.remove(purpose)
+                                    } else {
+                                        selectedPurposes.insert(purpose)
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
+                
+                Spacer()
+                
+                // Continue Button
+                Button(action: {
+                    withAnimation {
+                        currentTab += 1
+                    }
+                }) {
+                    HStack(spacing: 12) {
+                        Text("continue")
+                            .font(.system(size: 18, weight: .regular))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 16, weight: .light))
+                    }
+                    .frame(height: 56)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                accentColor,
+                                accentColor.opacity(0.9)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .foregroundColor(.white)
+                    .cornerRadius(28)
+                    .shadow(color: accentColor.opacity(0.15), radius: 12, y: 6)
+                }
+                .opacity(selectedPurposes.isEmpty ? 0.6 : 1)
+                .disabled(selectedPurposes.isEmpty)
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 48)
+        }
+    }
+}
+
+struct PurposeCard: View {
     let text: String
     let isSelected: Bool
     let onTap: () -> Void
@@ -651,6 +534,12 @@ struct ConceptCard: View {
                     .foregroundColor(isSelected ? .white : textColor)
                 
                 Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white)
+                }
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
@@ -664,8 +553,9 @@ struct ConceptCard: View {
 }
 
 #Preview {
-    LoopConceptView(currentTab: .constant(0))
+    WhyLoopView(currentTab: .constant(0))
 }
+
 
 struct StorageFeatureCard: View {
     let icon: String
@@ -725,10 +615,6 @@ struct GeometricShapes: Shape {
         
         return path
     }
-}
-
-#Preview {
-    PrivacyStorageView(currentTab: .constant(0))
 }
 
 #Preview {

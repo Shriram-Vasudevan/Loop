@@ -14,48 +14,35 @@ struct EntryTypeCarousel: View {
     @Binding var isOpen: Bool
     
     var body: some View {
-        ZStack {
-            // Background overlay - moved outside ScrollView
-            Color.black.opacity(0.5)
-                .edgesIgnoringSafeArea(.all)
-                .onTapGesture {
-                    withAnimation {
-                        isOpen = false
-                    }
-                }
-            
+        ScrollView(.horizontal, showsIndicators: false) {
             VStack {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    VStack {
-                        Spacer()
-                        
-                        HStack(spacing: spacing) {
-                            CarouselReflectionCard(type: .newEntry)
-                                .frame(width: cardWidth, height: cardHeight)
-                                .onTapGesture { newEntrySelected = true }
-                            
-                            CarouselReflectionCard(type: .moodCheckIn)
-                                .frame(width: cardWidth, height: cardHeight)
-                                .onTapGesture { moodCheckIn = true }
-                            
-                            CarouselReflectionCard(type: .success)
-                                .frame(width: cardWidth, height: cardHeight)
-                                .onTapGesture { successSelected = true }
-                            
-                            CarouselReflectionCard(type: .dreamJournal)
-                                .frame(width: cardWidth, height: cardHeight)
-                                .onTapGesture { dreamJournal = true }
-                            
-                            CarouselReflectionCard(type: .sleepCheckIn)
-                                .frame(width: cardWidth, height: cardHeight)
-                                .onTapGesture { sleepCheckIn = true }
-                        
-                            Spacer()
-                        }
-                        .padding(.leading, 24)
-                        .padding(.bottom, 85)
-                    }
+                Spacer()
+                
+                HStack(spacing: spacing) {
+                    CarouselReflectionCard(type: .newEntry)
+                        .frame(width: cardWidth, height: cardHeight)
+                        .onTapGesture { newEntrySelected = true }
+                    
+                    CarouselReflectionCard(type: .moodCheckIn)
+                        .frame(width: cardWidth, height: cardHeight)
+                        .onTapGesture { moodCheckIn = true }
+                    
+                    CarouselReflectionCard(type: .success)
+                        .frame(width: cardWidth, height: cardHeight)
+                        .onTapGesture { successSelected = true }
+                    
+                    CarouselReflectionCard(type: .dreamJournal)
+                        .frame(width: cardWidth, height: cardHeight)
+                        .onTapGesture { dreamJournal = true }
+                    
+                    CarouselReflectionCard(type: .sleepCheckIn)
+                        .frame(width: cardWidth, height: cardHeight)
+                        .onTapGesture { sleepCheckIn = true }
+                
+                    Spacer()
                 }
+                .padding(.leading, 24)
+                .padding(.bottom, 85)
             }
         }
     }
