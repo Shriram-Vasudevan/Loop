@@ -1,6 +1,271 @@
 import SwiftUI
 
-struct EntryTypeCarousel: View {
+
+struct CurvedReflectionSheet: View {
+    @Binding var isOpen: Bool
+    @Binding var newEntrySelected: Bool
+    @Binding var successSelected: Bool
+    @Binding var moodCheckIn: Bool
+    @Binding var sleepCheckIn: Bool
+    @Binding var dreamJournal: Bool
+    
+    // State for animations
+    @State private var sheetOffset: CGFloat = 1000
+    @State private var cardsOpacity: Double = 0
+    @State private var cardsScale: CGFloat = 0.8
+    
+    private let backgroundColor = Color(hex: "FAFBFC")
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                // Dimmed background
+                Color.black
+                    .opacity(0.5)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        dismiss()
+                    }
+                    .animation(.easeInOut, value: isOpen)
+                
+                // Main curved sheet
+                VStack(spacing: 0) {
+                    Spacer()
+                    
+                    CurveShape()
+                        .fill(Color.white)
+                        .frame(height: 24)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: 36, height: 4)
+                                .padding(.top, 8)
+                        )
+                    
+                    // Content container
+                    VStack(spacing: 32) {
+                        // Top row
+                        HStack(spacing: 60) {
+                            CircleReflectionButton(type: .dreamJournal, action: { selectReflection(.dreamJournal) })
+                            CircleReflectionButton(type: .success, action: { selectReflection(.success) })
+                        }
+                        .padding(.top, 20)
+                        
+                        HStack {
+                            Spacer()
+                            
+                            CircleReflectionButton(type: .newEntry, action: { selectReflection(.dreamJournal) })
+                            
+                            Spacer()
+                        }
+                        
+                        // Bottom row
+                        HStack(spacing: 60) {
+                            CircleReflectionButton(type: .moodCheckIn, action: { selectReflection(.moodCheckIn) })
+                            CircleReflectionButton(type: .sleepCheckIn, action: { selectReflection(.sleepCheckIn) })
+                        }
+                        .padding(.bottom, 30)
+                    }
+                    .opacity(cardsOpacity)
+                    .scaleEffect(cardsScale)
+                    .background(Color.white)
+                }
+                .offset(y: sheetOffset)
+                .gesture(
+                    DragGesture()
+                        .onEnded { value in
+                            if value.translation.height > 100 {
+                                dismiss()
+                            }
+                        }
+                )
+            }
+        }
+        .onAppear {
+            animateEntry()
+        }
+    }
+    
+    private func animateEntry() {
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+            sheetOffset = 0
+        }
+        
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2)) {
+            cardsScale = 1
+            cardsOpacity = 1
+        }
+    }
+    
+    private func dismiss() {
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+            sheetOffset = 1000
+            cardsScale = 0.8
+            cardsOpacity = 0
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            isOpen = false
+        }
+    }
+    
+    private func selectReflection(_ type: ReflectionType) {
+        switch type {
+            case .dreamJournal:
+                dreamJournal = true
+            case .newEntry:
+                newEntrySelected = true
+            case .moodCheckIn:
+                moodCheckIn = true
+            case .sleepCheckIn:
+                sleepCheckIn = true
+            case .success:
+                successSelected = true
+        }
+        dismiss()
+    }
+}
+
+struct CurveShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        
+        path.move(to: CGPoint(x: 0, y: 24))
+        
+        let center = rect.width / 2
+        
+        path.addCurve(
+            to: CGPoint(x: rect.width, y: 24),
+            control1: CGPoint(x: center - 80, y: 0),
+            control2: CGPoint(x: center + 80, y: 0)
+        )
+        
+        path.addLine(to: CGPoint(x: rect.width, y: rect.height))
+        path.addLine(to: CGPoint(x: 0, y: rect.height))
+        path.closeSubpath()
+        
+        return path
+    }
+}
+
+struct CircleReflectionButton: View {
+    let type: ReflectionType
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: type.gradientColors,
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 64, height: 64)
+                    .overlay(
+                        Image(systemName: type.iconName)
+                            .font(.system(size: 24, weight: .medium))
+                            .foregroundColor(.white)
+                    )
+                    .shadow(color: type.gradientColors[0].opacity(0.3), radius: 8, x: 0, y: 4)
+                
+                Text(type.rawValue)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color(hex: "2C3E50"))
+            }
+        }
+        .buttonStyle(SpringyButton())
+    }
+}
+
+struct MainReflectionCard: View {
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 16) {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: ReflectionType.newEntry.gradientColors,
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 80, height: 80)
+                    .overlay(
+                        Image(systemName: ReflectionType.newEntry.iconName)
+                            .font(.system(size: 32, weight: .medium))
+                            .foregroundColor(.white)
+                    )
+                    .shadow(color: ReflectionType.newEntry.gradientColors[0].opacity(0.3), radius: 12, x: 0, y: 6)
+                
+                VStack(spacing: 4) {
+                    Text("New Entry")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(Color(hex: "2C3E50"))
+                    
+                    Text("Share what's on your mind")
+                        .font(.system(size: 15))
+                        .foregroundColor(Color(hex: "2C3E50").opacity(0.6))
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 24)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.white)
+                    .shadow(color: Color.black.opacity(0.08), radius: 20, x: 0, y: 8)
+            )
+        }
+        .buttonStyle(SpringyButton())
+    }
+}
+
+struct SpringyButton: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.95 : 1)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: configuration.isPressed)
+    }
+}
+
+//#Preview {
+//    CurvedReflectionSheet(isPresented: .constant(true), selectedReflection: .constant(nil))
+//}
+
+// Add these properties to your EntryType enum
+extension ReflectionType {
+    var iconName: String {
+        switch self {
+        case .newEntry: return "square.and.pencil"
+        case .moodCheckIn: return "heart"
+        case .dreamJournal: return "moon.stars"
+        case .sleepCheckIn: return "bed.double"
+        case .success: return "star"
+        }
+    }
+    
+    var gradientColors: [Color] {
+        switch self {
+        case .newEntry:
+            return [Color(hex: "A28497"), Color(hex: "B784A7")]
+        case .moodCheckIn:
+            return [Color(hex: "B784A7"), Color(hex: "A28497")]
+        case .dreamJournal:
+            return [Color(hex: "1E3D59"), Color(hex: "4C5B61")]
+        case .sleepCheckIn:
+            return [Color(hex: "94A7B7"), Color(hex: "4C5B61")]
+        case .success:
+            return [Color(hex: "B784A7"), Color(hex: "94A7B7")]
+        }
+    }
+}
+
+struct EntryTypeGrid: View {
+    @Binding var isOpen: Bool
     @Binding var newEntrySelected: Bool
     @Binding var successSelected: Bool
     @Binding var moodCheckIn: Bool
@@ -8,56 +273,88 @@ struct EntryTypeCarousel: View {
     @Binding var dreamJournal: Bool
     
     private let cardWidth: CGFloat = 160
-    private let cardHeight: CGFloat = 240
+    private let cardHeight: CGFloat = 200  // Slightly shorter for grid layout
     private let spacing: CGFloat = 16
     
-    @Binding var isOpen: Bool
+    let backgroundColor = Color(hex: "FAFBFC")
     
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            VStack {
-                Spacer()
-                
-                HStack(spacing: spacing) {
-                    CarouselReflectionCard(type: .newEntry)
-                        .frame(width: cardWidth, height: cardHeight)
-                        .onTapGesture { newEntrySelected = true }
+        ZStack {
+            // Overlay background
+            if isOpen {
+                Color.black
+                    .opacity(0.5)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            isOpen = false
+                        }
+                    }
+            }
+
+            VStack(spacing: 24) {
+//                // Close button
+//                HStack {
+//                    Spacer()
+//                    Button {
+//                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+//                            isOpen = false
+//                        }
+//                    } label: {
+//                        Image(systemName: "xmark")
+//                            .font(.system(size: 17, weight: .semibold))
+//                            .foregroundColor(Color(hex: "2C3E50"))
+//                            .frame(width: 32, height: 32)
+//                    }
+//                }
+//                .padding(.horizontal, 24)
+            
+                VStack(spacing: spacing) {
+                    HStack(spacing: spacing) {
+                        CarouselReflectionCard(type: .newEntry)
+                            .frame(width: cardWidth, height: cardHeight)
+                            .onTapGesture { newEntrySelected = true }
+                        
+                        CarouselReflectionCard(type: .dreamJournal)
+                            .frame(width: cardWidth, height: cardHeight)
+                            .onTapGesture { dreamJournal = true }
+                    }
                     
-                    CarouselReflectionCard(type: .moodCheckIn)
-                        .frame(width: cardWidth, height: cardHeight)
-                        .onTapGesture { moodCheckIn = true }
+
+                    HStack(spacing: spacing) {
+                        CarouselReflectionCard(type: .moodCheckIn)
+                            .frame(width: cardWidth, height: cardHeight)
+                            .onTapGesture { moodCheckIn = true }
+                        
+                        CarouselReflectionCard(type: .sleepCheckIn)
+                            .frame(width: cardWidth, height: cardHeight)
+                            .onTapGesture { sleepCheckIn = true }
+                    }
                     
                     CarouselReflectionCard(type: .success)
                         .frame(width: cardWidth, height: cardHeight)
                         .onTapGesture { successSelected = true }
-                    
-                    CarouselReflectionCard(type: .dreamJournal)
-                        .frame(width: cardWidth, height: cardHeight)
-                        .onTapGesture { dreamJournal = true }
-                    
-                    CarouselReflectionCard(type: .sleepCheckIn)
-                        .frame(width: cardWidth, height: cardHeight)
-                        .onTapGesture { sleepCheckIn = true }
-                
-                    Spacer()
                 }
-                .padding(.leading, 24)
-                .padding(.bottom, 85)
+                .padding(.horizontal, 24)
             }
+            .padding(.vertical, 24)
+            .opacity(isOpen ? 1 : 0)
+            .scaleEffect(isOpen ? 1 : 0.9)
+            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isOpen)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }
+
 struct BackgroundEffect: View {
     @Binding var isMenuOpened: Bool
     
     var body: some View {
         ZStack {
-            // Blur effect
             Color.white
                 .opacity(0.98)
                 .blur(radius: 3)
             
-            // Optional: Add subtle animated gradient
             GeometryReader { geometry in
                 ZStack {
                     Circle()
@@ -204,7 +501,9 @@ struct NewEntryHeader: View {
                     .rotationEffect(.degrees(Double(index * 15) - 15))
                     .offset(x: CGFloat(index * 10) - 10,
                            y: CGFloat(index * 10) - 10)
+                    .padding(.bottom, 30)
             }
+            
         }
     }
 }

@@ -49,7 +49,7 @@ struct TodaysInsightsView: View {
                     KeyMomentCard(moment: nil, topic: nil)
                 }
                 
-                FollowUpCard()
+//                FollowUpCard()
 
                 SleepCard()
                 
@@ -728,112 +728,112 @@ struct AdditionalInsightsCard: View {
     }
 }
 
-struct FollowUpCard: View {
-    @ObservedObject var analysisManager = AnalysisManager.shared
-    @State private var showingFollowUp = false
-    
-    private let textColor = Color(hex: "2C3E50")
-    private let accentColor = Color(hex: "A28497")
-    private let coolBlue = Color(hex: "B5D5E2")
-    
-    var followUpPrompt: String? {
-        analysisManager.currentDailyAnalysis?.aiAnalysis.followUpSuggestion.suggestion
-    }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Header section
-            HStack(spacing: 12) {
-                Circle()
-                    .fill(coolBlue)
-                    .frame(width: 8, height: 8)
-                
-                Text("Further Reflection")
-                    .font(.system(size: 13, weight: .medium))
-                    .tracking(1.5)
-                    .foregroundColor(textColor.opacity(0.5))
-                
-                Spacer()
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 24)
-            .padding(.bottom, 20)
-            
-            if let prompt = followUpPrompt {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text(prompt)
-                        .font(.system(size: 17))
-                        .foregroundColor(textColor)
-                        .fixedSize(horizontal: false, vertical: true)
-                    
-                    if !analysisManager.isFollowUpCompleted {
-                        Button(action: {
-                            showingFollowUp = true
-                        }) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "mic.circle.fill")
-                                    .font(.system(size: 20))
-                                Text("Record Follow-up")
-                                    .font(.system(size: 15, weight: .medium))
-                            }
-                            .foregroundColor(accentColor)
-                            .padding(.vertical, 12)
-                            .padding(.horizontal, 20)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(accentColor.opacity(0.1))
-                            )
-                        }
-                    } else {
-                        HStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 16))
-                            Text("Completed")
-                                .font(.system(size: 15))
-                        }
-                        .foregroundColor(Color.gray.opacity(0.6))
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 24)
-            } else {
-                // Empty state
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Further Reflection")
-                        .font(.system(size: 24, weight: .medium))
-                        .foregroundColor(textColor)
-                    
-                    Text("Complete your daily reflection to unlock a personalized follow-up prompt")
-                        .font(.system(size: 15))
-                        .foregroundColor(textColor.opacity(0.7))
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 24)
-            }
-        }
-        .background(
-            ZStack {
-                Color.white
-                
-                // Evening sky-inspired pattern
-                EveningPattern()
-                    .stroke(coolBlue, lineWidth: 0.5)
-                    .opacity(0.04)
-            }
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.black.opacity(0.03), lineWidth: 1)
-        )
-        .fullScreenCover(isPresented: $showingFollowUp) {
-            if let prompt = followUpPrompt {
-                RecordFollowUpLoopView(prompt: prompt)
-            }
-        }
-    }
-}
+//struct FollowUpCard: View {
+//    @ObservedObject var analysisManager = AnalysisManager.shared
+//    @State private var showingFollowUp = false
+//    
+//    private let textColor = Color(hex: "2C3E50")
+//    private let accentColor = Color(hex: "A28497")
+//    private let coolBlue = Color(hex: "B5D5E2")
+//    
+//    var followUpPrompt: String? {
+//        analysisManager.currentDailyAnalysis?.aiAnalysis.followUpSuggestion.suggestion
+//    }
+//    
+//    var body: some View {
+//        VStack(alignment: .leading, spacing: 0) {
+//            // Header section
+//            HStack(spacing: 12) {
+//                Circle()
+//                    .fill(coolBlue)
+//                    .frame(width: 8, height: 8)
+//                
+//                Text("Further Reflection")
+//                    .font(.system(size: 13, weight: .medium))
+//                    .tracking(1.5)
+//                    .foregroundColor(textColor.opacity(0.5))
+//                
+//                Spacer()
+//            }
+//            .padding(.horizontal, 24)
+//            .padding(.top, 24)
+//            .padding(.bottom, 20)
+//            
+//            if let prompt = followUpPrompt {
+//                VStack(alignment: .leading, spacing: 16) {
+//                    Text(prompt)
+//                        .font(.system(size: 17))
+//                        .foregroundColor(textColor)
+//                        .fixedSize(horizontal: false, vertical: true)
+//                    
+//                    if !analysisManager.isFollowUpCompleted {
+//                        Button(action: {
+//                            showingFollowUp = true
+//                        }) {
+//                            HStack(spacing: 12) {
+//                                Image(systemName: "mic.circle.fill")
+//                                    .font(.system(size: 20))
+//                                Text("Record Follow-up")
+//                                    .font(.system(size: 15, weight: .medium))
+//                            }
+//                            .foregroundColor(accentColor)
+//                            .padding(.vertical, 12)
+//                            .padding(.horizontal, 20)
+//                            .background(
+//                                RoundedRectangle(cornerRadius: 12)
+//                                    .fill(accentColor.opacity(0.1))
+//                            )
+//                        }
+//                    } else {
+//                        HStack(spacing: 8) {
+//                            Image(systemName: "checkmark.circle.fill")
+//                                .font(.system(size: 16))
+//                            Text("Completed")
+//                                .font(.system(size: 15))
+//                        }
+//                        .foregroundColor(Color.gray.opacity(0.6))
+//                    }
+//                }
+//                .padding(.horizontal, 24)
+//                .padding(.bottom, 24)
+//            } else {
+//                // Empty state
+//                VStack(alignment: .leading, spacing: 12) {
+//                    Text("Further Reflection")
+//                        .font(.system(size: 24, weight: .medium))
+//                        .foregroundColor(textColor)
+//                    
+//                    Text("Complete your daily reflection to unlock a personalized follow-up prompt")
+//                        .font(.system(size: 15))
+//                        .foregroundColor(textColor.opacity(0.7))
+//                        .fixedSize(horizontal: false, vertical: true)
+//                }
+//                .padding(.horizontal, 24)
+//                .padding(.bottom, 24)
+//            }
+//        }
+//        .background(
+//            ZStack {
+//                Color.white
+//                
+//                // Evening sky-inspired pattern
+//                EveningPattern()
+//                    .stroke(coolBlue, lineWidth: 0.5)
+//                    .opacity(0.04)
+//            }
+//        )
+//        .clipShape(RoundedRectangle(cornerRadius: 10))
+//        .overlay(
+//            RoundedRectangle(cornerRadius: 10)
+//                .stroke(Color.black.opacity(0.03), lineWidth: 1)
+//        )
+//        .fullScreenCover(isPresented: $showingFollowUp) {
+//            if let prompt = followUpPrompt {
+//                RecordFollowUpLoopView(prompt: prompt)
+//            }
+//        }
+//    }
+//}
 
 // Evening pattern for the card background
 struct EveningPattern: Shape {

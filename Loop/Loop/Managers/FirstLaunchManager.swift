@@ -10,6 +10,8 @@ import AVFoundation
 import CloudKit
 
 class FirstLaunchManager {
+    @Published var showTutorial: Bool = false
+    
     private let hasLaunchedKey = "hasLaunchedBefore"
     
     static let shared = FirstLaunchManager()
@@ -24,6 +26,8 @@ class FirstLaunchManager {
             UserDefaults.standard.set(!newValue, forKey: hasLaunchedKey)
         }
     }
+    
+    
     
     func useIntroView() async -> Bool {
         if let userName = UserDefaults.standard.string(forKey: "userName"), !userName.isEmpty {

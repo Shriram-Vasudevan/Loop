@@ -36,6 +36,8 @@ struct HomeView: View {
         }))
     }
 
+    @State private var showTutorial = FirstLaunchManager.shared.showTutorial
+    
     let accentColor = Color(hex: "A28497")
     let backgroundColor = Color(hex: "FAFBFC")
     let textColor = Color(hex: "2C3E50")
@@ -183,7 +185,20 @@ struct HomeView: View {
         Button(action: { showingRecordLoopsView = true }) {
             Group {
                 if !ReflectionSessionManager.shared.hasCompletedForToday {
-                    SunsetReflectionView()
+                    VStack (spacing: 8) {
+                        if showTutorial {
+                            DailyReflectionTutorial {
+                                withAnimation(.spring(response: 0.3)) {
+                                    showTutorial = false
+                                    FirstLaunchManager.shared.showTutorial = false
+                                }
+                            }
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                        }
+                        
+                        SunsetReflectionView()
+                        
+                    }
                 } else {
                     VStack(alignment: .leading, spacing: 16) {
                         Text("DAILY REFLECTION")
@@ -468,6 +483,49 @@ struct HomeView: View {
         }
     }
 }
+
+
+struct DailyReflectionTutorial: View {
+    let onDismiss: () -> Void
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            // Header with close button
+            HStack {
+                Text("Begin Your First Reflection")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(textColor)
+                
+                Spacer()
+                
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(accentColor.opacity(0.6))
+                }
+            }
+            
+            Text("Your daily reflection is a personalized space to process your day.")
+                .font(.system(size: 16))
+                .foregroundColor(textColor.opacity(0.7))
+                .lineSpacing(4)
+                .multilineTextAlignment(.leading)
+            
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.clear)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(accentColor.opacity(0.08), lineWidth: 1)
+        )
+    }
+}
+
 
 // MARK: - Supporting Views
 struct ScrollOffsetKey: PreferenceKey {

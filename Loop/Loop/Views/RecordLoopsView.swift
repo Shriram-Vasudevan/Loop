@@ -799,52 +799,42 @@ struct RecordLoopsView: View {
     private func completeRecording() {
         guard !isSaving else { return }
         isSaving = true
+        ReflectionSessionManager.shared.isSavingLoop = true
         
         guard let audioFileURL = audioManager.getRecordedAudioFile() else {
             print("Audio file not found.")
             isSaving = false
+            ReflectionSessionManager.shared.isSavingLoop = false
             return
         }
-        
-        recordedTabs.insert(currentTab)
-        recordedAudioURLs[currentTab] = audioFileURL
         
         let currentPromptIndex = currentTab
-        guard currentPromptIndex < reflectionSessionManager.prompts.count else {
-            print("Invalid prompt index.")
-            isSaving = false
-            return
-        }
-        
         let currentPrompt = reflectionSessionManager.prompts[currentPromptIndex]
         
-        // First, handle the UI transition
-        Task { @MainActor in
-            // Find the next incomplete prompt after the current one, excluding mood and sleep check-ins
-            let nextPromptIndex = reflectionSessionManager.prompts[currentPromptIndex...].firstIndex(where: { prompt in
-                let promptIndex = reflectionSessionManager.prompts.firstIndex(of: prompt) ?? -1
-                return !reflectionSessionManager.completedPrompts.contains(promptIndex) &&
-                       prompt.type != .moodCheckIn &&
-                       prompt.type != .sleepCheckin
-            }) ?? reflectionSessionManager.prompts.firstIndex(where: { prompt in
-                let promptIndex = reflectionSessionManager.prompts.firstIndex(of: prompt) ?? -1
-                return !reflectionSessionManager.completedPrompts.contains(promptIndex) &&
-                       prompt.type != .moodCheckIn &&
-                       prompt.type != .sleepCheckin
-            })
+        let hasNextPrompt = (currentPromptIndex + 1..<reflectionSessionManager.prompts.count).contains { index in
+            let prompt = reflectionSessionManager.prompts[index]
+            return !reflectionSessionManager.completedPrompts.contains(index) &&
+                   (prompt.type == .recording || prompt.type == .guided)
+        }
+        
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+            isPostRecording = false
+            reflectionSessionManager.markPromptComplete(at: currentPromptIndex)
             
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                isPostRecording = false
-                
-                if let nextIndex = nextPromptIndex {
-                    currentTab = nextIndex
-                }
+            if hasNextPrompt {
+                currentTab += 1
+            } else {
+                isShowingMemory = false
+                audioManager.cleanup()
+                dismiss()
             }
         }
         
-        // Then, handle the data saving in the background
         Task {
-            defer { isSaving = false }
+            defer { 
+                isSaving = false
+                ReflectionSessionManager.shared.isSavingLoop = false
+            }
             
             do {
                 let (loop, transcript) = try await loopManager.addLoop(
@@ -858,18 +848,7 @@ struct RecordLoopsView: View {
                     isDream: false
                 )
                 
-                await MainActor.run {
-                    reflectionSessionManager.markPromptComplete(at: currentPromptIndex)
-                    reflectionSessionManager.saveRecordingCache(prompt: currentPrompt.text, transcript: transcript)
-                    
-                    if reflectionSessionManager.hasCompletedForToday {
-                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                            isShowingMemory = false
-                            audioManager.cleanup()
-                            dismiss()
-                        }
-                    }
-                }
+                reflectionSessionManager.saveRecordingCache(prompt: currentPrompt.text, transcript: transcript)
             } catch {
                 print("Error saving recording: \(error)")
             }

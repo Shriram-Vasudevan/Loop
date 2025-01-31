@@ -174,12 +174,7 @@ struct InsightsView: View {
     
     @ViewBuilder
     private var contentView: some View {
-        if tabManager.insightsSelectedTab == "today" {
-            TodaysInsightsView(analysisManager: analysisManager)
-        } else {
-            TrendsView(pageType: $pageType, selectedTimeframe: $selectedTimeframe)
-//            Text("Hello")
-        }
+        TrendsView(pageType: $pageType, selectedTimeframe: $selectedTimeframe)
     }
 }
 
@@ -192,7 +187,7 @@ struct TabNavigationView: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text(tabManager.insightsSelectedTab == "today" ? "TODAY" : "TRENDS")
+                Text("INSIGHTS")
                     .font(.custom("PPNeueMontreal-Bold", size: 24))
                     .foregroundColor(textColor)
                     .tracking(1.2)
@@ -204,72 +199,68 @@ struct TabNavigationView: View {
             
             Spacer()
             
-            Menu {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        tabManager.insightsSelectedTab = "today"
-                    }
-                } label: {
-                    HStack {
-                        Text("Today")
-                            .font(.custom("PPNeueMontreal-Medium", size: 15))
-                        
-                        if tabManager.insightsSelectedTab == "today" {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 12))
-                        }
-                    }
-                }
-                
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        tabManager.insightsSelectedTab = "trends"
-                    }
-                } label: {
-                    HStack {
-                        Text("Trends")
-                            .font(.custom("PPNeueMontreal-Medium", size: 15))
-                        
-                        if tabManager.insightsSelectedTab == "trends" {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 12))
-                        }
-                    }
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Text(tabManager.insightsSelectedTab == "today" ? "Today" : "Trends")
-                        .font(.custom("PPNeueMontreal-Medium", size: 15))
-                        .foregroundColor(textColor)
-                    
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(textColor.opacity(0.5))
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule()
-                        .fill(.white)
-//                        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2) // Added subtle shadow for depth
-                )
-            }
+//            Menu {
+//                Button {
+//                    withAnimation(.easeInOut(duration: 0.2)) {
+//                        tabManager.insightsSelectedTab = "today"
+//                    }
+//                } label: {
+//                    HStack {
+//                        Text("Today")
+//                            .font(.custom("PPNeueMontreal-Medium", size: 15))
+//                        
+//                        if tabManager.insightsSelectedTab == "today" {
+//                            Image(systemName: "checkmark")
+//                                .font(.system(size: 12))
+//                        }
+//                    }
+//                }
+//                
+//                Button {
+//                    withAnimation(.easeInOut(duration: 0.2)) {
+//                        tabManager.insightsSelectedTab = "trends"
+//                    }
+//                } label: {
+//                    HStack {
+//                        Text("Trends")
+//                            .font(.custom("PPNeueMontreal-Medium", size: 15))
+//                        
+//                        if tabManager.insightsSelectedTab == "trends" {
+//                            Image(systemName: "checkmark")
+//                                .font(.system(size: 12))
+//                        }
+//                    }
+//                }
+//            } label: {
+//                HStack(spacing: 8) {
+//                    Text(tabManager.insightsSelectedTab == "today" ? "Today" : "Trends")
+//                        .font(.custom("PPNeueMontreal-Medium", size: 15))
+//                        .foregroundColor(textColor)
+//                    
+//                    Image(systemName: "chevron.down")
+//                        .font(.system(size: 11, weight: .semibold))
+//                        .foregroundColor(textColor.opacity(0.5))
+//                }
+//                .padding(.horizontal, 16)
+//                .padding(.vertical, 8)
+//                .background(
+//                    Capsule()
+//                        .fill(.white)
+////                        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2) // Added subtle shadow for depth
+//                )
+//            }
         }
         .padding(.horizontal, 24)
     }
     
     private func getDateText() -> String {
-        if tabManager.insightsSelectedTab == "today" {
-            return formattedTodayDate()
-        } else {
-            switch selectedTimeframe {
-            case .week:
-                return formattedWeekDateRange()
-            case .month:
-                return currentMonth()
-            case .year:
-                return formattedYearRange()
-            }
+        switch selectedTimeframe {
+        case .week:
+            return formattedWeekDateRange()
+        case .month:
+            return currentMonth()
+        case .year:
+            return formattedYearRange()
         }
     }
     

@@ -32,7 +32,7 @@ struct OnboardingView: View {
     
     @State private var reminderTime: Date = {
         var components = Calendar.current.dateComponents([.year, .month, .day], from: Date())
-        components.hour = 21
+        components.hour = 20
         components.minute = 0
         return Calendar.current.date(from: components) ?? Date()
     }()
@@ -55,48 +55,23 @@ struct OnboardingView: View {
         
     var body: some View {
         ZStack {
-            if currentStep == 0 {
-                InitialReflectionVisual(index: 0)
-                    .edgesIgnoringSafeArea(.all)
-                    .animation(.easeInOut, value: currentStep)
-            }
-            else {
-                Color(hex: "F5F5F5").edgesIgnoringSafeArea(.all)
-            }
+            InitialReflectionVisual(index: 0)
+                .edgesIgnoringSafeArea(.all)
+                .animation(.easeInOut, value: currentStep)
             
             TabView(selection: $currentStep) {
-                welcomeView  // Keep existing welcome view
+                welcomeView
                     .tag(0)
                 WhyLoopView(currentTab: $currentStep)
                     .edgesIgnoringSafeArea(.all)
                     .tag(1)
-//                JournalShowcaseView(currentTab: $currentStep)
-//                    .tag(2)
                 PrivacyStorageView(currentTab: $currentStep, onIntroCompletion: {
+                    FirstLaunchManager.shared.showTutorial = true
                     onIntroCompletion()
                 })
                     .tag(2)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
-            
-//            if currentStep > 0 {
-//                VStack {
-//                    HStack {
-//                        Spacer()
-//                        Button(action: {
-//                            saveUserPreferences()
-//                            onIntroCompletion()
-//                        }) {
-//                            Text("Skip")
-//                                .font(.system(size: 16, weight: .medium))
-//                                .foregroundColor(textColor.opacity(0.5))
-//                        }
-//                        .padding(.horizontal, 24)
-//                        .padding(.top, 16)
-//                    }
-//                    Spacer()
-//                }
-//            }
 
         }
         .preferredColorScheme(.light)
@@ -118,7 +93,7 @@ struct OnboardingView: View {
                 .opacity(fadeInOpacity)
                 .padding(.horizontal, 32)
                 .padding(.top, 130)
-                // Context
+
                 Text("express your thoughts with guided prompts and discover patterns in your journey")
                     .font(.system(size: 17))
                     .foregroundColor(textColor.opacity(0.6))
@@ -214,311 +189,127 @@ struct OnboardingButton: View {
     }
 }
 
-struct PrivacyStorageView: View {
-    @Binding var currentTab: Int
-    @State var onIntroCompletion: () -> Void
-    
-    private let textColor = Color(hex: "2C3E50")
-    private let accentColor = Color(hex: "A28497")
-    
-    var body: some View {
-        VStack(spacing: 40) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("your journal is for you")
-                        .font(.system(size: 28, weight: .medium))
-                        .foregroundColor(textColor)
-                    
-                    Spacer()
-                }
-                
-                Text("we take privacy seriously")
-                    .font(.system(size: 14, weight: .medium))
-                    .tracking(1.5)
-                    .foregroundColor(textColor.opacity(0.5))
-            }
-            .padding(.top, 32)
-            
-            VStack(spacing: 32) {
-                WavePattern()
-                    .fill(accentColor.opacity(0.7))
-                    .frame(height: 90)
-                
-                Text("Your journal stays on your device by default. We strongly believe in privacy, which is why your reflections are stored locally and can only be accessed by you.\n\nFor added flexibility, you can enable iCloud backup to sync across your devices – but that's entirely up to you.")
-                    .font(.system(size: 17, weight: .medium))
-                    .tracking(1.5)
-                    .foregroundColor(textColor.opacity(0.5))
-                    .multilineTextAlignment(.center)
-                
-                // Extra assurance
-                HStack(spacing: 8) {
-                    Image(systemName: "sparkles")
-                    Text("We will never deal with third parties")
-                }
-                .font(.system(size: 14))
-                .foregroundColor(accentColor)
-            }
-            
-            Spacer()
-            
-            // Start Button
-            Button(action: {
-                withAnimation {
-                    onIntroCompletion()
-                }
-            }) {
-                HStack(spacing: 12) {
-                    Text("start looping")
-                        .font(.system(size: 18, weight: .regular))
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 16, weight: .light))
-                }
-                .frame(height: 56)
-                .frame(maxWidth: .infinity)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            accentColor,
-                            accentColor.opacity(0.9)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .foregroundColor(.white)
-                .cornerRadius(28)
-                .shadow(color: accentColor.opacity(0.15), radius: 12, y: 6)
-            }
-        }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 48)
-        .background(Color(hex: "F5F5F5"))
-    }
-}
-
-struct JournalShowcaseView: View {
-    @Binding var currentTab: Int
-   @State private var currentJournal = 0
-   @State private var isAnimating = false
-   @State private var timer: Timer.TimerPublisher = Timer.publish(every: 2.5, on: .main, in: .common)
-   @State private var timerCancellable: AnyCancellable?
-    
-    private let textColor = Color(hex: "2C3E50")
-    private let accentColor = Color(hex: "A28497")
-    
-    private let journals = [
-        (title: "daily reflection", description: "guided prompts for each day", background: AnyView(InitialReflectionVisual(index: 0))),
-        (title: "dream journal", description: "capture dreams before they fade", background: AnyView(DreamBackground())),
-        (title: "success journal", description: "celebrate your achievements", background: AnyView(SuccessBackground()))
-    ]
-    
-    var body: some View {
-        VStack(spacing: 32) {
-
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("find what interests you")
-                        .font(.system(size: 28, weight: .medium))
-                        .foregroundColor(textColor)
-                    
-                    Spacer()
-                }
-                    
-                Text("reflect in different ways")
-                    .font(.system(size: 14, weight: .medium))
-                    .tracking(1.5)
-                    .foregroundColor(textColor.opacity(0.5))
-            }
-            .padding(.top, 32)
-
-            ZStack {
-                ForEach(0..<journals.count, id: \.self) { index in
-                    journals[index].background
-                        .opacity(currentJournal == index ? 1 : 0)
-                }
-                
-                VStack {
-                    Spacer()
-                    
-                    // Title and description
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(journals[currentJournal].title)
-                            .font(.system(size: 24, weight: .medium))
-                            .foregroundColor(.white)
-                            .transition(.opacity)
-                        
-                        Text(journals[currentJournal].description)
-                            .font(.system(size: 16, weight: .regular))
-                            .foregroundColor(.white.opacity(0.8))
-                            .transition(.opacity)
-                    }
-                    .padding(24)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        LinearGradient(
-                            colors: [.black.opacity(0.3), .clear],
-                            startPoint: .bottom,
-                            endPoint: .top
-                        )
-                    )
-                }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 24))
-            .padding(.top, -16)
-
-            Button(action: {
-                withAnimation {
-                    currentTab += 1
-                }
-            }) {
-                HStack(spacing: 12) {
-                    Text("continue")
-                        .font(.system(size: 18, weight: .regular))
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 16, weight: .light))
-                }
-                .frame(height: 56)
-                .frame(maxWidth: .infinity)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            accentColor,
-                            accentColor.opacity(0.9)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .foregroundColor(.white)
-                .cornerRadius(28)
-                .shadow(color: accentColor.opacity(0.15), radius: 12, y: 6)
-                .padding(.bottom, 48)
-            }
-        }
-        .padding(.horizontal, 24)
-        .onAppear {
-            startTimer()
-        }
-        .onDisappear {
-            stopTimer()
-        }
-    }
-    
-    private func startTimer() {
-        timer = Timer.publish(every: 2.5, on: .main, in: .common)
-        timerCancellable = timer.autoconnect().sink { _ in
-            withAnimation(.easeInOut(duration: 0.7)) {
-                currentJournal = (currentJournal + 1) % journals.count
-            }
-        }
-    }
-    
-    private func stopTimer() {
-        timerCancellable?.cancel()
-        timerCancellable = nil
-    }
-}
-
-#Preview("Journal Showcase") {
-    JournalShowcaseView(currentTab: .constant(0))
-        .background(Color(hex: "F5F5F5"))
-}
-
 struct WhyLoopView: View {
     @Binding var currentTab: Int
     @State private var selectedPurposes: Set<String> = []
+    @State private var appearAnimation: [Bool] = Array(repeating: false, count: 7)
     
     private let textColor = Color(hex: "2C3E50")
     private let accentColor = Color(hex: "A28497")
     
     private let purposes = [
-        "process my day",
-        "track my growth",
-        "understand my emotions",
-        "build self-awareness",
-        "find clarity",
-        "other"
+        (icon: "sun.max", text: "process my day"),
+        (icon: "leaf", text: "track my growth"),
+        (icon: "heart", text: "understand my emotions"),
+        (icon: "brain", text: "build self-awareness"),
+        (icon: "sparkles", text: "find clarity"),
+        (icon: "ellipsis", text: "other")
     ]
     
     var body: some View {
         ZStack {
+//            Color(hex: "F5F5F5").edgesIgnoringSafeArea(.all)
+//            
             VStack(spacing: 32) {
-                // Header
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Text("why do you want to loop?")
-                            .font(.system(size: 28, weight: .medium))
+                            .font(.system(size: 26, weight: .medium))
                             .foregroundColor(textColor)
+                            .opacity(appearAnimation[0] ? 1 : 0)
+                            .offset(y: appearAnimation[0] ? 0 : 20)
                         
                         Spacer()
                     }
                     
                     Text("select all that resonate")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: 16, weight: .medium))
                         .tracking(1.5)
-                        .foregroundColor(textColor.opacity(0.5))
+                        .foregroundColor(textColor.opacity(0.6))
+                        .opacity(appearAnimation[1] ? 1 : 0)
+                        .offset(y: appearAnimation[1] ? 0 : 20)
                 }
-                .padding(.top, 32)
-                
-                // Selection cards
-                VStack(spacing: 12) {
-                    ForEach(purposes, id: \.self) { purpose in
-                        PurposeCard(
-                            text: purpose,
-                            isSelected: selectedPurposes.contains(purpose),
-                            onTap: {
-                                withAnimation(.spring(response: 0.3)) {
-                                    if selectedPurposes.contains(purpose) {
-                                        selectedPurposes.remove(purpose)
-                                    } else {
-                                        selectedPurposes.insert(purpose)
+                .padding(.top, 64)
+
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 16) {
+                        ForEach(Array(purposes.enumerated()), id: \.element.text) { index, purpose in
+                            EnhancedPurposeCard(
+                                icon: purpose.icon,
+                                text: purpose.text,
+                                isSelected: selectedPurposes.contains(purpose.text),
+                                onTap: {
+                                    withAnimation(.spring(response: 0.3)) {
+                                        if selectedPurposes.contains(purpose.text) {
+                                            selectedPurposes.remove(purpose.text)
+                                        } else {
+                                            selectedPurposes.insert(purpose.text)
+                                        }
                                     }
                                 }
-                            }
-                        )
+                            )
+                            .opacity(appearAnimation[min(index + 2, appearAnimation.count - 1)] ? 1 : 0)
+                            .offset(y: appearAnimation[min(index + 2, appearAnimation.count - 1)] ? 0 : 20)
+                        }
                     }
+                    .padding(.vertical, 8)
                 }
                 
                 Spacer()
                 
-                // Continue Button
                 Button(action: {
-                    withAnimation {
+                    withAnimation(.spring(response: 0.6)) {
                         currentTab += 1
                     }
                 }) {
                     HStack(spacing: 12) {
                         Text("continue")
-                            .font(.system(size: 18, weight: .regular))
+                            .font(.system(size: 18, weight: .medium))
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 16, weight: .light))
+                            .font(.system(size: 16, weight: .medium))
                     }
-                    .frame(height: 56)
+                    .frame(height: 60)
                     .frame(maxWidth: .infinity)
                     .background(
                         LinearGradient(
                             gradient: Gradient(colors: [
                                 accentColor,
-                                accentColor.opacity(0.9)
+                                accentColor.opacity(0.85)
                             ]),
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
                     .foregroundColor(.white)
-                    .cornerRadius(28)
-                    .shadow(color: accentColor.opacity(0.15), radius: 12, y: 6)
+                    .cornerRadius(30)
+                    .shadow(color: accentColor.opacity(0.25), radius: 15, y: 8)
                 }
                 .opacity(selectedPurposes.isEmpty ? 0.6 : 1)
                 .disabled(selectedPurposes.isEmpty)
+                .opacity(appearAnimation[6] ? 1 : 0)
+                .offset(y: appearAnimation[6] ? 0 : 20)
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 48)
         }
+        .onAppear {
+            animateEntrance()
+        }
+    }
+    
+    private func animateEntrance() {
+        for index in 0..<appearAnimation.count {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.1) {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                    appearAnimation[index] = true
+                }
+            }
+        }
     }
 }
 
-struct PurposeCard: View {
+struct EnhancedPurposeCard: View {
+    let icon: String
     let text: String
     let isSelected: Bool
     let onTap: () -> Void
@@ -528,75 +319,231 @@ struct PurposeCard: View {
     
     var body: some View {
         Button(action: onTap) {
-            HStack {
+            HStack(spacing: 16) {
+//                Image(systemName: icon)
+//                    .font(.system(size: 20, weight: .medium))
+//                    .foregroundColor(isSelected ? .white : accentColor)
+//                    .frame(width: 32)
+//
                 Text(text)
-                    .font(.system(size: 16))
+                    .font(.system(size: 17, weight: .medium))
                     .foregroundColor(isSelected ? .white : textColor)
                 
                 Spacer()
                 
                 if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 14, weight: .medium))
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 20, weight: .medium))
                         .foregroundColor(.white)
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(.vertical, 20)
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: 16)
                     .fill(isSelected ? accentColor : Color.white)
+                    .shadow(color: Color.black.opacity(isSelected ? 0.1 : 0.05),
+                           radius: isSelected ? 12 : 8,
+                           y: isSelected ? 6 : 4)
             )
         }
         .buttonStyle(ScaleButtonStyle())
     }
 }
 
-#Preview {
-    WhyLoopView(currentTab: .constant(0))
+struct PrivacyStorageView: View {
+    @Binding var currentTab: Int
+    let onIntroCompletion: () -> Void
+    
+    @State private var appearAnimation: [Bool] = Array(repeating: false, count: 4)
+    @State private var waveOffset: CGFloat = 0
+    
+    private let textColor = Color(hex: "2C3E50")
+    private let accentColor = Color(hex: "A28497")
+    
+    var body: some View {
+        ZStack {
+//            Color(hex: "F5F5F5").edgesIgnoringSafeArea(.all)
+//            
+            VStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("your journal is for you")
+                            .font(.system(size: 32, weight: .medium))
+                            .foregroundColor(textColor)
+                        
+                        Spacer()
+                    }
+                    
+                    Text("we take privacy seriously")
+                        .font(.system(size: 16, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(textColor.opacity(0.6))
+                }
+                .padding(.top, 64)
+                
+                VStack(spacing: 32) {
+                    ZStack {
+                        ForEach(0..<3) { index in
+                            AltWavePattern()
+                                .fill(accentColor.opacity(0.2 + Double(index) * 0.2))
+                                .frame(height: 90)
+                                .offset(x: -10 + CGFloat(index * 50))
+                        }
+                    }
+                    .frame(height: 90)
+                    .mask(Rectangle().frame(height: 90))
+                    .opacity(appearAnimation[1] ? 1 : 0)
+                    .padding(.top, -32)
+                    
+                    VStack(spacing: 24) {
+                        Text("Your journal stays on your device by default. We strongly believe in privacy, which is why your reflections are stored locally or backed up to your own iCloud if you choose. Only you can access your data.")
+                            .font(.system(size: 17, weight: .medium))
+                            .tracking(1.5)
+                            .foregroundColor(textColor.opacity(0.5))
+                            .multilineTextAlignment(.leading)
+
+                        HStack(spacing: 8) {
+                            Text("We will never deal with third parties.")
+                            
+                            Spacer()
+                        }
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(textColor)
+                    }
+                    .padding(.top, 12)
+                }
+                
+                Spacer()
+                
+                Button(action: {
+                    withAnimation(.spring(response: 0.6)) {
+                        onIntroCompletion()
+                    }
+                }) {
+                    HStack(spacing: 12) {
+                        Text("start looping")
+                            .font(.system(size: 18, weight: .medium))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 16, weight: .medium))
+                    }
+                    .frame(height: 60)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                accentColor,
+                                accentColor.opacity(0.85)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .foregroundColor(.white)
+                    .cornerRadius(30)
+                    .shadow(color: accentColor.opacity(0.25), radius: 15, y: 8)
+                }
+                .opacity(appearAnimation[3] ? 1 : 0)
+                .offset(y: appearAnimation[3] ? 0 : 20)
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 48)
+        }
+        .onAppear {
+            animateEntrance()
+            animateWave()
+        }
+    }
+    
+    private func animateEntrance() {
+        for index in 0..<appearAnimation.count {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.2) {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                    appearAnimation[index] = true
+                }
+            }
+        }
+    }
+    
+    private func animateWave() {
+        withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) {
+            waveOffset = -200
+        }
+    }
 }
 
+struct AltWavePattern: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let width = rect.width
+        let height = rect.height
 
-struct StorageFeatureCard: View {
+        path.move(to: CGPoint(x: 0, y: height))
+        
+        let waveSegmentWidth: CGFloat = width / 4
+        let amplitude: CGFloat = height * 0.3
+        
+        let c1 = CGPoint(x: waveSegmentWidth * 0.25, y: height - amplitude)
+        let c2 = CGPoint(x: waveSegmentWidth * 0.75, y: height - amplitude)
+        
+        let p1 = CGPoint(x: waveSegmentWidth, y: height)
+
+        let c3 = CGPoint(x: waveSegmentWidth * 1.25, y: height + amplitude)
+        let c4 = CGPoint(x: waveSegmentWidth * 1.75, y: height + amplitude)
+
+        let p2 = CGPoint(x: waveSegmentWidth * 2, y: height)
+
+        path.addCurve(to: p1, control1: c1, control2: c2)
+        path.addCurve(to: p2, control1: c3, control2: c4)
+
+        path.addCurve(to: CGPoint(x: waveSegmentWidth * 3, y: height),
+                     control1: CGPoint(x: waveSegmentWidth * 2.25, y: height - amplitude),
+                     control2: CGPoint(x: waveSegmentWidth * 2.75, y: height - amplitude))
+        path.addCurve(to: CGPoint(x: waveSegmentWidth * 4, y: height),
+                     control1: CGPoint(x: waveSegmentWidth * 3.25, y: height + amplitude),
+                     control2: CGPoint(x: waveSegmentWidth * 3.75, y: height + amplitude))
+
+        path.addLine(to: CGPoint(x: width, y: height))
+        path.addLine(to: CGPoint(x: 0, y: height))
+        path.closeSubpath()
+        
+        return path
+    }
+}
+
+struct PrivacyFeatureCard: View {
     let icon: String
     let title: String
     let description: String
     
     private let textColor = Color(hex: "2C3E50")
+    private let accentColor = Color(hex: "A28497")
     
     var body: some View {
         HStack(spacing: 16) {
-            // Icon
             ZStack {
                 Circle()
-                    .fill(Color.white)
-                    .frame(width: 44, height: 44)
-                    .shadow(color: Color.black.opacity(0.05), radius: 8, y: 4)
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                accentColor,
+                                accentColor.opacity(0.85)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 48, height: 48)
+                    .shadow(color: accentColor.opacity(0.15), radius: 8, y: 4)
                 
                 Image(systemName: icon)
                     .font(.system(size: 20))
-                    .foregroundColor(textColor)
+                    .foregroundColor(.white)
             }
             
-            // Text content
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(textColor)
-                
-                Text(description)
-                    .font(.system(size: 14))
-                    .foregroundColor(textColor.opacity(0.6))
-            }
-            
-            Spacer()
         }
-        .padding(20)
-        .background(Color.white)
-        .cornerRadius(16)
     }
 }
-
 struct GeometricShapes: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()

@@ -21,6 +21,35 @@ class NotificationManager: ObservableObject {
     private let promptNotificationIdentifier = "LoopPromptReminder"
     private let defaults = UserDefaults.standard
     
+    private let firstLaunchKey = "IsFirstLaunch"
+    private let lastMorningTypeKey = "LastMorningMessageType"
+
+    enum MorningMessageType: Int, CaseIterable {
+        case dream = 0
+        case prompts = 1
+        case success = 2
+        
+        var notification: (title: String, body: String) {
+            switch self {
+            case .dream:
+                return (
+                    "🌙 Remember Any Dreams?",
+                    "Capture your dreams before they fade away. They might reveal something interesting!"
+                )
+            case .prompts:
+                return (
+                    "✨ Fresh Questions Await",
+                    "Start your day with some new perspectives. Today's prompts are ready for you."
+                )
+            case .success:
+                return (
+                    "🌟 Start With Success",
+                    "Reflect on wins - big or small. Take a moment to celebrate one?"
+                )
+            }
+        }
+    }
+    
     private init() {
         isNotificationsEnabled = defaults.bool(forKey: reminderEnabledKey)
         updateNotificationPermissionStatus()
@@ -99,8 +128,7 @@ class NotificationManager: ObservableObject {
     
     func scheduleDailyReminder(at time: Date) {
             let center = UNUserNotificationCenter.current()
-            
-            // Schedule the user's custom reminder
+
             let content = UNMutableNotificationContent()
             content.title = "Time to Loop"
             content.body = "Don't forget to reflect and capture your thoughts!"
@@ -128,32 +156,60 @@ class NotificationManager: ObservableObject {
                 }
             }
             
-            let promptContent = UNMutableNotificationContent()
-            promptContent.title = "✨ New Prompts Available!"
-            promptContent.body = "Fresh questions are ready for today's reflection 📝"
-            promptContent.sound = UNNotificationSound.default
+        let now = Date()
+            var morningComponents = DateComponents()
+            morningComponents.hour = 8
+            morningComponents.minute = 0
             
-            var promptComponents = DateComponents()
-            promptComponents.hour = 8
-            promptComponents.minute = 0
+            // Determine if we should show dream notification tomorrow
+            let isFirstLaunch = !defaults.bool(forKey: firstLaunchKey)
+            let currentHour = calendar.component(.hour, from: now)
+            let shouldShowDreamTomorrow = isFirstLaunch && currentHour >= 8
             
-            let promptTrigger = UNCalendarNotificationTrigger(
-                dateMatching: promptComponents,
+            // Schedule 7 days of notifications
+        for day in 0..<7 {
+            let morningContent = UNMutableNotificationContent()
+            
+            // First day (or next day if after 8am) is dream
+            if day == 0 || (day == 1 && shouldShowDreamTomorrow) {
+                let dreamNotification = MorningMessageType.dream.notification
+                morningContent.title = dreamNotification.title
+                morningContent.body = dreamNotification.body
+            } else {
+                // Alternate between prompts and success for remaining days
+                let messageType = day % 2 == 0 ? MorningMessageType.prompts : MorningMessageType.success
+                let notification = messageType.notification
+                morningContent.title = notification.title
+                morningContent.body = notification.body
+            }
+            
+            morningContent.sound = UNNotificationSound.default
+            
+            var components = morningComponents
+            components.weekday = ((calendar.component(.weekday, from: now) + day - 1) % 7) + 1
+            
+            let trigger = UNCalendarNotificationTrigger(
+                dateMatching: components,
                 repeats: true
             )
             
-            let promptRequest = UNNotificationRequest(
-                identifier: promptNotificationIdentifier,
-                content: promptContent,
-                trigger: promptTrigger
+            let request = UNNotificationRequest(
+                identifier: "\(promptNotificationIdentifier)_\(day)",
+                content: morningContent,
+                trigger: trigger
             )
             
-            center.add(promptRequest) { error in
+            center.add(request) { error in
                 if let error = error {
-                    print("Error scheduling prompt reminder: \(error.localizedDescription)")
+                    print("Error scheduling morning reminder \(day): \(error.localizedDescription)")
                 }
             }
         }
+        
+        if isFirstLaunch {
+            defaults.set(true, forKey: firstLaunchKey)
+        }
+    }
     
     func rescheduleRemindersIfNeeded() {
         if isNotificationsEnabled,

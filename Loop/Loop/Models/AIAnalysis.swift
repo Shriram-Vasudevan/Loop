@@ -15,11 +15,18 @@ struct DailyAIAnalysisResult: Codable {
     let sleepData: SleepData?
     let standoutAnalysis: StandoutAnalysis?
     let additionalKeyMoments: AdditionalKeyMoments?
-    let recurringThemes: RecurringThemes?
-    let summaryAnalysis: SummaryAnalysis?
-    let freeformAnalysis: FreeformAnalysis?
-    let fillerAnalysis: FillerAnalysis
-    let followUpSuggestion: FollowUpSuggestion
+    let topicSentiments: [TopicSentiment]?
+    let dailySummary: DailySummary?
+}
+
+struct DailySummary: Codable {
+    let exists: Bool
+    let summary: String?
+}
+
+struct TopicSentiment: Codable {
+    let topic: TopicCategory
+    let sentiment: Double
 }
 
 struct FollowUpSuggestion: Codable {
@@ -41,7 +48,7 @@ struct StandoutAnalysis: Codable {
     let exists: Bool
     let primaryTopic: TopicCategory?
     let category: MomentCategory?
-    let sentiment: SentimentCategory?
+    let sentiment: Double? 
     let keyMoment: String?
 }
 
@@ -83,7 +90,7 @@ struct FillerAnalysis: Codable {
     let totalCount: Int
 }
 
-enum TopicCategory: String, Codable {
+enum TopicCategory: String, Codable, CaseIterable {
     case work
     case relationships
     case health
@@ -91,7 +98,8 @@ enum TopicCategory: String, Codable {
     case creativity
     case purpose
     case relaxation
-    case leisure
+    case finances
+    case growth
 }
 
 

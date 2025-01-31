@@ -44,9 +44,6 @@ struct TrendsView: View {
             }
         }
         .background(backgroundColor)
-        .task(id: selectedTimeframe) {
-            await trendsManager.fetchAllCorrelations(for: selectedTimeframe)
-        }
     }
     
     private var headerSection: some View {
@@ -346,11 +343,15 @@ struct MoodShapeCard: View {
             }
         )
         .cornerRadius(10)
-        .task(id: timeframe) {
-            let metrics = await trendsManager.getDailyMetrics(for: timeframe)
-            moodData = metrics.map { MoodDataPoint(date: $0.date, rating: $0.mood) }
-            calculateMoodDistribution(from: moodData)
+        .onAppear {
+            Task {
+                let metrics = await trendsManager.getDailyMetrics(for: timeframe)
+                print("MoodShapeCard received \(metrics.count) mood data points")
+                moodData = metrics.map { MoodDataPoint(date: $0.date, rating: $0.mood) }
+                calculateMoodDistribution(from: moodData)
+            }
         }
+
     }
     
     private func calculateMoodDistribution(from data: [MoodDataPoint]) {

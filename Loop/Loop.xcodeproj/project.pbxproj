@@ -80,6 +80,7 @@
 		996F820E2D39FECD00116F86 /* ReflectionCardManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 996F820D2D39FECD00116F86 /* ReflectionCardManager.swift */; };
 		996F82102D39FF6300116F86 /* TodaysReflectionPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 996F820F2D39FF6300116F86 /* TodaysReflectionPlanView.swift */; };
 		996F82122D3B0B5900116F86 /* ReflectionSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 996F82112D3B0B5900116F86 /* ReflectionSessionManager.swift */; };
+		9980B0B52D4B1E2C00A493E1 /* FullMoodAnalysisBreakdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9980B0B42D4B1E2C00A493E1 /* FullMoodAnalysisBreakdown.swift */; };
 		9986634D2D45CF5100D7406D /* TabManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9986634C2D45CF5100D7406D /* TabManager.swift */; };
 		9986634F2D475DF900D7406D /* DreamJournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9986634E2D475DF900D7406D /* DreamJournalView.swift */; };
 		9988DB852CD9BFAC005628DE /* FriendsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988DB842CD9BFAC005628DE /* FriendsView.swift */; };
@@ -194,6 +195,7 @@
 		9915BAB42CE6AF8D00D3C44B /* DailyCheckinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckinView.swift; sourceTree = "<group>"; };
 		9915BAB62CE6AF9E00D3C44B /* DailyCheckinManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckinManager.swift; sourceTree = "<group>"; };
 		9915BAB82CEC332500D3C44B /* AnalysisManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisManager.swift; sourceTree = "<group>"; };
+		992EB36B2D4C9F9B0061544E /* LoopDataNewer.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = LoopDataNewer.xcdatamodel; sourceTree = "<group>"; };
 		9935CED12D23969600AF0C16 /* SpeakingHighlight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakingHighlight.swift; sourceTree = "<group>"; };
 		9935CED32D23982200AF0C16 /* SpeakingPatternCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakingPatternCard.swift; sourceTree = "<group>"; };
 		9935CED52D239F3400AF0C16 /* AbstractCardBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AbstractCardBackground.swift; sourceTree = "<group>"; };
@@ -250,6 +252,7 @@
 		996F820D2D39FECD00116F86 /* ReflectionCardManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectionCardManager.swift; sourceTree = "<group>"; };
 		996F820F2D39FF6300116F86 /* TodaysReflectionPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodaysReflectionPlanView.swift; sourceTree = "<group>"; };
 		996F82112D3B0B5900116F86 /* ReflectionSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectionSessionManager.swift; sourceTree = "<group>"; };
+		9980B0B42D4B1E2C00A493E1 /* FullMoodAnalysisBreakdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullMoodAnalysisBreakdown.swift; sourceTree = "<group>"; };
 		9986634C2D45CF5100D7406D /* TabManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabManager.swift; sourceTree = "<group>"; };
 		9986634E2D475DF900D7406D /* DreamJournalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DreamJournalView.swift; sourceTree = "<group>"; };
 		9988DB842CD9BFAC005628DE /* FriendsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendsView.swift; sourceTree = "<group>"; };
@@ -419,6 +422,7 @@
 				9935CEEF2D2C75DA00AF0C16 /* FullDayActivityView.swift */,
 				999DAC772D1FA82000A6626B /* TodaysInsightsView.swift */,
 				999DAC852D20994400A6626B /* TrendsView.swift */,
+				9980B0B42D4B1E2C00A493E1 /* FullMoodAnalysisBreakdown.swift */,
 				99F00AF62D432417008F1228 /* TopicMoodGraph.swift */,
 				999DAC872D209AA100A6626B /* TrendGraph.swift */,
 				99AC6DDB2CE0226500B0D0D6 /* SettingsView.swift */,
@@ -813,6 +817,7 @@
 				9935CF282D34342000AF0C16 /* EntryCardTabView.swift in Sources */,
 				99F00AB52D3D9C90008F1228 /* WavePattern.swift in Sources */,
 				99F00ABB2D3DC159008F1228 /* TrendsManager.swift in Sources */,
+				9980B0B52D4B1E2C00A493E1 /* FullMoodAnalysisBreakdown.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1058,6 +1063,7 @@
 		9953BE0A2CFCC0FC00348AC3 /* LoopData.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				992EB36B2D4C9F9B0061544E /* LoopDataNewer.xcdatamodel */,
 				99FB9AC12D48326E00ED095D /* LoopCoreData.xcdatamodel */,
 				99A14AF92D446FD400DD6B78 /* LoopDataNewest.xcdatamodel */,
 				99F00AF52D3F61FD008F1228 /* LoopDataNew.xcdatamodel */,

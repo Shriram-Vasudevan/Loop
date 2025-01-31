@@ -19,47 +19,47 @@ struct MoodAnalysisView: View {
 
     private func checkDataSufficiency() async {
         let metrics = await trendsManager.getDailyMetrics(for: timeframe)
-        hasEnoughData = trendsManager.hasEnoughDataPoints(metrics, category: selectedCategory)
+//        hasEnoughData = trendsManager.hasEnoughDataPoints(metrics, category: selectedCategory)
     }
     
-    // Get current category data
-    private var categoryData: [CategoryEffect] {
-        let correlations = trendsManager.getCorrelations(for: timeframe)
-        switch selectedCategory {
-        case .topics:
-            return correlations.topics?.map { correlation in
-                CategoryEffect(
-                    name: correlation.name,
-                    effect: correlation.effect,
-                    color: correlation.color
-                )
-            } ?? getMockData()
-        case .sleep:
-            return correlations.sleep?.map { correlation in
-                CategoryEffect(
-                    name: correlation.name,
-                    effect: correlation.effect,
-                    color: correlation.color
-                )
-            } ?? getMockData()
-        case .timeOfDay:
-            return correlations.timeOfDay?.map { correlation in
-                CategoryEffect(
-                    name: correlation.name,
-                    effect: correlation.effect,
-                    color: correlation.color
-                )
-            } ?? getMockData()
-        case .wordCount:
-            return correlations.wordCount?.map { correlation in
-                CategoryEffect(
-                    name: correlation.name,
-                    effect: correlation.effect,
-                    color: correlation.color
-                )
-            } ?? getMockData()
-        }
-    }
+//    // Get current category data
+//    private var categoryData: [CategoryEffect] {
+//        let correlations = trendsManager.getCorrelations(for: timeframe)
+//        switch selectedCategory {
+//        case .topics:
+//            return correlations.topics?.map { correlation in
+//                CategoryEffect(
+//                    name: correlation.name,
+//                    effect: correlation.effect,
+//                    color: correlation.color
+//                )
+//            } ?? getMockData()
+//        case .sleep:
+//            return correlations.sleep?.map { correlation in
+//                CategoryEffect(
+//                    name: correlation.name,
+//                    effect: correlation.effect,
+//                    color: correlation.color
+//                )
+//            } ?? getMockData()
+//        case .timeOfDay:
+//            return correlations.timeOfDay?.map { correlation in
+//                CategoryEffect(
+//                    name: correlation.name,
+//                    effect: correlation.effect,
+//                    color: correlation.color
+//                )
+//            } ?? getMockData()
+//        case .dayOfWeek:
+//            return correlations.dayOfWeek?.map { correlation in
+//                CategoryEffect(
+//                    name: correlation.name,
+//                    effect: correlation.effect,
+//                    color: correlation.color
+//                )
+//            } ?? getMockData()
+//        }
+//    }
     
     private func getMockData() -> [CategoryEffect] {
         switch selectedCategory {
@@ -81,11 +81,11 @@ struct MoodAnalysisView: View {
                     CategoryEffect(name: "Afternoon", effect: 0.5, color: Color(hex: "A28497")),
                     CategoryEffect(name: "Evening", effect: -0.8, color: Color(hex: "93A7BB"))
                 ]
-            case .wordCount:
+            case .dayOfWeek:
                 return [
-                    CategoryEffect(name: "Short", effect: -0.5, color: Color(hex: "B5D5E2")),
-                    CategoryEffect(name: "Medium", effect: 1.0, color: Color(hex: "A28497")),
-                    CategoryEffect(name: "Long", effect: 1.5, color: Color(hex: "93A7BB"))
+                    CategoryEffect(name: "Monday", effect: -0.5, color: Color(hex: "B5D5E2")),
+                    CategoryEffect(name: "Wednesday", effect: 1.0, color: Color(hex: "A28497")),
+                    CategoryEffect(name: "Friday", effect: 1.5, color: Color(hex: "93A7BB"))
                 ]
             }
     }
@@ -114,7 +114,7 @@ struct MoodAnalysisView: View {
                     HStack(spacing: 16) {
                         YAxisLabels(bounds: yAxisBounds)
                         
-                        CurvesView(categories: hasEnoughData ? categoryData : getMockData(), bounds: yAxisBounds)
+                        CurvesView(categories: getMockData(), bounds: yAxisBounds)
                             .opacity(hasEnoughData ? 1 : 0.3)
                     }
                     .frame(height: 200)
@@ -127,40 +127,41 @@ struct MoodAnalysisView: View {
 
                 if hasEnoughData {
                     HStack(spacing: 24) {
-                        ForEach(categoryData, id: \.name) { category in
-                            LegendItem(name: category.name,
-                                     color: category.color,
-                                     effect: category.effect)
-                        }
+//                        ForEach(categoryData, id: \.name) { category in
+//                            LegendItem(name: category.name,
+//                                     color: category.color,
+//                                     effect: category.effect)
+//                        }
                     }
                 }
             }
         }
-        .onChange(of: timeframe) { _ in
-            Task {
-                await trendsManager.fetchAllCorrelations(for: timeframe)
-                await checkDataSufficiency()  // Add this
-            }
-        }
-        .onChange(of: selectedCategory) { _ in
-            Task {
-                await trendsManager.fetchAllCorrelations(for: timeframe)
-                await checkDataSufficiency()  // Add this
-            }
-        }
-        .onAppear {
-            Task {
-                await trendsManager.fetchAllCorrelations(for: timeframe)
-                await checkDataSufficiency()  // Add this
-            }
-        }
+//        .onChange(of: timeframe) { _ in
+//            Task {
+//                await trendsManager.fetchAllCorrelations(for: timeframe)
+//                await checkDataSufficiency()  // Add this
+//            }
+//        }
+//        .onChange(of: selectedCategory) { _ in
+//            Task {
+//                await trendsManager.fetchAllCorrelations(for: timeframe)
+//                await checkDataSufficiency()  // Add this
+//            }
+//        }
+//        .onAppear {
+//            Task {
+//                await trendsManager.fetchAllCorrelations(for: timeframe)
+//                await checkDataSufficiency()  // Add this
+//            }
+//        }
     }
     
     private var yAxisBounds: (min: Double, max: Double) {
-        let effects = categoryData.map { $0.effect }
+        let effects = getMockData().map { $0.effect }
         let minEffect = (effects.min() ?? -3).rounded(.down)
         let maxEffect = (effects.max() ?? 3).rounded(.up)
         return (minEffect, maxEffect)
+        return (0.0, 0.0)
     }
 }
 
@@ -307,8 +308,8 @@ struct LegendItem: View {
 enum AnalysisCategory: String, CaseIterable {
     case topics = "Entry Topics"
     case sleep = "Sleep Schedule"
-    case wordCount = "Journal Length"
     case timeOfDay = "Time of Day"
+    case dayOfWeek = "Day of Week"
 }
 
 // Preview

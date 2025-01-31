@@ -26,6 +26,10 @@
         <attribute name="weekOfYear" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="year" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
     </entity>
+    <entity name="DailySummaryEntity" representedClassName="DailySummaryEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="exists" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="summary" optional="YES" attributeType="String"/>
+    </entity>
     <entity name="DayMetricsEntity" representedClassName="DayMetricsEntity" syncable="YES" codeGenerationType="class">
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="entryCount" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
@@ -45,7 +49,7 @@
         <attribute name="content" optional="YES" attributeType="String"/>
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="momentType" optional="YES" attributeType="String"/>
-        <attribute name="sentiment" optional="YES" attributeType="String"/>
+        <attribute name="sentiment" optional="YES" attributeType="Double" usesScalarValueType="YES"/>
         <attribute name="topic" optional="YES" attributeType="String"/>
     </entity>
     <entity name="LoopEntity" representedClassName="LoopEntity" syncable="YES" codeGenerationType="class">
@@ -70,6 +74,11 @@
     </entity>
     <entity name="StandoutTopicEntity" representedClassName="StandoutTopicEntity" syncable="YES" codeGenerationType="class">
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="topic" optional="YES" attributeType="String"/>
+    </entity>
+    <entity name="TopicEntity" representedClassName="TopicEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="sentiment" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="topic" optional="YES" attributeType="String"/>
     </entity>
 </model>

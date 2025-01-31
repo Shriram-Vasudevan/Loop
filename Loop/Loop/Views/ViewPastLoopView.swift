@@ -482,7 +482,6 @@ struct TranscriptView: View {
                     
                     Button(action: {
                         if isEditing {
-                            // Save changes
                             Task {
                                 try? await LoopManager.shared.editTranscript(forLoopId: id, newTranscript: editedTranscript)
                             }
@@ -498,19 +497,17 @@ struct TranscriptView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 20)
-                
-                // Content
+
                 ScrollView {
                     VStack(alignment: .leading, spacing: 32) {
-                        // Prompt
+
                         Text(prompt)
                             .font(.system(size: 31, weight: .bold))
                             .foregroundColor(textColor)
                             .multilineTextAlignment(.leading)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.top, 15)
-                        
-                        // Transcript Section
+
                         ZStack(alignment: .topTrailing) {
                             if isEditing {
                                 editingView

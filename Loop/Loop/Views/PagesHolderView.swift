@@ -116,20 +116,14 @@ struct PagesHolderView: View {
                 }
                 
                 if isMenuOpened {
-                    EntryTypeCarousel(newEntrySelected: $showNewEntrySheet, successSelected: $showSuccessSheet, moodCheckIn: $showMoodCheckInSheet, sleepCheckIn: $showSleepInSheet, dreamJournal: $showDreamJournalSheet, isOpen: $isMenuOpened)
-                    
-//                    FloatingEntryMenu(newEntrySelected: $showNewEntrySheet, successSelected: $showSuccessSheet, moodCheckIn: $showMoodCheckInSheet)
-                }
-                
-                
-                if isMenuOpened {
-                    Color.black.opacity(0.5)
-                        .edgesIgnoringSafeArea(.all)
-                        .onTapGesture {
-                            withAnimation {
-                                isMenuOpened = false
-                            }
-                        }
+                    CurvedReflectionSheet(
+                        isOpen: $isMenuOpened,
+                        newEntrySelected: $showNewEntrySheet,
+                        successSelected: $showSuccessSheet,
+                        moodCheckIn: $showMoodCheckInSheet,
+                        sleepCheckIn: $showSleepInSheet,
+                        dreamJournal: $showDreamJournalSheet
+                    )
                 }
             }
             .edgesIgnoringSafeArea(.bottom)

@@ -24,10 +24,11 @@ class AIAnalyzer {
             .joined(separator: "\n\n")
         
         let prompt = """
-            Analyze these daily reflection responses while maintaining privacy. Look for responses to specific questions:
+            Analyze these daily reflection responses while maintaining privacy. Focus on identifying topics discussed and core patterns.
 
             \(formattedResponses)
-        
+
+            ### MOOD & SLEEP DATA:
             mood_data:
             [FROM "How are you feeling today?"]
             exists: YES/NO
@@ -38,51 +39,41 @@ class AIAnalyzer {
             exists: YES/NO
             hours: (number)
 
-           standout_analysis:
-               [FROM "What moment from today stands out most to you?"]
-               category: (work/relationships/health/learning/creativity/purpose/relaxation/leisure)
-               sentiment: (positive/neutral/negative)
-               key_moment: [Direct quote edited for impact: use ellipses (...) to skip sentences/parts that break flow, light paraphrasing allowed to improve clarity, preserve personal voice and emotional weight, maintain key realizations, edit grammar while keeping authenticity.
-               Example:
-               Original: "I realized today that I'm actually really good at leading and even though sometimes I doubt myself and get nervous about presentations which happens a lot especially with new clients, I can actually handle it really well and people seem to respond positively to my style."
-               Edited: "I realized today that I'm actually really good at leading... I can handle it really well and people respond positively to my style."]
-
-           additional_key_moments:
-               [FROM ALL OTHER RESPONSES, EXCLUDING CONTENT FROM STANDOUT]
-               exists: YES/NO
-               moments:
-                 - key_moment: [Direct quote edited for impact: use ellipses (...) to skip sentences/parts that break flow, light paraphrasing allowed to improve clarity, preserve personal voice and emotional weight, maintain key realizations, edit grammar while keeping authenticity.
-                   Example:
-                   Original: "I realized today that I'm actually really good at this stuff and even though sometimes I doubt myself and get nervous about presentations which happens a lot especially with new clients, I can actually handle it really well and people seem to respond positively to my style."
-                   Edited: "I realized today that I'm actually really good at this... I can handle it really well and people respond positively to my style."]
-                   category: (realization/learning/success/challenge/connection/decision/plan)
-                   source_type: (summary/freeform)
-        
-            recurring_themes:
-            [ANALYZE ALL RESPONSES]
-            exists: YES/NO
-            themes: (comma-separated list)
-
-            summary_analysis:
-            [FROM "Give a short summary"]
-            exists: YES/NO
-            primary_topic: (work/relationships/health/growth/creativity/purpose)
+            ### STANDOUT MOMENT ANALYSIS:
+            standout_analysis:
+            [FROM "What moment from today stands out most to you?"]
+            category: (work/relationships/health/learning/creativity/purpose/relaxation/finances/growth)
             sentiment: (positive/neutral/negative)
+            key_moment: [Direct quote edited for impact and grammar: use ellipses (...) to skip unnecessary parts, while keeping authenticity.]
 
-            freeform_analysis:
-            [FROM "Share anything on your mind"]
+            ### ADDITIONAL KEY MOMENTS:
+            additional_key_moments:
+            [FROM ALL OTHER RESPONSES, EXCLUDING STANDOUT MOMENT]
             exists: YES/NO
-            primary_topic: (work/relationships/health/growth/creativity/purpose)
-            sentiment: (positive/neutral/negative)
+            moments:
+              - key_moment: [Direct quote edited for clarity while preserving personal voice.]
+                category: (realization/learning/success/challenge/connection/decision/plan)
+                source_type: (summary/freeform)
 
-            filler_analysis:
-            total_count: (number)
+            ### TOPIC SENTIMENT ANALYSIS:
+            topic_sentiments:
+            [EXTRACT FROM ALL RESPONSES, ONLY TOPICS NATURALLY MENTIONED, NOT WHEN DIRECTLY ASKED ABOUT]
+            exists: YES/NO
+            topics:
+              - topic: (work/relationships/health/learning/creativity/purpose/relaxation/finances/growth)
+                sentiment: (number between -1.0 and 1.0)
+                // More negative numbers (-1.0 to -0.1) indicate more negative sentiment
+                // 0.0 indicates neutral sentiment
+                // More positive numbers (0.1 to 1.0) indicate more positive sentiment
+
+            ### DAILY SUMMARY:
+            daily_summary:
+            [SYNTHESIZE FROM ALL RESPONSES]
+            exists: YES/NO
+            summary: (2-3 sentence overview capturing key themes, mood, and notable events from the day's reflections)
+            """
         
-            follow_up_suggestion:
-            [ANALYZE ALL RESPONSES]
-            exists: YES/NO
-            suggestion: (A gentle, open-ended follow-up based on recurring themes or emotional undertones. Should be encouraging and exploratory without directly referencing specific responses. Maximum 2 sentences. Example: "What helps you stay calm during times of transition?")
-        """
+
             let requestBody: [String: Any] = [
                 "model": "gpt-4o-mini",
                 "messages": [
@@ -123,43 +114,12 @@ class AIAnalyzer {
         
         print("\n=== Parsing Individual Sections ===")
         
-        print("\n--- Parsing Mood Data ---")
         let moodData = try parseMoodData(from: sections)
-        print("Mood Data Result:", moodData ?? "nil")
-        
-        print("\n--- Parsing Sleep Data ---")
         let sleepData = try parseSleepData(from: sections)
-        print("Sleep Data Result:", sleepData ?? "nil")
-        
-        print("\n--- Parsing Standout Analysis ---")
         let standoutAnalysis = try parseStandoutAnalysis(from: sections)
-        print("Standout Analysis Result:", standoutAnalysis ?? "nil")
-        
-        print("\n--- Parsing Additional Key Moments ---")
         let additionalKeyMoments = try parseAdditionalKeyMoments(from: sections)
-        print("Additional Key Moments Result:", additionalKeyMoments ?? "nil")
-        
-        print("\n--- Parsing Recurring Themes ---")
-        let recurringThemes = try parseRecurringThemes(from: sections)
-        print("Recurring Themes Result:", recurringThemes ?? "nil")
-        
-        print("\n--- Parsing Summary Analysis ---")
-        let summaryAnalysis = try parseSummaryAnalysis(from: sections)
-        print("Summary Analysis Result:", summaryAnalysis ?? "nil")
-        
-        print("\n--- Parsing Freeform Analysis ---")
-        let freeformAnalysis = try parseFreeformAnalysis(from: sections)
-        print("Freeform Analysis Result:", freeformAnalysis ?? "nil")
-        
-        print("\n--- Parsing Filler Analysis ---")
-        let fillerAnalysis = try parseFillerAnalysis(from: sections)
-        print("Filler Analysis Result:", fillerAnalysis)
-        
-        print("\n--- Parsing Follow-up Suggestion ---")
-            let followUpSuggestion = try parseFollowUpSuggestion(from: sections)
-            print("Follow-up Suggestion Result:", followUpSuggestion)
-        
-        print("\n=== Parsing Complete ===")
+        let topicSentiments = try parseTopicSentiments(from: sections)
+        let dailySummary = try parseDailySummary(from: sections)
         
         let result = DailyAIAnalysisResult(
             date: Date(),
@@ -167,12 +127,11 @@ class AIAnalyzer {
             sleepData: sleepData,
             standoutAnalysis: standoutAnalysis,
             additionalKeyMoments: additionalKeyMoments,
-            recurringThemes: recurringThemes,
-            summaryAnalysis: summaryAnalysis,
-            freeformAnalysis: freeformAnalysis,
-            fillerAnalysis: fillerAnalysis, followUpSuggestion: followUpSuggestion
+            topicSentiments: topicSentiments,
+            dailySummary: dailySummary
         )
-        
+                
+                return result
         print("\nFinal Result:", result)
         return result
     }
@@ -199,41 +158,76 @@ class AIAnalyzer {
         return SleepData(exists: exists, hours: hours)
     }
     
-    private static func parseStandoutAnalysis(from sections: [String]) throws -> StandoutAnalysis? {
-        print("--- Debug: Standout Analysis ---")
-        
-        guard let section = sections.first(where: { $0.contains("standout_analysis:") }) else {
-            print("No standout section found")
+    private static func parseDailySummary(from sections: [String]) throws -> DailySummary? {
+        guard let section = sections.first(where: { $0.contains("daily_summary:") }) else {
             return nil
         }
         
-        print("Found section:", section)
+        let exists = section.contains("exists: YES")
+        let summary = try? extractString(from: section, field: "summary:")
         
+        return DailySummary(exists: exists, summary: summary)
+    }
+    
+    private static func parseTopicSentiments(from sections: [String]) throws -> [TopicSentiment]? {
+        guard let section = sections.first(where: { $0.contains("topic_sentiments:") }) else {
+            return nil
+        }
 
-        let topic = try? extractTopic(from: section, field: "category:")
-        print("Topic:", topic ?? "nil")
+        var extractedTopics: [TopicSentiment] = []
+        let lines = section.components(separatedBy: .newlines)
         
-        let sentiment = try? extractSentiment(from: section, field: "sentiment:")
-        print("Sentiment:", sentiment ?? "nil")
+        var currentTopic: TopicCategory?
+        var currentSentiment: Double?
+        
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("topic:") {
+                if let topic = currentTopic, let sentiment = currentSentiment {
+                    extractedTopics.append(TopicSentiment(topic: topic, sentiment: sentiment))
+                }
+                if let value = try? extractString(from: line, field: "topic:")?.lowercased(),
+                   let topic = TopicCategory(rawValue: value) {
+                    currentTopic = topic
+                    currentSentiment = nil
+                }
+            } else if trimmed.hasPrefix("sentiment:") {
+                if let value = try? extractString(from: line, field: "sentiment:"),
+                   let sentiment = Double(value) {
+                    currentSentiment = sentiment
+                }
+            }
+        }
+
+        if let topic = currentTopic, let sentiment = currentSentiment {
+            extractedTopics.append(TopicSentiment(topic: topic, sentiment: sentiment))
+        }
+
+        return extractedTopics.isEmpty ? nil : extractedTopics
+    }
+
+
+    
+    private static func parseStandoutAnalysis(from sections: [String]) throws -> StandoutAnalysis? {
+        guard let section = sections.first(where: { $0.contains("standout_analysis:") }) else {
+            return nil
+        }
+        
+        let topic = try? extractTopic(from: section, field: "category:")
+
+        let sentimentStr = try? extractString(from: section, field: "sentiment:")
+        let sentiment = sentimentStr.flatMap { Double($0) }
         
         let keyMoment = try? extractString(from: section, field: "key_moment:")
-        print("Key moment:", keyMoment ?? "nil")
-        
         let finalKeyMoment = keyMoment == "NONE" ? nil : keyMoment
-        print("Final key moment:", finalKeyMoment ?? "nil")
         
-        let result = StandoutAnalysis(
+        return StandoutAnalysis(
             exists: true,
             primaryTopic: topic,
             category: nil,
             sentiment: sentiment,
             keyMoment: finalKeyMoment
         )
-        
-        print("Final result:", result)
-        print("-------------------------")
-        
-        return result
     }
     
     private static func parseAdditionalKeyMoments(from sections: [String]) throws -> AdditionalKeyMoments? {
@@ -291,30 +285,6 @@ class AIAnalyzer {
         return RecurringThemes(exists: true, themes: themes.isEmpty ? nil : themes)
     }
     
-    private static func parseSummaryAnalysis(from sections: [String]) throws -> SummaryAnalysis? {
-        guard let section = sections.first(where: { $0.contains("summary_analysis:") }) else {
-            return nil
-        }
-        
-        let exists = section.contains("exists: YES")
-        let topic = try? extractTopic(from: section, field: "primary_topic:")
-        let sentiment = try? extractSentiment(from: section, field: "sentiment:")
-        
-        return SummaryAnalysis(exists: exists, primaryTopic: topic, sentiment: sentiment)
-    }
-    
-    private static func parseFreeformAnalysis(from sections: [String]) throws -> FreeformAnalysis? {
-        guard let section = sections.first(where: { $0.contains("freeform_analysis:") }) else {
-            return nil
-        }
-        
-        let exists = section.contains("exists: YES")
-        let topic = try? extractTopic(from: section, field: "primary_topic:")
-        let sentiment = try? extractSentiment(from: section, field: "sentiment:")
-        
-        return FreeformAnalysis(exists: exists, primaryTopic: topic, sentiment: sentiment)
-    }
-    
     private static func parseFillerAnalysis(from sections: [String]) throws -> FillerAnalysis {
         guard let section = sections.first(where: { $0.contains("filler_analysis:") }) else {
             return FillerAnalysis(totalCount: 0)
@@ -329,10 +299,9 @@ class AIAnalyzer {
             return FollowUpSuggestion(exists: false, suggestion: nil)
         }
         
-        let exists = section.contains("exists: YES")
         let suggestion = try? extractString(from: section, field: "suggestion:")
         
-        return FollowUpSuggestion(exists: exists, suggestion: suggestion)
+        return FollowUpSuggestion(exists: true, suggestion: suggestion)
     }
     
 
@@ -381,12 +350,7 @@ class AIAnalyzer {
         guard let value = try extractString(from: text, field: field)?.lowercased() else { return nil }
         return SourceType(rawValue: value)
     }
-    
-    private static func extractSentiment(from text: String, field: String) throws -> SentimentCategory? {
-        guard let value = try extractString(from: text, field: field)?.lowercased() else { return nil }
-        return SentimentCategory(rawValue: value)
-    }
-    
+
     private func getTodaysResponses() async -> [(question: String, answer: String)] {
         var responses: [(question: String, answer: String)] = []
 

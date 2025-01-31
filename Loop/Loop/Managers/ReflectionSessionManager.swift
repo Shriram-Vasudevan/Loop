@@ -46,6 +46,11 @@ class ReflectionSessionManager: ObservableObject {
         let transcript: String
         let date: Date
     }
+    
+    @Published var isSavingLoop: Bool = false
+    @Published var isSavingTranscript: Bool = false
+
+    
 
 //    NotificationCenter.default.addObserver(
 //       self,
@@ -187,8 +192,16 @@ class ReflectionSessionManager: ObservableObject {
     }
     
     func saveRecordingCache(prompt: String, transcript: String) {
+        isSavingTranscript = true  // Start tracking
+
         cacheResponse(prompt: prompt, transcript: transcript)
+
+        DispatchQueue.main.async {
+            print("[Cache] ✅ Transcript saved: \"\(transcript.prefix(50))...\"")
+            self.isSavingTranscript = false  // Mark transcript saving complete
+        }
     }
+
     
     func cacheResponse(prompt: String, transcript: String) {
         let response = CachedResponse(
