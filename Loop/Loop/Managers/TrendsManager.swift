@@ -74,10 +74,6 @@ class TrendsManager: ObservableObject {
     private var cachedMetrics: [Timeframe: [(date: Date, mood: Double, sleep: Double?, wordCount: Int, topic: String?)]] = [:]
     
     func getDailyMetrics(for timeframe: Timeframe) async -> [(date: Date, mood: Double, sleep: Double?, wordCount: Int, topic: String?)] {
-//        if let cached = cachedMetrics[timeframe] {
-//            return cached
-//        }
-//        
         return await withCheckedContinuation { continuation in
             let context = persistentContainer.newBackgroundContext()
             context.perform {

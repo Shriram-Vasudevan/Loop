@@ -405,6 +405,17 @@ struct CardWrapper: View {
     }
 }
 
+#Preview {
+    CurvedReflectionSheet(
+        isOpen: .constant(true),
+        newEntrySelected: .constant(false),
+        successSelected: .constant(false),
+        moodCheckIn: .constant(false),
+        sleepCheckIn: .constant(false),
+        dreamJournal: .constant(false)
+    )
+}
+
 
 enum ReflectionType: String, CaseIterable, Hashable {
     case newEntry = "New Entry"

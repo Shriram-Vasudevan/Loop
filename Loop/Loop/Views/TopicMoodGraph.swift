@@ -114,8 +114,8 @@ struct MoodAnalysisView: View {
                     HStack(spacing: 16) {
                         YAxisLabels(bounds: yAxisBounds)
                         
-                        CurvesView(categories: getMockData(), bounds: yAxisBounds)
-                            .opacity(hasEnoughData ? 1 : 0.3)
+//                        CurvesView(categories: hasEnoughData ? categoryData : getMockData(), bounds: yAxisBounds)
+//                            .opacity(hasEnoughData ? 1 : 0.3)
                     }
                     .frame(height: 200)
                     
@@ -157,10 +157,10 @@ struct MoodAnalysisView: View {
     }
     
     private var yAxisBounds: (min: Double, max: Double) {
-        let effects = getMockData().map { $0.effect }
-        let minEffect = (effects.min() ?? -3).rounded(.down)
-        let maxEffect = (effects.max() ?? 3).rounded(.up)
-        return (minEffect, maxEffect)
+//        let effects = categoryData.map { $0.effect }
+//        let minEffect = (effects.min() ?? -3).rounded(.down)
+//        let maxEffect = (effects.max() ?? 3).rounded(.up)
+//        return (minEffect, maxEffect)
         return (0.0, 0.0)
     }
 }
