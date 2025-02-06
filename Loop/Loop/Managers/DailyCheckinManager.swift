@@ -54,14 +54,12 @@ class DailyCheckinManager: ObservableObject {
        
        do {
            let results = try context.fetch(fetchRequest)
-           
-           // If no ratings found, return nil
+
            guard !results.isEmpty else {
                print("ℹ️ No ratings found for today")
                return nil
            }
-           
-           // Calculate the average
+
            let totalRating = results.reduce(0.0) { sum, checkin in
                sum + (checkin.value(forKey: "rating") as? Double ?? 0.0)
            }

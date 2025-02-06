@@ -60,8 +60,7 @@ class AIPromptManager {
                 CORE PRINCIPLES:
                 1. Move from specific experiences to broader patterns in their life
                 2. Build on emotional themes or behaviors they've mentioned
-                3. Help them discover connections between different aspects of their life
-                4. Use their own perspective as a foundation
+                3. Use their own perspective as a foundation
 
                 EXAMPLES:
 
@@ -69,16 +68,18 @@ class AIPromptManager {
 
                 ✓ Good: "How do challenging situations tend to affect your relationships with others?"
                 (Expands from specific project to broader pattern about challenges and connections)
+                
+                ✓ Good: "What do you has helped you become better at overcoming challenges?"
+                (Asks them to go deeper with their relationship with challenge)
+                
 
                 ✗ Bad: "What made the project stressful?"
                 (Too specific, focuses on past details they've already discussed)
 
-                
-
                 GUIDELINES:
                 - Use simple, conversational language
                 - Make questions easy to answer through reflection
-                - Stay under 15 words
+                - Stay under 13 words
                 - Focus on patterns and themes rather than specific events
                 - Build on their perspective without contradicting it
                 - Connect their experiences to broader life patterns

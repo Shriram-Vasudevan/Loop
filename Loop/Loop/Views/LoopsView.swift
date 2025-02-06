@@ -29,11 +29,11 @@ struct LoopsView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
-                headerView
-                    .padding(.top, 22)
+//                headerView
+//                    .padding(.top, 22)
                 
                 tabView
-                    .padding(.top, 24)
+                    .padding(.top, 36)
                 
                 contentView
                     .padding(.top, 32)
@@ -171,22 +171,32 @@ struct DateSection: View {
     let loops: [Loop]
     @Binding var selectedLoop: Loop?
     @ObservedObject private var checkinManager = DailyCheckinManager.shared
+    @State private var dailySummary: String?
     
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
+    private let surfaceColor = Color(hex: "F8F5F7")
     
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
-            HStack {
-                Text(formatDate())
-                    .font(.custom("PPNeueMontreal-Medium", size: 16))
-                    .foregroundColor(textColor)
+            // Date and Mood Section
+            VStack(spacing: 12) {
+                HStack(alignment: .bottom) {
+                    Text(formatDate())
+                        .font(.custom("PPNeueMontreal-Medium", size: 24)) // Increased size
+                        .foregroundColor(textColor)
+                    
+                    Spacer()
+                    
+                    DayMoodIndicators(date: date)
+                }
                 
-                DayMoodIndicators(date: date)
-                
-                Spacer()
+                if let summary = dailySummary {
+                    summaryCard(summary)
+                }
             }
             
+            // Loops Section
             VStack(spacing: 16) {
                 ForEach(loops) { loop in
                     LoopCard(loop: loop) {
@@ -195,17 +205,70 @@ struct DateSection: View {
                 }
             }
         }
+        .task {
+            await loadDailySummary()
+        }
+    }
+    
+    private func summaryCard(_ summary: String) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Daily Summary")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(accentColor)
+            
+            Text(summary)
+                .font(.system(size: 16))
+                .foregroundColor(textColor.opacity(0.9))
+                .lineSpacing(4)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(surfaceColor.opacity(0.8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(accentColor.opacity(0.1), lineWidth: 1)
+                )
+        )
+    }
+    
+    private func loadDailySummary() async {
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailySummaryEntity")
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date)
+        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+        
+        fetchRequest.predicate = NSPredicate(
+            format: "date >= %@ AND date < %@",
+            startOfDay as NSDate,
+            endOfDay as NSDate
+        )
+        fetchRequest.fetchLimit = 1
+        
+        do {
+            if let summaryEntity = try checkinManager.context.fetch(fetchRequest).first,
+               let summaryText = summaryEntity.value(forKey: "summaryText") as? String {
+                await MainActor.run {
+                    self.dailySummary = summaryText
+                }
+            }
+        } catch {
+            print("❌ Failed to fetch daily summary: \(error)")
+        }
     }
     
     private func formatDate() -> String {
         if Calendar.current.isDateInToday(date) {
-            return "today"
+            return "Today"  // Capitalized
         } else if Calendar.current.isDateInYesterday(date) {
-            return "yesterday"
+            return "Yesterday"  // Capitalized
         } else {
             let formatter = DateFormatter()
             formatter.dateFormat = "MMMM d"
-            return formatter.string(from: date).lowercased()
+            // Capitalize first letter while keeping rest lowercase
+            let dateString = formatter.string(from: date)
+            return dateString.prefix(1).uppercased() + dateString.dropFirst().lowercased()
         }
     }
 }

@@ -30,14 +30,16 @@ struct InsightsView: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "F5F5F5")
+            FlowingBackground(color: accentColor)
+                .opacity(0.2)
                 .ignoresSafeArea()
+
             VStack(spacing: 0) {
                 TabNavigationView(selectedTimeframe: $selectedTimeframe)
                     .padding(.top, 24)
                 
                 contentView
-                    .padding(.top, 16)
+                    .padding(.top, 8)
             }
         }
     }
@@ -186,18 +188,17 @@ struct TabNavigationView: View {
     
     var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .center, spacing: 4) {
                 Text("INSIGHTS")
                     .font(.custom("PPNeueMontreal-Bold", size: 24))
                     .foregroundColor(textColor)
                     .tracking(1.2)
                 
-                Text(getDateText())
+                Text("From your check-ins and daily reflections")
                     .font(.custom("PPNeueMontreal-Regular", size: 15))
                     .foregroundColor(textColor.opacity(0.7))
             }
-            
-            Spacer()
+
             
 //            Menu {
 //                Button {

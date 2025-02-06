@@ -376,38 +376,45 @@ class AnalysisManager: ObservableObject {
             print("[AnalysisManager] 🚨 Failed to save daily summary: \(error)")
         }
     }
-    
     private func saveTopicSentiments(analysis: DailyAnalysis) {
-        guard let topicEntity = NSEntityDescription.entity(forEntityName: "TopicEntity", in: context) else {
-            print("[AnalysisManager] 🚨 Failed to get Topic entity description")
-            return
-        }
-        
-        let today = Calendar.current.startOfDay(for: Date())
+       print("[AnalysisManager] Starting to save topic sentiments")
+       
+       guard let topicEntity = NSEntityDescription.entity(forEntityName: "TopicEntity", in: context) else {
+           print("[AnalysisManager] 🚨 Failed to get Topic entity description")
+           return
+       }
+       
+       let today = Calendar.current.startOfDay(for: Date())
+       print("[AnalysisManager] Saving sentiments for date: \(today)")
 
-        let clearRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "TopicEntity")
-        clearRequest.predicate = NSPredicate(format: "date == %@", today as NSDate)
-        let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: clearRequest)
-        
-        do {
-            try context.execute(batchDeleteRequest)
+       let clearRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "TopicEntity")
+       clearRequest.predicate = NSPredicate(format: "date == %@", today as NSDate)
+       let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: clearRequest)
+       
+       do {
+           try context.execute(batchDeleteRequest)
+           print("[AnalysisManager] Cleared existing records for today")
 
-            if let topicSentiments = analysis.aiAnalysis.topicSentiments {
-                for sentiment in topicSentiments {
-                    let newTopic = NSManagedObject(entity: topicEntity, insertInto: context)
-                    newTopic.setValue(today, forKey: "date")
-                    newTopic.setValue(sentiment.topic.rawValue, forKey: "topic")
-                    newTopic.setValue(sentiment.sentiment, forKey: "sentiment")
-                }
-            }
-            
-            try context.save()
-            print("[AnalysisManager] ✅ Successfully saved topic sentiments")
-        } catch {
-            print("[AnalysisManager] 🚨 Failed to save topic sentiments: \(error)")
-        }
-    }
-
+           if let topicSentiments = analysis.aiAnalysis.topicSentiments {
+               print("[AnalysisManager] Found \(topicSentiments.count) topics to save")
+               for sentiment in topicSentiments {
+                   let newTopic = NSManagedObject(entity: topicEntity, insertInto: context)
+                   newTopic.setValue(today, forKey: "date")
+                   newTopic.setValue(sentiment.topic, forKey: "topic")
+                   newTopic.setValue(sentiment.sentiment, forKey: "sentiment")
+                   print("[AnalysisManager] Saving topic: \(sentiment.topic) with sentiment: \(sentiment.sentiment)")
+               }
+           } else {
+               print("[AnalysisManager] No topic sentiments found to save")
+           }
+           
+           try context.save()
+           print("[AnalysisManager] ✅ Successfully saved topic sentiments")
+       } catch {
+           print("[AnalysisManager] 🚨 Failed to save topic sentiments: \(error)")
+       }
+   }
+    
     func getDailySummaries(for timeframe: Timeframe) -> [(date: Date, summary: String)] {
         let calendar = Calendar.current
         let now = Date()

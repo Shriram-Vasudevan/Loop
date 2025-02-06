@@ -141,7 +141,6 @@ struct MoodCheckInView: View {
             }
 
             if isOpenedFromPlus {
-                
                 Button(action: {
                     withAnimation (.smooth(duration: 0.4)) {
                         checkinManager.saveDailyCheckin(rating: dayRating, isThroughDailySession: false)

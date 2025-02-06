@@ -22,14 +22,13 @@ struct TrendsView: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 40) {
-                VStack(spacing: 24) {
+            VStack(spacing: 25) {
+                VStack(spacing: 12) {
                     headerSection
+                        .padding(.horizontal, 24)
                     
-                    MoodAnalysisView(timeframe: $selectedTimeframe)
+                    TrendGraphsView(timeframe: $selectedTimeframe)
                 }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 24)
                 
                 MoodSection(timeframe: $selectedTimeframe, pageType: $pageType)
                     .padding(.horizontal, 24)
@@ -43,7 +42,11 @@ struct TrendsView: View {
                 }
             }
         }
-        .background(backgroundColor)
+        .background(
+            FlowingBackground(color: accentColor)
+                .opacity(0.2)
+                .ignoresSafeArea()
+        )
     }
     
     private var headerSection: some View {
@@ -68,8 +71,6 @@ struct TrendsView: View {
                             )
                     }
                 }
-                
-                Spacer()
             }
         }
         .padding(.top, 16)
@@ -581,7 +582,7 @@ struct TrendsTopicsCard: View {
                         .padding(.horizontal, 2)
                     }
                 } else {
-                    Text("Keep reflecting to discover topics")
+                    Text("No Data\nKeep reflecting to discover topics")
                         .font(.system(size: 15))
                         .foregroundColor(textColor.opacity(0.6))
                 }
@@ -646,7 +647,7 @@ struct TrendsTopicChallengesCard: View {
                         .padding(.horizontal, 2)
                     }
                 } else {
-                    Text("Keep reflecting to discover topics")
+                    Text("No Data\nKeep reflecting to discover topics")
                         .font(.system(size: 15))
                         .foregroundColor(textColor.opacity(0.6))
                 }
@@ -1073,14 +1074,6 @@ struct MockMoodData {
     ]
 }
 
-// MARK: - Preview Helpers
-extension MoodAnalysisView {
-    static var mock: some View {
-        MoodAnalysisView(timeframe: .constant(.week))
-            .environmentObject(MockMoodStore())
-    }
-}
-
 // MARK: - Mock Environment Objects
 class MockMoodStore: ObservableObject {
     @Published var moodEntries = MockMoodData.moodEntries
@@ -1181,13 +1174,6 @@ struct MoodSection_Previews: PreviewProvider {
     }
 }
 
-struct MoodGraph_Previews: PreviewProvider {
-    static var previews: some View {
-        MoodAnalysisView.mock
-            .padding()
-            .previewLayout(.sizeThatFits)
-    }
-}
 
 struct MoodShapePreview: View {
     private let textColor = Color(hex: "2C3E50")

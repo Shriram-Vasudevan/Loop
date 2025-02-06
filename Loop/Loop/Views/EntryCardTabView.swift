@@ -1,6 +1,9 @@
 import SwiftUI
 
 
+
+import SwiftUI
+
 struct CurvedReflectionSheet: View {
     @Binding var isOpen: Bool
     @Binding var newEntrySelected: Bool
@@ -9,101 +12,105 @@ struct CurvedReflectionSheet: View {
     @Binding var sleepCheckIn: Bool
     @Binding var dreamJournal: Bool
     
-    // State for animations
     @State private var sheetOffset: CGFloat = 1000
-    @State private var cardsOpacity: Double = 0
-    @State private var cardsScale: CGFloat = 0.8
-    
-    private let backgroundColor = Color(hex: "FAFBFC")
+    @State private var backgroundOpacity: Double = 0
     
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Dimmed background
+                // Dimmed background with smooth animation
                 Color.black
-                    .opacity(0.5)
+                    .opacity(backgroundOpacity)
                     .ignoresSafeArea()
-                    .onTapGesture {
-                        dismiss()
-                    }
-                    .animation(.easeInOut, value: isOpen)
+                    .onTapGesture { dismiss() }
                 
-                // Main curved sheet
+                // Main sheet
                 VStack(spacing: 0) {
                     Spacer()
                     
-                    CurveShape()
-                        .fill(Color.white)
-                        .frame(height: 24)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(Color.gray.opacity(0.3))
-                                .frame(width: 36, height: 4)
-                                .padding(.top, 8)
-                        )
+                    // Modern handle indicator
+                    RoundedRectangle(cornerRadius: 2.5)
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 36, height: 5)
+                        .padding(.vertical, 10)
                     
                     // Content container
-                    VStack(spacing: 32) {
-                        // Top row
-                        HStack(spacing: 60) {
-                            CircleReflectionButton(type: .dreamJournal, action: { selectReflection(.dreamJournal) })
-                            CircleReflectionButton(type: .success, action: { selectReflection(.success) })
-                        }
-                        .padding(.top, 20)
+                    VStack(spacing: 24) {
+                        Text("What would you like to reflect on?")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(.primary)
+                            .padding(.top, 10)
                         
-                        HStack {
-                            Spacer()
+                        // Grid layout
+                        LazyVGrid(columns: [
+                            GridItem(.flexible()),
+                            GridItem(.flexible())
+                        ], spacing: 16) {
+                            ModernCard(
+                                title: "New Entry",
+                                description: "Share thoughts",
+                                pattern: .dots,
+                                action: { selectReflection(.newEntry) }
+                            )
                             
-                            CircleReflectionButton(type: .newEntry, action: { selectReflection(.dreamJournal) })
+                            ModernCard(
+                                title: "Dreams",
+                                description: "Record dreams",
+                                pattern: .waves,
+                                action: { selectReflection(.dreamJournal) }
+                            )
                             
-                            Spacer()
+                            ModernCard(
+                                title: "Mood",
+                                description: "Track emotions",
+                                pattern: .circles,
+                                action: { selectReflection(.moodCheckIn) }
+                            )
+                            
+                            ModernCard(
+                                title: "Sleep",
+                                description: "Monitor rest",
+                                pattern: .lines,
+                                action: { selectReflection(.sleepCheckIn) }
+                            )
                         }
+                        .padding(.horizontal, 24)
                         
-                        // Bottom row
-                        HStack(spacing: 60) {
-                            CircleReflectionButton(type: .moodCheckIn, action: { selectReflection(.moodCheckIn) })
-                            CircleReflectionButton(type: .sleepCheckIn, action: { selectReflection(.sleepCheckIn) })
-                        }
-                        .padding(.bottom, 30)
+                        ModernCard(
+                            title: "Success",
+                            description: "Celebrate wins",
+                            pattern: .triangles,
+                            isWide: true,
+                            action: { selectReflection(.success) }
+                        )
+                        .padding(.horizontal, 24)
                     }
-                    .opacity(cardsOpacity)
-                    .scaleEffect(cardsScale)
-                    .background(Color.white)
+                    .padding(.bottom, 32)
+                    .background(
+                        RoundedRectangle(cornerRadius: 24)
+                            .fill(Color(UIColor.systemBackground))
+                    )
                 }
                 .offset(y: sheetOffset)
-                .gesture(
-                    DragGesture()
-                        .onEnded { value in
-                            if value.translation.height > 100 {
-                                dismiss()
-                            }
-                        }
-                )
             }
         }
-        .onAppear {
-            animateEntry()
-        }
+        .onAppear { animateEntry() }
     }
     
     private func animateEntry() {
         withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
             sheetOffset = 0
-        }
-        
-        withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2)) {
-            cardsScale = 1
-            cardsOpacity = 1
+            backgroundOpacity = 0.5
         }
     }
     
     private func dismiss() {
         withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
             sheetOffset = 1000
-            cardsScale = 0.8
-            cardsOpacity = 0
+            backgroundOpacity = 0
         }
         
+        // Delay the actual dismissal until animation completes
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             isOpen = false
         }
@@ -111,21 +118,129 @@ struct CurvedReflectionSheet: View {
     
     private func selectReflection(_ type: ReflectionType) {
         switch type {
-            case .dreamJournal:
-                dreamJournal = true
-            case .newEntry:
-                newEntrySelected = true
-            case .moodCheckIn:
-                moodCheckIn = true
-            case .sleepCheckIn:
-                sleepCheckIn = true
-            case .success:
-                successSelected = true
+        case .dreamJournal:
+            dreamJournal = true
+        case .newEntry:
+            newEntrySelected = true
+        case .moodCheckIn:
+            moodCheckIn = true
+        case .sleepCheckIn:
+            sleepCheckIn = true
+        case .success:
+            successSelected = true
         }
         dismiss()
     }
 }
 
+// Geometric pattern types
+enum PatternStyle {
+    case dots, waves, circles, lines, triangles
+}
+
+struct ModernCard: View {
+    let title: String
+    let description: String
+    let pattern: PatternStyle
+    var isWide: Bool = false
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 8) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(UIColor.secondarySystemBackground))
+                    
+                    // Geometric pattern overlay
+                    NewGeometricPatternGeometricPattern(style: pattern)
+                        .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                        .frame(height: 80)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(title)
+                            .font(.system(size: 18, weight: .medium))
+                        Text(description)
+                            .font(.system(size: 14))
+                            .opacity(0.7)
+                    }
+                    .foregroundColor(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+                }
+            }
+        }
+        .frame(maxWidth: isWide ? .infinity : nil)
+    }
+}
+
+struct NewGeometricPatternGeometricPattern: Shape {
+    let style: PatternStyle
+    
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        
+        switch style {
+        case .dots:
+            let spacing: CGFloat = 20
+            for x in stride(from: spacing, through: rect.width, by: spacing) {
+                for y in stride(from: spacing, through: rect.height, by: spacing) {
+                    path.addEllipse(in: CGRect(x: x - 1, y: y - 1, width: 2, height: 2))
+                }
+            }
+            
+        case .waves:
+            let amplitude: CGFloat = 10
+            let frequency: CGFloat = .pi / 30
+            path.move(to: CGPoint(x: 0, y: rect.height / 2))
+            for x in stride(from: 0, through: rect.width, by: 1) {
+                let y = rect.height / 2 + amplitude * sin(frequency * x)
+                path.addLine(to: CGPoint(x: x, y: y))
+            }
+            
+        case .circles:
+            let radius: CGFloat = 15
+            for x in stride(from: radius * 2, through: rect.width, by: radius * 4) {
+                for y in stride(from: radius * 2, through: rect.height, by: radius * 4) {
+                    path.addEllipse(in: CGRect(x: x - radius, y: y - radius,
+                                             width: radius * 2, height: radius * 2))
+                }
+            }
+            
+        case .lines:
+            let spacing: CGFloat = 15
+            for x in stride(from: spacing, through: rect.width, by: spacing) {
+                path.move(to: CGPoint(x: x, y: 0))
+                path.addLine(to: CGPoint(x: x, y: rect.height))
+            }
+            
+        case .triangles:
+            let size: CGFloat = 20
+            for x in stride(from: 0, through: rect.width, by: size * 2) {
+                for y in stride(from: 0, through: rect.height, by: size * 2) {
+                    path.move(to: CGPoint(x: x, y: y + size))
+                    path.addLine(to: CGPoint(x: x + size, y: y))
+                    path.addLine(to: CGPoint(x: x + size * 2, y: y + size))
+                    path.addLine(to: CGPoint(x: x, y: y + size))
+                }
+            }
+        }
+        
+        return path
+    }
+}
+
+#Preview {
+    CurvedReflectionSheet(
+        isOpen: .constant(true),
+        newEntrySelected: .constant(false),
+        successSelected: .constant(false),
+        moodCheckIn: .constant(false),
+        sleepCheckIn: .constant(false),
+        dreamJournal: .constant(false)
+    )
+}
 struct CurveShape: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
@@ -147,6 +262,80 @@ struct CurveShape: Shape {
         return path
     }
 }
+
+struct NewReflectionCard: View {
+    let title: String
+    let description: String
+    let gradientColors: [Color]
+    var isWide: Bool = false
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 8) {
+                // Abstract wave pattern background
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(
+                            LinearGradient(
+                                colors: gradientColors,
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                    
+                    // Decorative wave overlay
+                    NewWavePattern()
+                        .fill(Color.white.opacity(0.1))
+                }
+                .frame(height: 80)
+                .overlay(
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(title)
+                            .font(.system(size: 18, weight: .medium))
+                        Text(description)
+                            .font(.system(size: 14))
+                            .opacity(0.9)
+                    }
+                    .foregroundColor(.white)
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                )
+            }
+        }
+        .frame(maxWidth: isWide ? .infinity : nil)
+    }
+}
+
+struct NewWavePattern: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let width = rect.width
+        let height = rect.height
+        
+        path.move(to: CGPoint(x: 0, y: height))
+        
+        // Create gentle wave pattern
+        let points = 5
+        for i in 0...points {
+            let x = width * CGFloat(i) / CGFloat(points)
+            let y = height * (0.5 + 0.2 * sin(CGFloat(i) * .pi / 2))
+            
+            if i == 0 {
+                path.move(to: CGPoint(x: x, y: y))
+            } else {
+                path.addLine(to: CGPoint(x: x, y: y))
+            }
+        }
+        
+        path.addLine(to: CGPoint(x: width, y: height))
+        path.addLine(to: CGPoint(x: 0, y: height))
+        path.closeSubpath()
+        
+        return path
+    }
+}
+
 
 struct CircleReflectionButton: View {
     let type: ReflectionType

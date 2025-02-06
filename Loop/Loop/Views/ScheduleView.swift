@@ -10,256 +10,200 @@ import CoreData
 
 struct ScheduleView: View {
     @ObservedObject private var scheduleManager = ScheduleManager.shared
+    @Binding var selectedScheduleDate: Date?
     @State private var selectedDate: Date?
     @State private var showingDayView = false
     
-    @Binding var selectedScheduleDate: Date?
-    
+    // Soft, approachable colors
+    private let backgroundColor = Color(hex: "F8F9FA")
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
-    
-    private var monthsToShow: [(month: Int, year: Int)] {
-        let calendar = Calendar.current
-        let current = Date()
-        var months: [(Int, Int)] = []
-        
-        for monthOffset in 0...11 {
-            if let date = calendar.date(byAdding: .month, value: -monthOffset, to: current) {
-                let month = calendar.component(.month, from: date)
-                let year = calendar.component(.year, from: date)
-                months.append((month, year))
-            }
-        }
-        print("📅 Generated \(months.count) months to show")
-        return months
-    }
-    
-    @Environment(\.dismiss) var dismiss
+    private let softGray = Color(hex: "E9ECEF")
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 32) {
-                HStack(spacing: 12) {
-                    Text("CALENDAR")
-                        .font(.custom("PPNeueMontreal-Bold", size: 24))
-                        .foregroundColor(textColor)
-                        .tracking(1.2)
-                    
-                    Spacer()
-                    
-                    Button(action: { }) {
-                        HStack(spacing: 4) {
-                            Circle()
-                                .stroke(textColor.opacity(0.2), lineWidth: 1)
-                                .frame(width: 8, height: 8)
-                            
-                            Text("TAP TO VIEW")
-                                .font(.system(size: 11, weight: .medium))
-                                .tracking(1.5)
-                                .foregroundColor(textColor.opacity(0.5))
-                        }
-                    }
-                }
-                .padding(.top, 30)
+            VStack(spacing: 24) {
+                // Modern header with subtle gradient
+                HeaderView()
                 
-                VStack(spacing: 24) {
-                    ForEach(monthsToShow, id: \.0) { month, year in
-                        MonthRow(
+                // Calendar grid
+                LazyVStack(spacing: 32) {
+                    ForEach(scheduleManager.monthsToShow, id: \.self) { month in
+                        MonthSection(
                             month: month,
-                            year: year,
-                            accentColor: accentColor,
-                            textColor: textColor,
                             selectedDate: $selectedDate,
                             showingDayView: $showingDayView
                         )
                     }
                 }
+                .padding(.horizontal)
             }
-            .padding(.horizontal, 24)
         }
+        .background(backgroundColor.ignoresSafeArea())
         .task {
-            print("🔄 ScheduleView appeared, loading data")
             await scheduleManager.loadYearDataAndAssignColors()
             if let date = selectedScheduleDate {
-                print("📅 Setting selected date to: \(date)")
                 selectedDate = date
                 selectedScheduleDate = nil
                 showingDayView = true
             }
         }
-        .navigationDestination(item: $selectedDate) { date in
-            FullDayActivityView(date: date)
+        .navigationDestination(isPresented: $showingDayView) {
+            if let date = selectedDate {
+                FullDayActivityView(date: date)
+            }
         }
     }
 }
 
-struct MonthRow: View {
-    let month: Int
-    let year: Int
-    let accentColor: Color
-    let textColor: Color
+struct HeaderView: View {
+    private let textColor = Color(hex: "2C3E50")
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // Title with subtle animation
+            Text("CALENDAR")
+                .font(.custom("PPNeueMontreal-Bold", size: 24))
+                .foregroundColor(textColor)
+                .tracking(1.2)
+                .padding(.top, 24)
+        }
+    }
+}
+
+struct LegendItem: View {
+    let color: Color
+    let text: String
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(color)
+                .frame(width: 12, height: 12)
+            Text(text)
+                .font(.system(size: 14))
+                .foregroundColor(Color(hex: "2C3E50"))
+        }
+    }
+}
+
+struct MonthSection: View {
+    let month: Date
     @Binding var selectedDate: Date?
     @Binding var showingDayView: Bool
-    
     @ObservedObject private var scheduleManager = ScheduleManager.shared
     
-    private let calendar = Calendar.current
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 7)
     private let weekdays = ["S", "M", "T", "W", "T", "F", "S"]
     
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            // Calendar grid
-            VStack(spacing: 8) {
-                // Weekday headers
-                HStack {
-                    ForEach(weekdays, id: \.self) { day in
-                        Text(day)
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(textColor.opacity(0.4))
-                            .frame(maxWidth: .infinity)
-                    }
-                }
-                
-                ForEach(weeks, id: \.self) { week in
-                    HStack(spacing: 0) {
-                        ForEach(week, id: \.self) { day in
-                            if day > 0 {
-                                Circle()
-                                    .stroke(Color(hex: "2C3E50").opacity(0.1), lineWidth: 1)
-                                    .background(
-                                        Circle()
-                                            .fill(getEmotionColor(for: day) ?? .clear)
-                                    )
-                                    .frame(width: 28, height: 28)
-                                    .onTapGesture {
-                                        if let date = calendar.date(from: DateComponents(year: year, month: month, day: day)) {
-                                            selectedDate = date
-                                            showingDayView = true
-                                        }
-                                    }
-                            } else {
-                                Color.clear
-                                    .frame(width: 28, height: 28)
-                            }
-                        }
+        VStack(alignment: .leading, spacing: 16) {
+            Text(month.formatted(.dateTime.month(.wide)))
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(Color(hex: "2C3E50"))
+            
+            HStack {
+                ForEach(weekdays, id: \.self) { day in
+                    Text(day)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Color(hex: "2C3E50").opacity(0.6))
                         .frame(maxWidth: .infinity)
-                    }
                 }
             }
             
-            Text(monthName.uppercased())
-                .font(.system(size: 12, weight: .semibold))
-                .tracking(2)
-                .foregroundColor(textColor.opacity(0.5))
-                .frame(width: 10, alignment: .leading)
+            LazyVGrid(columns: columns, spacing: 8) {
+                ForEach(daysInMonth(for: month), id: \.self) { date in
+                    if let date = date {
+                        let calendar = Calendar.current
+                        let startOfDay = calendar.startOfDay(for: date)
+                        DayCell(
+                            date: date,
+                            isSelected: selectedDate == date,
+                            rating: scheduleManager.ratings[startOfDay]
+                        )
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.3)) {
+                                selectedDate = date
+                                showingDayView = true
+                            }
+                        }
+                    } else {
+                        Color.clear
+                            .frame(height: 40)
+                    }
+                }
+            }
         }
     }
     
-    private var monthName: String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMM"
-        return dateFormatter.shortMonthSymbols[month - 1]
-    }
-    
-    private var weeks: [[Int]] {
-        let firstDay = calendar.date(from: DateComponents(year: year, month: month, day: 1))!
-        let firstWeekday = calendar.component(.weekday, from: firstDay)
-        let daysInMonth = calendar.range(of: .day, in: .month, for: firstDay)!.count
+    private func daysInMonth(for date: Date) -> [Date?] {
+        let calendar = Calendar.current
+        let monthInterval = calendar.dateInterval(of: .month, for: date)!
+        let firstWeekday = calendar.component(.weekday, from: monthInterval.start)
         
-        var days: [[Int]] = []
-        var week = Array(repeating: 0, count: firstWeekday - 1)
+        var days: [Date?] = Array(repeating: nil, count: firstWeekday - 1)
         
-        for day in 1...daysInMonth {
-            week.append(day)
-            if week.count == 7 {
-                days.append(week)
-                week = []
+        let dateComponents = calendar.dateComponents([.year, .month], from: date)
+        let numberOfDays = calendar.range(of: .day, in: .month, for: date)!.count
+        
+        for day in 1...numberOfDays {
+            var components = dateComponents
+            components.day = day
+            if let date = calendar.date(from: components) {
+                days.append(date)
             }
         }
         
-        if !week.isEmpty {
-            week.append(contentsOf: Array(repeating: 0, count: 7 - week.count))
-            days.append(week)
+        while days.count % 7 != 0 {
+            days.append(nil)
         }
         
         return days
     }
-    
-    private func getEmotionColor(for day: Int) -> Color? {
-        guard let date = calendar.date(from: DateComponents(year: year, month: month, day: day)) else {
-            return nil
-        }
-        
-        let startOfDay = calendar.startOfDay(for: date)
-        
-        if let rating = scheduleManager.ratings[startOfDay] {
-            print("🎨 Found rating \(rating) for \(date)")
-            return scheduleManager.ratingColors[rating]
-        }
-        
-        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
-            print("🔴 Error: Could not calculate end of day")
-            return nil
-        }
-        
-        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "ActivityForToday")
-        fetchRequest.predicate = NSPredicate(format: "date >= %@ AND date < %@", startOfDay as NSDate, endOfDay as NSDate)
-        
-        do {
-            let activities = try scheduleManager.context.fetch(fetchRequest)
-            if !activities.isEmpty {
-                print("📝 Found activities for \(date)")
-                return Color.gray.opacity(0.5)
-            }
-        } catch {
-            print("🔴 Error fetching activities: \(error)")
-        }
-        
-        return nil
-    }
 }
 
-struct ScheduleView_Previews: View {
+struct DayCell: View {
+    let date: Date
+    let isSelected: Bool
+    let rating: Double?
+    @ObservedObject private var scheduleManager = ScheduleManager.shared
+    
     var body: some View {
-        let previewData = PreviewData()
-        ScheduleView(selectedScheduleDate: .constant(.now))
-    }
-}
-
-// Separate preview data struct
-struct PreviewData {
-    let emotions: [Date: String]
-    let emotionColors: [String: Color]
-    
-    init() {
-        self.emotionColors = [
-            "Joy": Color(hex: "A28497"),     // Original accent (mauve)
-            "Peace": Color(hex: "B5C4C9"),   // Light blue-grey
-            "Gratitude": Color(hex: "C2CCBB"),// Light sage
-            "Energy": Color(hex: "C4B5B5"),  // Light dusty rose
-            "Focus": Color(hex: "BFB5C9")    // Light purple
-        ]
-        
-        // Generate sample emotion data
-        var sampleEmotions: [Date: String] = [:]
-        let calendar = Calendar.current
-        let today = Date()
-        let emotions = Array(emotionColors.keys)
-        
-        // Fill in some random days in the past year
-        for dayOffset in 0...365 {
-            if let date = calendar.date(byAdding: .day, value: -dayOffset, to: today) {
-                // Fill roughly 40% of days
-                if Int.random(in: 1...10) <= 4 {
-                    sampleEmotions[calendar.startOfDay(for: date)] = emotions.randomElement()!
-                }
-            }
+        ZStack {
+            Circle()
+                .fill(getRatingColor())
+                .overlay(
+                    Circle()
+                        .stroke(Color(hex: "2C3E50").opacity(0.1), lineWidth: isSelected ? 2 : 0)
+                )
+            
+            Text("\(Calendar.current.component(.day, from: date))")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(rating == nil ? .black.opacity(0.6) : .white)
         }
-        
-        self.emotions = sampleEmotions
+        .frame(height: 40)
+        .animation(.spring(response: 0.3), value: isSelected)
+    }
+    
+    private func getRatingColor() -> Color {
+        if let rating = rating,
+           let color = scheduleManager.ratingColors[rating] {
+            return color
+        }
+        return Color(hex: "F1F3F5")
     }
 }
 
-#Preview {
-    ScheduleView_Previews()
+extension Date: Hashable {
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(self.timeIntervalSince1970)
+    }
+}
+
+// Preview
+struct ModernCalendarView_Previews: PreviewProvider {
+    static var previews: some View {
+        ScheduleView(selectedScheduleDate: .constant(Date()))
+            .preferredColorScheme(.light)
+    }
 }

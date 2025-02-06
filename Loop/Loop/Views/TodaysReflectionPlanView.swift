@@ -11,95 +11,132 @@ struct TodaysReflectionPlanView: View {
     @StateObject private var reflectionManager = ReflectionCardManager.shared
     @State private var showingEditView = false
     
-    private let accentColor = Color(hex: "A28497")    // Main mauve accent
+    private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
-    private let lightMauve = Color(hex: "D5C5CC")     // Lighter variant
-    private let midMauve = Color(hex: "BBA4AD")       // Medium variant
+    private let lightMauve = Color(hex: "D5C5CC")
+    private let midMauve = Color(hex: "BBA4AD")
     
     private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16)
     ]
     
     var body: some View {
         VStack(spacing: 24) {
+            // Enhanced header
             HStack {
                 Text("TODAY'S PLAN")
-                    .font(.system(size: 13, weight: .medium))
-                    .tracking(1.5)
-                    .foregroundColor(textColor.opacity(0.5))
+                    .font(.system(size: 15, weight: .semibold))
+                    .tracking(1.2)
+                    .foregroundColor(textColor)
                 
                 Spacer()
                 
-                Button(action: {
-                    showingEditView = true
-                }) {
-                    Text("EDIT")
-                        .font(.system(size: 13, weight: .medium))
-                        .tracking(1.5)
-                        .foregroundColor(accentColor)
+                Button(action: { showingEditView = true }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 12))
+                        Text("EDIT")
+                            .font(.system(size: 13, weight: .medium))
+                            .tracking(1.2)
+                    }
+                    .foregroundColor(accentColor)
                 }
             }
             
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: 12) {
+            ScrollView(showsIndicators: false) {
+                LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(reflectionManager.getOrderedCards(), id: \.self) { card in
                         ReflectionCard(card: card)
+                            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
                     }
                 }
-                .padding(.horizontal, 2)
-                .padding(.top, 3)
+                .padding(.vertical, 8)
             }
-            .scrollIndicators(.hidden)
         }
         .fullScreenCover(isPresented: $showingEditView) {
             EditPlanView()
         }
     }
 }
-
 struct ReflectionCard: View {
     let card: ReflectionCardManager.ReflectionCardType
+    @State private var isPressed = false
     
     private let textColor = Color(hex: "2C3E50")
     private let accentColor = Color(hex: "A28497")
     private let lightMauve = Color(hex: "D5C5CC")
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .center, spacing: 6) {
+        VStack(alignment: .leading, spacing: 16) {
+            cardIcon
+                .frame(width: 32, height: 32)
+                .foregroundColor(accentColor)
+            
+            VStack(alignment: .leading, spacing: 8) {
                 Text(card.title)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(textColor)
                 
                 Text(card.shortDescription)
-                    .font(.system(size: 13))
+                    .font(.system(size: 14))
                     .foregroundColor(textColor.opacity(0.6))
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
         }
-        .frame(width: 140, height: 100)
-        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: 120)
+        .padding(20)
         .background(
             ZStack {
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        lightMauve.opacity(0.3),
-                        Color.white.opacity(0.9)
+                        .white,
+                        lightMauve.opacity(0.15)
                     ]),
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
-
+                
                 cardPattern
-                    .opacity(0.2)
+                    .opacity(0.1)
             }
         )
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(accentColor.opacity(0.1), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(accentColor.opacity(0.12), lineWidth: 1)
         )
+        .scaleEffect(isPressed ? 0.98 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
+        .onTapGesture {
+            withAnimation {
+                isPressed = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    isPressed = false
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var cardIcon: some View {
+        switch card {
+        case .sleepCheckin:
+            Image(systemName: "moon.stars.fill")
+        case .moodCheckin:
+            Image(systemName: "heart.fill")
+        case .daySummary:
+            Image(systemName: "sun.and.horizon.fill")
+        case .standOut:
+            Image(systemName: "star.fill")
+        case .success:
+            Image(systemName: "trophy.fill")
+        case .aiGenerated:
+            Image(systemName: "sparkles")
+        case .freeform:
+            Image(systemName: "pencil.line")
+        }
     }
     
     @ViewBuilder

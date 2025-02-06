@@ -25,7 +25,7 @@ struct DailySummary: Codable {
 }
 
 struct TopicSentiment: Codable {
-    let topic: TopicCategory
+    let topic: String
     let sentiment: Double
 }
 
@@ -100,6 +100,7 @@ enum TopicCategory: String, Codable, CaseIterable {
     case relaxation
     case finances
     case growth
+    case school
 }
 
 

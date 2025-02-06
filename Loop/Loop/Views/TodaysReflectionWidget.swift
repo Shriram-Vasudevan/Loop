@@ -17,7 +17,6 @@ struct SunsetReflectionView: View {
     
     var body: some View {
         ZStack {
-            // Gentle gradient background using accent color variants
             LinearGradient(
                 gradient: Gradient(colors: [
                     lightMauve.opacity(0.3),
@@ -26,15 +25,13 @@ struct SunsetReflectionView: View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            
-            // Geometric mountain silhouettes
+
             GeometricMountains()
                 .fill(midMauve)
                 .opacity(0.2)
                 .frame(height: 120)
                 .offset(y: 40)
-            
-            // Content overlay
+
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("TODAY'S REFLECTION")

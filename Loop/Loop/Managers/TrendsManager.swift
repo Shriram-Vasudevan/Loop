@@ -194,27 +194,41 @@ class TrendsManager: ObservableObject {
     }
     
     func getTopicSentiments(for timeframe: Timeframe) async -> [TopicSentimentSummary] {
+        print("getting topic sentiment")
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "TopicEntity")
         let calendar = Calendar.current
         let now = Date()
         
         guard let startDate = calendar.date(byAdding: timeframe.dateComponent, to: now) else {
+            print("Failed to calculate start date")
             return []
         }
         
         fetchRequest.predicate = NSPredicate(format: "date >= %@", startDate as NSDate)
+        print("Fetching topics from \(startDate) to \(now)")
         
         do {
             let results = try context.fetch(fetchRequest)
+            print("Found \(results.count) total records")
+            
             let groupedResults = Dictionary(grouping: results) { entity -> String in
                 entity.value(forKey: "topic") as? String ?? ""
             }
+            print("Grouped into \(groupedResults.count) topics")
             
             return groupedResults.compactMap { topic, entities in
-                let sentiments = entities.compactMap { $0.value(forKey: "sentiment") as? Double }
-                guard !sentiments.isEmpty else { return nil }
+                let sentiments = entities.compactMap { entity -> Double? in
+                    let rawSentiment = entity.value(forKey: "sentiment") as? Double
+                    print("Raw sentiment value from DB: \(entity.value(forKey: "sentiment"))")
+                    return rawSentiment
+                }
+                guard !sentiments.isEmpty else {
+                    print("No sentiments found for topic: \(topic)")
+                    return nil
+                }
                 
                 let avgSentiment = sentiments.reduce(0.0, +) / Double(sentiments.count)
+                print("Topic: \(topic) - Count: \(entities.count) - Avg Sentiment: \(avgSentiment)")
                 return TopicSentimentSummary(
                     topic: topic,
                     averageSentiment: avgSentiment,
@@ -226,7 +240,7 @@ class TrendsManager: ObservableObject {
             return []
         }
     }
-    
+
     func getTopicTimeline(topic: String, timeframe: Timeframe) async -> [TopicTimelinePoint] {
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "TopicEntity")
         let calendar = Calendar.current
@@ -371,6 +385,307 @@ class TrendsManager: ObservableObject {
         } catch {
             print("Failed to fetch negative topics: \(error)")
             return []
+        }
+    }
+    
+    func getSleepAverages(for timeframe: Timeframe) async -> [Double] {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        switch timeframe {
+        case .week:
+            // Initialize array for whole week
+            var weekData = Array(repeating: 0.0, count: 7)
+            
+            // Get start of current week (Sunday)
+            var components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear, .weekday], from: now)
+            components.weekday = 1  // 1 = Sunday
+            guard let currentWeekStart = calendar.date(from: components) else {
+                return weekData
+            }
+            
+            let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "SleepCheckinEntity")
+            fetchRequest.predicate = NSPredicate(
+                format: "date >= %@ AND date <= %@",
+                currentWeekStart as NSDate,
+                now as NSDate
+            )
+            
+            do {
+                let results = try context.fetch(fetchRequest)
+                
+                for result in results {
+                    guard let date = result.value(forKey: "date") as? Date,
+                          let hours = result.value(forKey: "hours") as? Double else { continue }
+                    
+                    // Get the weekday index (1-7, where 1 is Sunday)
+                    let weekday = calendar.component(.weekday, from: date)
+                    let index = weekday - 1  // Convert to 0-based index
+                    
+                    if index >= 0 && index < 7 {
+                        weekData[index] = hours
+                    }
+                }
+                
+                // Zero out future days
+                let currentWeekday = calendar.component(.weekday, from: now)
+                for i in currentWeekday..<7 {
+                    weekData[i] = 0.0
+                }
+                
+                return weekData
+            } catch {
+                print("Error fetching sleep data: \(error)")
+                return weekData
+            }
+            
+        case .month:
+            // Initialize array for weeks in current month
+            var monthData = Array(repeating: 0.0, count: 4)
+            
+            // Get start of current month
+            guard let currentMonthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) else {
+                return monthData
+            }
+            
+            let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "SleepCheckinEntity")
+            fetchRequest.predicate = NSPredicate(
+                format: "date >= %@ AND date <= %@",
+                currentMonthStart as NSDate,
+                now as NSDate
+            )
+            
+            do {
+                let results = try context.fetch(fetchRequest)
+                var weeklyData: [Int: [Double]] = [:]
+                
+                for result in results {
+                    guard let date = result.value(forKey: "date") as? Date,
+                          let hours = result.value(forKey: "hours") as? Double else { continue }
+                    
+                    let weekOfMonth = calendar.component(.weekOfMonth, from: date) - 1  // 0-based index
+                    if weekOfMonth >= 0 && weekOfMonth < 4 {
+                        weeklyData[weekOfMonth, default: []].append(hours)
+                    }
+                }
+                
+                // Calculate averages for weeks with data
+                for (week, hours) in weeklyData {
+                    monthData[week] = hours.reduce(0.0, +) / Double(hours.count)
+                }
+                
+                // Zero out future weeks
+                let currentWeek = calendar.component(.weekOfMonth, from: now) - 1
+                for i in currentWeek + 1..<4 {
+                    monthData[i] = 0.0
+                }
+                
+                return monthData
+            } catch {
+                print("Error fetching sleep data: \(error)")
+                return monthData
+            }
+            
+        case .year:
+            var yearData = Array(repeating: 0.0, count: 12)
+            
+            // Get date 11 months ago from start of current month
+            let components = calendar.dateComponents([.year, .month], from: now)
+            guard let currentMonthStart = calendar.date(from: components),
+                  let yearAgoStart = calendar.date(byAdding: .month, value: -11, to: currentMonthStart) else {
+                return yearData
+            }
+            
+            let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "SleepCheckinEntity")
+            fetchRequest.predicate = NSPredicate(
+                format: "date >= %@ AND date <= %@",
+                yearAgoStart as NSDate,
+                now as NSDate
+            )
+            
+            do {
+                let results = try context.fetch(fetchRequest)
+                var monthlyData: [Int: [Double]] = [:]
+                
+                for result in results {
+                    guard let date = result.value(forKey: "date") as? Date,
+                          let hours = result.value(forKey: "hours") as? Double else { continue }
+                    
+                    let monthsFromStart = calendar.dateComponents([.month], from: yearAgoStart, to: date).month ?? 0
+                    if monthsFromStart >= 0 && monthsFromStart < 12 {
+                        monthlyData[monthsFromStart, default: []].append(hours)
+                    }
+                }
+                
+                // Calculate averages for months with data
+                for (month, hours) in monthlyData {
+                    yearData[month] = hours.reduce(0.0, +) / Double(hours.count)
+                }
+                
+                // Zero out any future days in current month
+                if let lastMonthWithData = monthlyData.keys.max(), lastMonthWithData < 11 {
+                    for i in (lastMonthWithData + 1)...11 {
+                        yearData[i] = 0.0
+                    }
+                }
+                
+                return yearData
+            } catch {
+                print("Error fetching sleep data: \(error)")
+                return yearData
+            }
+        }
+    }
+    
+    func getMoodAverages(for timeframe: Timeframe) async -> [Double] {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        switch timeframe {
+        case .week:
+            // Initialize array for whole week
+            var weekData = Array(repeating: 0.0, count: 7)
+            
+            // Get start of current week (Sunday)
+            var components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear, .weekday], from: now)
+            components.weekday = 1  // 1 = Sunday
+            guard let currentWeekStart = calendar.date(from: components) else {
+                return weekData
+            }
+
+            let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyCheckinEntity")
+            fetchRequest.predicate = NSPredicate(
+                format: "date >= %@ AND date <= %@",
+                currentWeekStart as NSDate,
+                now as NSDate
+            )
+            
+            do {
+                let results = try context.fetch(fetchRequest)
+                var dailyRatings: [Int: [Double]] = [:]
+
+                for result in results {
+                    guard let date = result.value(forKey: "date") as? Date,
+                          let rating = result.value(forKey: "rating") as? Double else { continue }
+                    
+                    // Get the weekday index (1-7, where 1 is Sunday)
+                    let weekday = calendar.component(.weekday, from: date)
+                    let index = weekday - 1  // Convert to 0-based index
+                    
+                    if index >= 0 && index < 7 {
+                        dailyRatings[index, default: []].append(rating)
+                    }
+                }
+                
+                // Calculate averages for days with data
+                for (day, ratings) in dailyRatings {
+                    weekData[day] = ratings.reduce(0.0, +) / Double(ratings.count)
+                }
+                
+                // Zero out future days
+                let currentWeekday = calendar.component(.weekday, from: now)
+                for i in currentWeekday..<7 {
+                    weekData[i] = 0.0
+                }
+                
+                return weekData
+            } catch {
+                print("Error fetching mood data: \(error)")
+                return weekData
+            }
+            
+        case .month:
+            var monthData = Array(repeating: 0.0, count: 4)
+            
+            // Get start of current month
+            guard let currentMonthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) else {
+                return monthData
+            }
+            
+            let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyCheckinEntity")
+            fetchRequest.predicate = NSPredicate(
+                format: "date >= %@ AND date <= %@",
+                currentMonthStart as NSDate,
+                now as NSDate
+            )
+            
+            do {
+                let results = try context.fetch(fetchRequest)
+                var weeklyRatings: [Int: [Double]] = [:]
+                
+                for result in results {
+                    guard let date = result.value(forKey: "date") as? Date,
+                          let rating = result.value(forKey: "rating") as? Double else { continue }
+                    
+                    let weekOfMonth = calendar.component(.weekOfMonth, from: date) - 1  // 0-based index
+                    if weekOfMonth >= 0 && weekOfMonth < 4 {
+                        weeklyRatings[weekOfMonth, default: []].append(rating)
+                    }
+                }
+                
+                // Calculate averages for weeks with data
+                for (week, ratings) in weeklyRatings {
+                    monthData[week] = ratings.reduce(0.0, +) / Double(ratings.count)
+                }
+                
+                // Zero out future weeks
+                let currentWeek = calendar.component(.weekOfMonth, from: now) - 1
+                for i in currentWeek + 1..<4 {
+                    monthData[i] = 0.0
+                }
+                
+                return monthData
+            } catch {
+                print("Error fetching mood data: \(error)")
+                return monthData
+            }
+            
+        case .year:
+            var yearData = Array(repeating: 0.0, count: 12)
+            
+            // Get date 11 months ago from start of current month
+            let components = calendar.dateComponents([.year, .month], from: now)
+            guard let currentMonthStart = calendar.date(from: components),
+                  let yearAgoStart = calendar.date(byAdding: .month, value: -11, to: currentMonthStart) else {
+                return yearData
+            }
+            
+            let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailyCheckinEntity")
+            fetchRequest.predicate = NSPredicate(
+                format: "date >= %@ AND date <= %@",
+                yearAgoStart as NSDate,
+                now as NSDate
+            )
+            
+            do {
+                let results = try context.fetch(fetchRequest)
+                var monthlyRatings: [Int: [Double]] = [:]
+                
+                for result in results {
+                    guard let date = result.value(forKey: "date") as? Date,
+                          let rating = result.value(forKey: "rating") as? Double else { continue }
+                    
+                    let monthsFromStart = calendar.dateComponents([.month], from: yearAgoStart, to: date).month ?? 0
+                    if monthsFromStart >= 0 && monthsFromStart < 12 {
+                        monthlyRatings[monthsFromStart, default: []].append(rating)
+                    }
+                }
+
+                for (month, ratings) in monthlyRatings {
+                    yearData[month] = ratings.reduce(0.0, +) / Double(ratings.count)
+                }
+
+                if let lastMonthWithData = monthlyRatings.keys.max(), lastMonthWithData < 11 {
+                    for i in (lastMonthWithData + 1)...11 {
+                        yearData[i] = 0.0
+                    }
+                }
+                
+                return yearData
+            } catch {
+                print("Error fetching mood data: \(error)")
+                return yearData
+            }
         }
     }
 }

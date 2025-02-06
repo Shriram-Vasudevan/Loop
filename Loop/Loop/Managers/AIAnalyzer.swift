@@ -51,27 +51,51 @@ class AIAnalyzer {
             [FROM ALL OTHER RESPONSES, EXCLUDING STANDOUT MOMENT]
             exists: YES/NO
             moments:
-              - key_moment: [Direct quote edited for clarity while preserving personal voice.]
-                category: (realization/learning/success/challenge/connection/decision/plan)
-                source_type: (summary/freeform)
+              key_moment: [Direct quote edited for clarity while preserving personal voice.]
+              category: (realization/learning/success/challenge/connection/decision/plan)
+              source_type: (summary/freeform)
 
             ### TOPIC SENTIMENT ANALYSIS:
             topic_sentiments:
-            [EXTRACT FROM ALL RESPONSES, ONLY TOPICS NATURALLY MENTIONED, NOT WHEN DIRECTLY ASKED ABOUT]
+            [IDENTIFY CORE THEMES FROM ALL RESPONSES. LOOK FOR NATURALLY MENTIONED TOPICS, NOT WHEN DIRECTLY ASKED. ABSTRACT TO MEANINGFUL LIFE AREAS.]
             exists: YES/NO
             topics:
-              - topic: (work/relationships/health/learning/creativity/purpose/relaxation/finances/growth)
-                sentiment: (number between -1.0 and 1.0)
-                // More negative numbers (-1.0 to -0.1) indicate more negative sentiment
-                // 0.0 indicates neutral sentiment
-                // More positive numbers (0.1 to 1.0) indicate more positive sentiment
+              topic: [USE CONSISTENT PLURAL FORMS FROM: relationships/work/sports/health/hobbies/finances/learning/community/wellness]
+              sentiment: (number between -1.0 and 1.0)
+              [USE EXACT FORMAT: single topic per entry, 2-space indentation]
+              // More negative numbers (-1.0 to -0.1) indicate more negative sentiment
+              // 0.0 indicates neutral sentiment
+              // More positive numbers (0.1 to 1.0) indicate more positive sentiment
+
+            TOPIC ABSTRACTION RULES:
+            - Extract core life areas, not specific activities or objects
+            - Always use plural form (relationships not relationship)
+            - Map to closest meaningful category:
+              * Personal interactions/fights/dating → relationships
+              * Job/career/workplace/tasks → work
+              * Exercise/games/physical activities → sports
+              * Diet/sleep/medical → health
+              * Creative/recreational activities → hobbies
+              * Money/investments/spending → finances
+              * Education/skills/development → learning
+              * Volunteering/social causes → community
+              * Mental health/spirituality/self-care → wellness
+            - Do not force topics - only include if naturally discussed
 
             ### DAILY SUMMARY:
             daily_summary:
             [SYNTHESIZE FROM ALL RESPONSES]
             exists: YES/NO
-            summary: (2-3 sentence overview capturing key themes, mood, and notable events from the day's reflections)
-            """
+            summary: (2-3 sentence overview in the second-person capturing key themes, mood, and notable events from the day's reflections. Be personable and thoughtful. Don't provide advice, but identify potential patterns and other things you noticed if possible. Don't force anything.)
+
+            CRITICAL FORMAT RULES:
+            1. The topic_sentiments: field name must be exact
+            2. Use 2-space indentation under topics:
+            3. Each topic must be on its own line with 2-space indent
+            4. No markdown bullets or special characters
+            5. Include exact field names with colons
+            6. Follow number formats exactly
+        """
         
 
             let requestBody: [String: Any] = [
@@ -83,8 +107,7 @@ class AIAnalyzer {
                 "temperature": 0.3,
                 "max_tokens": 1000
             ]
-            
-            // Rest of the API call code remains the same
+
             var request = URLRequest(url: URL(string: endpoint)!)
             request.httpMethod = "POST"
             request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
@@ -130,8 +153,6 @@ class AIAnalyzer {
             topicSentiments: topicSentiments,
             dailySummary: dailySummary
         )
-                
-                return result
         print("\nFinal Result:", result)
         return result
     }
@@ -177,7 +198,7 @@ class AIAnalyzer {
         var extractedTopics: [TopicSentiment] = []
         let lines = section.components(separatedBy: .newlines)
         
-        var currentTopic: TopicCategory?
+        var currentTopic: String?
         var currentSentiment: Double?
         
         for line in lines {
@@ -186,9 +207,8 @@ class AIAnalyzer {
                 if let topic = currentTopic, let sentiment = currentSentiment {
                     extractedTopics.append(TopicSentiment(topic: topic, sentiment: sentiment))
                 }
-                if let value = try? extractString(from: line, field: "topic:")?.lowercased(),
-                   let topic = TopicCategory(rawValue: value) {
-                    currentTopic = topic
+                if let value = try? extractString(from: line, field: "topic:")?.lowercased() {
+                    currentTopic = value
                     currentSentiment = nil
                 }
             } else if trimmed.hasPrefix("sentiment:") {
@@ -201,6 +221,7 @@ class AIAnalyzer {
 
         if let topic = currentTopic, let sentiment = currentSentiment {
             extractedTopics.append(TopicSentiment(topic: topic, sentiment: sentiment))
+            print("the topic \(topic) and sentiment: \(sentiment)")
         }
 
         return extractedTopics.isEmpty ? nil : extractedTopics

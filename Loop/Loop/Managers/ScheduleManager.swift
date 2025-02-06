@@ -27,6 +27,25 @@ class ScheduleManager: ObservableObject {
     private let neutralColor = Color(hex: "94A7B7")
     private let happyColor = Color(hex: "B784A7")
     
+    var monthsToShow: [Date] {
+        let calendar = Calendar.current
+        let current = Date()
+        var months: [Date] = []
+        
+        // Show current month and 11 previous months (1 year total)
+        for monthOffset in 0...11 {
+            if let date = calendar.date(byAdding: .month, value: -monthOffset, to: current) {
+                // Get the start of each month to ensure consistency
+                if let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: date)) {
+                    months.append(monthStart)
+                }
+            }
+        }
+        
+        print("📅 Generated \(months.count) months to show")
+        return months
+    }
+    
     lazy var persistentContainer: NSPersistentContainer = {
         let container = NSPersistentContainer(name: "LoopData")
         container.loadPersistentStores { _, error in

@@ -26,6 +26,7 @@ struct HomeView: View {
     
     @State var navigateToAllThemesView: Bool = false
     @State var navigateToSettingsView: Bool = false
+    @State var navigateToDaySummary: Bool = false
     
     @State private var showUnlockReminder = true
     @State private var distinctDays: Int = 0
@@ -69,7 +70,7 @@ struct HomeView: View {
             FlowingBackground(color: accentColor)
                 .opacity(backgroundOpacity)
                 .ignoresSafeArea()
-//
+
             ScrollView {
                 VStack(spacing: 32) {
                     VStack (spacing: 12) {
@@ -80,20 +81,20 @@ struct HomeView: View {
 //                        }
 //                        .padding(.horizontal, 24)
 //                        .padding(.top, 22)
-                        
-                        welcomeHeader
-                            .padding(.horizontal, 24)
-                            .padding(.top, 30)
-//                        LoopHomeHeader()
+//                        
+//                        welcomeHeader
 //                            .padding(.horizontal, 24)
-
-                        VStack (spacing: 6) {
-                            EmotionSchedulePreviewView(pageType: $pageType, selectedScheduleDate: $selectedScheduleDate)
-                              
-                            Divider()
-                        }
+//                            .padding(.top, 44)
+////                        LoopHomeHeader()
+////                            .padding(.horizontal, 24)
+//
+//                        VStack (spacing: 6) {
+//                            EmotionSchedulePreviewView(pageType: $pageType, selectedScheduleDate: $selectedScheduleDate)
+//                              
+//                            Divider()
+//                        }
                         
-
+                        JournalHeader(navigateToSettingsView: $navigateToSettingsView)
                     }
                     
                     VStack (spacing: 16) {
@@ -149,21 +150,23 @@ struct HomeView: View {
         .navigationDestination(isPresented: $navigateToSettingsView) {
             SettingsView()
         }
+        .navigationDestination(isPresented: $navigateToDaySummary) {
+            DaySummaryView()
+        }
     }
     
     // MARK: - Header Section
     private var welcomeHeader: some View {
         ZStack {
             HStack(alignment: .center, spacing: 16) {
-                VStack (alignment: .leading) {
-                    Text(formatDate())
-                        .font(.custom("PPNeueMontreal-Bold", size: 35))
+                VStack(alignment: .leading, spacing: 6) {
                     Text(getGreeting())
-                    .font(.system(size: 13, weight: .medium))
-                    .tracking(1.5)
-                    .foregroundColor(textColor)
-
+                        .font(.system(size: 30, weight: .bold))
+                        .foregroundColor(textColor)
                     
+                    Text(formatDate())
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(textColor.opacity(0.6))
                 }
                 
                 Spacer()
@@ -210,10 +213,24 @@ struct HomeView: View {
                             Text("complete for today")
                                 .font(.system(size: 24, weight: .light))
                                 .foregroundColor(textColor)
-                            Text("great work!")
-                                .font(.system(size: 13, weight: .medium))
-                                .tracking(1.5)
-                                .foregroundColor(textColor)
+                            
+                            if let summary = AnalysisManager.shared.currentDailyAnalysis?.aiAnalysis.dailySummary {
+                                Button {
+                                    navigateToDaySummary = true
+                                } label: {
+                                    Text("see your daily summary")
+                                        .font(.system(size: 13, weight: .medium))
+                                        .tracking(1.5)
+                                        .foregroundColor(textColor)
+                                        .underline()
+                                }
+
+                            } else {
+                                Text("great work!")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .tracking(1.5)
+                                    .foregroundColor(textColor)
+                            }
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -1068,6 +1085,49 @@ struct LoopHomeHeader: View {
         case "evening": return "good evening"
         default: return "hello"
         }
+    }
+}
+
+struct JournalHeader: View {
+    @Binding var navigateToSettingsView: Bool
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Today")
+                    .font(.system(size: 34, weight: .medium))
+                
+                Spacer()
+                
+                Button {
+                    navigateToSettingsView = true
+                } label: {
+                    Image(systemName: "person.circle.fill")
+                        .font(.system(size: 28))
+                        .foregroundColor(.black)
+                }
+            }
+            
+            Text(formatDate().uppercased())
+                .font(.system(size: 15, weight: .regular))
+                .foregroundColor(Color.black.opacity(0.5))
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 16)
+    }
+    
+    private func formatDate() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, MMMM d"
+        return formatter.string(from: Date())
+    }
+}
+
+// Preview
+struct JournalHeader_Previews: PreviewProvider {
+    static var previews: some View {
+        JournalHeader(navigateToSettingsView: .constant(false))
+            .background(Color.white)
     }
 }
 

@@ -121,22 +121,11 @@ struct OnboardingView: View {
     private func saveUserPreferences() {
         UserDefaults.standard.set(userName, forKey: "userName")
         UserDefaults.standard.set(reminderTime, forKey: "reminderTime")
-        Task {
-            let speechStatus = await withCheckedContinuation { continuation in
-                SFSpeechRecognizer.requestAuthorization { status in
-                    continuation.resume(returning: status)
-                }
-            }
-            
-            if speechStatus == .authorized {
-                if await NotificationManager.shared.requestNotificationPermissions() {
-                    NotificationManager.shared.scheduleDailyReminder(at: reminderTime)
-                }
-            }
-
-            DispatchQueue.main.async {
-                onIntroCompletion()
-            }
+        
+        NotificationManager.shared.scheduleDailyReminder(at: reminderTime)
+        
+        DispatchQueue.main.async {
+            onIntroCompletion()
         }
     }
     
@@ -227,67 +216,66 @@ struct WhyLoopView: View {
                         .tracking(1.5)
                         .foregroundColor(textColor.opacity(0.6))
                         .opacity(appearAnimation[1] ? 1 : 0)
-                        .offset(y: appearAnimation[1] ? 0 : 20)
                 }
                 .padding(.top, 64)
 
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 16) {
-                        ForEach(Array(purposes.enumerated()), id: \.element.text) { index, purpose in
-                            EnhancedPurposeCard(
-                                icon: purpose.icon,
-                                text: purpose.text,
-                                isSelected: selectedPurposes.contains(purpose.text),
-                                onTap: {
-                                    withAnimation(.spring(response: 0.3)) {
-                                        if selectedPurposes.contains(purpose.text) {
-                                            selectedPurposes.remove(purpose.text)
-                                        } else {
-                                            selectedPurposes.insert(purpose.text)
+                VStack(spacing: 8) {
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 16) {
+                            ForEach(Array(purposes.enumerated()), id: \.element.text) { index, purpose in
+                                EnhancedPurposeCard(
+                                    icon: purpose.icon,
+                                    text: purpose.text,
+                                    isSelected: selectedPurposes.contains(purpose.text),
+                                    onTap: {
+                                        withAnimation(.spring(response: 0.3)) {
+                                            if selectedPurposes.contains(purpose.text) {
+                                                selectedPurposes.remove(purpose.text)
+                                            } else {
+                                                selectedPurposes.insert(purpose.text)
+                                            }
                                         }
                                     }
-                                }
-                            )
-                            .opacity(appearAnimation[min(index + 2, appearAnimation.count - 1)] ? 1 : 0)
-                            .offset(y: appearAnimation[min(index + 2, appearAnimation.count - 1)] ? 0 : 20)
+                                )
+                                .opacity(appearAnimation[min(index + 2, appearAnimation.count - 1)] ? 1 : 0)
+                                .offset(y: appearAnimation[min(index + 2, appearAnimation.count - 1)] ? 0 : 20)
+                            }
                         }
+                        .padding(.vertical, 8)
                     }
-                    .padding(.vertical, 8)
-                }
-                
-                Spacer()
-                
-                Button(action: {
-                    withAnimation(.spring(response: 0.6)) {
-                        currentTab += 1
-                    }
-                }) {
-                    HStack(spacing: 12) {
-                        Text("continue")
-                            .font(.system(size: 18, weight: .medium))
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 16, weight: .medium))
-                    }
-                    .frame(height: 60)
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                accentColor,
-                                accentColor.opacity(0.85)
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
+                    
+                    Button(action: {
+                        withAnimation(.spring(response: 0.6)) {
+                            currentTab += 1
+                        }
+                    }) {
+                        HStack(spacing: 12) {
+                            Text("continue")
+                                .font(.system(size: 18, weight: .medium))
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 16, weight: .medium))
+                        }
+                        .frame(height: 60)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    accentColor,
+                                    accentColor.opacity(0.85)
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
                         )
-                    )
-                    .foregroundColor(.white)
-                    .cornerRadius(30)
-                    .shadow(color: accentColor.opacity(0.25), radius: 15, y: 8)
+                        .foregroundColor(.white)
+                        .cornerRadius(30)
+                        .shadow(color: accentColor.opacity(0.25), radius: 15, y: 8)
+                    }
+                    .opacity(selectedPurposes.isEmpty ? 0.6 : 1)
+                    .disabled(selectedPurposes.isEmpty)
+                    .opacity(appearAnimation[6] ? 1 : 0)
+                    .offset(y: appearAnimation[6] ? 0 : 20)
                 }
-                .opacity(selectedPurposes.isEmpty ? 0.6 : 1)
-                .disabled(selectedPurposes.isEmpty)
-                .opacity(appearAnimation[6] ? 1 : 0)
-                .offset(y: appearAnimation[6] ? 0 : 20)
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 48)
@@ -355,7 +343,7 @@ struct PrivacyStorageView: View {
     @Binding var currentTab: Int
     let onIntroCompletion: () -> Void
     
-    @State private var appearAnimation: [Bool] = Array(repeating: false, count: 4)
+    @State private var appearAnimation: [Bool] = Array(repeating: false, count: 5)
     @State private var waveOffset: CGFloat = 0
     
     private let textColor = Color(hex: "2C3E50")
@@ -374,11 +362,12 @@ struct PrivacyStorageView: View {
                         
                         Spacer()
                     }
-                    
+
                     Text("we take privacy seriously")
                         .font(.system(size: 16, weight: .medium))
                         .tracking(1.5)
                         .foregroundColor(textColor.opacity(0.6))
+                        .opacity(appearAnimation[1] ? 1 : 0)
                 }
                 .padding(.top, 64)
                 
@@ -393,7 +382,7 @@ struct PrivacyStorageView: View {
                     }
                     .frame(height: 90)
                     .mask(Rectangle().frame(height: 90))
-                    .opacity(appearAnimation[1] ? 1 : 0)
+                    .opacity(appearAnimation[2] ? 1 : 0)
                     .padding(.top, -32)
                     
                     VStack(spacing: 24) {
@@ -402,9 +391,11 @@ struct PrivacyStorageView: View {
                             .tracking(1.5)
                             .foregroundColor(textColor.opacity(0.5))
                             .multilineTextAlignment(.leading)
+                            .opacity(appearAnimation[3] ? 1 : 0)
 
                         HStack(spacing: 8) {
                             Text("We will never deal with third parties.")
+                                .opacity(appearAnimation[4] ? 1 : 0)
                             
                             Spacer()
                         }
