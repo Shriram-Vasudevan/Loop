@@ -4,7 +4,10 @@ import SwiftUI
 
 import SwiftUI
 
-struct CurvedReflectionSheet: View {
+
+import SwiftUI
+
+struct MinimalReflectionSheet: View {
     @Binding var isOpen: Bool
     @Binding var newEntrySelected: Bool
     @Binding var successSelected: Bool
@@ -16,83 +19,95 @@ struct CurvedReflectionSheet: View {
     @State private var backgroundOpacity: Double = 0
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Dimmed background with smooth animation
-                Color.black
-                    .opacity(backgroundOpacity)
-                    .ignoresSafeArea()
-                    .onTapGesture { dismiss() }
+        ZStack {
+            // Background overlay
+            Color.black
+                .opacity(backgroundOpacity)
+                .ignoresSafeArea()
+                .onTapGesture { dismiss() }
+            
+            // Sheet content
+            VStack(spacing: 0) {
+                Spacer()
                 
-                // Main sheet
-                VStack(spacing: 0) {
-                    Spacer()
-                    
-                    // Modern handle indicator
+                // Curved top shape
+                CurveShape()
+                    .fill(Color(.systemGray6))
+                    .frame(height: 24)
+                
+                // Content
+                VStack(spacing: 16) {
+                    // Handle indicator
                     RoundedRectangle(cornerRadius: 2.5)
-                        .fill(Color.gray.opacity(0.3))
+                        .fill(Color(.systemGray3))
                         .frame(width: 36, height: 5)
-                        .padding(.vertical, 10)
+                        .padding(.top, 8)
                     
-                    // Content container
-                    VStack(spacing: 24) {
-                        Text("What would you like to reflect on?")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.primary)
-                            .padding(.top, 10)
+                    // Top row - 2 cards
+                    HStack(spacing: 12) {
+                        Spacer()
                         
-                        // Grid layout
-                        LazyVGrid(columns: [
-                            GridItem(.flexible()),
-                            GridItem(.flexible())
-                        ], spacing: 16) {
-                            ModernCard(
-                                title: "New Entry",
-                                description: "Share thoughts",
-                                pattern: .dots,
-                                action: { selectReflection(.newEntry) }
-                            )
-                            
-                            ModernCard(
-                                title: "Dreams",
-                                description: "Record dreams",
-                                pattern: .waves,
-                                action: { selectReflection(.dreamJournal) }
-                            )
-                            
-                            ModernCard(
-                                title: "Mood",
-                                description: "Track emotions",
-                                pattern: .circles,
-                                action: { selectReflection(.moodCheckIn) }
-                            )
-                            
-                            ModernCard(
-                                title: "Sleep",
-                                description: "Monitor rest",
-                                pattern: .lines,
-                                action: { selectReflection(.sleepCheckIn) }
-                            )
+                        MinimalCard(
+                            icon: "sparkles",
+                            title: "Success\nJournal"
+                        ) {
+                            selectReflection(.success)
                         }
-                        .padding(.horizontal, 24)
                         
-                        ModernCard(
-                            title: "Success",
-                            description: "Celebrate wins",
-                            pattern: .triangles,
-                            isWide: true,
-                            action: { selectReflection(.success) }
-                        )
-                        .padding(.horizontal, 24)
+                        MinimalCard(
+                            icon: "moon.stars",
+                            title: "Dream\nJournal"
+                        ) {
+                            selectReflection(.dreamJournal)
+                        }
+                        
+                        Spacer()
                     }
-                    .padding(.bottom, 32)
-                    .background(
-                        RoundedRectangle(cornerRadius: 24)
-                            .fill(Color(UIColor.systemBackground))
-                    )
+                    .padding(.horizontal, 24)
+
+                    HStack(spacing: 12) {
+                        MinimalCard(
+                            icon: "face.smiling",
+                            title: "Mood\nCheck-In"
+                        ) {
+                            selectReflection(.moodCheckIn)
+                        }
+                        
+                        MinimalCard(
+                            icon: "doc",
+                            title: "New\nEntry",
+                            isSelected: true
+                        ) {
+                            selectReflection(.newEntry)
+                        }
+                        
+                        MinimalCard(
+                            icon: "bed.double",
+                            title: "Sleep\nCheck-In"
+                        ) {
+                            selectReflection(.sleepCheckIn)
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    
+                    // Close button
+                    Button(action: dismiss) {
+                        Circle()
+                            .fill(Color(.systemGray6))
+                            .frame(width: 44, height: 44)
+                            .overlay(
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 17, weight: .medium))
+                                    .foregroundColor(.primary)
+                            )
+                    }
+                    .padding(.top, 8)
+                    .padding(.bottom, 16)
                 }
-                .offset(y: sheetOffset)
+                .background(Color(.systemGray6))
             }
+            .offset(y: sheetOffset)
+            .edgesIgnoringSafeArea(.bottom)
         }
         .onAppear { animateEntry() }
     }
@@ -109,8 +124,6 @@ struct CurvedReflectionSheet: View {
             sheetOffset = 1000
             backgroundOpacity = 0
         }
-        
-        // Delay the actual dismissal until animation completes
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             isOpen = false
         }
@@ -133,7 +146,107 @@ struct CurvedReflectionSheet: View {
     }
 }
 
-// Geometric pattern types
+struct CurveShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        
+        path.move(to: CGPoint(x: 0, y: 24))
+        
+        let center = rect.width / 2
+        
+        path.addCurve(
+            to: CGPoint(x: rect.width, y: 24),
+            control1: CGPoint(x: center - 80, y: 0),
+            control2: CGPoint(x: center + 80, y: 0)
+        )
+        
+        path.addLine(to: CGPoint(x: rect.width, y: rect.height))
+        path.addLine(to: CGPoint(x: 0, y: rect.height))
+        path.closeSubpath()
+        
+        return path
+    }
+}
+
+struct MinimalCard: View {
+    let icon: String
+    let title: String
+    var isSelected: Bool = false
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 16) {
+                // Icon circle
+                Circle()
+                    .fill(isSelected ? Color(.systemBackground) : Color(.systemGray5))
+                    .frame(width: 56, height: 56)
+                    .overlay(
+                        Image(systemName: icon)
+                            .font(.system(size: 20))
+                            .foregroundColor(isSelected ? .primary : .secondary)
+                    )
+                
+                // Title
+                Text(title)
+                    .font(.system(size: 15, weight: .medium))
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(isSelected ? .primary : .secondary)
+            }
+            .frame(width: 100)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(isSelected ? Color(.systemBackground) : Color.clear)
+            )
+        }
+    }
+}
+
+#Preview {
+    ZStack {
+        Color.black.ignoresSafeArea()
+        MinimalReflectionSheet(
+            isOpen: .constant(true),
+            newEntrySelected: .constant(false),
+            successSelected: .constant(false),
+            moodCheckIn: .constant(false),
+            sleepCheckIn: .constant(false),
+            dreamJournal: .constant(false)
+        )
+    }
+}
+
+
+struct RoundedShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        
+        let radius: CGFloat = 24
+        let width = rect.width
+        let height = rect.height
+
+        path.move(to: CGPoint(x: 0, y: radius))
+        path.addQuadCurve(
+            to: CGPoint(x: radius, y: 0),
+            control: CGPoint(x: 0, y: 0)
+        )
+        
+        path.addLine(to: CGPoint(x: width - radius, y: 0))
+        path.addQuadCurve(
+            to: CGPoint(x: width, y: radius),
+            control: CGPoint(x: width, y: 0)
+        )
+        
+        path.addLine(to: CGPoint(x: width, y: height))
+        
+        path.addLine(to: CGPoint(x: 0, y: height))
+        
+        return path
+    }
+}
+
+
 enum PatternStyle {
     case dots, waves, circles, lines, triangles
 }
@@ -231,37 +344,6 @@ struct NewGeometricPatternGeometricPattern: Shape {
     }
 }
 
-#Preview {
-    CurvedReflectionSheet(
-        isOpen: .constant(true),
-        newEntrySelected: .constant(false),
-        successSelected: .constant(false),
-        moodCheckIn: .constant(false),
-        sleepCheckIn: .constant(false),
-        dreamJournal: .constant(false)
-    )
-}
-struct CurveShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        
-        path.move(to: CGPoint(x: 0, y: 24))
-        
-        let center = rect.width / 2
-        
-        path.addCurve(
-            to: CGPoint(x: rect.width, y: 24),
-            control1: CGPoint(x: center - 80, y: 0),
-            control2: CGPoint(x: center + 80, y: 0)
-        )
-        
-        path.addLine(to: CGPoint(x: rect.width, y: rect.height))
-        path.addLine(to: CGPoint(x: 0, y: rect.height))
-        path.closeSubpath()
-        
-        return path
-    }
-}
 
 struct NewReflectionCard: View {
     let title: String
@@ -592,17 +674,6 @@ struct CardWrapper: View {
                 }
             }
     }
-}
-
-#Preview {
-    CurvedReflectionSheet(
-        isOpen: .constant(true),
-        newEntrySelected: .constant(false),
-        successSelected: .constant(false),
-        moodCheckIn: .constant(false),
-        sleepCheckIn: .constant(false),
-        dreamJournal: .constant(false)
-    )
 }
 
 

@@ -116,7 +116,7 @@ struct PagesHolderView: View {
                 }
                 
                 if isMenuOpened {
-                    CurvedReflectionSheet(
+                    MinimalReflectionSheet(
                         isOpen: $isMenuOpened,
                         newEntrySelected: $showNewEntrySheet,
                         successSelected: $showSuccessSheet,

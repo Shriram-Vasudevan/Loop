@@ -210,7 +210,7 @@ struct StarPattern: Shape {
         let centerY = rect.height * 0.7
         let size: CGFloat = 20
         
-        // Create a simple star
+    
         let points = 5
         let angleStep = Double.pi * 2 / Double(points)
         

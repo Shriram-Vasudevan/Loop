@@ -95,13 +95,18 @@ struct HomeView: View {
 //                        }
                         
                         JournalHeader(navigateToSettingsView: $navigateToSettingsView)
+                            .padding(.top, 16)
                     }
                     
-                    VStack (spacing: 16) {
+                    VStack (spacing: 24) {
                         recordingInterface
                             .padding(.horizontal, 24)
-
+                        
+                        DailyQuoteWidget()
+                            .padding(.horizontal, 24)
+                        
                     }
+                    
                     thematicPromptsSection
                         .padding(.horizontal, 24)
                     

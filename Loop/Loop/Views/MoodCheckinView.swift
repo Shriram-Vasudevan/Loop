@@ -60,7 +60,7 @@ struct MoodCheckInView: View {
                 .padding(.bottom, 30)
             }
             VStack(spacing: 8) {
-                Text("HOW ARE YOU FEELING TODAY?")
+                Text("HOW ARE YOU FEELING RIGHT NOW?")
                     .font(.system(size: 13, weight: .medium))
                     .tracking(1.5)
                     .foregroundColor(Color(hex: "2C3E50").opacity(0.5))

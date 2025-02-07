@@ -124,6 +124,8 @@
 		99AC6DE62CE0F99800B0D0D6 /* CachedLoop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99AC6DE52CE0F99800B0D0D6 /* CachedLoop.swift */; };
 		99AC6DE82CE1235400B0D0D6 /* LoopLogoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99AC6DE72CE1235400B0D0D6 /* LoopLogoView.swift */; };
 		99AC6DEA2CE18E9900B0D0D6 /* LoopStreak.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99AC6DE92CE18E9900B0D0D6 /* LoopStreak.swift */; };
+		99C7F83A2D56BBC100A6D4FC /* DailyQuoteWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99C7F8392D56BBC100A6D4FC /* DailyQuoteWidget.swift */; };
+		99C7F83C2D56C0CE00A6D4FC /* DailyQuoteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99C7F83B2D56C0CE00A6D4FC /* DailyQuoteManager.swift */; };
 		99CCFBB82D10DB9300DA8A55 /* AIAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CCFBB72D10DB9300DA8A55 /* AIAnalyzer.swift */; };
 		99CCFBBC2D10DF4300DA8A55 /* CleanGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CCFBBB2D10DF4300DA8A55 /* CleanGraphView.swift */; };
 		99CCFBBE2D121F2400DA8A55 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CCFBBD2D121F2400DA8A55 /* EmptyStateView.swift */; };
@@ -302,6 +304,8 @@
 		99AC6DE52CE0F99800B0D0D6 /* CachedLoop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedLoop.swift; sourceTree = "<group>"; };
 		99AC6DE72CE1235400B0D0D6 /* LoopLogoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopLogoView.swift; sourceTree = "<group>"; };
 		99AC6DE92CE18E9900B0D0D6 /* LoopStreak.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopStreak.swift; sourceTree = "<group>"; };
+		99C7F8392D56BBC100A6D4FC /* DailyQuoteWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyQuoteWidget.swift; sourceTree = "<group>"; };
+		99C7F83B2D56C0CE00A6D4FC /* DailyQuoteManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyQuoteManager.swift; sourceTree = "<group>"; };
 		99CCFBB72D10DB9300DA8A55 /* AIAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIAnalyzer.swift; sourceTree = "<group>"; };
 		99CCFBBB2D10DF4300DA8A55 /* CleanGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanGraphView.swift; sourceTree = "<group>"; };
 		99CCFBBD2D121F2400DA8A55 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
@@ -492,6 +496,7 @@
 				996F820B2D39F2B200116F86 /* ReflectionCompleteView.swift */,
 				996F820F2D39FF6300116F86 /* TodaysReflectionPlanView.swift */,
 				99F00AB42D3D9C90008F1228 /* WavePattern.swift */,
+				99C7F8392D56BBC100A6D4FC /* DailyQuoteWidget.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -522,6 +527,7 @@
 				99F00AB82D3DA794008F1228 /* SleepCheckinManager.swift */,
 				99F00ABA2D3DC159008F1228 /* TrendsManager.swift */,
 				9986634C2D45CF5100D7406D /* TabManager.swift */,
+				99C7F83B2D56C0CE00A6D4FC /* DailyQuoteManager.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -726,6 +732,7 @@
 				9953BE002CF8EE9B00348AC3 /* MoodCloudKitUtility.swift in Sources */,
 				99DC91BD2D1A50E4002B9A89 /* TranscriptionError.swift in Sources */,
 				99F7F6E92CAC792C009858AC /* NotificationManager.swift in Sources */,
+				99C7F83C2D56C0CE00A6D4FC /* DailyQuoteManager.swift in Sources */,
 				9935CF242D32E1E000AF0C16 /* MoodTrendsManager.swift in Sources */,
 				9953BE062CFBB30900348AC3 /* ArtisticBackground.swift in Sources */,
 				990E4A962CBDCA51009F88A0 /* VideoRecordingView.swift in Sources */,
@@ -759,6 +766,7 @@
 				9986634F2D475DF900D7406D /* DreamJournalView.swift in Sources */,
 				9935CEFA2D2DEB4900AF0C16 /* KeyPhraseManager.swift in Sources */,
 				9953BDFC2CF8105200348AC3 /* SettingsModels.swift in Sources */,
+				99C7F83A2D56BBC100A6D4FC /* DailyQuoteWidget.swift in Sources */,
 				9935CEEE2D2ADDD100AF0C16 /* RecordFreeResponseView.swift in Sources */,
 				9935CF222D32D93800AF0C16 /* DarkBlueWave.swift in Sources */,
 				99F7F6F12CAC7B5B009858AC /* LoopCloudKitUtility.swift in Sources */,

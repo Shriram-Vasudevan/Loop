@@ -59,19 +59,15 @@ class AudioManager: NSObject, ObservableObject, AVAudioRecorderDelegate {
         
         let session = AVAudioSession.sharedInstance()
         
-        // First, make sure any existing session is properly deactivated
         if session.isOtherAudioPlaying {
             try? session.setActive(false, options: .notifyOthersOnDeactivation)
         }
         
-        // Reset the audio session to ensure clean state
         try? session.setActive(false, options: [])
         
         do {
-            // Configure the session
             try session.setCategory(category, mode: mode, options: [.defaultToSpeaker, .allowBluetooth])
-            
-            // Activate with proper options
+
             try session.setActive(true, options: [.notifyOthersOnDeactivation])
             isSessionActive = true
         } catch {
@@ -117,7 +113,7 @@ class AudioManager: NSObject, ObservableObject, AVAudioRecorderDelegate {
     
     // MARK: - Recording Methods
     func prepareForNewRecording() throws {
-        stopPlayback() // Ensure any playback is stopped
+        stopPlayback()
         audioRecorder?.stop()
         audioRecorder = nil
         

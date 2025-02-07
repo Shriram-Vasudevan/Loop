@@ -302,6 +302,7 @@ struct DreamJournalView: View {
 
 struct DreamBackground: View {
     @State private var starOpacity: Double = 0
+    @State private var starScale: CGSize = CGSize(width: 1.0, height: 1.0)
     
     var body: some View {
         ZStack {
@@ -322,6 +323,7 @@ struct DreamBackground: View {
                         x: CGFloat.random(in: 0...UIScreen.main.bounds.width),
                         y: CGFloat.random(in: 0...UIScreen.main.bounds.height)
                     )
+                    .scaleEffect(starScale)
             }
             
 
@@ -341,6 +343,16 @@ struct DreamBackground: View {
                     )
                     .blur(radius: 10)
             }
+        }
+        .onAppear {
+            Timer.scheduledTimer(withTimeInterval: 6.0, repeats: true) { _ in
+                withAnimation(
+                    Animation.easeInOut(duration: 1.5)
+                ) {
+                    starScale = CGSize(width: Double.random(in: 0.8...1.2), height: Double.random(in: 0.8...1.2))
+                }
+            }
+
         }
     }
 }

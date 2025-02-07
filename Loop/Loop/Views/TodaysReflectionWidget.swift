@@ -25,13 +25,13 @@ struct SunsetReflectionView: View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-
+            
             GeometricMountains()
                 .fill(midMauve)
                 .opacity(0.2)
                 .frame(height: 120)
                 .offset(y: 40)
-
+            
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("TODAY'S REFLECTION")
@@ -61,6 +61,7 @@ struct SunsetReflectionView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
+
 
 struct GeometricMountains: Shape {
     func path(in rect: CGRect) -> Path {
