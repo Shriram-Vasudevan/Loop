@@ -126,6 +126,7 @@
 		99AC6DEA2CE18E9900B0D0D6 /* LoopStreak.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99AC6DE92CE18E9900B0D0D6 /* LoopStreak.swift */; };
 		99C7F83A2D56BBC100A6D4FC /* DailyQuoteWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99C7F8392D56BBC100A6D4FC /* DailyQuoteWidget.swift */; };
 		99C7F83C2D56C0CE00A6D4FC /* DailyQuoteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99C7F83B2D56C0CE00A6D4FC /* DailyQuoteManager.swift */; };
+		99C7F83E2D56C93300A6D4FC /* RecordQuoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99C7F83D2D56C93300A6D4FC /* RecordQuoteView.swift */; };
 		99CCFBB82D10DB9300DA8A55 /* AIAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CCFBB72D10DB9300DA8A55 /* AIAnalyzer.swift */; };
 		99CCFBBC2D10DF4300DA8A55 /* CleanGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CCFBBB2D10DF4300DA8A55 /* CleanGraphView.swift */; };
 		99CCFBBE2D121F2400DA8A55 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99CCFBBD2D121F2400DA8A55 /* EmptyStateView.swift */; };
@@ -306,6 +307,7 @@
 		99AC6DE92CE18E9900B0D0D6 /* LoopStreak.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopStreak.swift; sourceTree = "<group>"; };
 		99C7F8392D56BBC100A6D4FC /* DailyQuoteWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyQuoteWidget.swift; sourceTree = "<group>"; };
 		99C7F83B2D56C0CE00A6D4FC /* DailyQuoteManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyQuoteManager.swift; sourceTree = "<group>"; };
+		99C7F83D2D56C93300A6D4FC /* RecordQuoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordQuoteView.swift; sourceTree = "<group>"; };
 		99CCFBB72D10DB9300DA8A55 /* AIAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIAnalyzer.swift; sourceTree = "<group>"; };
 		99CCFBBB2D10DF4300DA8A55 /* CleanGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanGraphView.swift; sourceTree = "<group>"; };
 		99CCFBBD2D121F2400DA8A55 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
@@ -444,6 +446,7 @@
 				99F31CA62D0F2DA300330180 /* RecordFollowUpLoopView.swift */,
 				999DAC8D2D2107D000A6626B /* RecordFeaturedLoopView.swift */,
 				9935CEED2D2ADDD100AF0C16 /* RecordFreeResponseView.swift */,
+				99C7F83D2D56C93300A6D4FC /* RecordQuoteView.swift */,
 				9986634E2D475DF900D7406D /* DreamJournalView.swift */,
 				9935CF1A2D30BB8500AF0C16 /* AddSuccessView.swift */,
 				990E4A832CB30EAB009F88A0 /* ThankYouView.swift */,
@@ -807,6 +810,7 @@
 				99F7F6E72CAC77F4009858AC /* HomeView.swift in Sources */,
 				9915BAB72CE6AF9E00D3C44B /* DailyCheckinManager.swift in Sources */,
 				9935CF182D3082CE00AF0C16 /* GoalManager.swift in Sources */,
+				99C7F83E2D56C93300A6D4FC /* RecordQuoteView.swift in Sources */,
 				9935CEFC2D2F1DD000AF0C16 /* TopEmotionsCard.swift in Sources */,
 				996F820E2D39FECD00116F86 /* ReflectionCardManager.swift in Sources */,
 				9953BDF62CF40E4A00348AC3 /* ProgressIndicator.swift in Sources */,
