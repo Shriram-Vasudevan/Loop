@@ -73,7 +73,7 @@ struct RecordQuoteView: View {
             }
             .padding(.top, 16)
             
-            Text("Let's Reflect")
+            Text("Quote Reflection")
                 .font(.system(size: 28, weight: .medium))
                 .foregroundColor(textColor)
             
@@ -103,7 +103,7 @@ struct RecordQuoteView: View {
                         .foregroundColor(textColor.opacity(0.5))
                 }
             }
-            .padding(.top, 30)
+            .padding(.top, 60)
             
             if isRecording {
                 VStack(spacing: 16) {

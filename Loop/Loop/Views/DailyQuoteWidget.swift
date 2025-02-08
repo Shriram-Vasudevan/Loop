@@ -14,6 +14,8 @@ struct DailyQuoteWidget: View {
     
     @StateObject private var quoteManager = QuoteManager.shared
     
+    @State var showQuoteReflectionSheet: Bool = false
+    
     var body: some View {
         ZStack {
 //            GeometryReader { geometry in
@@ -55,15 +57,21 @@ struct DailyQuoteWidget: View {
                     }
                 }
                 
-                Text("Reflect")
-                    .padding()
-                    .padding(.horizontal, 12)
-                    .background(
-                        Capsule()
-                            .stroke(style: StrokeStyle(lineWidth: 1))
-                            .foregroundColor(textColor.opacity(0.7))
-                    )
+                Button(action: {
+                    showQuoteReflectionSheet = true
+                }, label: {
+                    Text("Reflect")
+                        .foregroundColor(textColor)
+                        .padding()
+                        .padding(.horizontal, 12)
+                        .background(
+                            Capsule()
+                                .stroke(style: StrokeStyle(lineWidth: 1))
+                                .foregroundColor(textColor.opacity(0.7))
+                        )
+                        .padding(.top, 12)
 
+                })
             }
             .padding(32)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -74,6 +82,9 @@ struct DailyQuoteWidget: View {
                 .fill(.white)
         )
         .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 2)
+        .fullScreenCover(isPresented: $showQuoteReflectionSheet, content: {
+            RecordQuoteView(quote: quoteManager.currentQuote)
+        })
     }
 }
 
