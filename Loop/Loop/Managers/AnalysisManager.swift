@@ -209,7 +209,7 @@ class AnalysisManager: ObservableObject {
     
     func performAnalysisForUnguidedEntry(transcript: String) {
         let metrics = calculateQuantitativeMetrics(transcript)
-        let today = Calendar.current.startOfDay(for: Date()) // Get the start of the current day
+        let today = Calendar.current.startOfDay(for: Date())
         
         print("[AnalysisManager] Starting to update metrics in Core Data")
         
@@ -294,10 +294,16 @@ class AnalysisManager: ObservableObject {
                 existingMetrics.setValue(Date(), forKey: "timeOfEntry")
                 existingMetrics.setValue(!responses.isEmpty, forKey: "isCompleted")
                 existingMetrics.setValue(actualEntryCount, forKey: "entryCount")
+                existingMetrics.setValue(analysis.aiAnalysis.goalsAnalysis?.items?.count ?? 0, forKey: "goalsSet")
+                existingMetrics.setValue(analysis.aiAnalysis.winsAnalysis?.achievements?.count ?? 0, forKey: "achievementsCount")
+                existingMetrics.setValue(analysis.aiAnalysis.positiveBeliefs?.statements?.count ?? 0, forKey: "affirmationsCount")
                 
                 saveKeyMoments(analysis: analysis)
                 saveTopicSentiments(analysis: analysis)
                 saveDailySummary(analysis: analysis)
+                saveGoals(analysis: analysis)
+                saveAchievements(analysis: analysis)
+                saveAffirmations(analysis: analysis)
                 
                 try context.save()
                 print("[AnalysisManager] ✅ Successfully updated metrics in Core Data")
@@ -316,11 +322,17 @@ class AnalysisManager: ObservableObject {
                 metrics.setValue(Date(), forKey: "timeOfEntry")
                 metrics.setValue(!responses.isEmpty, forKey: "isCompleted")
                 metrics.setValue(actualEntryCount, forKey: "entryCount")
+                metrics.setValue(analysis.aiAnalysis.goalsAnalysis?.items?.count ?? 0, forKey: "goalsSet")
+                metrics.setValue(analysis.aiAnalysis.winsAnalysis?.achievements?.count ?? 0, forKey: "achievementsCount")
+                metrics.setValue(analysis.aiAnalysis.positiveBeliefs?.statements?.count ?? 0, forKey: "affirmationsCount")
                 
                 saveKeyMoments(analysis: analysis)
                 saveTopicSentiments(analysis: analysis)
                 saveDailySummary(analysis: analysis)
-                
+                saveGoals(analysis: analysis)
+                saveAchievements(analysis: analysis)
+                saveAffirmations(analysis: analysis)
+    
                 try context.save()
                 print("[AnalysisManager] ✅ Successfully created new metrics in Core Data")
             }
@@ -469,6 +481,83 @@ class AnalysisManager: ObservableObject {
                 additionalMoment.setValue(moment.sourceType.rawValue, forKey: "sourceType")
                 additionalMoment.setValue("additional", forKey: "momentType")
             }
+        }
+    }
+    
+    private func saveGoals(analysis: DailyAnalysis) {
+        guard let goalEntity = NSEntityDescription.entity(forEntityName: "GoalEntity", in: context),
+              let goals = analysis.aiAnalysis.goalsAnalysis?.items else {
+            return
+        }
+        
+        let today = Calendar.current.startOfDay(for: Date())
+        
+        do {
+            for goal in goals {
+                let newGoal = NSManagedObject(entity: goalEntity, insertInto: context)
+                newGoal.setValue(today, forKey: "date")
+                newGoal.setValue(goal.goal, forKey: "goalText")
+                newGoal.setValue(goal.category.rawValue, forKey: "category")
+                newGoal.setValue(goal.timeframe.rawValue, forKey: "timeframe")
+                newGoal.setValue(goal.context, forKey: "context")
+                newGoal.setValue(false, forKey: "isCompleted")
+                newGoal.setValue(analysis.aiAnalysis.moodData?.rating, forKey: "associatedMood")
+            }
+            
+            try context.save()
+            print("[AnalysisManager] ✅ Successfully saved goals")
+        } catch {
+            print("[AnalysisManager] 🚨 Failed to save goals: \(error)")
+        }
+    }
+
+    private func saveAchievements(analysis: DailyAnalysis) {
+        guard let achievementEntity = NSEntityDescription.entity(forEntityName: "AchievementEntity", in: context),
+              let achievements = analysis.aiAnalysis.winsAnalysis?.achievements else {
+            return
+        }
+        
+        let today = Calendar.current.startOfDay(for: Date())
+        
+        do {
+            for achievement in achievements {
+                let newAchievement = NSManagedObject(entity: achievementEntity, insertInto: context)
+                newAchievement.setValue(today, forKey: "date")
+                newAchievement.setValue(achievement.win, forKey: "achievementText")
+                newAchievement.setValue(achievement.category.rawValue, forKey: "category")
+                newAchievement.setValue(achievement.associatedTopic, forKey: "associatedTopic")
+                newAchievement.setValue(achievement.sentimentIntensity, forKey: "sentimentIntensity")
+            }
+            
+            try context.save()
+            print("[AnalysisManager] ✅ Successfully saved achievements")
+        } catch {
+            print("[AnalysisManager] 🚨 Failed to save achievements: \(error)")
+        }
+    }
+
+    private func saveAffirmations(analysis: DailyAnalysis) {
+        guard let affirmationEntity = NSEntityDescription.entity(forEntityName: "AffirmationEntity", in: context),
+              let affirmations = analysis.aiAnalysis.positiveBeliefs?.statements else {
+            return
+        }
+        
+        let today = Calendar.current.startOfDay(for: Date())
+        
+        do {
+            for affirmation in affirmations {
+                let newAffirmation = NSManagedObject(entity: affirmationEntity, insertInto: context)
+                newAffirmation.setValue(today, forKey: "date")
+                newAffirmation.setValue(affirmation.affirmation, forKey: "affirmationText")
+                newAffirmation.setValue(affirmation.theme.rawValue, forKey: "theme")
+                newAffirmation.setValue(affirmation.context, forKey: "context")
+                newAffirmation.setValue(analysis.aiAnalysis.moodData?.rating, forKey: "associatedMood")
+            }
+            
+            try context.save()
+            print("[AnalysisManager] ✅ Successfully saved affirmations")
+        } catch {
+            print("[AnalysisManager] 🚨 Failed to save affirmations: \(error)")
         }
     }
     

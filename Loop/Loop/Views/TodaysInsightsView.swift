@@ -332,9 +332,9 @@ struct KeyMomentCard: View {
             ZStack {
                 Color.white
                 
-                SparklePattern()
-                    .stroke(accentColor, lineWidth: 0.5)
-                    .opacity(moment != nil ? 0.04 : 0.02)
+//                SparklePattern()
+//                    .stroke(accentColor, lineWidth: 0.5)
+//                    .opacity(moment != nil ? 0.04 : 0.02)
             }
         )
         .clipShape(RoundedRectangle(cornerRadius: 10))

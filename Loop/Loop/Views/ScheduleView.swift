@@ -16,27 +16,26 @@ struct ScheduleView: View {
     @State private var currentMonth: Date = Date()
     
     private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    private let backgroundColor = Color(hex: "FAFBFC")
     
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 40) {
+            VStack(spacing: 48) {
+                // Minimal Header
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Calendar")
+                    Text("Schedule")
                         .font(.system(size: 34, weight: .medium))
+                        .foregroundColor(textColor)
                         .padding(.top, 16)
-                    
-                    Text(formatMonthYear(currentMonth).uppercased())
-                        .font(.system(size: 15, weight: .regular))
-                        .foregroundColor(.black.opacity(0.5))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 24)
-                .padding(.top, 16)
                 
-
-                LazyVStack(spacing: 60) {
+                // Free-flowing Calendar
+                LazyVStack(spacing: 64) {
                     ForEach(scheduleManager.monthsToShow, id: \.self) { month in
-                        MonthView(
+                        FlowingMonthView(
                             month: month,
                             selectedDate: $selectedDate,
                             showingDayView: $showingDayView
@@ -47,7 +46,7 @@ struct ScheduleView: View {
                 .padding(.bottom, 32)
             }
         }
-        .background(Color(.systemBackground))
+        .background(backgroundColor)
         .task {
             await scheduleManager.loadYearDataAndAssignColors()
             if let date = selectedScheduleDate {
@@ -62,44 +61,42 @@ struct ScheduleView: View {
             }
         }
     }
-    
-    private func formatMonthYear(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: date)
-    }
 }
 
-struct MonthView: View {
+struct FlowingMonthView: View {
     let month: Date
     @Binding var selectedDate: Date?
     @Binding var showingDayView: Bool
     @ObservedObject private var scheduleManager = ScheduleManager.shared
     
-    private let weekdays = Calendar.current.veryShortWeekdaySymbols
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
+    private let weekdays = ["S", "M", "T", "W", "T", "F", "S"]
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 7)
+    private let textColor = Color(hex: "2C3E50")
+    private let accentColor = Color(hex: "A28497")
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
+        VStack(alignment: .leading, spacing: 32) {
+            // Minimal month header
             Text(month.formatted(.dateTime.month(.wide)))
-                .font(.system(size: 24, weight: .medium))
-                .foregroundColor(.primary)
+                .font(.system(size: 20, weight: .medium))
+                .foregroundColor(textColor.opacity(0.8))
             
-            VStack(spacing: 16) {
+            VStack(spacing: 24) {
+                // Minimal weekday headers
                 HStack {
                     ForEach(weekdays, id: \.self) { day in
                         Text(day)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.secondary)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(textColor.opacity(0.3))
                             .frame(maxWidth: .infinity)
                     }
                 }
                 
-
-                LazyVGrid(columns: columns, spacing: 2) {
+                // Open calendar grid
+                LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(daysInMonth(), id: \.self) { date in
                         if let date = date {
-                            DayCell(
+                            MinimalDayCell(
                                 date: date,
                                 isSelected: selectedDate == date,
                                 rating: scheduleManager.ratings[Calendar.current.startOfDay(for: date)]
@@ -146,35 +143,41 @@ struct MonthView: View {
     }
 }
 
-struct DayCell: View {
+struct MinimalDayCell: View {
     let date: Date
     let isSelected: Bool
     let rating: Double?
     
     @ObservedObject private var scheduleManager = ScheduleManager.shared
     private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
     
     var body: some View {
         let isToday = Calendar.current.isDateInToday(date)
+        let dayNumber = Calendar.current.component(.day, from: date)
         
         ZStack {
             if let rating = rating,
                let color = scheduleManager.ratingColors[rating] {
-                color
-                    .opacity(0.9)
+                // Emotion color background
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(color.opacity(0.15))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(color.opacity(0.3), lineWidth: 1)
+                    )
+            } else if isToday {
+                // Today's cell
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(accentColor.opacity(0.3), lineWidth: 1)
             }
             
-            Text("\(Calendar.current.component(.day, from: date))")
+            Text("\(dayNumber)")
                 .font(.system(size: 16, weight: isToday ? .medium : .regular))
-                .foregroundColor(rating != nil ? .white : (isToday ? accentColor : .primary))
-                .frame(maxWidth: .infinity)
+                .foregroundColor(isToday ? accentColor : textColor.opacity(0.8))
         }
-        .frame(height: 50)
-//        .overlay(
-//            Rectangle()
-//                .stroke(isToday ? accentColor : Color.clear, lineWidth: isToday ? 5 : 0)
-//                .cornerRadius(10)
-//        )
+        .frame(height: 44)
+        .background(Color.clear)
     }
 }
 

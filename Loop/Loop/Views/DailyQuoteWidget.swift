@@ -12,7 +12,7 @@ struct DailyQuoteWidget: View {
     private let textColor = Color(hex: "2C3E50")
     private let backgroundColor = Color.white
     
-    @StateObject private var quoteManager = QuoteManager.shared
+    @ObservedObject private var quoteManager = QuoteManager.shared
     
     @State var showQuoteReflectionSheet: Bool = false
     
@@ -41,6 +41,18 @@ struct DailyQuoteWidget: View {
                         .foregroundColor(textColor.opacity(0.5))
                     
                     Spacer()
+                    
+                    Button {
+                        withAnimation {
+                            quoteManager.showDailyQuote = false
+                        }
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 13, weight: .medium))
+                            .tracking(1.5)
+                            .foregroundColor(textColor)
+                    }
+
                 }
                 
                 VStack (spacing: 16) {

@@ -35,9 +35,9 @@ struct InsightsView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                TabNavigationView(selectedTimeframe: $selectedTimeframe)
-                    .padding(.top, 24)
-                
+//                TabNavigationView(selectedTimeframe: $selectedTimeframe)
+//                    .padding(.top, 24)
+//                
                 contentView
                     .padding(.top, 8)
             }

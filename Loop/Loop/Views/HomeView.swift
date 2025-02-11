@@ -15,6 +15,7 @@ struct HomeView: View {
     @ObservedObject var loopManager = LoopManager.shared
     @ObservedObject var scheduleManager = ScheduleManager.shared
     @ObservedObject var reflectionSessionManager = ReflectionSessionManager.shared
+    @ObservedObject var quoteManager = QuoteManager.shared
     
     @State private var showingRecordLoopsView = false
     @State private var showPastLoopSheet = false
@@ -57,8 +58,7 @@ struct HomeView: View {
         Calendar.current.startOfDay(for: Calendar.current.date(byAdding: .day, value: -1, to: Date())!): "Calm",
         Calendar.current.startOfDay(for: Calendar.current.date(byAdding: .day, value: 1, to: Date())!): "Peace"
     ]
-    
-    // Sample color mappings based on frequency
+
     let sampleColors: [String: Color] = [
         "Joy": Color(hex: "A28497"),
         "Calm": Color(hex: "B5D5E2"),
@@ -102,8 +102,10 @@ struct HomeView: View {
                         recordingInterface
                             .padding(.horizontal, 24)
                         
-                        DailyQuoteWidget()
-                            .padding(.horizontal, 24)
+                        if quoteManager.showDailyQuote {
+                            DailyQuoteWidget()
+                                .padding(.horizontal, 24)
+                        }
                         
                     }
                     

@@ -68,12 +68,12 @@ struct ReflectionCard: View {
     private let lightMauve = Color(hex: "D5C5CC")
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            cardIcon
-                .frame(width: 32, height: 32)
-                .foregroundColor(accentColor)
+        VStack(alignment: .center, spacing: 16) {
+//            cardIcon
+//                .frame(width: 32, height: 32)
+//                .foregroundColor(accentColor)
             
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .center, spacing: 8) {
                 Text(card.title)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(textColor)
@@ -84,7 +84,7 @@ struct ReflectionCard: View {
                     .lineLimit(2)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .center)
         .frame(height: 120)
         .padding(20)
         .background(
@@ -146,12 +146,12 @@ struct ReflectionCard: View {
             GeometricMountains()
                 .fill(accentColor)
                 .frame(height: 60)
-                .offset(y: 40)
+                .offset(y: 50)
         case .moodCheckin:
             GeometricMountains()
                 .fill(accentColor)
                 .frame(height: 60)
-                .offset(y: 40)
+                .offset(y: 50)
         case .daySummary:
             WavyPattern()
                 .fill(accentColor)

@@ -308,6 +308,7 @@
 		99C7F8392D56BBC100A6D4FC /* DailyQuoteWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyQuoteWidget.swift; sourceTree = "<group>"; };
 		99C7F83B2D56C0CE00A6D4FC /* DailyQuoteManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyQuoteManager.swift; sourceTree = "<group>"; };
 		99C7F83D2D56C93300A6D4FC /* RecordQuoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordQuoteView.swift; sourceTree = "<group>"; };
+		99C7F83F2D5AC91A00A6D4FC /* LoopDataStore.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = LoopDataStore.xcdatamodel; sourceTree = "<group>"; };
 		99CCFBB72D10DB9300DA8A55 /* AIAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIAnalyzer.swift; sourceTree = "<group>"; };
 		99CCFBBB2D10DF4300DA8A55 /* CleanGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanGraphView.swift; sourceTree = "<group>"; };
 		99CCFBBD2D121F2400DA8A55 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
@@ -1081,6 +1082,7 @@
 		9953BE0A2CFCC0FC00348AC3 /* LoopData.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				99C7F83F2D5AC91A00A6D4FC /* LoopDataStore.xcdatamodel */,
 				992FA39D2D52FC4200F8AE36 /* LoopNewerData.xcdatamodel */,
 				992FA39C2D52FC3300F8AE36 /* LoopNewData.xcdatamodel */,
 				992EB36B2D4C9F9B0061544E /* LoopDataNewer.xcdatamodel */,

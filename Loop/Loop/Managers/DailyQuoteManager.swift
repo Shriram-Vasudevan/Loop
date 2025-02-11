@@ -28,6 +28,8 @@ class QuoteManager: ObservableObject {
     
     @Published private(set) var currentQuote: Quote
     
+    @Published var showDailyQuote: Bool = true
+    
     private let quotes: [Quote] = [
         Quote(text: "The unexamined life is not worth living.", author: "Socrates"),
         Quote(text: "Between stimulus and response there is a space. In that space is our power to choose our response.", author: "Viktor E. Frankl"),
@@ -141,6 +143,7 @@ class QuoteManager: ObservableObject {
     private let currentQuoteKey = "currentDailyQuote"
     private let quoteHistoryKey = "quoteHistory"
     
+    
     private init() {
         self.currentQuote = Quote(text: "Loading...", author: "")
         loadQuoteHistory()
@@ -211,13 +214,6 @@ class QuoteManager: ObservableObject {
             saveCurrentQuote()
             saveQuoteHistory()
         }
-    }
-}
-
-extension UserDefaults {
-    func set(_ value: Any?, for key: String) {
-        set(value, forKey: key)
-        synchronize()
     }
 }
 

@@ -28,6 +28,8 @@ class AIAnalyzer {
 
             \(formattedResponses)
 
+            Format your response EXACTLY as below:
+        
             ### MOOD & SLEEP DATA:
             mood_data:
             [FROM "How are you feeling today?"]
@@ -54,6 +56,35 @@ class AIAnalyzer {
               key_moment: [Direct quote edited for clarity while preserving personal voice.]
               category: (realization/learning/success/challenge/connection/decision/plan)
               source_type: (summary/freeform)
+
+            ### GOALS & INTENTIONS:
+            goals_analysis:
+            [FROM ALL RESPONSES]
+            exists: YES/NO
+            items:
+              goal: [Direct quote edited for clarity: use ellipses (...) to skip unnecessary parts, maintain core intention]
+              category: (career/personal/health/relationship/financial/learning)
+              timeframe: (immediate/short_term/long_term/unspecified)
+              context: [Brief context if mentioned]
+
+            ### WINS & PROGRESS:
+            wins_analysis:
+            [FROM ALL RESPONSES]
+            exists: YES/NO
+            achievements:
+              win: [Direct quote edited for impact and clarity, preserve authentic voice]
+              category: (accomplishment/progress/realization/breakthrough)
+              associated_topic: [Map to same topic categories as topic_sentiments]
+              sentiment_intensity: (number 0.0 to 1.0)
+
+            ### AFFIRMATIONS & BELIEFS:
+            positive_beliefs:
+            [LOOK FOR STATEMENTS ABOUT SELF/CAPABILITIES/FUTURE]
+            exists: YES/NO
+            statements:
+              affirmation: [Direct quote edited for clarity while preserving personal voice]
+              theme: (self_worth/capability/growth/future/relationships)
+              context: [Brief situation context if relevant]
 
             ### TOPIC SENTIMENT ANALYSIS:
             topic_sentiments:
@@ -143,16 +174,24 @@ class AIAnalyzer {
         let additionalKeyMoments = try parseAdditionalKeyMoments(from: sections)
         let topicSentiments = try parseTopicSentiments(from: sections)
         let dailySummary = try parseDailySummary(from: sections)
-        
+        let goalsAnalysis = try parseGoalsAnalysis(from: sections)
+        let winsAnalysis = try parseWinsAnalysis(from: sections)
+        let positiveBeliefs = try parsePositiveBeliefs(from: sections)
+
+
         let result = DailyAIAnalysisResult(
             date: Date(),
             moodData: moodData,
             sleepData: sleepData,
             standoutAnalysis: standoutAnalysis,
             additionalKeyMoments: additionalKeyMoments,
+            goalsAnalysis: goalsAnalysis,
+            winsAnalysis: winsAnalysis,
+            positiveBeliefs: positiveBeliefs,
             topicSentiments: topicSentiments,
             dailySummary: dailySummary
         )
+        
         print("\nFinal Result:", result)
         return result
     }
@@ -325,6 +364,109 @@ class AIAnalyzer {
         return FollowUpSuggestion(exists: true, suggestion: suggestion)
     }
     
+    private static func parseGoalsAnalysis(from sections: [String]) throws -> GoalsAnalysis? {
+        guard let section = sections.first(where: { $0.contains("goals_analysis:") }) else {
+            return nil
+        }
+        
+        let exists = section.contains("exists: YES")
+        if !exists {
+            return GoalsAnalysis(exists: false, items: nil)
+        }
+        
+        var goals: [Goal] = []
+        if let itemsText = try? extractString(from: section, field: "items:") {
+            let goalEntries = itemsText.components(separatedBy: "goal:")
+                .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+            
+            for entry in goalEntries {
+                if let goalText = try? extractString(from: entry, field: ""),
+                   let category = try? extractGoalCategory(from: entry, field: "category:"),
+                   let timeframe = try? extractTimeframe(from: entry, field: "timeframe:") {
+                    
+                    let context = try? extractString(from: entry, field: "context:")
+                    let goal = Goal(
+                        goal: goalText.trimmingCharacters(in: .whitespaces),
+                        category: category,
+                        timeframe: timeframe,
+                        context: context
+                    )
+                    goals.append(goal)
+                }
+            }
+        }
+        
+        return GoalsAnalysis(exists: true, items: goals.isEmpty ? nil : goals)
+    }
+
+    private static func parseWinsAnalysis(from sections: [String]) throws -> WinsAnalysis? {
+        guard let section = sections.first(where: { $0.contains("wins_analysis:") }) else {
+            return nil
+        }
+        
+        let exists = section.contains("exists: YES")
+        if !exists {
+            return WinsAnalysis(exists: false, achievements: nil)
+        }
+        
+        var achievements: [Achievement] = []
+        if let achievementsText = try? extractString(from: section, field: "achievements:") {
+            let winEntries = achievementsText.components(separatedBy: "win:")
+                .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+            
+            for entry in winEntries {
+                if let winText = try? extractString(from: entry, field: ""),
+                   let category = try? extractAchievementCategory(from: entry, field: "category:"),
+                   let topic = try? extractString(from: entry, field: "associated_topic:"),
+                   let intensity = try? extractDouble(from: entry, field: "sentiment_intensity:") {
+                    
+                    let achievement = Achievement(
+                        win: winText.trimmingCharacters(in: .whitespaces),
+                        category: category,
+                        associatedTopic: topic,
+                        sentimentIntensity: intensity
+                    )
+                    achievements.append(achievement)
+                }
+            }
+        }
+        
+        return WinsAnalysis(exists: true, achievements: achievements.isEmpty ? nil : achievements)
+    }
+
+    private static func parsePositiveBeliefs(from sections: [String]) throws -> PositiveBeliefs? {
+        guard let section = sections.first(where: { $0.contains("positive_beliefs:") }) else {
+            return nil
+        }
+        
+        let exists = section.contains("exists: YES")
+        if !exists {
+            return PositiveBeliefs(exists: false, statements: nil)
+        }
+        
+        var affirmations: [Affirmation] = []
+        if let statementsText = try? extractString(from: section, field: "statements:") {
+            let affirmationEntries = statementsText.components(separatedBy: "affirmation:")
+                .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+            
+            for entry in affirmationEntries {
+                if let affirmationText = try? extractString(from: entry, field: ""),
+                   let theme = try? extractAffirmationTheme(from: entry, field: "theme:") {
+                    
+                    let context = try? extractString(from: entry, field: "context:")
+                    let affirmation = Affirmation(
+                        affirmation: affirmationText.trimmingCharacters(in: .whitespaces),
+                        theme: theme,
+                        context: context
+                    )
+                    affirmations.append(affirmation)
+                }
+            }
+        }
+        
+        return PositiveBeliefs(exists: true, statements: affirmations.isEmpty ? nil : affirmations)
+    }
+    
 
     private static func extractDouble(from text: String, field: String) throws -> Double? {
         guard let value = try extractString(from: text, field: field) else { return nil }
@@ -372,6 +514,26 @@ class AIAnalyzer {
         return SourceType(rawValue: value)
     }
 
+    private static func extractGoalCategory(from text: String, field: String) throws -> GoalCategory? {
+        guard let value = try extractString(from: text, field: field)?.lowercased() else { return nil }
+        return GoalCategory(rawValue: value)
+    }
+
+    private static func extractTimeframe(from text: String, field: String) throws -> GoalTimeframe? {
+        guard let value = try extractString(from: text, field: field)?.lowercased() else { return nil }
+        return GoalTimeframe(rawValue: value)
+    }
+
+    private static func extractAchievementCategory(from text: String, field: String) throws -> AchievementCategory? {
+        guard let value = try extractString(from: text, field: field)?.lowercased() else { return nil }
+        return AchievementCategory(rawValue: value)
+    }
+
+    private static func extractAffirmationTheme(from text: String, field: String) throws -> AffirmationTheme? {
+        guard let value = try extractString(from: text, field: field)?.lowercased() else { return nil }
+        return AffirmationTheme(rawValue: value)
+    }
+    
     private func getTodaysResponses() async -> [(question: String, answer: String)] {
         var responses: [(question: String, answer: String)] = []
 

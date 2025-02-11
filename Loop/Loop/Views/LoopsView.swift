@@ -260,13 +260,13 @@ struct DateSection: View {
     
     private func formatDate() -> String {
         if Calendar.current.isDateInToday(date) {
-            return "Today"  // Capitalized
+            return "Today"
         } else if Calendar.current.isDateInYesterday(date) {
-            return "Yesterday"  // Capitalized
+            return "Yesterday"
         } else {
             let formatter = DateFormatter()
             formatter.dateFormat = "MMMM d"
-            // Capitalize first letter while keeping rest lowercase
+      
             let dateString = formatter.string(from: date)
             return dateString.prefix(1).uppercased() + dateString.dropFirst().lowercased()
         }

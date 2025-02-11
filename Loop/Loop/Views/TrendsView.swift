@@ -26,12 +26,15 @@ struct TrendsView: View {
                 VStack(spacing: 12) {
                     headerSection
                         .padding(.horizontal, 24)
+//                    
+                    MoodShapeCard(timeframe: $selectedTimeframe, pageType: $pageType)
+                        .padding(.horizontal, 24)
                     
-                    TrendGraphsView(timeframe: $selectedTimeframe)
+//                    TrendGraphsView(timeframe: $selectedTimeframe)
                 }
                 
-                MoodSection(timeframe: $selectedTimeframe, pageType: $pageType)
-                    .padding(.horizontal, 24)
+//                MoodSection(timeframe: $selectedTimeframe, pageType: $pageType)
+//                    .padding(.horizontal, 24)
             }
             .overlay {
                 if trendsManager.isLoading {
@@ -52,25 +55,9 @@ struct TrendsView: View {
     private var headerSection: some View {
         VStack(spacing: 16) {
             HStack(spacing: 4) {
-                ForEach(Timeframe.allCases, id: \.self) { timeframe in
-                    Button(action: {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedTimeframe = timeframe
-                        }
-                    }) {
-                        Text(timeframe.displayText)
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(selectedTimeframe == timeframe ?
-                                accentColor : textColor)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .fill(selectedTimeframe == timeframe ?
-                                        accentColor.opacity(0.1) : Color.clear)
-                            )
-                    }
-                }
+                TimeframeSelector(selected: $selectedTimeframe)
+                
+                Spacer()
             }
         }
         .padding(.top, 16)
@@ -250,100 +237,83 @@ struct MoodShapeCard: View {
     
     var body: some View {
         VStack(spacing: 24) {
-            // Header
-            HStack {
-                Text("MOOD JOURNEY")
-                    .font(.system(size: 13, weight: .medium))
-                    .tracking(1.5)
-                    .foregroundColor(textColor.opacity(0.5))
-                
-                Spacer()
-                
-                Button(action: {
-                    pageType = .schedule
-                }, label: {
-                    Text("see more")
-                        .font(.system(size: 12, weight: .medium))
-                        .tracking(1.5)
-                        .foregroundColor(textColor.opacity(0.5))
-                })
-            }
             
             if !moodData.isEmpty {
                 HStack(spacing: 24) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("you've been")
-                            .font(.system(size: 17))
-                            .foregroundColor(textColor)
                         
                         Text(moodLabel)
-                            .font(.system(size: 24, weight: .medium))
+                            .font(.system(size: 30, weight: .bold))
                             .foregroundColor(textColor)
+                        
+                        MoodShape(rating: currentMood)
+                            .fill(moodColor)
+                            .frame(width: 160, height: 160)
+                        
+//
+//                        Text("you've been")
+//                            .font(.system(size: 17))
+//                            .foregroundColor(textColor)
+
                     }
-                    
-                    Spacer()
-                    
-                    MoodShape(rating: currentMood)
-                        .fill(moodColor)
-                        .frame(width: 120, height: 120)
+        
                 }
                 
                 // Mood Distribution Section
-                VStack(spacing: 16) {
-                    Divider()
-                        .background(textColor.opacity(0.1))
-                    
-                    VStack(spacing: 12) {
-                        ForEach(moodDistribution, id: \.label) { mood in
-                            HStack(spacing: 12) {
-                                HStack (spacing: 6) {
-                                    Circle()
-                                        .fill(mood.color)
-                                        .frame(width: 8, height: 8)
-                                    
-                                    Text(mood.label)
-                                        .font(.system(size: 15, weight: .medium))
-                                        .foregroundColor(textColor)
-                                    
-                                }
-                                
-                                Spacer()
-                                
-                                Text("\(Int(round(mood.percentage)))%")
-                                    .font(.system(size: 15, weight: .medium))
-                                    .foregroundColor(textColor)
-                            }
-                        }
-                    }
-                }
+//                VStack(spacing: 16) {
+//                    Divider()
+//                        .background(textColor.opacity(0.1))
+//                    
+//                    VStack(spacing: 12) {
+//                        ForEach(moodDistribution, id: \.label) { mood in
+//                            HStack(spacing: 12) {
+//                                HStack (spacing: 6) {
+//                                    Circle()
+//                                        .fill(mood.color)
+//                                        .frame(width: 8, height: 8)
+//                                    
+//                                    Text(mood.label)
+//                                        .font(.system(size: 15, weight: .medium))
+//                                        .foregroundColor(textColor)
+//                                    
+//                                }
+//                                
+//                                Spacer()
+//                                
+//                                Text("\(Int(round(mood.percentage)))%")
+//                                    .font(.system(size: 15, weight: .medium))
+//                                    .foregroundColor(textColor)
+//                            }
+//                        }
+//                    }
+//                }
             } else {
-                HStack(spacing: 24) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("add reflections")
-                            .font(.system(size: 17))
-                            .foregroundColor(textColor)
+                VStack(alignment: .leading, spacing: 0) {
+                    
+                    HStack {
+                        VStack (alignment: .leading, spacing: 8) {
+                            Text("add reflections")
+                                .font(.system(size: 17))
+                                .foregroundColor(textColor)
+                            
+                            Text("to see your journey")
+                                .font(.system(size: 24, weight: .medium))
+                                .foregroundColor(textColor)
+                        }
                         
-                        Text("to see your journey")
-                            .font(.system(size: 24, weight: .medium))
-                            .foregroundColor(textColor)
+                        Spacer()
+                        
+                        MoodShape(rating: currentMood)
+                            .fill(moodColor)
+                            .frame(width: 130, height: 130)
+                        
                     }
-                    
-                    Spacer()
-                    
-                    MoodShape(rating: 5.0)
-                        .fill(Color(hex: "94A7B7"))
-                        .opacity(0.5)
-                        .frame(width: 120, height: 120)
+                
+                
                 }
             }
         }
-        .padding(24)
-        .background(
-            ZStack {
-                Color.white
-            }
-        )
-        .cornerRadius(10)
+
         .onAppear {
             Task {
                 let metrics = await trendsManager.getDailyMetrics(for: timeframe)
@@ -708,7 +678,8 @@ struct TopicsPatternBackground: Shape {
 
 struct TimeframeSelector: View {
     @Binding var selected: Timeframe
-    let accentColor: Color
+    private let textColor = Color(hex: "2C3E50")
+    private let backgroundColor = Color.white
     
     var body: some View {
         Menu {
@@ -719,23 +690,36 @@ struct TimeframeSelector: View {
                 }
             }
         } label: {
-            HStack(spacing: 8) {
-                Text(selected.displayText.lowercased())
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(accentColor)
+            HStack {
+                Text(selected.displayText.uppercased())
+                    .font(.system(size: 13, weight: .medium))
+                    .tracking(1.5)
+                    .foregroundColor(textColor.opacity(0.5))
                 
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(accentColor)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(textColor.opacity(0.5))
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.vertical, 12)
             .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(accentColor.opacity(0.3), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(backgroundColor)
+                    .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 2)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(textColor.opacity(0.1), lineWidth: 1)
             )
         }
     }
+}
+
+// Preview
+#Preview {
+    TimeframeSelector(selected: .constant(.week))
+        .padding()
+        .background(Color(hex: "FAFBFC"))
 }
 
 struct TrendCard<Content: View>: View {
