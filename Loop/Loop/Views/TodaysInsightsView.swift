@@ -134,9 +134,9 @@ struct TodaysMoodCard: View {
                     
                     Spacer()
                     
-                    MoodShape(rating: rating)
-                        .fill(moodColor)
-                        .frame(width: 110, height: 110)
+//                    MoodShape(rating: rating)
+//                        .fill(moodColor)
+//                        .frame(width: 110, height: 110)
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
@@ -155,10 +155,10 @@ struct TodaysMoodCard: View {
                     
                     Spacer()
                     
-                    MoodShape(rating: 5.0)
-                        .fill(Color(hex: "94A7B7"))
-                        .opacity(0.5)
-                        .frame(width: 110, height: 110)
+//                    MoodShape(rating: 5.0)
+//                        .fill(Color(hex: "94A7B7"))
+//                        .opacity(0.5)
+//                        .frame(width: 110, height: 110)
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)

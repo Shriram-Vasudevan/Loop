@@ -77,10 +77,10 @@ struct RecordQuoteView: View {
                 .font(.system(size: 28, weight: .medium))
                 .foregroundColor(textColor)
             
-//            Text("This is your space to explore what this quote means to you. What thoughts or memories does it spark?")
-//                .font(.system(size: 16, weight: .regular))
-//                .foregroundColor(.gray)
-//                .padding(.bottom, 8)
+            Text("What thoughts does this spark?")
+                .font(.system(size: 16, weight: .regular))
+                .foregroundColor(.gray)
+                .padding(.bottom, 8)
             
             Divider()
         }

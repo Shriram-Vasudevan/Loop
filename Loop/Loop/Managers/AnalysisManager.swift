@@ -208,6 +208,7 @@ class AnalysisManager: ObservableObject {
     
     
     func performAnalysisForUnguidedEntry(transcript: String) {
+        // Keep existing metrics calculation
         let metrics = calculateQuantitativeMetrics(transcript)
         let today = Calendar.current.startOfDay(for: Date())
         
@@ -216,61 +217,99 @@ class AnalysisManager: ObservableObject {
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DayMetricsEntity")
         fetchRequest.predicate = NSPredicate(format: "date == %@", today as NSDate)
         fetchRequest.fetchLimit = 1
-        
-        do {
-            if let existingMetrics = try context.fetch(fetchRequest).first {
-                let currentWords = existingMetrics.value(forKey: "totalWords") as? Int ?? 0
-                let currentDuration = existingMetrics.value(forKey: "totalDuration") as? Double ?? 0
-                let currentEntryCount = existingMetrics.value(forKey: "entryCount") as? Int ?? 0
-                
-                existingMetrics.setValue(currentWords + metrics.totalWordCount, forKey: "totalWords")
-                existingMetrics.setValue(currentDuration + metrics.totalDurationSeconds, forKey: "totalDuration")
-                existingMetrics.setValue(currentEntryCount + 1, forKey: "entryCount")
-                
-                try context.save()
-                print("[AnalysisManager] ✅ Successfully updated metrics in Core Data")
-                
-                if var currentDayMetrics = self.currentDayMetrics {
-                    currentDayMetrics.totalWords = currentWords + metrics.totalWordCount
-                    currentDayMetrics.totalDuration = currentDuration + metrics.totalDurationSeconds
-                    currentDayMetrics.entryCount = currentEntryCount + 1
-                    
-                    self.currentDayMetrics = currentDayMetrics
-                    self.saveDailyMetric(currentDayMetrics)
-                }
-            } else {
-                guard let dayMetricsEntity = NSEntityDescription.entity(forEntityName: "DayMetricsEntity", in: context) else {
-                    print("[AnalysisManager] 🚨 Failed to get DayMetrics entity description")
-                    return
-                }
-                
-                let newMetrics = NSManagedObject(entity: dayMetricsEntity, insertInto: context)
-                newMetrics.setValue(today, forKey: "date")
-                newMetrics.setValue(metrics.totalWordCount, forKey: "totalWords")
-                newMetrics.setValue(metrics.totalDurationSeconds, forKey: "totalDuration")
-                newMetrics.setValue(1, forKey: "entryCount")
-                
-                try context.save()
-                print("[AnalysisManager] ✅ Successfully created new metrics in Core Data")
-                
-                if var currentDayMetrics = self.currentDayMetrics {
-                    currentDayMetrics.totalWords = metrics.totalWordCount
-                    currentDayMetrics.totalDuration = metrics.totalDurationSeconds
-                    currentDayMetrics.entryCount = 1
-                    
-                    self.currentDayMetrics = currentDayMetrics
-                    self.saveDailyMetric(currentDayMetrics)
-                }
-                else {
-                    self.currentDayMetrics = DayMetrics(date: Date(), entryCount: 1, totalWords: metrics.totalWordCount, totalDuration: metrics.totalDurationSeconds, fillerWordCount: 0)
-                    if let currentDayMetrics = self.currentDayMetrics {
-                        self.saveDailyMetric(currentDayMetrics)
-                    }
 
+        Task {
+            do {
+                print("[AnalysisManager] Starting AI analysis for unguided entry")
+                let aiResult = try await SingleResponseAIAnalyzer.shared.analyzeTranscript(transcript)
+
+                if let keyMoments = aiResult.keyMoments {
+                    print("[AnalysisManager] Saving \(keyMoments.count) key moments")
+                    saveKeyMoments(moments: keyMoments)
                 }
+                
+                if let topicSentiments = aiResult.topicSentiments {
+                    print("[AnalysisManager] Saving \(topicSentiments.count) topic sentiments")
+                    saveTopicSentiments(sentiments: topicSentiments)
+                }
+                
+                if let wins = aiResult.winsAnalysis?.achievements {
+                    print("[AnalysisManager] Saving \(wins.count) achievements")
+                    saveAchievements(achievements: wins)
+                }
+                
+                if let goals = aiResult.goalsAnalysis?.items {
+                    print("[AnalysisManager] Saving \(goals.count) goals")
+                    saveGoals(goals: goals)
+                }
+                
+                if let beliefs = aiResult.positiveBeliefs?.statements {
+                    print("[AnalysisManager] Saving \(beliefs.count) affirmations")
+                    saveAffirmations(affirmations: beliefs)
+                }
+
+                do {
+                    if let existingMetrics = try context.fetch(fetchRequest).first {
+                        let currentWords = existingMetrics.value(forKey: "totalWords") as? Int ?? 0
+                        let currentDuration = existingMetrics.value(forKey: "totalDuration") as? Double ?? 0
+                        let currentEntryCount = existingMetrics.value(forKey: "entryCount") as? Int ?? 0
+                        
+                        existingMetrics.setValue(currentWords + metrics.totalWordCount, forKey: "totalWords")
+                        existingMetrics.setValue(currentDuration + metrics.totalDurationSeconds, forKey: "totalDuration")
+                        existingMetrics.setValue(currentEntryCount + 1, forKey: "entryCount")
+                        existingMetrics.setValue(aiResult.goalsAnalysis?.items?.count ?? 0, forKey: "goalsSet")
+                        existingMetrics.setValue(aiResult.winsAnalysis?.achievements?.count ?? 0, forKey: "achievementsCount")
+                        existingMetrics.setValue(aiResult.positiveBeliefs?.statements?.count ?? 0, forKey: "affirmationsCount")
+                        
+                        try context.save()
+                        print("[AnalysisManager] ✅ Successfully updated metrics in Core Data")
+                        
+                        if var currentDayMetrics = self.currentDayMetrics {
+                            currentDayMetrics.totalWords = currentWords + metrics.totalWordCount
+                            currentDayMetrics.totalDuration = currentDuration + metrics.totalDurationSeconds
+                            currentDayMetrics.entryCount = currentEntryCount + 1
+                            
+                            self.currentDayMetrics = currentDayMetrics
+                            self.saveDailyMetric(currentDayMetrics)
+                        }
+                    } else {
+                        guard let dayMetricsEntity = NSEntityDescription.entity(forEntityName: "DayMetricsEntity", in: context) else {
+                            print("[AnalysisManager] 🚨 Failed to get DayMetrics entity description")
+                            return
+                        }
+                        
+                        let newMetrics = NSManagedObject(entity: dayMetricsEntity, insertInto: context)
+                        newMetrics.setValue(today, forKey: "date")
+                        newMetrics.setValue(metrics.totalWordCount, forKey: "totalWords")
+                        newMetrics.setValue(metrics.totalDurationSeconds, forKey: "totalDuration")
+                        newMetrics.setValue(1, forKey: "entryCount")
+                        newMetrics.setValue(aiResult.goalsAnalysis?.items?.count ?? 0, forKey: "goalsSet")
+                        newMetrics.setValue(aiResult.winsAnalysis?.achievements?.count ?? 0, forKey: "achievementsCount")
+                        newMetrics.setValue(aiResult.positiveBeliefs?.statements?.count ?? 0, forKey: "affirmationsCount")
+                        
+                        try context.save()
+                        print("[AnalysisManager] ✅ Successfully created new metrics in Core Data")
+                        
+                        if var currentDayMetrics = self.currentDayMetrics {
+                            currentDayMetrics.totalWords = metrics.totalWordCount
+                            currentDayMetrics.totalDuration = metrics.totalDurationSeconds
+                            currentDayMetrics.entryCount = 1
+                            
+                            self.currentDayMetrics = currentDayMetrics
+                            self.saveDailyMetric(currentDayMetrics)
+                        } else {
+                            self.currentDayMetrics = DayMetrics(date: Date(), entryCount: 1, totalWords: metrics.totalWordCount, totalDuration: metrics.totalDurationSeconds, fillerWordCount: 0)
+                            if let currentDayMetrics = self.currentDayMetrics {
+                                self.saveDailyMetric(currentDayMetrics)
+                            }
+                        }
+                    }
+                } catch {
+                    print("[AnalysisManager] 🚨 Failed to update metrics in Core Data: \(error)")
+                }
+            } catch {
+                print("[AnalysisManager] 🚨 Failed to perform AI analysis: \(error)")
             }
-        } catch {
-            print("[AnalysisManager] 🚨 Failed to update metrics in Core Data: \(error)")
         }
     }
     
@@ -298,15 +337,33 @@ class AnalysisManager: ObservableObject {
                 existingMetrics.setValue(analysis.aiAnalysis.winsAnalysis?.achievements?.count ?? 0, forKey: "achievementsCount")
                 existingMetrics.setValue(analysis.aiAnalysis.positiveBeliefs?.statements?.count ?? 0, forKey: "affirmationsCount")
                 
-                saveKeyMoments(analysis: analysis)
-                saveTopicSentiments(analysis: analysis)
-                saveDailySummary(analysis: analysis)
-                saveGoals(analysis: analysis)
-                saveAchievements(analysis: analysis)
-                saveAffirmations(analysis: analysis)
+                if let moments = analysis.aiAnalysis.additionalKeyMoments?.moments {
+                    saveKeyMoments(moments: moments)
+                }
+                
+                if let sentiments = analysis.aiAnalysis.topicSentiments {
+                    saveTopicSentiments(sentiments: sentiments)
+                }
+                
+                if let summary = analysis.aiAnalysis.dailySummary?.summary {
+                    saveDailySummary(summary: summary)
+                }
+                
+                if let goals = analysis.aiAnalysis.goalsAnalysis?.items {
+                    saveGoals(goals: goals)
+                }
+                
+                if let achievements = analysis.aiAnalysis.winsAnalysis?.achievements {
+                    saveAchievements(achievements: achievements)
+                }
+                
+                if let affirmations = analysis.aiAnalysis.positiveBeliefs?.statements {
+                    saveAffirmations(affirmations: affirmations)
+                }
                 
                 try context.save()
                 print("[AnalysisManager] ✅ Successfully updated metrics in Core Data")
+                
             } else {
                 guard let dayMetricsEntity = NSEntityDescription.entity(forEntityName: "DayMetricsEntity", in: context) else {
                     print("[AnalysisManager] 🚨 Failed to get DayMetrics entity description")
@@ -326,13 +383,30 @@ class AnalysisManager: ObservableObject {
                 metrics.setValue(analysis.aiAnalysis.winsAnalysis?.achievements?.count ?? 0, forKey: "achievementsCount")
                 metrics.setValue(analysis.aiAnalysis.positiveBeliefs?.statements?.count ?? 0, forKey: "affirmationsCount")
                 
-                saveKeyMoments(analysis: analysis)
-                saveTopicSentiments(analysis: analysis)
-                saveDailySummary(analysis: analysis)
-                saveGoals(analysis: analysis)
-                saveAchievements(analysis: analysis)
-                saveAffirmations(analysis: analysis)
-    
+                if let moments = analysis.aiAnalysis.additionalKeyMoments?.moments {
+                    saveKeyMoments(moments: moments)
+                }
+                
+                if let sentiments = analysis.aiAnalysis.topicSentiments {
+                    saveTopicSentiments(sentiments: sentiments)
+                }
+                
+                if let summary = analysis.aiAnalysis.dailySummary?.summary {
+                    saveDailySummary(summary: summary)
+                }
+                
+                if let goals = analysis.aiAnalysis.goalsAnalysis?.items {
+                    saveGoals(goals: goals)
+                }
+                
+                if let achievements = analysis.aiAnalysis.winsAnalysis?.achievements {
+                    saveAchievements(achievements: achievements)
+                }
+                
+                if let affirmations = analysis.aiAnalysis.positiveBeliefs?.statements {
+                    saveAffirmations(affirmations: affirmations)
+                }
+        
                 try context.save()
                 print("[AnalysisManager] ✅ Successfully created new metrics in Core Data")
             }
@@ -361,26 +435,24 @@ class AnalysisManager: ObservableObject {
         return 0
     }
     
-    private func saveDailySummary(analysis: DailyAnalysis) {
-        guard let summaryEntity = NSEntityDescription.entity(forEntityName: "DailySummaryEntity", in: context),
-              let summary = analysis.aiAnalysis.dailySummary?.summary else {
+    private func saveDailySummary(summary: String) {
+        guard let summaryEntity = NSEntityDescription.entity(forEntityName: "DailySummaryEntity", in: context) else {
             return
         }
         
         let today = Calendar.current.startOfDay(for: Date())
         
-        // Check for existing summary
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "DailySummaryEntity")
         fetchRequest.predicate = NSPredicate(format: "date == %@", today as NSDate)
         
         do {
             let existingEntries = try context.fetch(fetchRequest)
             if let existing = existingEntries.first {
-                existing.setValue(summary, forKey: "summaryText")
+                existing.setValue(summary, forKey: "summary")
             } else {
                 let newSummary = NSManagedObject(entity: summaryEntity, insertInto: context)
                 newSummary.setValue(today, forKey: "date")
-                newSummary.setValue(summary, forKey: "summaryText")
+                newSummary.setValue(summary, forKey: "summary")
             }
             try context.save()
             print("[AnalysisManager] ✅ Successfully saved daily summary")
@@ -388,6 +460,7 @@ class AnalysisManager: ObservableObject {
             print("[AnalysisManager] 🚨 Failed to save daily summary: \(error)")
         }
     }
+
     private func saveTopicSentiments(analysis: DailyAnalysis) {
        print("[AnalysisManager] Starting to save topic sentiments")
        
@@ -442,7 +515,7 @@ class AnalysisManager: ObservableObject {
             let results = try context.fetch(fetchRequest)
             return results.compactMap { entity -> (date: Date, summary: String)? in
                 guard let date = entity.value(forKey: "date") as? Date,
-                      let summary = entity.value(forKey: "summaryText") as? String else {
+                      let summary = entity.value(forKey: "summary") as? String else {
                     return nil
                 }
                 return (date: date, summary: summary)
@@ -454,39 +527,53 @@ class AnalysisManager: ObservableObject {
     }
 
     
-    private func saveKeyMoments(analysis: DailyAnalysis) {
+    private func saveKeyMoments(moments: [KeyMomentModel]) {
         guard let momentEntity = NSEntityDescription.entity(forEntityName: "KeyMomentEntity", in: context) else {
             print("[AnalysisManager] 🚨 Failed to get KeyMoment entity description")
             return
         }
         
-        if let standoutAnalysis = analysis.aiAnalysis.standoutAnalysis,
-           let keyMoment = standoutAnalysis.keyMoment {
-            let standoutMoment = NSManagedObject(entity: momentEntity, insertInto: context)
-            standoutMoment.setValue(Date(), forKey: "date")
-            standoutMoment.setValue(keyMoment, forKey: "content")
-            standoutMoment.setValue(analysis.aiAnalysis.moodData?.rating, forKey: "associatedMood")
-            standoutMoment.setValue(standoutAnalysis.category?.rawValue, forKey: "category")
-            standoutMoment.setValue(standoutAnalysis.sentiment, forKey: "sentiment")
-            standoutMoment.setValue("standout", forKey: "momentType")
-        }
-        
-        if let additionalMoments = analysis.aiAnalysis.additionalKeyMoments?.moments {
-            for moment in additionalMoments {
-                let additionalMoment = NSManagedObject(entity: momentEntity, insertInto: context)
-                additionalMoment.setValue(Date(), forKey: "date")
-                additionalMoment.setValue(moment.keyMoment, forKey: "content")
-                additionalMoment.setValue(analysis.aiAnalysis.moodData?.rating, forKey: "associatedMood")
-                additionalMoment.setValue(moment.category.rawValue, forKey: "category")
-                additionalMoment.setValue(moment.sourceType.rawValue, forKey: "sourceType")
-                additionalMoment.setValue("additional", forKey: "momentType")
+        do {
+            for moment in moments {
+                let newMoment = NSManagedObject(entity: momentEntity, insertInto: context)
+                newMoment.setValue(Date(), forKey: "date")
+                newMoment.setValue(moment.keyMoment, forKey: "content")
+                newMoment.setValue(moment.category.rawValue, forKey: "category")
+                newMoment.setValue(moment.sourceType.rawValue, forKey: "sourceType")
+                newMoment.setValue("additional", forKey: "momentType")
             }
+            try context.save()
+            print("[AnalysisManager] ✅ Successfully saved key moments")
+        } catch {
+            print("[AnalysisManager] 🚨 Failed to save key moments: \(error)")
         }
     }
     
-    private func saveGoals(analysis: DailyAnalysis) {
-        guard let goalEntity = NSEntityDescription.entity(forEntityName: "GoalEntity", in: context),
-              let goals = analysis.aiAnalysis.goalsAnalysis?.items else {
+    private func saveTopicSentiments(sentiments: [TopicSentiment]) {
+        guard let topicEntity = NSEntityDescription.entity(forEntityName: "TopicEntity", in: context) else {
+            print("[AnalysisManager] 🚨 Failed to get Topic entity description")
+            return
+        }
+        
+        let today = Calendar.current.startOfDay(for: Date())
+        
+        do {
+            for sentiment in sentiments {
+                let newTopic = NSManagedObject(entity: topicEntity, insertInto: context)
+                newTopic.setValue(today, forKey: "date")
+                newTopic.setValue(sentiment.topic, forKey: "topic")
+                newTopic.setValue(sentiment.sentiment, forKey: "sentiment")
+            }
+            try context.save()
+            print("[AnalysisManager] ✅ Successfully saved topic sentiments")
+        } catch {
+            print("[AnalysisManager] 🚨 Failed to save topic sentiments: \(error)")
+        }
+    }
+    
+    private func saveGoals(goals: [Goal]) {
+        guard let goalEntity = NSEntityDescription.entity(forEntityName: "GoalEntity", in: context) else {
+            print("[AnalysisManager] 🚨 Failed to get Goal entity description")
             return
         }
         
@@ -501,19 +588,17 @@ class AnalysisManager: ObservableObject {
                 newGoal.setValue(goal.timeframe.rawValue, forKey: "timeframe")
                 newGoal.setValue(goal.context, forKey: "context")
                 newGoal.setValue(false, forKey: "isCompleted")
-                newGoal.setValue(analysis.aiAnalysis.moodData?.rating, forKey: "associatedMood")
             }
-            
             try context.save()
             print("[AnalysisManager] ✅ Successfully saved goals")
         } catch {
             print("[AnalysisManager] 🚨 Failed to save goals: \(error)")
         }
     }
-
-    private func saveAchievements(analysis: DailyAnalysis) {
-        guard let achievementEntity = NSEntityDescription.entity(forEntityName: "AchievementEntity", in: context),
-              let achievements = analysis.aiAnalysis.winsAnalysis?.achievements else {
+    
+    private func saveAchievements(achievements: [Achievement]) {
+        guard let achievementEntity = NSEntityDescription.entity(forEntityName: "AchievementEntity", in: context) else {
+            print("[AnalysisManager] 🚨 Failed to get Achievement entity description")
             return
         }
         
@@ -528,17 +613,16 @@ class AnalysisManager: ObservableObject {
                 newAchievement.setValue(achievement.associatedTopic, forKey: "associatedTopic")
                 newAchievement.setValue(achievement.sentimentIntensity, forKey: "sentimentIntensity")
             }
-            
             try context.save()
             print("[AnalysisManager] ✅ Successfully saved achievements")
         } catch {
             print("[AnalysisManager] 🚨 Failed to save achievements: \(error)")
         }
     }
-
-    private func saveAffirmations(analysis: DailyAnalysis) {
-        guard let affirmationEntity = NSEntityDescription.entity(forEntityName: "AffirmationEntity", in: context),
-              let affirmations = analysis.aiAnalysis.positiveBeliefs?.statements else {
+    
+    private func saveAffirmations(affirmations: [Affirmation]) {
+        guard let affirmationEntity = NSEntityDescription.entity(forEntityName: "AffirmationEntity", in: context) else {
+            print("[AnalysisManager] 🚨 Failed to get Affirmation entity description")
             return
         }
         
@@ -551,9 +635,7 @@ class AnalysisManager: ObservableObject {
                 newAffirmation.setValue(affirmation.affirmation, forKey: "affirmationText")
                 newAffirmation.setValue(affirmation.theme.rawValue, forKey: "theme")
                 newAffirmation.setValue(affirmation.context, forKey: "context")
-                newAffirmation.setValue(analysis.aiAnalysis.moodData?.rating, forKey: "associatedMood")
             }
-            
             try context.save()
             print("[AnalysisManager] ✅ Successfully saved affirmations")
         } catch {

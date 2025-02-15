@@ -24,8 +24,11 @@ struct LoopsView: View {
     
     var body: some View {
         ZStack {
-            FlowingBackground(color: accentColor)
-                .opacity(backgroundOpacity)
+//            FlowingBackground(color: accentColor)
+//                .opacity(backgroundOpacity)
+//                .ignoresSafeArea()
+//            
+            Color(hex: "F5F5F5")
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
@@ -248,7 +251,7 @@ struct DateSection: View {
         
         do {
             if let summaryEntity = try checkinManager.context.fetch(fetchRequest).first,
-               let summaryText = summaryEntity.value(forKey: "summaryText") as? String {
+               let summaryText = summaryEntity.value(forKey: "summary") as? String {
                 await MainActor.run {
                     self.dailySummary = summaryText
                 }

@@ -30,10 +30,13 @@ struct InsightsView: View {
 
     var body: some View {
         ZStack {
-            FlowingBackground(color: accentColor)
-                .opacity(0.2)
-                .ignoresSafeArea()
+//            FlowingBackground(color: accentColor)
+//                .opacity(0.2)
+//                .ignoresSafeArea()
 
+            Color(hex: "F5F5F5")
+                .ignoresSafeArea()
+            
             VStack(spacing: 0) {
 //                TabNavigationView(selectedTimeframe: $selectedTimeframe)
 //                    .padding(.top, 24)

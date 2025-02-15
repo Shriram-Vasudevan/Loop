@@ -117,7 +117,7 @@ class AIAnalyzer {
             daily_summary:
             [SYNTHESIZE FROM ALL RESPONSES]
             exists: YES/NO
-            summary: (2-3 sentence overview in the second-person capturing key themes, mood, and notable events from the day's reflections. Be personable and thoughtful. Don't provide advice, but identify potential patterns and other things you noticed if possible. Don't force anything.)
+            summary: (1-2 sentence overview in the second-person capturing key themes, mood, and notable events from the day's reflections. Be personable and thoughtful. Don't provide advice, but identify potential patterns and other things you noticed if possible. Don't force anything.)
 
             CRITICAL FORMAT RULES:
             1. The topic_sentiments: field name must be exact
@@ -143,16 +143,39 @@ class AIAnalyzer {
             request.httpMethod = "POST"
             request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
             request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
-            
-            let (data, _) = try await URLSession.shared.data(for: request)
-            let response = try JSONDecoder().decode(OpenAIResponse.self, from: data)
-            
-            guard let content = response.choices.first?.message.content else {
-                throw AnalysisError.aiAnalysisFailed("No content in response")
+
+            do {
+                let requestData = try JSONSerialization.data(withJSONObject: requestBody)
+                request.httpBody = requestData
+
+                print("🔵 [Request] URL: \(endpoint)")
+                print("🔵 [Request] HTTP Method: \(request.httpMethod ?? "N/A")")
+                print("🔵 [Request] Headers: \(request.allHTTPHeaderFields ?? [:])")
+                print("🔵 [Request] Body: \(String(data: requestData, encoding: .utf8) ?? "N/A")")
+
+                let (data, response) = try await URLSession.shared.data(for: request)
+
+                if let httpResponse = response as? HTTPURLResponse {
+                    print("🟢 [Response] Status Code: \(httpResponse.statusCode)")
+                }
+
+                print("🟢 [Response] Raw Data: \(String(data: data, encoding: .utf8) ?? "N/A")")
+
+                let decodedResponse = try JSONDecoder().decode(OpenAIResponse.self, from: data)
+
+                guard let content = decodedResponse.choices.first?.message.content else {
+                    print("🔴 [Error] No content in response")
+                    throw AnalysisError.aiAnalysisFailed("No content in response")
+                }
+
+                print("🟢 [Response] Parsed Content: \(content)")
+
+                return try AIAnalyzer.parseFromAIResponse(content)
+            } catch {
+                print("🔴 [Error] \(error.localizedDescription)")
+                throw error
             }
-            
-            return try AIAnalyzer.parseFromAIResponse(content)
+
         }
 
     static func parseFromAIResponse(_ response: String) throws -> DailyAIAnalysisResult {
@@ -196,18 +219,181 @@ class AIAnalyzer {
         return result
     }
     
-    private static func parseMoodData(from sections: [String]) throws -> MoodData? {
+    static func parseMoodData(from sections: [String]) throws -> MoodData? {
         guard let section = sections.first(where: { $0.contains("mood_data:") }) else {
             return nil
         }
         
         let exists = section.contains("exists: YES")
-        let rating = try? extractDouble(from: section, field: "rating:")
+        let ratingLine = section.components(separatedBy: .newlines).first { $0.contains("rating:") }
+        let rating = ratingLine.flatMap { line -> Double? in
+            let components = line.components(separatedBy: "rating:")
+            guard components.count > 1 else { return nil }
+            let valueStr = components[1].trimmingCharacters(in: .whitespaces)
+            return Double(valueStr)
+        }
         
         return MoodData(exists: exists, rating: rating)
     }
+
+    static func parseAdditionalKeyMoments(from sections: [String]) throws -> AdditionalKeyMoments? {
+        guard let section = sections.first(where: { $0.contains("additional_key_moments:") }) else {
+            return nil
+        }
+        
+        let exists = section.contains("exists: YES")
+        if !exists {
+            return AdditionalKeyMoments(exists: false, moments: nil)
+        }
+        
+        let lines = section.components(separatedBy: .newlines)
+        var moments: [KeyMomentModel] = []
+        var currentMoment: String?
+        var currentCategory: MomentCategory?
+        var currentSourceType: SourceType?
+        
+        for line in lines {
+            let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+            if trimmedLine.contains("key_moment:") {
+                if let moment = currentMoment, let category = currentCategory, let sourceType = currentSourceType {
+                    moments.append(KeyMomentModel(keyMoment: moment, category: category, sourceType: sourceType))
+                }
+                currentMoment = trimmedLine.components(separatedBy: "key_moment:").last?.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "\"", with: "")
+            } else if trimmedLine.contains("category:") {
+                let categoryStr = trimmedLine.components(separatedBy: "category:").last?.trimmingCharacters(in: .whitespaces)
+                currentCategory = MomentCategory(rawValue: categoryStr ?? "")
+            } else if trimmedLine.contains("source_type:") {
+                let sourceTypeStr = trimmedLine.components(separatedBy: "source_type:").last?.trimmingCharacters(in: .whitespaces)
+                currentSourceType = SourceType(rawValue: sourceTypeStr ?? "")
+            }
+        }
+        
+        if let moment = currentMoment, let category = currentCategory, let sourceType = currentSourceType {
+            moments.append(KeyMomentModel(keyMoment: moment, category: category, sourceType: sourceType))
+        }
+        
+        return AdditionalKeyMoments(exists: true, moments: moments.isEmpty ? nil : moments)
+    }
+
+    static func parseWinsAnalysis(from sections: [String]) throws -> WinsAnalysis? {
+        guard let section = sections.first(where: { $0.contains("wins_analysis:") }) else {
+            return nil
+        }
+        
+        let exists = section.contains("exists: YES")
+        if !exists {
+            return WinsAnalysis(exists: false, achievements: nil)
+        }
+        
+        let lines = section.components(separatedBy: .newlines)
+        var achievements: [Achievement] = []
+        var currentWin: String?
+        var currentCategory: AchievementCategory?
+        var currentTopic: String?
+        var currentIntensity: Double?
+        
+        for line in lines {
+            let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+            if trimmedLine.contains("win:") {
+                if let win = currentWin,
+                   let category = currentCategory,
+                   let topic = currentTopic,
+                   let intensity = currentIntensity {
+                    achievements.append(Achievement(win: win, category: category, associatedTopic: topic, sentimentIntensity: intensity))
+                }
+                currentWin = trimmedLine.components(separatedBy: "win:").last?.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "\"", with: "")
+            } else if trimmedLine.contains("category:") {
+                let categoryStr = trimmedLine.components(separatedBy: "category:").last?.trimmingCharacters(in: .whitespaces)
+                currentCategory = AchievementCategory(rawValue: categoryStr ?? "")
+            } else if trimmedLine.contains("associated_topic:") {
+                currentTopic = trimmedLine.components(separatedBy: "associated_topic:").last?.trimmingCharacters(in: .whitespaces)
+            } else if trimmedLine.contains("sentiment_intensity:") {
+                let intensityStr = trimmedLine.components(separatedBy: "sentiment_intensity:").last?.trimmingCharacters(in: .whitespaces)
+                currentIntensity = Double(intensityStr ?? "")
+            }
+        }
+        
+        if let win = currentWin,
+           let category = currentCategory,
+           let topic = currentTopic,
+           let intensity = currentIntensity {
+            achievements.append(Achievement(win: win, category: category, associatedTopic: topic, sentimentIntensity: intensity))
+        }
+        
+        return WinsAnalysis(exists: true, achievements: achievements.isEmpty ? nil : achievements)
+    }
+
+    static func parsePositiveBeliefs(from sections: [String]) throws -> PositiveBeliefs? {
+        guard let section = sections.first(where: { $0.contains("positive_beliefs:") }) else {
+            return nil
+        }
+        
+        let exists = section.contains("exists: YES")
+        if !exists {
+            return PositiveBeliefs(exists: false, statements: nil)
+        }
+        
+        let lines = section.components(separatedBy: .newlines)
+        var statements: [Affirmation] = []
+        var currentAffirmation: String?
+        var currentTheme: AffirmationTheme?
+        var currentContext: String?
+        
+        for line in lines {
+            let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+            if trimmedLine.contains("affirmation:") {
+                if let affirmation = currentAffirmation, let theme = currentTheme {
+                    statements.append(Affirmation(affirmation: affirmation, theme: theme, context: currentContext))
+                }
+                currentAffirmation = trimmedLine.components(separatedBy: "affirmation:").last?.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "\"", with: "")
+            } else if trimmedLine.contains("theme:") {
+                let themeStr = trimmedLine.components(separatedBy: "theme:").last?.trimmingCharacters(in: .whitespaces)
+                currentTheme = AffirmationTheme(rawValue: themeStr ?? "")
+            } else if trimmedLine.contains("context:") {
+                currentContext = trimmedLine.components(separatedBy: "context:").last?.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "[", with: "").replacingOccurrences(of: "]", with: "")
+            }
+        }
+        
+        if let affirmation = currentAffirmation, let theme = currentTheme {
+            statements.append(Affirmation(affirmation: affirmation, theme: theme, context: currentContext))
+        }
+        
+        return PositiveBeliefs(exists: true, statements: statements.isEmpty ? nil : statements)
+    }
+
+    private static func parseDailySummary(from sections: [String]) throws -> DailySummary? {
+        guard let section = sections.first(where: { $0.contains("### DAILY SUMMARY") }) else {
+            return nil
+        }
+        
+        let exists = section.contains("exists: YES")
+        if !exists {
+            return DailySummary(exists: false, summary: nil)
+        }
+        
+        let lines = section.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        
+        guard let summaryIndex = lines.firstIndex(where: { $0.contains("summary:") }) else {
+            return DailySummary(exists: true, summary: nil)
+        }
+        
+        // Get the rest of the lines after "summary:"
+        let remainingLines = lines[(summaryIndex)...]
+            .filter { !$0.hasPrefix("###") }
+            .joined(separator: " ")
+        
+        // Extract everything after "summary:"
+        guard let summaryText = remainingLines.components(separatedBy: "summary:").last else {
+            return DailySummary(exists: true, summary: nil)
+        }
+        
+        let finalSummary = summaryText.trimmingCharacters(in: .whitespaces)
+        return DailySummary(exists: true, summary: finalSummary.isEmpty ? nil : finalSummary)
+    }
     
-    private static func parseSleepData(from sections: [String]) throws -> SleepData? {
+    static func parseSleepData(from sections: [String]) throws -> SleepData? {
         guard let section = sections.first(where: { $0.contains("sleep_data:") }) else {
             return nil
         }
@@ -217,19 +403,9 @@ class AIAnalyzer {
         
         return SleepData(exists: exists, hours: hours)
     }
+
     
-    private static func parseDailySummary(from sections: [String]) throws -> DailySummary? {
-        guard let section = sections.first(where: { $0.contains("daily_summary:") }) else {
-            return nil
-        }
-        
-        let exists = section.contains("exists: YES")
-        let summary = try? extractString(from: section, field: "summary:")
-        
-        return DailySummary(exists: exists, summary: summary)
-    }
-    
-    private static func parseTopicSentiments(from sections: [String]) throws -> [TopicSentiment]? {
+    static func parseTopicSentiments(from sections: [String]) throws -> [TopicSentiment]? {
         guard let section = sections.first(where: { $0.contains("topic_sentiments:") }) else {
             return nil
         }
@@ -268,7 +444,7 @@ class AIAnalyzer {
 
 
     
-    private static func parseStandoutAnalysis(from sections: [String]) throws -> StandoutAnalysis? {
+    static func parseStandoutAnalysis(from sections: [String]) throws -> StandoutAnalysis? {
         guard let section = sections.first(where: { $0.contains("standout_analysis:") }) else {
             return nil
         }
@@ -290,41 +466,8 @@ class AIAnalyzer {
         )
     }
     
-    private static func parseAdditionalKeyMoments(from sections: [String]) throws -> AdditionalKeyMoments? {
-        guard let section = sections.first(where: { $0.contains("additional_key_moments:") }) else {
-            return nil
-        }
-        
-        let exists = section.contains("exists: YES")
-        if !exists {
-            return AdditionalKeyMoments(exists: false, moments: nil)
-        }
-        
-
-        var moments: [KeyMomentModel] = []
-        if let momentsText = try? extractString(from: section, field: "moments:") {
-            let momentEntries = momentsText.components(separatedBy: "- key_moment:")
-                .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
-            
-            for entry in momentEntries {
-                if let keyMoment = try? extractString(from: entry, field: ""),
-                   let category = try? extractMomentCategory(from: entry, field: "category:"),
-                   let sourceType = try? extractSourceType(from: entry, field: "source_type:") {
-                    
-                    let moment = KeyMomentModel(
-                        keyMoment: keyMoment.trimmingCharacters(in: .whitespaces),
-                        category: category,
-                        sourceType: sourceType
-                    )
-                    moments.append(moment)
-                }
-            }
-        }
-        
-        return AdditionalKeyMoments(exists: true, moments: moments.isEmpty ? nil : moments)
-    }
     
-    private static func parseRecurringThemes(from sections: [String]) throws -> RecurringThemes? {
+    static func parseRecurringThemes(from sections: [String]) throws -> RecurringThemes? {
         guard let section = sections.first(where: { $0.contains("recurring_themes:") }) else {
             return nil
         }
@@ -345,7 +488,7 @@ class AIAnalyzer {
         return RecurringThemes(exists: true, themes: themes.isEmpty ? nil : themes)
     }
     
-    private static func parseFillerAnalysis(from sections: [String]) throws -> FillerAnalysis {
+    static func parseFillerAnalysis(from sections: [String]) throws -> FillerAnalysis {
         guard let section = sections.first(where: { $0.contains("filler_analysis:") }) else {
             return FillerAnalysis(totalCount: 0)
         }
@@ -354,7 +497,7 @@ class AIAnalyzer {
         return FillerAnalysis(totalCount: totalCount)
     }
     
-    private static func parseFollowUpSuggestion(from sections: [String]) throws -> FollowUpSuggestion {
+    static func parseFollowUpSuggestion(from sections: [String]) throws -> FollowUpSuggestion {
         guard let section = sections.first(where: { $0.contains("follow_up_suggestion:") }) else {
             return FollowUpSuggestion(exists: false, suggestion: nil)
         }
@@ -364,7 +507,7 @@ class AIAnalyzer {
         return FollowUpSuggestion(exists: true, suggestion: suggestion)
     }
     
-    private static func parseGoalsAnalysis(from sections: [String]) throws -> GoalsAnalysis? {
+    static func parseGoalsAnalysis(from sections: [String]) throws -> GoalsAnalysis? {
         guard let section = sections.first(where: { $0.contains("goals_analysis:") }) else {
             return nil
         }
@@ -399,75 +542,7 @@ class AIAnalyzer {
         return GoalsAnalysis(exists: true, items: goals.isEmpty ? nil : goals)
     }
 
-    private static func parseWinsAnalysis(from sections: [String]) throws -> WinsAnalysis? {
-        guard let section = sections.first(where: { $0.contains("wins_analysis:") }) else {
-            return nil
-        }
-        
-        let exists = section.contains("exists: YES")
-        if !exists {
-            return WinsAnalysis(exists: false, achievements: nil)
-        }
-        
-        var achievements: [Achievement] = []
-        if let achievementsText = try? extractString(from: section, field: "achievements:") {
-            let winEntries = achievementsText.components(separatedBy: "win:")
-                .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
-            
-            for entry in winEntries {
-                if let winText = try? extractString(from: entry, field: ""),
-                   let category = try? extractAchievementCategory(from: entry, field: "category:"),
-                   let topic = try? extractString(from: entry, field: "associated_topic:"),
-                   let intensity = try? extractDouble(from: entry, field: "sentiment_intensity:") {
-                    
-                    let achievement = Achievement(
-                        win: winText.trimmingCharacters(in: .whitespaces),
-                        category: category,
-                        associatedTopic: topic,
-                        sentimentIntensity: intensity
-                    )
-                    achievements.append(achievement)
-                }
-            }
-        }
-        
-        return WinsAnalysis(exists: true, achievements: achievements.isEmpty ? nil : achievements)
-    }
-
-    private static func parsePositiveBeliefs(from sections: [String]) throws -> PositiveBeliefs? {
-        guard let section = sections.first(where: { $0.contains("positive_beliefs:") }) else {
-            return nil
-        }
-        
-        let exists = section.contains("exists: YES")
-        if !exists {
-            return PositiveBeliefs(exists: false, statements: nil)
-        }
-        
-        var affirmations: [Affirmation] = []
-        if let statementsText = try? extractString(from: section, field: "statements:") {
-            let affirmationEntries = statementsText.components(separatedBy: "affirmation:")
-                .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
-            
-            for entry in affirmationEntries {
-                if let affirmationText = try? extractString(from: entry, field: ""),
-                   let theme = try? extractAffirmationTheme(from: entry, field: "theme:") {
-                    
-                    let context = try? extractString(from: entry, field: "context:")
-                    let affirmation = Affirmation(
-                        affirmation: affirmationText.trimmingCharacters(in: .whitespaces),
-                        theme: theme,
-                        context: context
-                    )
-                    affirmations.append(affirmation)
-                }
-            }
-        }
-        
-        return PositiveBeliefs(exists: true, statements: affirmations.isEmpty ? nil : affirmations)
-    }
-    
-
+   
     private static func extractDouble(from text: String, field: String) throws -> Double? {
         guard let value = try extractString(from: text, field: field) else { return nil }
         return Double(value.trimmingCharacters(in: .whitespaces))
@@ -564,6 +639,193 @@ class AIAnalyzer {
     }
 }
 
+struct SingleResponseAnalysisResult: Codable {
+    let date: Date
+    let transcript: String
+    let keyMoments: [KeyMomentModel]?
+    let topicSentiments: [TopicSentiment]?
+    let winsAnalysis: WinsAnalysis?
+    let goalsAnalysis: GoalsAnalysis?
+    let positiveBeliefs: PositiveBeliefs?
+}
+
+class SingleResponseAIAnalyzer {
+    static let shared = SingleResponseAIAnalyzer()
+    
+    private let endpoint = "https://api.openai.com/v1/chat/completions"
+    private let apiKey: String
+    
+    init() {
+        self.apiKey = ConfigurationKey.apiKey
+        print("🎯 SingleResponseAIAnalyzer initialized")
+    }
+    
+    func analyzeTranscript(_ transcript: String) async throws -> SingleResponseAnalysisResult {
+        print("\n📝 Starting analysis of transcript:")
+        print("Transcript length: \(transcript.count) characters")
+        print("First 100 chars: \(String(transcript.prefix(100)))...")
+        
+        let prompt = """
+            Analyze this personal reflection while maintaining privacy. Focus on identifying key themes, moments, and patterns.
+
+            Transcript: \(transcript)
+
+            Format your response EXACTLY as below:
+
+            ### KEY MOMENTS:
+            key_moments:
+            exists: YES/NO
+            moments:
+              key_moment: [Direct quote edited for clarity while preserving personal voice]
+              category: (realization/learning/success/challenge/connection/decision/plan)
+              source_type: (summary/freeform)
+
+            ### TOPIC SENTIMENT ANALYSIS:
+            topic_sentiments:
+            exists: YES/NO
+            topics:
+              topic: [USE CONSISTENT PLURAL FORMS FROM: relationships/work/sports/health/hobbies/finances/learning/community/wellness]
+              sentiment: (number between -1.0 and 1.0)
+
+            ### WINS & PROGRESS:
+            wins_analysis:
+            exists: YES/NO
+            achievements:
+              win: [Direct quote edited for impact and clarity]
+              category: (accomplishment/progress/realization/breakthrough)
+              associated_topic: [Map to topic categories]
+              sentiment_intensity: (number 0.0 to 1.0)
+
+            ### GOALS & INTENTIONS:
+            goals_analysis:
+            exists: YES/NO
+            items:
+              goal: [Direct quote edited for clarity]
+              category: (career/personal/health/relationship/financial/learning)
+              timeframe: (immediate/short_term/long_term/unspecified)
+              context: [Brief context if mentioned]
+
+            ### AFFIRMATIONS & BELIEFS:
+            positive_beliefs:
+            exists: YES/NO
+            statements:
+              affirmation: [Direct quote edited for clarity]
+              theme: (self_worth/capability/growth/future/relationships)
+              context: [Brief context if relevant]
+        """
+
+        print("\n🔄 Preparing API request")
+        let requestBody: [String: Any] = [
+            "model": "gpt-4o-mini",
+            "messages": [
+                ["role": "system", "content": "You are an expert at analyzing personal reflections while maintaining privacy. Focus on finding clear elements rather than forcing insights."],
+                ["role": "user", "content": prompt]
+            ],
+            "temperature": 0.3,
+            "max_tokens": 1000
+        ]
+
+        var request = URLRequest(url: URL(string: endpoint)!)
+        request.httpMethod = "POST"
+        request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+
+        print("📡 Sending request to OpenAI API")
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        if let httpResponse = response as? HTTPURLResponse {
+            print("📥 Received response with status code: \(httpResponse.statusCode)")
+        }
+        
+        print("🔍 Decoding API response")
+        let decodedResponse = try JSONDecoder().decode(OpenAIResponse.self, from: data)
+        
+        guard let content = decodedResponse.choices.first?.message.content else {
+            print("❌ Error: No content in API response")
+            throw AnalysisError.aiAnalysisFailed("No content in response")
+        }
+
+        print("\n📊 Starting response parsing")
+        return try parseAnalysisResponse(content, transcript: transcript)
+    }
+    
+    private func parseAnalysisResponse(_ response: String, transcript: String) throws -> SingleResponseAnalysisResult {
+        print("\n🔎 Parsing AI response sections")
+        let sections = response.components(separatedBy: "\n\n")
+        print("Found \(sections.count) sections to parse")
+        
+        print("\n📋 Parsing key moments")
+        let keyMoments = try AIAnalyzer.parseAdditionalKeyMoments(from: sections)?.moments
+        if let moments = keyMoments {
+            print("✓ Found \(moments.count) key moments")
+            moments.forEach { moment in
+                print("  - Category: \(moment.category.rawValue)")
+                print("    Moment: \(moment.keyMoment.prefix(50))...")
+            }
+        } else {
+            print("⚠️ No key moments found")
+        }
+        
+        print("\n🎭 Parsing topic sentiments")
+        let topicSentiments = try AIAnalyzer.parseTopicSentiments(from: sections)
+        if let sentiments = topicSentiments {
+            print("✓ Found \(sentiments.count) topic sentiments")
+            sentiments.forEach { sentiment in
+                print("  - Topic: \(sentiment.topic), Sentiment: \(sentiment.sentiment)")
+            }
+        } else {
+            print("⚠️ No topic sentiments found")
+        }
+        
+        print("\n🏆 Parsing wins analysis")
+        let winsAnalysis = try AIAnalyzer.parseWinsAnalysis(from: sections)
+        if let wins = winsAnalysis?.achievements {
+            print("✓ Found \(wins.count) achievements")
+            wins.forEach { win in
+                print("  - Category: \(win.category.rawValue)")
+                print("    Win: \(win.win.prefix(50))...")
+            }
+        } else {
+            print("⚠️ No wins found")
+        }
+        
+        print("\n🎯 Parsing goals analysis")
+        let goalsAnalysis = try AIAnalyzer.parseGoalsAnalysis(from: sections)
+        if let goals = goalsAnalysis?.items {
+            print("✓ Found \(goals.count) goals")
+            goals.forEach { goal in
+                print("  - Category: \(goal.category.rawValue)")
+                print("    Goal: \(goal.goal.prefix(50))...")
+            }
+        } else {
+            print("⚠️ No goals found")
+        }
+        
+        print("\n💭 Parsing positive beliefs")
+        let positiveBeliefs = try AIAnalyzer.parsePositiveBeliefs(from: sections)
+        if let beliefs = positiveBeliefs?.statements {
+            print("✓ Found \(beliefs.count) positive beliefs")
+            beliefs.forEach { belief in
+                print("  - Theme: \(belief.theme.rawValue)")
+                print("    Affirmation: \(belief.affirmation.prefix(50))...")
+            }
+        } else {
+            print("⚠️ No positive beliefs found")
+        }
+
+        print("\n✅ Analysis parsing complete")
+        return SingleResponseAnalysisResult(
+            date: Date(),
+            transcript: transcript,
+            keyMoments: keyMoments,
+            topicSentiments: topicSentiments,
+            winsAnalysis: winsAnalysis,
+            goalsAnalysis: goalsAnalysis,
+            positiveBeliefs: positiveBeliefs
+        )
+    }
+}
 
 
 private struct OpenAIResponse: Codable {

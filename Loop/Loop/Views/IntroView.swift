@@ -66,6 +66,7 @@ struct OnboardingView: View {
                     .edgesIgnoringSafeArea(.all)
                     .tag(1)
                 PrivacyStorageView(currentTab: $currentStep, onIntroCompletion: {
+                    saveUserPreferences()
                     FirstLaunchManager.shared.showTutorial = true
                     onIntroCompletion()
                 })
@@ -104,7 +105,6 @@ struct OnboardingView: View {
                 OnboardingButton(text: "begin", icon: "arrow.right") {
                     withAnimation {
                         currentStep = 1
-                        showFinalNote = true
                     }
                 }
                 .padding(.bottom, 48)

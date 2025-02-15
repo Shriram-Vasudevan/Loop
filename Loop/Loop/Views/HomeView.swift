@@ -67,8 +67,11 @@ struct HomeView: View {
     
     var body: some View {
         ZStack {
-            FlowingBackground(color: accentColor)
-                .opacity(backgroundOpacity)
+//            FlowingBackground(color: accentColor)
+//                .opacity(backgroundOpacity)
+//                .ignoresSafeArea()
+//            
+            Color(hex: "F5F5F5")
                 .ignoresSafeArea()
 
             ScrollView {

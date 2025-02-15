@@ -688,4 +688,164 @@ class TrendsManager: ObservableObject {
             }
         }
     }
+    
+    func getKeyMoments(for timeframe: Timeframe) -> [KeyMoment] {
+        let calendar = Calendar.current
+        let now = Date()
+        guard let startDate = calendar.date(byAdding: timeframe.dateComponent, to: now) else {
+            return []
+        }
+        
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "KeyMomentEntity")
+        fetchRequest.predicate = NSPredicate(format: "date >= %@", startDate as NSDate)
+        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
+        
+        do {
+            let results = try context.fetch(fetchRequest)
+            return results.compactMap { entity -> KeyMoment? in
+                guard let date = entity.value(forKey: "date") as? Date,
+                      let content = entity.value(forKey: "content") as? String,
+                      let categoryString = entity.value(forKey: "category") as? String,
+                      let category = MomentCategory(rawValue: categoryString),
+                      let momentType = entity.value(forKey: "momentType") as? String,
+                      let sentiment = entity.value(forKey: "sentiment") as? Double else {
+                    return nil
+                }
+                let associatedMood = entity.value(forKey: "associatedMood") as? Double
+                
+                return KeyMoment(
+                    date: date,
+                    content: content,
+                    category: category,
+                    sentiment: sentiment,
+                    momentType: momentType,
+                    associatedMood: associatedMood
+                )
+            }
+        } catch {
+            print("Error fetching key moments: \(error)")
+            return []
+        }
+    }
+    
+    func getAchievements(for timeframe: Timeframe) -> [Achievement] {
+        let calendar = Calendar.current
+        let now = Date()
+        guard let startDate = calendar.date(byAdding: timeframe.dateComponent, to: now) else {
+            return []
+        }
+        
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "AchievementEntity")
+        fetchRequest.predicate = NSPredicate(format: "date >= %@", startDate as NSDate)
+        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
+        
+        do {
+            let results = try context.fetch(fetchRequest)
+            return results.compactMap { entity -> Achievement? in
+                guard let achievementText = entity.value(forKey: "achievementText") as? String,
+                      let categoryString = entity.value(forKey: "category") as? String,
+                      let category = AchievementCategory(rawValue: categoryString),
+                      let associatedTopic = entity.value(forKey: "associatedTopic") as? String,
+                      let sentimentIntensity = entity.value(forKey: "sentimentIntensity") as? Double else {
+                    return nil
+                }
+                
+                return Achievement(
+                    win: achievementText,
+                    category: category,
+                    associatedTopic: associatedTopic,
+                    sentimentIntensity: sentimentIntensity
+                )
+            }
+        } catch {
+            print("Error fetching achievements: \(error)")
+            return []
+        }
+    }
+    
+    func getAffirmations(for timeframe: Timeframe) -> [Affirmation] {
+        let calendar = Calendar.current
+        let now = Date()
+        guard let startDate = calendar.date(byAdding: timeframe.dateComponent, to: now) else {
+            return []
+        }
+        
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "AffirmationEntity")
+        fetchRequest.predicate = NSPredicate(format: "date >= %@", startDate as NSDate)
+        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
+        
+        do {
+            let results = try context.fetch(fetchRequest)
+            return results.compactMap { entity -> Affirmation? in
+                guard let affirmationText = entity.value(forKey: "affirmationText") as? String,
+                      let themeString = entity.value(forKey: "theme") as? String,
+                      let theme = AffirmationTheme(rawValue: themeString) else {
+                    return nil
+                }
+                let context = entity.value(forKey: "context") as? String
+                
+                return Affirmation(
+                    affirmation: affirmationText,
+                    theme: theme,
+                    context: context
+                )
+            }
+        } catch {
+            print("Error fetching affirmations: \(error)")
+            return []
+        }
+    }
+    
+    func getGoals(for timeframe: Timeframe) -> [Goal] {
+        let calendar = Calendar.current
+        let now = Date()
+        guard let startDate = calendar.date(byAdding: timeframe.dateComponent, to: now) else {
+            return []
+        }
+        
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "GoalEntity")
+        fetchRequest.predicate = NSPredicate(format: "date >= %@", startDate as NSDate)
+        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "date", ascending: true)]
+        
+        do {
+            let results = try context.fetch(fetchRequest)
+            return results.compactMap { entity -> Goal? in
+                guard let goalText = entity.value(forKey: "goalText") as? String,
+                      let categoryString = entity.value(forKey: "category") as? String,
+                      let category = GoalCategory(rawValue: categoryString),
+                      let timeframeString = entity.value(forKey: "timeframe") as? String,
+                      let timeframe = GoalTimeframe(rawValue: timeframeString) else {
+                    return nil
+                }
+                let context = entity.value(forKey: "context") as? String
+                
+                return Goal(
+                    goal: goalText,
+                    category: category,
+                    timeframe: timeframe,
+                    context: context
+                )
+            }
+        } catch {
+            print("Error fetching goals: \(error)")
+            return []
+        }
+    }
+    
+    func getMetricCounts(for timeframe: Timeframe) async -> (goals: Int, achievements: Int, affirmations: Int) {
+        let goals = getGoals(for: timeframe).count
+        let achievements = getAchievements(for: timeframe).count
+        let affirmations = getAffirmations(for: timeframe).count
+        
+        return (goals: goals, achievements: achievements, affirmations: affirmations)
+    }
+}
+
+struct KeyMoment {
+    let date: Date
+    let content: String
+    let category: MomentCategory
+    let sentiment: Double
+    let momentType: String
+    let associatedMood: Double?
 }
