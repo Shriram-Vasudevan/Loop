@@ -7,6 +7,7 @@
 
 
 import SwiftUI
+import StoreKit
 
 struct HomeView: View {
     @Binding var pageType: PageType
@@ -64,6 +65,10 @@ struct HomeView: View {
         "Calm": Color(hex: "B5D5E2"),
         "Peace": Color(hex: "C2E5C9")
     ]
+    
+    @State private var showNotificationPrompt = false
+    
+    @Environment(\.requestReview) var requestReview
     
     var body: some View {
         ZStack {
@@ -138,10 +143,19 @@ struct HomeView: View {
             }
         }
         .onAppear {
+            if NotificationManager.shouldShowNotificationPrompt() {
+                showNotificationPrompt = true
+                NotificationManager.markPromptAsShownToday()
+            }
+            
             Task {
                 await loopManager.loadThematicPrompts()
             }
         }
+        .fullScreenCover(isPresented: $showNotificationPrompt) {
+            NotificationPermissionSheet()
+        }
+        
         .fullScreenCover(item: $selectedLoop) { loop in
             ViewPastLoopView(loop: loop, isThroughRecordLoopsView: false)
         }
@@ -162,6 +176,10 @@ struct HomeView: View {
         }
         .navigationDestination(isPresented: $navigateToDaySummary) {
             DaySummaryView()
+        }
+        .onAppear {
+            requestReview()
+
         }
     }
     

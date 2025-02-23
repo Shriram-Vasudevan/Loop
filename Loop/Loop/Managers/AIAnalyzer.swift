@@ -117,7 +117,7 @@ class AIAnalyzer {
             daily_summary:
             [SYNTHESIZE FROM ALL RESPONSES]
             exists: YES/NO
-            summary: (1-2 sentence overview in the second-person capturing key themes, mood, and notable events from the day's reflections. Be personable and thoughtful. Don't provide advice, but identify potential patterns and other things you noticed if possible. Don't force anything.)
+            summary: (1-2 sentence overview in the second-person capturing key themes, mood (do not mention the rating number. Rather use descriptors like high, low, etc.), and notable events from the day's reflections. Be personable and thoughtful. Don't provide advice, but identify potential patterns and other things you noticed if possible. Don't force anything.)
 
             CRITICAL FORMAT RULES:
             1. The topic_sentiments: field name must be exact

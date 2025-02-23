@@ -53,16 +53,19 @@ struct SettingsView: View {
                     }
                     .padding(.top, 20)
                     
-                    VStack(spacing: 30) {
+                    VStack(spacing: 16) {
                         header
+                        premiumWidget
+                        
+                        
                     }
-                    
+                
                     preferencesSection
                     
                     socialSection
                     
                     supportSection
-                
+                    
                     Spacer(minLength: 60)
                 }
                 .padding(.horizontal, 24)
@@ -83,7 +86,7 @@ struct SettingsView: View {
         .alert("Leave a Review", isPresented: $showingReviewPrompt) {
             Button("Not Now", role: .cancel) { }
             Button("Review on App Store") {
-                if let writeReviewURL = URL(string: "https://apps.apple.com/app/idXXXXXXXXXX?action=write-review") {
+                if let writeReviewURL = URL(string: "https://apps.apple.com/us/app/loop-daily-reflections/id6738974660?action=write-review") {
                     UIApplication.shared.open(writeReviewURL)
                 }
             }
@@ -105,6 +108,61 @@ struct SettingsView: View {
                 animateContent = true
             }
         }
+    }
+    
+    private var premiumWidget: some View {
+        VStack(spacing: 16) {
+            VStack(spacing: 12) {
+                Text("Unlimited entry length, custom prompts, and more")
+                    .font(.custom("PPNeueMontreal-Medium", size: 20))
+                    .foregroundColor(textColor)
+                    .multilineTextAlignment(.center)
+                
+                Text("try loop premium.")
+                    .font(.system(size: 17))
+                    .foregroundColor(textColor.opacity(0.6))
+                    .padding(.top, 4)
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 48)
+            
+            HStack {
+                Spacer()
+                
+                Button(action: {
+                }, label: {
+                    Text("Subscribe")
+                        .foregroundColor(textColor)
+                        .padding()
+                        .padding(.horizontal, 12)
+                        .background(
+                            Capsule()
+                                .stroke(style: StrokeStyle(lineWidth: 1))
+                                .foregroundColor(textColor.opacity(0.7))
+                        )
+                        .padding(.top, 12)
+
+                })
+                .padding(.bottom, 24)
+   
+                Spacer()
+            }
+        }
+        .background(ZStack{
+            Color.white
+            
+            VStack {
+                Spacer()
+                
+                Image(systemName: "quote.opening")
+                    .font(.system(size: 200))
+                    .foregroundColor(Color(hex: "E9ECEF"))
+                    .offset(x: 0, y: -50)
+                    .scaleEffect(y: -1)
+                    .opacity(0.6)
+            }
+        })
+        .cornerRadius(10)
     }
     
     private var profileSection: some View {

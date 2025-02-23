@@ -66,9 +66,8 @@ struct OnboardingView: View {
                     .edgesIgnoringSafeArea(.all)
                     .tag(1)
                 PrivacyStorageView(currentTab: $currentStep, onIntroCompletion: {
-                    saveUserPreferences()
                     FirstLaunchManager.shared.showTutorial = true
-                    onIntroCompletion()
+                    saveUserPreferences()
                 })
                     .tag(2)
             }
@@ -120,10 +119,10 @@ struct OnboardingView: View {
     
     private func saveUserPreferences() {
         UserDefaults.standard.set(userName, forKey: "userName")
-        UserDefaults.standard.set(reminderTime, forKey: "reminderTime")
-        
-        NotificationManager.shared.scheduleDailyReminder(at: reminderTime)
-        
+//        UserDefaults.standard.set(reminderTime, forKey: "reminderTime")
+//        
+//        NotificationManager.shared.saveAndScheduleReminder(at: reminderTime)
+//        
         DispatchQueue.main.async {
             onIntroCompletion()
         }

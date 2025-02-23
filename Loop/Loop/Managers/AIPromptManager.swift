@@ -66,14 +66,14 @@ class AIPromptManager {
 
                 User shares: "Finally finished that big project at work. Felt great to complete it, even though it was stressful. The team really came together at the end."
 
-                ✓ Good: "How do challenging situations tend to affect your relationships with others?"
+                ✓ Good: How do challenging situations tend to affect your relationships with others?
                 (Expands from specific project to broader pattern about challenges and connections)
                 
-                ✓ Good: "What do you has helped you become better at overcoming challenges?"
+                ✓ Good: What do you has helped you become better at overcoming challenges?
                 (Asks them to go deeper with their relationship with challenge)
                 
 
-                ✗ Bad: "What made the project stressful?"
+                ✗ Bad: What made the project stressful?
                 (Too specific, focuses on past details they've already discussed)
 
                 GUIDELINES:
@@ -93,12 +93,12 @@ class AIPromptManager {
                 - Questioning their experiences or feelings
                 - Overly specific focus on single events
 
-                Response format: Return only the question, nothing else.
+                Response format: Return only the question, nothing else. No quotes bookending response.
                 """
 
                 do {
                     let requestBody: [String: Any] = [
-                        "model": "gpt-4",
+                        "model": "gpt-4o-mini",
                         "messages": [
                             ["role": "system", "content": """
                                 You are an expert in creating simple, reflective follow-up questions.

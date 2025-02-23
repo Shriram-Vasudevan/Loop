@@ -22,6 +22,9 @@
 		990E4A9E2CBDE063009F88A0 /* ViewPastLoopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A9D2CBDE063009F88A0 /* ViewPastLoopView.swift */; };
 		990E4AA02CBF0E29009F88A0 /* FirstLaunchManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4A9F2CBF0E29009F88A0 /* FirstLaunchManager.swift */; };
 		990E4AA42CC0A7CD009F88A0 /* InsightModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990E4AA32CC0A7CD009F88A0 /* InsightModels.swift */; };
+		991564652D66A97E00779836 /* NotificationRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991564642D66A97E00779836 /* NotificationRequestView.swift */; };
+		991564672D696CAA00779836 /* PremiumSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991564662D696CAA00779836 /* PremiumSheet.swift */; };
+		991564692D6B5ECC00779836 /* MinimalReflectionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991564682D6B5ECC00779836 /* MinimalReflectionSheet.swift */; };
 		9915BAB52CE6AF8D00D3C44B /* DailyCheckinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB42CE6AF8D00D3C44B /* DailyCheckinView.swift */; };
 		9915BAB72CE6AF9E00D3C44B /* DailyCheckinManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB62CE6AF9E00D3C44B /* DailyCheckinManager.swift */; };
 		9915BAB92CEC332500D3C44B /* AnalysisManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB82CEC332500D3C44B /* AnalysisManager.swift */; };
@@ -51,7 +54,6 @@
 		9935CF222D32D93800AF0C16 /* DarkBlueWave.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CF212D32D93700AF0C16 /* DarkBlueWave.swift */; };
 		9935CF242D32E1E000AF0C16 /* MoodTrendsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CF232D32E1E000AF0C16 /* MoodTrendsManager.swift */; };
 		9935CF262D3426FF00AF0C16 /* MoodCheckinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CF252D3426FF00AF0C16 /* MoodCheckinView.swift */; };
-		9935CF282D34342000AF0C16 /* EntryCardTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CF272D34342000AF0C16 /* EntryCardTabView.swift */; };
 		9953BDDD2CEE620E00348AC3 /* AnimatedBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDDC2CEE620E00348AC3 /* AnimatedBackground.swift */; };
 		9953BDE02CEE623B00348AC3 /* PulsingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDDF2CEE623B00348AC3 /* PulsingView.swift */; };
 		9953BDE42CF17A5F00348AC3 /* LoadingWaveform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9953BDE32CF17A5F00348AC3 /* LoadingWaveform.swift */; };
@@ -196,6 +198,9 @@
 		990E4A9D2CBDE063009F88A0 /* ViewPastLoopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewPastLoopView.swift; sourceTree = "<group>"; };
 		990E4A9F2CBF0E29009F88A0 /* FirstLaunchManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstLaunchManager.swift; sourceTree = "<group>"; };
 		990E4AA32CC0A7CD009F88A0 /* InsightModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightModels.swift; sourceTree = "<group>"; };
+		991564642D66A97E00779836 /* NotificationRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationRequestView.swift; sourceTree = "<group>"; };
+		991564662D696CAA00779836 /* PremiumSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumSheet.swift; sourceTree = "<group>"; };
+		991564682D6B5ECC00779836 /* MinimalReflectionSheet.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MinimalReflectionSheet.swift; sourceTree = "<group>"; };
 		9915BAB42CE6AF8D00D3C44B /* DailyCheckinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckinView.swift; sourceTree = "<group>"; };
 		9915BAB62CE6AF9E00D3C44B /* DailyCheckinManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckinManager.swift; sourceTree = "<group>"; };
 		9915BAB82CEC332500D3C44B /* AnalysisManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisManager.swift; sourceTree = "<group>"; };
@@ -228,7 +233,6 @@
 		9935CF212D32D93700AF0C16 /* DarkBlueWave.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DarkBlueWave.swift; sourceTree = "<group>"; };
 		9935CF232D32E1E000AF0C16 /* MoodTrendsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodTrendsManager.swift; sourceTree = "<group>"; };
 		9935CF252D3426FF00AF0C16 /* MoodCheckinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodCheckinView.swift; sourceTree = "<group>"; };
-		9935CF272D34342000AF0C16 /* EntryCardTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryCardTabView.swift; sourceTree = "<group>"; };
 		9935CF2A2D36373500AF0C16 /* LoopDataNext.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = LoopDataNext.xcdatamodel; sourceTree = "<group>"; };
 		9953BDDC2CEE620E00348AC3 /* AnimatedBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedBackground.swift; sourceTree = "<group>"; };
 		9953BDDF2CEE623B00348AC3 /* PulsingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PulsingView.swift; sourceTree = "<group>"; };
@@ -426,8 +430,9 @@
 				99F7F6E42CAC77E7009858AC /* IntroView.swift */,
 				990E4A9D2CBDE063009F88A0 /* ViewPastLoopView.swift */,
 				99F7F6E62CAC77F4009858AC /* HomeView.swift */,
+				991564682D6B5ECC00779836 /* MinimalReflectionSheet.swift */,
+				99AC6DDB2CE0226500B0D0D6 /* SettingsView.swift */,
 				992FA39A2D52E83200F8AE36 /* DaySummaryView.swift */,
-				9935CF272D34342000AF0C16 /* EntryCardTabView.swift */,
 				99AC6DD32CDED81100B0D0D6 /* LoopsView.swift */,
 				990E4A912CB48CEF009F88A0 /* InsightsView.swift */,
 				9935CEDF2D28D07100AF0C16 /* ScheduleView.swift */,
@@ -437,7 +442,6 @@
 				9980B0B42D4B1E2C00A493E1 /* FullMoodAnalysisBreakdown.swift */,
 				99F00AF62D432417008F1228 /* TopicMoodGraph.swift */,
 				999DAC872D209AA100A6626B /* TrendGraph.swift */,
-				99AC6DDB2CE0226500B0D0D6 /* SettingsView.swift */,
 				99AC6DD52CDFFAFA00B0D0D6 /* LoopChatView.swift */,
 				99AC6DD92CE01A3E00B0D0D6 /* SendLoopOverlay.swift */,
 				9988DB842CD9BFAC005628DE /* FriendsView.swift */,
@@ -501,6 +505,8 @@
 				996F820F2D39FF6300116F86 /* TodaysReflectionPlanView.swift */,
 				99F00AB42D3D9C90008F1228 /* WavePattern.swift */,
 				99C7F8392D56BBC100A6D4FC /* DailyQuoteWidget.swift */,
+				991564642D66A97E00779836 /* NotificationRequestView.swift */,
+				991564662D696CAA00779836 /* PremiumSheet.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -692,6 +698,7 @@
 				996F820A2D39EA1300116F86 /* AIPromptManager.swift in Sources */,
 				99AC6DDE2CE03CC600B0D0D6 /* AudioBulletJournal.swift in Sources */,
 				99CCFBC22D137A2100DA8A55 /* AnalysisState.swift in Sources */,
+				991564652D66A97E00779836 /* NotificationRequestView.swift in Sources */,
 				9935CEDE2D24DC8400AF0C16 /* ReflectionSelectionView.swift in Sources */,
 				9915BAB92CEC332500D3C44B /* AnalysisManager.swift in Sources */,
 				9935CED62D239F3400AF0C16 /* AbstractCardBackground.swift in Sources */,
@@ -715,6 +722,7 @@
 				99DC91B72D1A258A002B9A89 /* WeeklyAnalysis.swift in Sources */,
 				9953BDEA2CF25A7C00348AC3 /* MonthSummary.swift in Sources */,
 				99DC91B32D19C112002B9A89 /* LoopCard.swift in Sources */,
+				991564672D696CAA00779836 /* PremiumSheet.swift in Sources */,
 				9915BAB52CE6AF8D00D3C44B /* DailyCheckinView.swift in Sources */,
 				9935CF1B2D30BB8500AF0C16 /* AddSuccessView.swift in Sources */,
 				9953BE0E2D07AD9700348AC3 /* TrendModels.swift in Sources */,
@@ -767,6 +775,7 @@
 				990E4A882CB30EC0009F88A0 /* WavyBackground.swift in Sources */,
 				9953BDF82CF4101E00348AC3 /* RecordThematicLoopPromptsView.swift in Sources */,
 				9935CEE82D29A3B300AF0C16 /* PreviewScheduleEmotionDay.swift in Sources */,
+				991564692D6B5ECC00779836 /* MinimalReflectionSheet.swift in Sources */,
 				9986634F2D475DF900D7406D /* DreamJournalView.swift in Sources */,
 				9935CEFA2D2DEB4900AF0C16 /* KeyPhraseManager.swift in Sources */,
 				9953BDFC2CF8105200348AC3 /* SettingsModels.swift in Sources */,
@@ -833,7 +842,6 @@
 				9988DB972CDA8508005628DE /* AddFriends.swift in Sources */,
 				999DAC8A2D20AD3700A6626B /* TrendsLoadingView.swift in Sources */,
 				9935CEF22D2C8C7700AF0C16 /* DayActivity.swift in Sources */,
-				9935CF282D34342000AF0C16 /* EntryCardTabView.swift in Sources */,
 				99F00AB52D3D9C90008F1228 /* WavePattern.swift in Sources */,
 				99F00ABB2D3DC159008F1228 /* TrendsManager.swift in Sources */,
 				9980B0B52D4B1E2C00A493E1 /* FullMoodAnalysisBreakdown.swift in Sources */,
@@ -976,10 +984,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Loop/Info.plist;
-				INFOPLIST_KEY_NSCameraUsageDescription = "Required to record video loops";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Loop needs this so that you can record videos.";
 				INFOPLIST_KEY_NSContactsUsageDescription = "To See Users using loop";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "So that you can Loop!";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "For Journal Analytics!";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Loop needs access in order to record your entries and transcribe them for analysis.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Loop needs this to transcribe your recordings.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -989,13 +997,15 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.LoopApplication;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -1013,10 +1023,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Loop/Info.plist;
-				INFOPLIST_KEY_NSCameraUsageDescription = "Required to record video loops";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Loop needs this so that you can record videos.";
 				INFOPLIST_KEY_NSContactsUsageDescription = "To See Users using loop";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "So that you can Loop!";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "For Journal Analytics!";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Loop needs access in order to record your entries and transcribe them for analysis.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Loop needs this to transcribe your recordings.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -1026,13 +1036,15 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.LoopApplication;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};

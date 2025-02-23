@@ -127,56 +127,52 @@ class NotificationManager: ObservableObject {
     }
     
     func scheduleDailyReminder(at time: Date) {
-            let center = UNUserNotificationCenter.current()
+        let center = UNUserNotificationCenter.current()
 
-            let content = UNMutableNotificationContent()
-            content.title = "Time to Loop"
-            content.body = "Don't forget to reflect and capture your thoughts!"
-            content.sound = UNNotificationSound.default
-            content.badge = 1
-            
-            let calendar = Calendar.current
-            var dateComponents = calendar.dateComponents([.hour, .minute], from: time)
-            dateComponents.second = 0
-            
-            let trigger = UNCalendarNotificationTrigger(
-                dateMatching: dateComponents,
-                repeats: true
-            )
-            
-            let request = UNNotificationRequest(
-                identifier: notificationIdentifier,
-                content: content,
-                trigger: trigger
-            )
-            
-            center.add(request) { error in
-                if let error = error {
-                    print("Error scheduling reminder: \(error.localizedDescription)")
-                }
+        let content = UNMutableNotificationContent()
+        content.title = "Time to Loop"
+        content.body = "Don't forget to reflect and capture your thoughts!"
+        content.sound = UNNotificationSound.default
+        content.badge = 1
+        
+        let calendar = Calendar.current
+        var dateComponents = calendar.dateComponents([.hour, .minute], from: time)
+        dateComponents.second = 0
+        
+        let trigger = UNCalendarNotificationTrigger(
+            dateMatching: dateComponents,
+            repeats: true
+        )
+        
+        let request = UNNotificationRequest(
+            identifier: notificationIdentifier,
+            content: content,
+            trigger: trigger
+        )
+        
+        center.add(request) { error in
+            if let error = error {
+                print("Error scheduling reminder: \(error.localizedDescription)")
             }
-            
+        }
+        
         let now = Date()
             var morningComponents = DateComponents()
             morningComponents.hour = 8
             morningComponents.minute = 0
             
-            // Determine if we should show dream notification tomorrow
             let isFirstLaunch = !defaults.bool(forKey: firstLaunchKey)
             let currentHour = calendar.component(.hour, from: now)
             let shouldShowDreamTomorrow = isFirstLaunch && currentHour >= 8
-            
-            // Schedule 7 days of notifications
+
         for day in 0..<7 {
             let morningContent = UNMutableNotificationContent()
-            
-            // First day (or next day if after 8am) is dream
+
             if day == 0 || (day == 1 && shouldShowDreamTomorrow) {
                 let dreamNotification = MorningMessageType.dream.notification
                 morningContent.title = dreamNotification.title
                 morningContent.body = dreamNotification.body
             } else {
-                // Alternate between prompts and success for remaining days
                 let messageType = day % 2 == 0 ? MorningMessageType.prompts : MorningMessageType.success
                 let notification = messageType.notification
                 morningContent.title = notification.title
@@ -335,3 +331,35 @@ extension NotificationManager {
         }
     }
 }
+
+extension NotificationManager {
+    static func shouldShowNotificationPrompt() -> Bool {
+        if UserDefaults.standard.bool(forKey: "dontShowNotificationPrompt") {
+            return false
+        }
+        
+        if let lastShown = UserDefaults.standard.object(forKey: "lastNotificationPromptDate") as? Date {
+            let calendar = Calendar.current
+            if calendar.isDateInToday(lastShown) {
+                return false
+            }
+        }
+        
+        let current = UNUserNotificationCenter.current()
+        var isAuthorized = false
+        
+        let semaphore = DispatchSemaphore(value: 0)
+        current.getNotificationSettings { settings in
+            isAuthorized = settings.authorizationStatus == .authorized
+            semaphore.signal()
+        }
+        semaphore.wait()
+        
+        return !isAuthorized
+    }
+    
+    static func markPromptAsShownToday() {
+        UserDefaults.standard.set(Date(), forKey: "lastNotificationPromptDate")
+    }
+}
+
