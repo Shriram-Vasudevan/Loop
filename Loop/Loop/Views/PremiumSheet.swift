@@ -69,8 +69,8 @@ struct PremiumUpgradeView: View {
                             FeatureRow(emoji: "✦", title: "Unlimited Entry Length")
                             FeatureRow(emoji: "✦", title: "Talk to your Journal")
                             FeatureRow(emoji: "✦", title: "Customizable Prompts")
+                            FeatureRow(emoji: "✦", title: "Deeper Insights")
                             FeatureRow(emoji: "✦", title: "Themes & Customization")
-                            FeatureRow(emoji: "✦", title: "Priority Support")
                         }
                         .opacity(appearAnimation[3] ? 1 : 0)
                         

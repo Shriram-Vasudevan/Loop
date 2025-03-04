@@ -122,7 +122,6 @@ struct RecordLoopsView: View {
         currentTab = index
         let currentPrompt = reflectionSessionManager.prompts[index]
 
-        // Reset recording state when changing tabs
         isRecording = false
         timeRemaining = 30
         
@@ -344,6 +343,7 @@ struct RecordLoopsView: View {
                                     .font(.system(size: 14, weight: .medium))
                                     .tracking(1.5)
                                     .foregroundColor(textColor.opacity(0.5))
+                                    .multilineTextAlignment(.leading)
                                 
                                 Spacer()
                             }
@@ -845,7 +845,7 @@ struct RecordLoopsView: View {
                     isFollowUp: false,
                     isSuccess: currentPrompt.text.contains("success or win"),
                     isUnguided: false,
-                    isDream: false
+                    isDream: false, isMorningJournal: false
                 )
                 
                 reflectionSessionManager.saveRecordingCache(prompt: currentPrompt.text, transcript: transcript)

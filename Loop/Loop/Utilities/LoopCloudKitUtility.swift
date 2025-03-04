@@ -140,7 +140,9 @@ class LoopCloudKitUtility {
         loopRecord["FreeResponse"] = loop.freeResponse as CKRecordValue
         loopRecord["IsDailyLoop"] = loop.isDailyLoop as CKRecordValue
         loopRecord["IsSuccessJournal"] = loop.isSuccessJournal as CKRecordValue?
-        loopRecord["IsDreamJournal"] = loop.isDream as CKRecordValue?
+        loopRecord["isDreamJournal"] = loop.isDream as CKRecordValue?
+        loopRecord["isAffirmation"] = loop.isAffirmation as CKRecordValue?
+        loopRecord["isMorningJournal"] = loop.isMorningJournal as CKRecordValue?
         loopRecord["Mood"] = loop.mood as CKRecordValue?
         
         privateUserDB.save(loopRecord) { record, error in

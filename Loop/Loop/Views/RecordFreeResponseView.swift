@@ -252,7 +252,7 @@ struct RecordFreeResponseView: View {
                     isVideo: false,
                     prompt: formattedDate(),
                     isDailyLoop: true,
-                    isFollowUp: false, isSuccess: false, isUnguided: true, isDream: false
+                    isFollowUp: false, isSuccess: false, isUnguided: true, isDream: false, isMorningJournal: false
                 )
                 
                 AnalysisManager.shared.performAnalysisForUnguidedEntry(transcript: loop.1)

@@ -55,8 +55,11 @@ struct SettingsView: View {
                     
                     VStack(spacing: 16) {
                         header
-                        premiumWidget
                         
+                        if getPurchaseStatus() {
+                            premiumWidget
+                        }
+//                        
                         
                     }
                 
@@ -418,6 +421,10 @@ struct SettingsView: View {
             }
         }
     }
+    
+    func getPurchaseStatus() -> Bool {
+        return PurchaseManager.shared.checkIfPremiumUser()
+    }
 }
 
 struct MinimalToggle: View {
@@ -641,9 +648,7 @@ struct TimePickerSheet: View {
     
     var body: some View {
         ZStack {
-            // Main Sheet
             VStack(spacing: 0) {
-                // Top Section with Time Display
                 VStack(spacing: 12) {
                     RoundedRectangle(cornerRadius: 3)
                         .fill(Color.gray.opacity(0.3))
@@ -669,14 +674,12 @@ struct TimePickerSheet: View {
                 )
                 .padding(.horizontal, 20)
                 
-                // Custom Picker Area
                 DatePicker("", selection: $selectedTime, displayedComponents: .hourAndMinute)
                     .datePickerStyle(.wheel)
                     .labelsHidden()
                     .padding(.top, 40)
                     .colorMultiply(accentColor.opacity(0.8))
-                
-                // Action Buttons
+
                 HStack(spacing: 16) {
                     Button(action: hideSheet) {
                         Text("Cancel")

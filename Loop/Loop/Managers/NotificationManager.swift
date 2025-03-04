@@ -126,6 +126,30 @@ class NotificationManager: ObservableObject {
         return defaults.object(forKey: reminderTimeKey) as? Date
     }
     
+    func scheduleMorningReminder(at time: Date) {
+        let center = UNUserNotificationCenter.current()
+        
+        let content = UNMutableNotificationContent()
+        content.title = "Complete your Morning Reflection"
+        content.body = "Start your day prepared" //change this obviously
+        content.badge = 1
+        
+        let calendar = Calendar.current
+        var dateComponents = calendar.dateComponents([.hour, .minute], from: time)
+        
+        dateComponents.minute = 0
+        
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+        
+        let request = UNNotificationRequest(identifier: notificationIdentifier, content: content, trigger: trigger)
+        
+        center.add(request) { error in
+            if let error = error {
+                print("Error scheduling reminder: \(error.localizedDescription)")
+            }
+        }
+    }
+    
     func scheduleDailyReminder(at time: Date) {
         let center = UNUserNotificationCenter.current()
 
@@ -139,10 +163,7 @@ class NotificationManager: ObservableObject {
         var dateComponents = calendar.dateComponents([.hour, .minute], from: time)
         dateComponents.second = 0
         
-        let trigger = UNCalendarNotificationTrigger(
-            dateMatching: dateComponents,
-            repeats: true
-        )
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
         
         let request = UNNotificationRequest(
             identifier: notificationIdentifier,

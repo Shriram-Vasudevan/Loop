@@ -300,7 +300,7 @@ struct RecordThematicLoopPromptsView: View {
                     mediaURL: audioFileURL,
                     isVideo: false,
                     prompt: currentPrompt,
-                    isDailyLoop: false, isFollowUp: false, isSuccess: false, isUnguided: false, isDream: false
+                    isDailyLoop: false, isFollowUp: false, isSuccess: false, isUnguided: false, isDream: false, isMorningJournal: false
                 )
                 
                 AnalysisManager.shared.performAnalysisForUnguidedEntry(transcript: loop.1)

@@ -82,25 +82,6 @@ struct HomeView: View {
             ScrollView {
                 VStack(spacing: 32) {
                     VStack (spacing: 12) {
-//                        HStack {
-//                            StreakIndicator()
-//                            
-//                            Spacer()
-//                        }
-//                        .padding(.horizontal, 24)
-//                        .padding(.top, 22)
-//                        
-//                        welcomeHeader
-//                            .padding(.horizontal, 24)
-//                            .padding(.top, 44)
-////                        LoopHomeHeader()
-////                            .padding(.horizontal, 24)
-//
-//                        VStack (spacing: 6) {
-//                            EmotionSchedulePreviewView(pageType: $pageType, selectedScheduleDate: $selectedScheduleDate)
-//                              
-//                            Divider()
-//                        }
                         
                         JournalHeader(navigateToSettingsView: $navigateToSettingsView)
                             .padding(.top, 16)
@@ -119,17 +100,6 @@ struct HomeView: View {
                     
                     thematicPromptsSection
                         .padding(.horizontal, 24)
-                    
-//                    featuredReflectionsSection
-//                        .padding(.horizontal, 24)
-//                    
-//                    DayRatingSlider()
-//                        .padding(.horizontal, 24)
-//                        .padding(.top, 6)
-                    
-//                    notificationsSection
-                    
-                   
                     
                     if let pastLoop = loopManager.pastLoop {
                         pastLoopSection(pastLoop)
@@ -215,22 +185,16 @@ struct HomeView: View {
     private var recordingInterface: some View {
         Button(action: { showingRecordLoopsView = true }) {
             Group {
-                if !ReflectionSessionManager.shared.hasCompletedForToday {
+                if !ReflectionSessionManager.shared.hasCompletedForToday && getReflectionStatus() == "daily" {
                     VStack (spacing: 8) {
-                        if showTutorial {
-                            DailyReflectionTutorial {
-                                withAnimation(.spring(response: 0.3)) {
-                                    showTutorial = false
-                                    FirstLaunchManager.shared.showTutorial = false
-                                }
-                            }
-                            .transition(.move(edge: .top).combined(with: .opacity))
-                        }
-                        
                         SunsetReflectionView()
-                        
+                            .frame(maxWidth: .infinity)
                     }
-                } else {
+                } else if getReflectionStatus() == "morning" {
+                    MorningSunriseView()
+                        .frame(maxWidth: .infinity)
+                }
+                else {
                     VStack(alignment: .leading, spacing: 16) {
                         Text("DAILY REFLECTION")
                             .font(.system(size: 13, weight: .medium))
@@ -381,7 +345,6 @@ struct HomeView: View {
             
             VStack(spacing: 4) {
                 if !loopManager.hasRemovedUnlockReminder {
-                    // Unlock Past Loops Notification
                     HStack {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
@@ -525,6 +488,19 @@ struct HomeView: View {
             return "good evening."
         default:
             return "hey there."
+        }
+    }
+    
+    func getReflectionStatus() -> String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        
+        switch hour {
+            case 0 ..< 12:
+                return "morning"
+            case 12 ..< 24:
+                return "daily"
+            default:
+                return "daily"
         }
     }
 }
@@ -714,20 +690,16 @@ struct ThematicPromptCard: View {
                         .fill(.white)
                     
                     WavyBackground()
-//                        .foregroundColor(accentColor)
+
                         .rotation3DEffect(
                             .degrees(isEven ? 0 : 180),
                             axis: (x: 1, y: 0, z: 0)
                         )
                         .offset(y: isEven ? 25 : -25)
-    //
                         .cornerRadius(10)
                 }
             )
-//            .overlay(
-//                RoundedRectangle(cornerRadius: 20)
-//                   // .stroke(accentColor.opacity(0.08), lineWidth: 1)
-//            )
+
         }
     }
     
@@ -1044,18 +1016,16 @@ struct LoopHomeHeader: View {
                         )
                     }
                 }
-                
-                // Date and insights row
+
                 HStack(alignment: .bottom) {
                     Text(formatDate())
                         .font(.custom("PPNeueMontreal-Bold", size: 35))
                         .foregroundColor(textColor)
                     
                     Spacer()
-                    
-                    // Insights button
+
                     Button(action: {
-                        // Add your insights navigation action here
+
                     }) {
                         HStack(spacing: 4) {
                             Text("insights")
@@ -1151,7 +1121,6 @@ struct JournalHeader: View {
     }
 }
 
-// Preview
 struct JournalHeader_Previews: PreviewProvider {
     static var previews: some View {
         JournalHeader(navigateToSettingsView: .constant(false))

@@ -344,7 +344,7 @@ struct AddSuccessView: View {
                     isDailyLoop: false,
                     isFollowUp: false,
                     isSuccess: true,
-                    isUnguided: true, isDream: false
+                    isUnguided: true, isDream: false, isMorningJournal: false
                 )
                 
                 AnalysisManager.shared.performAnalysisForUnguidedEntry(transcript: loop.1)

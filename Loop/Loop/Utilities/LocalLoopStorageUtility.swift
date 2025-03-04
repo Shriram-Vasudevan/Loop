@@ -93,7 +93,8 @@ class LoopLocalStorageUtility {
             loopEntity.setValue(loop.isFollowUp, forKey: "isFollowUp")
             loopEntity.setValue(loop.isSuccessJournal, forKey: "isSuccessJournal")
             loopEntity.setValue(loop.isDream, forKey: "isDreamJournal")
-            
+            loopEntity.setValue(loop.isAffirmation, forKey: "isAffirmation")
+            loopEntity.setValue(loop.isMorningJournal, forKey: "isMorningJournal")
             do {
                 try context.save()
                 print("Loop saved successfully to local storage")
@@ -134,6 +135,8 @@ class LoopLocalStorageUtility {
             isFollowUp: entity.value(forKey: "isFollowUp") as? Bool ?? false,
             isSuccessJournal: entity.value(forKey: "isSuccessJournal") as? Bool ?? false,
             isDream: entity.value(forKey: "isDreamJournal") as? Bool ?? false,
+            isAffirmation: entity.value(forKey: "isAffirmation") as? Bool ?? false,
+            isMorningJournal: entity.value(forKey: "isMorningJournal") as? Bool ?? false,
             mood: entity.value(forKey: "mood") as? String
         )
     }

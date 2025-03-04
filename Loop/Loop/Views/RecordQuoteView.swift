@@ -270,7 +270,7 @@ struct RecordQuoteView: View {
                     isVideo: false,
                     prompt: quote.text,
                     isDailyLoop: true,
-                    isFollowUp: false, isSuccess: false, isUnguided: false, isDream: false
+                    isFollowUp: false, isSuccess: false, isUnguided: false, isDream: false, isMorningJournal: false
                 )
                 
                 AnalysisManager.shared.performAnalysisForUnguidedEntry(transcript: loop.1)

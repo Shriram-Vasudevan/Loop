@@ -257,7 +257,7 @@ struct DreamJournalView: View {
                     isVideo: false,
                     prompt: formattedDate(),
                     isDailyLoop: true,
-                    isFollowUp: false, isSuccess: false, isUnguided: true, isDream: true
+                    isFollowUp: false, isSuccess: false, isUnguided: true, isDream: true, isMorningJournal: false
                 )
                 
                 AnalysisManager.shared.performAnalysisForUnguidedEntry(transcript: loop.1)

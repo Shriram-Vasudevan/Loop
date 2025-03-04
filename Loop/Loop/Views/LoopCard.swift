@@ -24,6 +24,9 @@ struct LoopCard: View {
     private let deepBlue = Color(hex: "1E3D59")
     private let lightBlue = Color(hex: "94A7B7")
     
+    private let midMauve = Color(hex: "BBA4AD")
+    private let sunriseYellow = Color(hex: "B7A284")
+    
     var body: some View {
         Button(action: {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -86,7 +89,15 @@ struct LoopCard: View {
                 ZStack {
                     if loop.isDream ?? false {
                         DreamCardBackground()
-                    } else {
+                    } else if loop.isMorningJournal ?? false {
+                        GeometricSunrise()
+                            .fill(sunriseYellow)
+                            .opacity(0.2)
+                            .frame(height: 120)
+                            .offset(y: 40)
+
+                    }
+                    else {
                         RoundedRectangle(cornerRadius: 10)
                             .fill(Color.white)
                         
@@ -227,6 +238,8 @@ struct LoopTypeIndicator: View {
             return "follow up"
         } else if !loop.isDailyLoop && !loop.isFollowUp {
             return "thematic"
+        } else if loop.isMorningJournal ?? false {
+            return "morning journal"
         }
         return "daily"
     }
@@ -234,11 +247,11 @@ struct LoopTypeIndicator: View {
     private var indicatorColor: Color {
         if loop.isDream ?? false {
             return .white
-        } else if loop.isSuccessJournal ?? false {
+        } else if loop.isSuccessJournal ?? false || loop.isMorningJournal ?? false {
             return thematicColor
         } else if loop.isFollowUp {
             return followUpColor
-        } else if !loop.isDailyLoop && !loop.isFollowUp {
+        } else if !loop.isDailyLoop && !loop.isFollowUp  {
             return thematicColor
         }
         return accentColor

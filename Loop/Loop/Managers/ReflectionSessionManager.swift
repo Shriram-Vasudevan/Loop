@@ -90,7 +90,7 @@ class ReflectionSessionManager: ObservableObject {
                 )
             case .standOut:
                 return ReflectionPrompt(
-                    text: "What moment from today stands out most to you?",
+                    text: "What do you want to share about today?",
                     type: .recording,
                     description: "Share whatever you're thinking about today - perhaps a memorable event, realization, success, or even a challenge. Focus in on something that matters to you."
                 )

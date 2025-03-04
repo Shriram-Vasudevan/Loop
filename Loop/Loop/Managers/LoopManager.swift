@@ -255,7 +255,7 @@ class LoopManager: ObservableObject {
     }
     
     
-    func addLoop(mediaURL: URL, isVideo: Bool, prompt: String, mood: String? = nil, freeResponse: Bool = false, isDailyLoop: Bool, isFollowUp: Bool, isSuccess: Bool, isUnguided: Bool, isDream: Bool) async -> (Loop, String) {
+    func addLoop(mediaURL: URL, isVideo: Bool, prompt: String, mood: String? = nil, freeResponse: Bool = false, isDailyLoop: Bool, isFollowUp: Bool, isSuccess: Bool, isUnguided: Bool, isDream: Bool, isMorningJournal: Bool) async -> (Loop, String) {
 
         let loopID = UUID().uuidString
         let timestamp = Date()
@@ -287,7 +287,9 @@ class LoopManager: ObservableObject {
             isDailyLoop: isDailyLoop,
             isFollowUp: isFollowUp,
             isSuccessJournal: isSuccess,
-            isDream: isDream
+            isDream: isDream,
+            isAffirmation: false,
+            isMorningJournal: isMorningJournal
         )
 
         let loopDate = Calendar.current.startOfDay(for: timestamp)

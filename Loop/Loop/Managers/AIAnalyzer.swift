@@ -43,7 +43,7 @@ class AIAnalyzer {
 
             ### STANDOUT MOMENT ANALYSIS:
             standout_analysis:
-            [FROM "What moment from today stands out most to you?"]
+            [FROM "What do you want to share about today?"]
             category: (work/relationships/health/learning/creativity/purpose/relaxation/finances/growth)
             sentiment: (positive/neutral/negative)
             key_moment: [Direct quote edited for impact and grammar: use ellipses (...) to skip unnecessary parts, while keeping authenticity.]

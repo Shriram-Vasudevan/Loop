@@ -25,6 +25,11 @@
 		991564652D66A97E00779836 /* NotificationRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991564642D66A97E00779836 /* NotificationRequestView.swift */; };
 		991564672D696CAA00779836 /* PremiumSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991564662D696CAA00779836 /* PremiumSheet.swift */; };
 		991564692D6B5ECC00779836 /* MinimalReflectionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991564682D6B5ECC00779836 /* MinimalReflectionSheet.swift */; };
+		9915646B2D6D404000779836 /* FullTopicBreakdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915646A2D6D404000779836 /* FullTopicBreakdown.swift */; };
+		9915646D2D6E774100779836 /* MorningReflectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915646C2D6E774100779836 /* MorningReflectionManager.swift */; };
+		9915646F2D6E778700779836 /* MorningReflectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915646E2D6E778700779836 /* MorningReflectionView.swift */; };
+		991564732D7689F200779836 /* StoreManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991564722D7689F200779836 /* StoreManager.swift */; };
+		991564752D7689FD00779836 /* PurchaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991564742D7689FD00779836 /* PurchaseManager.swift */; };
 		9915BAB52CE6AF8D00D3C44B /* DailyCheckinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB42CE6AF8D00D3C44B /* DailyCheckinView.swift */; };
 		9915BAB72CE6AF9E00D3C44B /* DailyCheckinManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB62CE6AF9E00D3C44B /* DailyCheckinManager.swift */; };
 		9915BAB92CEC332500D3C44B /* AnalysisManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB82CEC332500D3C44B /* AnalysisManager.swift */; };
@@ -201,6 +206,11 @@
 		991564642D66A97E00779836 /* NotificationRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationRequestView.swift; sourceTree = "<group>"; };
 		991564662D696CAA00779836 /* PremiumSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumSheet.swift; sourceTree = "<group>"; };
 		991564682D6B5ECC00779836 /* MinimalReflectionSheet.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MinimalReflectionSheet.swift; sourceTree = "<group>"; };
+		9915646A2D6D404000779836 /* FullTopicBreakdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullTopicBreakdown.swift; sourceTree = "<group>"; };
+		9915646C2D6E774100779836 /* MorningReflectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MorningReflectionManager.swift; sourceTree = "<group>"; };
+		9915646E2D6E778700779836 /* MorningReflectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MorningReflectionView.swift; sourceTree = "<group>"; };
+		991564722D7689F200779836 /* StoreManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreManager.swift; sourceTree = "<group>"; };
+		991564742D7689FD00779836 /* PurchaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseManager.swift; sourceTree = "<group>"; };
 		9915BAB42CE6AF8D00D3C44B /* DailyCheckinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckinView.swift; sourceTree = "<group>"; };
 		9915BAB62CE6AF9E00D3C44B /* DailyCheckinManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckinManager.swift; sourceTree = "<group>"; };
 		9915BAB82CEC332500D3C44B /* AnalysisManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisManager.swift; sourceTree = "<group>"; };
@@ -451,6 +461,7 @@
 				99F31CA62D0F2DA300330180 /* RecordFollowUpLoopView.swift */,
 				999DAC8D2D2107D000A6626B /* RecordFeaturedLoopView.swift */,
 				9935CEED2D2ADDD100AF0C16 /* RecordFreeResponseView.swift */,
+				9915646E2D6E778700779836 /* MorningReflectionView.swift */,
 				99C7F83D2D56C93300A6D4FC /* RecordQuoteView.swift */,
 				9986634E2D475DF900D7406D /* DreamJournalView.swift */,
 				9935CF1A2D30BB8500AF0C16 /* AddSuccessView.swift */,
@@ -507,6 +518,7 @@
 				99C7F8392D56BBC100A6D4FC /* DailyQuoteWidget.swift */,
 				991564642D66A97E00779836 /* NotificationRequestView.swift */,
 				991564662D696CAA00779836 /* PremiumSheet.swift */,
+				9915646A2D6D404000779836 /* FullTopicBreakdown.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -538,6 +550,9 @@
 				99F00ABA2D3DC159008F1228 /* TrendsManager.swift */,
 				9986634C2D45CF5100D7406D /* TabManager.swift */,
 				99C7F83B2D56C0CE00A6D4FC /* DailyQuoteManager.swift */,
+				9915646C2D6E774100779836 /* MorningReflectionManager.swift */,
+				991564722D7689F200779836 /* StoreManager.swift */,
+				991564742D7689FD00779836 /* PurchaseManager.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -700,6 +715,7 @@
 				99CCFBC22D137A2100DA8A55 /* AnalysisState.swift in Sources */,
 				991564652D66A97E00779836 /* NotificationRequestView.swift in Sources */,
 				9935CEDE2D24DC8400AF0C16 /* ReflectionSelectionView.swift in Sources */,
+				9915646D2D6E774100779836 /* MorningReflectionManager.swift in Sources */,
 				9915BAB92CEC332500D3C44B /* AnalysisManager.swift in Sources */,
 				9935CED62D239F3400AF0C16 /* AbstractCardBackground.swift in Sources */,
 				9953BDFE2CF810AB00348AC3 /* WebView.swift in Sources */,
@@ -707,11 +723,13 @@
 				99AC6DDA2CE01A3E00B0D0D6 /* SendLoopOverlay.swift in Sources */,
 				99AC6DE82CE1235400B0D0D6 /* LoopLogoView.swift in Sources */,
 				9953BE022CFABA4400348AC3 /* LocalLoopStorageUtility.swift in Sources */,
+				9915646F2D6E778700779836 /* MorningReflectionView.swift in Sources */,
 				9953BE142D0CF79200348AC3 /* AppPromoVid.swift in Sources */,
 				990E4AA42CC0A7CD009F88A0 /* InsightModels.swift in Sources */,
 				996F82122D3B0B5900116F86 /* ReflectionSessionManager.swift in Sources */,
 				990E4A9E2CBDE063009F88A0 /* ViewPastLoopView.swift in Sources */,
 				999DAC722D1E239400A6626B /* DayRatingSlider.swift in Sources */,
+				991564732D7689F200779836 /* StoreManager.swift in Sources */,
 				99AC6DD62CDFFAFA00B0D0D6 /* LoopChatView.swift in Sources */,
 				999DAC882D209AA100A6626B /* TrendGraph.swift in Sources */,
 				999DAC782D1FA82100A6626B /* TodaysInsightsView.swift in Sources */,
@@ -746,6 +764,7 @@
 				99F7F6E92CAC792C009858AC /* NotificationManager.swift in Sources */,
 				99C7F83C2D56C0CE00A6D4FC /* DailyQuoteManager.swift in Sources */,
 				9935CF242D32E1E000AF0C16 /* MoodTrendsManager.swift in Sources */,
+				9915646B2D6D404000779836 /* FullTopicBreakdown.swift in Sources */,
 				9953BE062CFBB30900348AC3 /* ArtisticBackground.swift in Sources */,
 				990E4A962CBDCA51009F88A0 /* VideoRecordingView.swift in Sources */,
 				9935CED42D23982200AF0C16 /* SpeakingPatternCard.swift in Sources */,
@@ -768,6 +787,7 @@
 				9935CEF62D2C8ECA00AF0C16 /* AcitivtyLocalStorageUtility.swift in Sources */,
 				999DAC902D210A5000A6626B /* FeaturedPrompt.swift in Sources */,
 				9935CEDC2D24576F00AF0C16 /* TimeLapseDemoView.swift in Sources */,
+				991564752D7689FD00779836 /* PurchaseManager.swift in Sources */,
 				9988DB952CDA7F92005628DE /* FriendRequest.swift in Sources */,
 				99F7F6F52CAC7DB4009858AC /* LoopManager.swift in Sources */,
 				99A0C8F32CA9EF2400F9281A /* ContentView.swift in Sources */,
@@ -997,7 +1017,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.13;
 				PRODUCT_BUNDLE_IDENTIFIER = com.LoopApplication;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1036,7 +1056,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.13;
 				PRODUCT_BUNDLE_IDENTIFIER = com.LoopApplication;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

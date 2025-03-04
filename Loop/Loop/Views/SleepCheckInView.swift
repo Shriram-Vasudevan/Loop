@@ -68,17 +68,14 @@ struct MinimalSleepCheckInView: View {
                 VStack(spacing: 24) {
                     GeometryReader { geometry in
                         ZStack(alignment: .leading) {
-                            // Background bar
                             RoundedRectangle(cornerRadius: 2)
                                 .fill(accentColor.opacity(0.1))
                                 .frame(height: 4)
-                            
-                            // Progress bar
+
                             RoundedRectangle(cornerRadius: 2)
                                 .fill(accentColor)
                                 .frame(width: geometry.size.width * CGFloat((hoursSlept - 2) / 9), height: 4)
                             
-                            // Drag handle
                             Circle()
                                 .fill(accentColor)
                                 .frame(width: 24, height: 24)
@@ -143,7 +140,7 @@ struct MinimalSleepCheckInView: View {
                 if let savedSleep = checkinManager.checkIfCheckinCompleted() {
                     hoursSlept = savedSleep
                 } else {
-                    hoursSlept = 7.0 // Default value if no check-in found
+                    hoursSlept = 7.0 
                 }
             }
         }

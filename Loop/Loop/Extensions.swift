@@ -185,3 +185,24 @@ extension UserDefaults {
     }
 }
 
+
+extension UserDefaults {
+    @objc dynamic var hasCompletedMorningReflection: Bool {
+        get { bool(forKey: "HasCompletedMorningForToday") }
+        set { set(newValue, forKey: "HasCompletedMorningForToday") }
+    }
+    
+    @objc dynamic var lastMorningReflectionDate: Date? {
+        get { object(forKey: "MorningReflectionDate") as? Date }
+        set { set(newValue, forKey: "MorningReflectionDate") }
+    }
+    
+    var shouldShowMorningReflection: Bool {
+        guard let lastDate = lastMorningReflectionDate else {
+            return true
+        }
+        
+        // Check if we've already done a morning reflection today
+        return !Calendar.current.isDateInToday(lastDate)
+    }
+}

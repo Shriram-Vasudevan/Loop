@@ -804,14 +804,34 @@ struct TopicsCard: View {
                     .font(.system(size: 13))
                     .foregroundColor(.gray)
             } else {
-                FlowLayout(spacing: 8) {
-                    ForEach(topics, id: \.self) { topic in
-                        Text(topic)
-                            .font(.system(size: 16))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(8)
+                ScrollView(.horizontal) {
+                    HStack {
+                        ForEach(topics, id: \.self) { topic in
+                            Text(topic)
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(Color(hex: "2C3E50"))
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            Color(hex: topic.hashValue % 2 == 0 ? "94A7B7" : "B784A7").opacity(0.15),
+                                            Color(hex: topic.hashValue % 2 == 0 ? "B784A7" : "94A7B7").opacity(0.05)
+                                        ]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(
+                                            Color(hex: topic.hashValue % 2 == 0 ? "94A7B7" : "B784A7").opacity(0.3),
+                                            lineWidth: 1
+                                        )
+                                )
+                                .cornerRadius(12)
+                                .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+                        }
                     }
                 }
             }
@@ -821,7 +841,10 @@ struct TopicsCard: View {
         .cornerRadius(10)
         .task(id: timeframe) {
             topics = await fetchTopics(timeframe)
+            
+            print("the topics \(topics)")
         }
+        
     }
 }
 
