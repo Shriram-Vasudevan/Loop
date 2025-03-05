@@ -245,6 +245,39 @@ struct HomeView: View {
         }
     }
     
+    private var shortcutJournals: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("themes")
+                    .font(.system(size: 24, weight: .regular))
+                    .foregroundColor(textColor)
+                
+                Spacer()
+                
+                Button(action: {
+                    navigateToAllThemesView = true
+                }, label: {
+                    Text("SEE MORE")
+                        .font(.system(size: 11, weight: .medium))
+                        .tracking(1.5)
+                        .foregroundColor(textColor.opacity(0.5))
+                })
+            }
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(Array(displayedPrompts.prefix(3).enumerated()), id: \.element.id) { index, prompt in
+                        ThematicPromptCard(prompt: prompt, accentColor: accentColor, isEven: index % 2 == 0) {
+                            thematicPrompt = prompt
+                        }
+                    }
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
+        }
+    }
+    
     // MARK: - Thematic Section
     private var thematicPromptsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -278,7 +311,7 @@ struct HomeView: View {
             .background(Color.clear)
         }
     }
-    
+
 //    private var featuredReflectionsSection: some View {
 //        VStack(alignment: .leading, spacing: 16) {
 //            Text("featured reflections")
