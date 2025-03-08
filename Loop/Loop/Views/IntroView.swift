@@ -460,7 +460,6 @@ struct EmotionalIntelligenceView: View {
     }
 }
 
-// New View: Pattern Recognition Demo
 struct PatternRecognitionView: View {
     @Binding var currentTab: Int
     @State private var appearAnimation: [Bool] = Array(repeating: false, count: 10)
@@ -474,7 +473,6 @@ struct PatternRecognitionView: View {
     private let textColor = Color(hex: "2C3E50")
     private let accentColor = Color(hex: "A28497")
     
-    // Sample reflection data
     private let sampleReflections = [
         "Today I felt anxious about my presentation at work but was relieved when it was over",
         "Meeting with Sarah made me feel supported. I'm grateful for friends like her",
@@ -483,132 +481,133 @@ struct PatternRecognitionView: View {
         "Family dinner was wonderful. Feeling connected and loved"
     ]
     
-    // Sample insights
     private let insights = [
-        "Work presentations consistently trigger anxiety followed by relief",
-        "Social connections with specific people (Sarah, family) correlate with positive emotions",
-        "External factors (traffic) regularly impact your mood - consider countermeasures"
+        "Work consistently triggers thoughts of anxiety",
+        "Social connections correlate with positive emotions",
+        "Morning and evening moods tend to differ in your entries"
     ]
     
     private var bubblesData: [WordBubble] {
         var bubbles: [WordBubble] = []
+
+        let containerWidth: CGFloat = UIScreen.main.bounds.width
+        let containerHeight: CGFloat = 240
         
-        let baseX = UIScreen.main.bounds.width / 2
-        let baseY = UIScreen.main.bounds.height / 2 - 80
+        let baseX = containerWidth / 2
+        let baseY = containerHeight / 2
         
-        // Create pattern of bubbles
-        bubbles.append(WordBubble(id: 0, text: "anxiety", x: baseX - 120, y: baseY - 80, delay: 0.2, size: 70, color: Color(hex: "FF7675").opacity(0.8)))
-        bubbles.append(WordBubble(id: 1, text: "relief", x: baseX - 50, y: baseY - 50, delay: 0.3, size: 60, color: Color(hex: "74B9FF").opacity(0.8)))
-        bubbles.append(WordBubble(id: 2, text: "work", x: baseX + 40, y: baseY - 90, delay: 0.4, size: 80, color: Color(hex: "A29BFE").opacity(0.8)))
+        bubbles.append(WordBubble(id: 0, text: "anxiety", x: baseX - 120, y: baseY - 40, delay: 0.2, size: 70, color: Color(hex: "FF7675").opacity(0.8)))
+        bubbles.append(WordBubble(id: 1, text: "relief", x: baseX - 50, y: baseY - 20, delay: 0.3, size: 60, color: Color(hex: "74B9FF").opacity(0.8)))
+        bubbles.append(WordBubble(id: 2, text: "work", x: baseX + 40, y: baseY - 50, delay: 0.4, size: 80, color: Color(hex: "A29BFE").opacity(0.8)))
         bubbles.append(WordBubble(id: 3, text: "support", x: baseX + 100, y: baseY, delay: 0.5, size: 75, color: Color(hex: "55EFC4").opacity(0.8)))
-        bubbles.append(WordBubble(id: 4, text: "friends", x: baseX + 70, y: baseY + 70, delay: 0.6, size: 65, color: Color(hex: "FDCB6E").opacity(0.8)))
-        bubbles.append(WordBubble(id: 5, text: "family", x: baseX - 80, y: baseY + 50, delay: 0.7, size: 70, color: Color(hex: "FF9FF3").opacity(0.8)))
-        bubbles.append(WordBubble(id: 6, text: "traffic", x: baseX - 30, y: baseY + 100, delay: 0.8, size: 55, color: Color(hex: "FF7675").opacity(0.8)))
+        bubbles.append(WordBubble(id: 4, text: "friends", x: baseX + 70, y: baseY + 50, delay: 0.6, size: 65, color: Color(hex: "FDCB6E").opacity(0.8)))
+        bubbles.append(WordBubble(id: 5, text: "family", x: baseX - 80, y: baseY + 30, delay: 0.7, size: 70, color: Color(hex: "FF9FF3").opacity(0.8)))
+        bubbles.append(WordBubble(id: 6, text: "traffic", x: baseX - 30, y: baseY + 60, delay: 0.8, size: 55, color: Color(hex: "FF7675").opacity(0.8)))
         
         return bubbles
     }
     
     var body: some View {
-        ZStack {
-            VStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text("discover patterns you never noticed")
-                            .font(.system(size: 26, weight: .medium))
-                            .foregroundColor(textColor)
-                            .opacity(appearAnimation[0] ? 1 : 0)
-                        
-                        Spacer()
-                    }
+        VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("discover patterns you never noticed")
+                        .font(.system(size: 26, weight: .medium))
+                        .foregroundColor(textColor)
+                        .opacity(appearAnimation[0] ? 1 : 0)
                     
-                    Text("loop reveals hidden connections in your reflections")
-                        .font(.system(size: 16, weight: .medium))
-                        .tracking(1.5)
-                        .foregroundColor(textColor.opacity(0.6))
-                        .opacity(appearAnimation[1] ? 1 : 0)
+                    Spacer()
                 }
-                .padding(.top, 64)
-                .padding(.horizontal, 24)
+                
+                Text("loop reveals hidden patterns in your reflections")
+                    .font(.system(size: 16, weight: .medium))
+                    .tracking(1.5)
+                    .foregroundColor(textColor.opacity(0.6))
+                    .opacity(appearAnimation[1] ? 1 : 0)
+            }
+            .padding(.top, 64)
+            .padding(.horizontal, 24)
 
+            VStack {
                 ZStack {
                     ForEach(bubblesData) { bubble in
                         BubbleView(wordBubble: bubble, isVisible: appearAnimation[2])
                     }
                 }
-                .frame(height: 300)
+                .frame(height: 240)
                 .opacity(appearAnimation[2] ? 1 : 0)
-
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Insights generated from your patterns:")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(textColor)
-                        .padding(.horizontal, 24)
-                        .opacity(insightOpacity[0])
-                    
-                    VStack(alignment: .leading, spacing: 12) {
-                        ForEach(0..<insights.count, id: \.self) { index in
-                            HStack(alignment: .top, spacing: 12) {
-                                Image(systemName: "sparkles")
-                                    .foregroundColor(accentColor)
-                                
-                                Text(insights[index])
-                                    .font(.system(size: 16))
-                                    .foregroundColor(textColor.opacity(0.8))
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                            .padding(.horizontal, 24)
-                            .opacity(insightOpacity[min(index + 1, insightOpacity.count - 1)])
-                        }
-                    }
-                }
-                .padding(.top, 16)
-
-                
-                Spacer()
-                
-                Button(action: {
-                    withAnimation(.spring(response: 0.6)) {
-                        currentTab += 1
-                    }
-                }) {
-                    HStack(spacing: 12) {
-                        Text("continue")
-                            .font(.system(size: 18, weight: .medium))
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 16, weight: .medium))
-                    }
-                    .frame(height: 60)
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                accentColor,
-                                accentColor.opacity(0.85)
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .foregroundColor(.white)
-                    .cornerRadius(30)
-                    .shadow(color: accentColor.opacity(0.25), radius: 15, y: 8)
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 48)
-                .opacity(appearAnimation[9] ? 1 : 0)
-                .offset(y: appearAnimation[9] ? 0 : 20)
             }
+            .padding(.top, 20)
+
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Insights generated from your patterns:")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(textColor)
+                    .padding(.horizontal, 24)
+                    .opacity(insightOpacity[0])
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(0..<insights.count, id: \.self) { index in
+                        HStack(alignment: .top, spacing: 12) {
+                            Image(systemName: "sparkles")
+                                .foregroundColor(accentColor)
+                            
+                            Text(insights[index])
+                                .font(.system(size: 16))
+                                .foregroundColor(textColor.opacity(0.8))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .padding(.horizontal, 24)
+                        .opacity(insightOpacity[min(index + 1, insightOpacity.count - 1)])
+                    }
+                }
+            }
+            
+            Spacer()
+            
+            // Button section
+            Button(action: {
+                withAnimation(.spring(response: 0.6)) {
+                    currentTab += 1
+                }
+            }) {
+                HStack(spacing: 12) {
+                    Text("continue")
+                        .font(.system(size: 18, weight: .medium))
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 16, weight: .medium))
+                }
+                .frame(height: 60)
+                .frame(maxWidth: .infinity)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            accentColor,
+                            accentColor.opacity(0.85)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .foregroundColor(.white)
+                .cornerRadius(30)
+                .shadow(color: accentColor.opacity(0.25), radius: 15, y: 8)
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 48)
+            .opacity(appearAnimation[9] ? 1 : 0)
+            .offset(y: appearAnimation[9] ? 0 : 20)
         }
         .onAppear {
             animateEntrance()
             
             // Run the demo animation sequence
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 withAnimation(.easeInOut(duration: 1.0)) {
                     pulsateCircle = true
                 }
                 
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     withAnimation(.spring(response: 0.8)) {
                         showConnections = true
                     }
@@ -618,11 +617,10 @@ struct PatternRecognitionView: View {
                             expandLines = true
                         }
                         
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             withAnimation(.easeInOut(duration: 0.8)) {
                                 showInsights = true
-                                
-                                // Animate each insight appearance
+       
                                 for i in 0..<insightOpacity.count {
                                     DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.7) {
                                         withAnimation(.easeInOut(duration: 0.7)) {

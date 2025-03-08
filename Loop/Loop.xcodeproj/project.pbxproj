@@ -30,6 +30,8 @@
 		9915646F2D6E778700779836 /* MorningReflectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915646E2D6E778700779836 /* MorningReflectionView.swift */; };
 		991564732D7689F200779836 /* StoreManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991564722D7689F200779836 /* StoreManager.swift */; };
 		991564752D7689FD00779836 /* PurchaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991564742D7689FD00779836 /* PurchaseManager.swift */; };
+		991564772D7BCA2100779836 /* RecordMorningPagesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991564762D7BCA2100779836 /* RecordMorningPagesView.swift */; };
+		9915647B2D7BCCF500779836 /* JournalOfTheDayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915647A2D7BCCF500779836 /* JournalOfTheDayManager.swift */; };
 		9915BAB52CE6AF8D00D3C44B /* DailyCheckinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB42CE6AF8D00D3C44B /* DailyCheckinView.swift */; };
 		9915BAB72CE6AF9E00D3C44B /* DailyCheckinManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB62CE6AF9E00D3C44B /* DailyCheckinManager.swift */; };
 		9915BAB92CEC332500D3C44B /* AnalysisManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB82CEC332500D3C44B /* AnalysisManager.swift */; };
@@ -211,6 +213,8 @@
 		9915646E2D6E778700779836 /* MorningReflectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MorningReflectionView.swift; sourceTree = "<group>"; };
 		991564722D7689F200779836 /* StoreManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreManager.swift; sourceTree = "<group>"; };
 		991564742D7689FD00779836 /* PurchaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseManager.swift; sourceTree = "<group>"; };
+		991564762D7BCA2100779836 /* RecordMorningPagesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordMorningPagesView.swift; sourceTree = "<group>"; };
+		9915647A2D7BCCF500779836 /* JournalOfTheDayManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalOfTheDayManager.swift; sourceTree = "<group>"; };
 		9915BAB42CE6AF8D00D3C44B /* DailyCheckinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckinView.swift; sourceTree = "<group>"; };
 		9915BAB62CE6AF9E00D3C44B /* DailyCheckinManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckinManager.swift; sourceTree = "<group>"; };
 		9915BAB82CEC332500D3C44B /* AnalysisManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisManager.swift; sourceTree = "<group>"; };
@@ -519,6 +523,7 @@
 				991564642D66A97E00779836 /* NotificationRequestView.swift */,
 				991564662D696CAA00779836 /* PremiumSheet.swift */,
 				9915646A2D6D404000779836 /* FullTopicBreakdown.swift */,
+				991564762D7BCA2100779836 /* RecordMorningPagesView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -549,10 +554,11 @@
 				99F00AB82D3DA794008F1228 /* SleepCheckinManager.swift */,
 				99F00ABA2D3DC159008F1228 /* TrendsManager.swift */,
 				9986634C2D45CF5100D7406D /* TabManager.swift */,
-				99C7F83B2D56C0CE00A6D4FC /* DailyQuoteManager.swift */,
 				9915646C2D6E774100779836 /* MorningReflectionManager.swift */,
 				991564722D7689F200779836 /* StoreManager.swift */,
 				991564742D7689FD00779836 /* PurchaseManager.swift */,
+				99C7F83B2D56C0CE00A6D4FC /* DailyQuoteManager.swift */,
+				9915647A2D7BCCF500779836 /* JournalOfTheDayManager.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -787,6 +793,7 @@
 				9935CEF62D2C8ECA00AF0C16 /* AcitivtyLocalStorageUtility.swift in Sources */,
 				999DAC902D210A5000A6626B /* FeaturedPrompt.swift in Sources */,
 				9935CEDC2D24576F00AF0C16 /* TimeLapseDemoView.swift in Sources */,
+				9915647B2D7BCCF500779836 /* JournalOfTheDayManager.swift in Sources */,
 				991564752D7689FD00779836 /* PurchaseManager.swift in Sources */,
 				9988DB952CDA7F92005628DE /* FriendRequest.swift in Sources */,
 				99F7F6F52CAC7DB4009858AC /* LoopManager.swift in Sources */,
@@ -835,6 +842,7 @@
 				9935CED22D23969600AF0C16 /* SpeakingHighlight.swift in Sources */,
 				9935CEF42D2C8E9500AF0C16 /* ActivityCloudKidUtility.swift in Sources */,
 				990E4A942CBDCA24009F88A0 /* VideoManager.swift in Sources */,
+				991564772D7BCA2100779836 /* RecordMorningPagesView.swift in Sources */,
 				99A0C8F12CA9EF2400F9281A /* LoopApp.swift in Sources */,
 				9953BE102D07ADC100348AC3 /* LoopComparison.swift in Sources */,
 				99F7F6E72CAC77F4009858AC /* HomeView.swift in Sources */,

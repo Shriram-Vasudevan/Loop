@@ -118,8 +118,9 @@ class TrendsManager: ObservableObject {
                     guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else { break }
                     currentDate = nextDate
                 }
-                
-                self.cachedMetrics[timeframe] = metrics
+                if self.cachedMetrics[timeframe] != nil {
+                    self.cachedMetrics[timeframe] = metrics
+                }
                 continuation.resume(returning: metrics)
             }
         }
