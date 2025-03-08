@@ -5,6 +5,7 @@
 //  Created by Shriram Vasudevan on 11/9/24.
 //
 
+
 import SwiftUI
 import Foundation
 import Darwin
@@ -16,13 +17,21 @@ struct SettingsView: View {
     @State private var showingReviewPrompt = false
     @State private var selectedWebView: WebViewData?
     @State private var reminderTime: Date
+    @State private var morningReminderTime: Date
     @State private var showTimeSelector = false
+    @State private var showMorningTimeSelector = false
     @State private var showNameEditor = false
     @State private var userName: String
     @State private var animateContent = false
+    @State private var timePickerType: TimePickerType = .evening
     
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
+    
+    enum TimePickerType {
+        case morning
+        case evening
+    }
     
     @Environment(\.dismiss) var dismiss
     
@@ -33,6 +42,10 @@ struct SettingsView: View {
         let savedTime = UserDefaults.standard.object(forKey: "reminderTime") as? Date
         let defaultTime = Calendar.current.date(from: DateComponents(hour: 21, minute: 0)) ?? Date()
         _reminderTime = State(initialValue: savedTime ?? defaultTime)
+        
+        let savedMorningTime = UserDefaults.standard.object(forKey: "morningReminderTime") as? Date
+        let defaultMorningTime = Calendar.current.date(from: DateComponents(hour: 8, minute: 0)) ?? Date()
+        _morningReminderTime = State(initialValue: savedMorningTime ?? defaultMorningTime)
     }
     
     var body: some View {
@@ -59,8 +72,6 @@ struct SettingsView: View {
                         if getPurchaseStatus() {
                             premiumWidget
                         }
-//                        
-                        
                     }
                 
                     preferencesSection
@@ -75,10 +86,27 @@ struct SettingsView: View {
             }
         }
         .sheet(isPresented: $showTimeSelector) {
-            TimePickerSheet(selectedTime: $reminderTime) { newTime in
-                UserDefaults.standard.set(newTime, forKey: "reminderTime")
-                NotificationManager.shared.saveAndScheduleReminder(at: newTime)
-            }
+            TimePickerSheet(
+                selectedTime: $reminderTime,
+                onSave: { newTime in
+                    UserDefaults.standard.set(newTime, forKey: "reminderTime")
+                    NotificationManager.shared.saveAndScheduleReminder(at: newTime)
+                },
+                pickerTitle: "daily reminder",
+                timePickerType: .evening
+            )
+            .presentationDetents([.fraction(0.7)])
+        }
+        .sheet(isPresented: $showMorningTimeSelector) {
+            TimePickerSheet(
+                selectedTime: $morningReminderTime,
+                onSave: { newTime in
+                    UserDefaults.standard.set(newTime, forKey: "morningReminderTime")
+                    NotificationManager.shared.saveAndScheduleMorningReminder(at: newTime)
+                },
+                pickerTitle: "morning reflection",
+                timePickerType: .morning
+            )
             .presentationDetents([.fraction(0.7)])
         }
         .sheet(isPresented: $showingContactView) { ContactView() }
@@ -228,9 +256,33 @@ struct SettingsView: View {
                     if notificationManager.isNotificationsEnabled {
                         Button(action: { showTimeSelector = true }) {
                             HStack(spacing: 8) {
-                                Text(NotificationManager.shared.formatReminderTime(reminderTime))
+                                Image(systemName: "moon.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(accentColor)
+                                
+                                Text("Evening Reflection - \(NotificationManager.shared.formatReminderTime(reminderTime))")
                                     .font(.system(size: 15))
                                     .foregroundColor(textColor.opacity(0.5))
+                                
+                                Spacer()
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(textColor.opacity(0.3))
+                            }
+                        }
+                        
+                        Button(action: { showMorningTimeSelector = true }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "sun.max.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(accentColor)
+                                
+                                Text("Morning Reflection - \(NotificationManager.shared.formatReminderTime(morningReminderTime))")
+                                    .font(.system(size: 15))
+                                    .foregroundColor(textColor.opacity(0.5))
+                                
+                                Spacer()
                                 
                                 Image(systemName: "chevron.right")
                                     .font(.system(size: 12))
@@ -298,7 +350,7 @@ struct SettingsView: View {
     }
     
     private var accountSection: some View {
-        VStack(alignment: .leading, spacing: 32) {            
+        VStack(alignment: .leading, spacing: 32) {
             VStack(spacing: 24) {
                 Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")")
                     .font(.system(size: 15))
@@ -311,7 +363,7 @@ struct SettingsView: View {
                 }
                 .alert("Log Out", isPresented: $showingLogoutAlert) {
                     Button("Cancel", role: .cancel) { }
-                    Button("Log Out", role: .destructive) { 
+                    Button("Log Out", role: .destructive) {
                         print("logging out")
                         FirstLaunchManager.shared.isFirstLaunch = true
                     }
@@ -639,6 +691,8 @@ struct TimePickerSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var selectedTime: Date
     let onSave: (Date) -> Void
+    let pickerTitle: String
+    let timePickerType: SettingsView.TimePickerType
     
     @State private var opacity = 0.0
     @State private var sheetOffset: CGFloat = 1000
@@ -655,15 +709,29 @@ struct TimePickerSheet: View {
                         .frame(width: 38, height: 4)
                         .padding(.top, 12)
                     
-                    Text("daily reminder")
+                    Text(pickerTitle)
                         .font(.system(size: 15, weight: .medium))
                         .foregroundColor(textColor.opacity(0.6))
                         .tracking(1.2)
                         .padding(.top, 8)
                     
-                    Text(timeFormatted(selectedTime))
-                        .font(.custom("PPNeueMontreal-Medium", size: 58))
-                        .foregroundColor(textColor)
+                    HStack {
+                        if timePickerType == .morning {
+                            Image(systemName: "sun.max.fill")
+                                .foregroundColor(accentColor)
+                                .font(.system(size: 32))
+                                .padding(.trailing, 8)
+                        } else {
+                            Image(systemName: "moon.fill")
+                                .foregroundColor(accentColor)
+                                .font(.system(size: 32))
+                                .padding(.trailing, 8)
+                        }
+                        
+                        Text(timeFormatted(selectedTime))
+                            .font(.custom("PPNeueMontreal-Medium", size: 58))
+                            .foregroundColor(textColor)
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 160)

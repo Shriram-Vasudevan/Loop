@@ -15,9 +15,11 @@ class NotificationManager: ObservableObject {
     @Published private(set) var isNotificationsEnabled = false
     @Published private(set) var currentPermissionStatus: UNAuthorizationStatus = .notDetermined
     
-    private let reminderTimeKey = "LoopReminderTime"
+    private let reminderTimeKey = "reminderTime"
+    private let morningReminderTimeKey = "morningReminderTime"
     private let reminderEnabledKey = "LoopReminderEnabled"
     private let notificationIdentifier = "LoopDailyReminder"
+    private let morningNotificationIdentifier = "LoopMorningReminder"
     private let promptNotificationIdentifier = "LoopPromptReminder"
     private let defaults = UserDefaults.standard
     
@@ -79,6 +81,10 @@ class NotificationManager: ObservableObject {
                     if let savedTime = self.loadReminderTime() {
                         self.scheduleDailyReminder(at: savedTime)
                     }
+                    
+                    if let savedMorningTime = self.loadMorningReminderTime() {
+                        self.scheduleMorningReminder(at: savedMorningTime)
+                    }
                 }
             }
             
@@ -118,44 +124,33 @@ class NotificationManager: ObservableObject {
         defaults.set(true, forKey: reminderEnabledKey)
         isNotificationsEnabled = true
         
-        cancelReminders()
+        cancelSpecificReminder(identifier: notificationIdentifier)
         scheduleDailyReminder(at: time)
+    }
+    
+    func saveAndScheduleMorningReminder(at time: Date) {
+        defaults.set(time, forKey: morningReminderTimeKey)
+        defaults.set(true, forKey: reminderEnabledKey)
+        isNotificationsEnabled = true
+        
+        cancelSpecificReminder(identifier: morningNotificationIdentifier)
+        scheduleMorningReminder(at: time)
     }
     
     func loadReminderTime() -> Date? {
         return defaults.object(forKey: reminderTimeKey) as? Date
     }
     
+    func loadMorningReminderTime() -> Date? {
+        return defaults.object(forKey: morningReminderTimeKey) as? Date
+    }
+    
     func scheduleMorningReminder(at time: Date) {
         let center = UNUserNotificationCenter.current()
         
         let content = UNMutableNotificationContent()
-        content.title = "Complete your Morning Reflection"
-        content.body = "Start your day prepared" //change this obviously
-        content.badge = 1
-        
-        let calendar = Calendar.current
-        var dateComponents = calendar.dateComponents([.hour, .minute], from: time)
-        
-        dateComponents.minute = 0
-        
-        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
-        
-        let request = UNNotificationRequest(identifier: notificationIdentifier, content: content, trigger: trigger)
-        
-        center.add(request) { error in
-            if let error = error {
-                print("Error scheduling reminder: \(error.localizedDescription)")
-            }
-        }
-    }
-    
-    func scheduleDailyReminder(at time: Date) {
-        let center = UNUserNotificationCenter.current()
-
-        let content = UNMutableNotificationContent()
-        content.title = "Time to Loop"
-        content.body = "Don't forget to reflect and capture your thoughts!"
+        content.title = "Morning Reflection"
+        content.body = "Start your day with a moment of reflection"
         content.sound = UNNotificationSound.default
         content.badge = 1
         
@@ -166,25 +161,39 @@ class NotificationManager: ObservableObject {
         let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
         
         let request = UNNotificationRequest(
-            identifier: notificationIdentifier,
+            identifier: morningNotificationIdentifier,
             content: content,
             trigger: trigger
         )
         
         center.add(request) { error in
             if let error = error {
-                print("Error scheduling reminder: \(error.localizedDescription)")
+                print("Error scheduling morning reminder: \(error.localizedDescription)")
             }
         }
         
+        scheduleDynamicMorningPrompts(baseTime: time)
+    }
+    
+    func scheduleDynamicMorningPrompts(baseTime: Date) {
+        let center = UNUserNotificationCenter.current()
+        let calendar = Calendar.current
         let now = Date()
-            var morningComponents = DateComponents()
-            morningComponents.hour = 8
-            morningComponents.minute = 0
-            
-            let isFirstLaunch = !defaults.bool(forKey: firstLaunchKey)
-            let currentHour = calendar.component(.hour, from: now)
-            let shouldShowDreamTomorrow = isFirstLaunch && currentHour >= 8
+        
+        for day in 0..<7 {
+            center.removePendingNotificationRequests(withIdentifiers: ["\(promptNotificationIdentifier)_\(day)"])
+        }
+    
+        let hour = calendar.component(.hour, from: baseTime)
+        let minute = calendar.component(.minute, from: baseTime)
+        
+        var morningComponents = DateComponents()
+        morningComponents.hour = hour
+        morningComponents.minute = minute
+        
+        let isFirstLaunch = !defaults.bool(forKey: firstLaunchKey)
+        let currentHour = calendar.component(.hour, from: now)
+        let shouldShowDreamTomorrow = isFirstLaunch && currentHour >= hour
 
         for day in 0..<7 {
             let morningContent = UNMutableNotificationContent()
@@ -218,7 +227,7 @@ class NotificationManager: ObservableObject {
             
             center.add(request) { error in
                 if let error = error {
-                    print("Error scheduling morning reminder \(day): \(error.localizedDescription)")
+                    print("Error scheduling morning prompt \(day): \(error.localizedDescription)")
                 }
             }
         }
@@ -228,45 +237,126 @@ class NotificationManager: ObservableObject {
         }
     }
     
+    func scheduleDailyReminder(at time: Date) {
+        let center = UNUserNotificationCenter.current()
+
+        let content = UNMutableNotificationContent()
+        content.title = "Time to Loop"
+        content.body = "Don't forget to reflect and capture your thoughts!"
+        content.sound = UNNotificationSound.default
+        content.badge = 1
+        
+        let calendar = Calendar.current
+        var dateComponents = calendar.dateComponents([.hour, .minute], from: time)
+        dateComponents.second = 0
+        
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+        
+        let request = UNNotificationRequest(
+            identifier: notificationIdentifier,
+            content: content,
+            trigger: trigger
+        )
+        
+        center.add(request) { error in
+            if let error = error {
+                print("Error scheduling reminder: \(error.localizedDescription)")
+            }
+        }
+    }
+    
     func rescheduleRemindersIfNeeded() {
-        if isNotificationsEnabled,
-           let savedTime = loadReminderTime() {
-            scheduleDailyReminder(at: savedTime)
+        if isNotificationsEnabled {
+            if let savedTime = loadReminderTime() {
+                scheduleDailyReminder(at: savedTime)
+            }
+            
+            if let savedMorningTime = loadMorningReminderTime() {
+                scheduleMorningReminder(at: savedMorningTime)
+            }
+        }
+    }
+    
+    func cancelSpecificReminder(identifier: String) {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
+    }
+    
+    func cancelPromptReminders() {
+        let center = UNUserNotificationCenter.current()
+        for day in 0..<7 {
+            center.removePendingNotificationRequests(withIdentifiers: ["\(promptNotificationIdentifier)_\(day)"])
         }
     }
     
     func cancelReminders() {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [notificationIdentifier])
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [notificationIdentifier, morningNotificationIdentifier])
+        cancelPromptReminders()
     }
     
     func disableReminders() {
         cancelReminders()
         defaults.removeObject(forKey: reminderTimeKey)
+        defaults.removeObject(forKey: morningReminderTimeKey)
         defaults.set(false, forKey: reminderEnabledKey)
         isNotificationsEnabled = false
     }
     
     func getNextReminderDate() -> Date? {
-        guard let savedTime = loadReminderTime() else { return nil }
-        
-        let calendar = Calendar.current
         let now = Date()
+        let calendar = Calendar.current
         
-        let hour = calendar.component(.hour, from: savedTime)
-        let minute = calendar.component(.minute, from: savedTime)
-        
-        var components = calendar.dateComponents([.year, .month, .day], from: now)
-        components.hour = hour
-        components.minute = minute
-        components.second = 0
-        
-        guard let reminderTime = calendar.date(from: components) else { return nil }
-        
-        if reminderTime <= now {
-            return calendar.date(byAdding: .day, value: 1, to: reminderTime)
+        // Check evening reminder
+        if let savedTime = loadReminderTime() {
+            let hour = calendar.component(.hour, from: savedTime)
+            let minute = calendar.component(.minute, from: savedTime)
+            
+            var components = calendar.dateComponents([.year, .month, .day], from: now)
+            components.hour = hour
+            components.minute = minute
+            components.second = 0
+            
+            if let reminderTime = calendar.date(from: components), reminderTime > now {
+                return reminderTime
+            }
         }
         
-        return reminderTime
+        // Check morning reminder
+        if let savedMorningTime = loadMorningReminderTime() {
+            let hour = calendar.component(.hour, from: savedMorningTime)
+            let minute = calendar.component(.minute, from: savedMorningTime)
+            
+            var components = calendar.dateComponents([.year, .month, .day], from: now)
+            components.hour = hour
+            components.minute = minute
+            components.second = 0
+            
+            if let morningTime = calendar.date(from: components), morningTime > now {
+                return morningTime
+            }
+            
+            // If both reminders are earlier today, return tomorrow's morning reminder
+            if let morningTime = calendar.date(from: components) {
+                return calendar.date(byAdding: .day, value: 1, to: morningTime)
+            }
+        }
+        
+        // If there's an evening reminder and it's earlier today, return tomorrow's evening reminder
+        if let savedTime = loadReminderTime() {
+            let hour = calendar.component(.hour, from: savedTime)
+            let minute = calendar.component(.minute, from: savedTime)
+            
+            var components = calendar.dateComponents([.year, .month, .day], from: now)
+            components.hour = hour
+            components.minute = minute
+            components.second = 0
+            
+            if let reminderTime = calendar.date(from: components) {
+                return calendar.date(byAdding: .day, value: 1, to: reminderTime)
+            }
+        }
+        
+        return nil
     }
     
     func formatReminderTime(_ date: Date) -> String {
@@ -383,4 +473,3 @@ extension NotificationManager {
         UserDefaults.standard.set(Date(), forKey: "lastNotificationPromptDate")
     }
 }
-
