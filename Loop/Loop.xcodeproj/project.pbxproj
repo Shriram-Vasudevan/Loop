@@ -32,6 +32,7 @@
 		991564752D7689FD00779836 /* PurchaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991564742D7689FD00779836 /* PurchaseManager.swift */; };
 		991564772D7BCA2100779836 /* RecordMorningPagesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991564762D7BCA2100779836 /* RecordMorningPagesView.swift */; };
 		9915647B2D7BCCF500779836 /* JournalOfTheDayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915647A2D7BCCF500779836 /* JournalOfTheDayManager.swift */; };
+		9915647D2D7D235C00779836 /* LiveTranscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915647C2D7D235C00779836 /* LiveTranscriptionManager.swift */; };
 		9915BAB52CE6AF8D00D3C44B /* DailyCheckinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB42CE6AF8D00D3C44B /* DailyCheckinView.swift */; };
 		9915BAB72CE6AF9E00D3C44B /* DailyCheckinManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB62CE6AF9E00D3C44B /* DailyCheckinManager.swift */; };
 		9915BAB92CEC332500D3C44B /* AnalysisManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB82CEC332500D3C44B /* AnalysisManager.swift */; };
@@ -215,6 +216,7 @@
 		991564742D7689FD00779836 /* PurchaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseManager.swift; sourceTree = "<group>"; };
 		991564762D7BCA2100779836 /* RecordMorningPagesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordMorningPagesView.swift; sourceTree = "<group>"; };
 		9915647A2D7BCCF500779836 /* JournalOfTheDayManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalOfTheDayManager.swift; sourceTree = "<group>"; };
+		9915647C2D7D235C00779836 /* LiveTranscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranscriptionManager.swift; sourceTree = "<group>"; };
 		9915BAB42CE6AF8D00D3C44B /* DailyCheckinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckinView.swift; sourceTree = "<group>"; };
 		9915BAB62CE6AF9E00D3C44B /* DailyCheckinManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckinManager.swift; sourceTree = "<group>"; };
 		9915BAB82CEC332500D3C44B /* AnalysisManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisManager.swift; sourceTree = "<group>"; };
@@ -559,6 +561,7 @@
 				991564742D7689FD00779836 /* PurchaseManager.swift */,
 				99C7F83B2D56C0CE00A6D4FC /* DailyQuoteManager.swift */,
 				9915647A2D7BCCF500779836 /* JournalOfTheDayManager.swift */,
+				9915647C2D7D235C00779836 /* LiveTranscriptionManager.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -862,6 +865,7 @@
 				990E4A8A2CB47FEE009F88A0 /* LaunchManager.swift in Sources */,
 				990E4A9C2CBDD1BB009F88A0 /* LoopVideoConfirmationView.swift in Sources */,
 				990E4A9A2CBDD091009F88A0 /* VideoRecordButton.swift in Sources */,
+				9915647D2D7D235C00779836 /* LiveTranscriptionManager.swift in Sources */,
 				999DAC662D1DB54A00A6626B /* AllThemesView.swift in Sources */,
 				9953BDF22CF3A02400348AC3 /* PromptSet.swift in Sources */,
 				99F31CA92D0F31AF00330180 /* FollowUp.swift in Sources */,

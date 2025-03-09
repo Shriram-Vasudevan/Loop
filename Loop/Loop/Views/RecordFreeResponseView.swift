@@ -11,11 +11,13 @@ import AVFoundation
 struct RecordFreeResponseView: View {
     @ObservedObject var loopManager = LoopManager.shared
     @ObservedObject var audioManager = AudioManager.shared
+    @ObservedObject var transcriptionManager = LiveTranscriptionManager.shared
     
     @State private var isRecording = false
     @State private var isPostRecording = false
     @State private var showingThankYouScreen = false
     @State private var recordingTimer: Timer?
+    @State private var liveTranscriptionEnabled = true
     
     @State private var timeRemaining: Int = 60
     @State private var retryAttempts = 100
@@ -29,6 +31,8 @@ struct RecordFreeResponseView: View {
         ZStack {
             InitialReflectionVisual(index: 0)
                 .edgesIgnoringSafeArea(.all)
+                .scaleEffect(y: -1)
+                
             VStack(spacing: 0) {
                 if showingThankYouScreen {
                     thankYouView
@@ -46,9 +50,9 @@ struct RecordFreeResponseView: View {
                 Spacer()
             }
         }
-        .background(Color.white)
         .onAppear {
             audioManager.cleanup()
+            transcriptionManager.checkSpeechRecognitionAuthorization()
         }
     }
     
@@ -60,12 +64,7 @@ struct RecordFreeResponseView: View {
                     .foregroundColor(.gray)
                 
                 Spacer()
-                
-                Button(action: { dismiss() }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 16, weight: .regular))
-                        .foregroundColor(.gray)
-                }
+
             }
             .padding(.top, 16)
             
@@ -88,18 +87,33 @@ struct RecordFreeResponseView: View {
             Spacer()
             
             if isRecording {
-                VStack(spacing: 16) {
-                    HStack(spacing: 12) {
-                        PulsingDot()
-                        Text("\(timeRemaining)s")
-                            .font(.system(size: 20, weight: .regular))
-                            .foregroundColor(accentColor)
+                VStack(spacing: 20) {
+                    // Timer and status
+//                    HStack(spacing: 12) {
+//                        PulsingDot()
+//                        Text("\(timeRemaining)s")
+//                            .font(.system(size: 20, weight: .regular))
+//                            .foregroundColor(accentColor)
+//                    }
+//                    
+//                    Text("Recording your thoughts...")
+//                        .font(.system(size: 16, weight: .regular))
+//                        .foregroundColor(.gray)
+
+                    if liveTranscriptionEnabled && !transcriptionManager.transcribedText.isEmpty {
+                        TranscriptionView(text: transcriptionManager.transcribedText)
+                            .padding(.top, 10)
+                            .transition(.opacity)
                     }
-                    
-                    Text("Recording your thoughts...")
-                        .font(.system(size: 16, weight: .regular))
-                        .foregroundColor(.gray)
                 }
+            } else {
+//                VStack(spacing: 24) {
+//                    Image(systemName: "waveform")
+//                        .font(.system(size: 48))
+//                        .foregroundColor(accentColor.opacity(0.8))
+//                    
+//                }
+//                .padding(.bottom, 40)
             }
             
             Spacer()
@@ -186,6 +200,17 @@ struct RecordFreeResponseView: View {
         VStack(spacing: 8) {
             Spacer()
             
+            ZStack {
+                Circle()
+                    .fill(accentColor.opacity(0.1))
+                    .frame(width: 100)
+                
+                Image(systemName: "checkmark")
+                    .font(.system(size: 40, weight: .light))
+                    .foregroundColor(accentColor)
+            }
+            .padding(.bottom, 20)
+            
             Text("Entry Saved")
                 .font(.system(size: 24, weight: .light))
                 .foregroundColor(textColor)
@@ -198,24 +223,31 @@ struct RecordFreeResponseView: View {
         }
         .onAppear {
             audioManager.cleanup()
+            transcriptionManager.resetTranscription()
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                 dismiss()
             }
         }
     }
     
-    // Helper functions remain largely the same
+    // Helper functions
     private func toggleRecording() {
         withAnimation(.easeInOut(duration: 0.3)) {
             isRecording.toggle()
         }
         
         if !isRecording {
+            if liveTranscriptionEnabled {
+                transcriptionManager.stopTranscription()
+            }
             audioManager.stopRecording()
             stopTimer()
             isPostRecording = true
         } else {
             startRecordingWithTimer()
+            if liveTranscriptionEnabled {
+                transcriptionManager.startTranscription()
+            }
         }
     }
     
@@ -233,6 +265,9 @@ struct RecordFreeResponseView: View {
                 timeRemaining -= 1
             } else {
                 stopTimer()
+                if liveTranscriptionEnabled {
+                    transcriptionManager.stopTranscription()
+                }
                 audioManager.stopRecording()
                 isPostRecording = true
             }
@@ -255,7 +290,9 @@ struct RecordFreeResponseView: View {
                     isFollowUp: false, isSuccess: false, isUnguided: true, isDream: false, isMorningJournal: false
                 )
                 
-                AnalysisManager.shared.performAnalysisForUnguidedEntry(transcript: loop.1)
+                // Here we don't need to modify addLoop, we just send the final transcript for analysis
+                let transcriptForAnalysis = liveTranscriptionEnabled ? transcriptionManager.transcribedText : loop.1
+                AnalysisManager.shared.performAnalysisForUnguidedEntry(transcript: transcriptForAnalysis)
             }
         }
     }
@@ -263,6 +300,7 @@ struct RecordFreeResponseView: View {
     private func retryRecording() {
         if retryAttempts > 0 {
             audioManager.cleanup()
+            transcriptionManager.resetTranscription()
             isPostRecording = false
             isRecording = false
             timeRemaining = 30
@@ -287,10 +325,10 @@ struct RecordFreeResponseView: View {
                 return "Good Morning"
             case 12...16:
                 return "Good Afternoon"
-        case 17...23:
-            return "Good Evening"
-        default:
-            return "Hey there"
+            case 17...23:
+                return "Good Evening"
+            default:
+                return "Hey there"
         }
     }
 }
@@ -308,12 +346,12 @@ struct FreeResponseAudioConfirmationView: View {
     @State private var isWaveformVisible = false
     @State private var audioPlayer: AVAudioPlayer?
     @State private var isPlaying = false
+    @State private var showTranscript = false
     
     var body: some View {
         VStack(spacing: 32) {
             Spacer()
             
-            // Waveform visualization
             HStack(spacing: 3) {
                 ForEach(Array(waveformData.enumerated()), id: \.offset) { index, height in
                     RoundedRectangle(cornerRadius: 1.5)
@@ -329,8 +367,7 @@ struct FreeResponseAudioConfirmationView: View {
             .frame(height: 60)
             .padding(.horizontal, 32)
             .padding(.bottom, 12)
-            
-            // Playback controls
+
             Button(action: togglePlayback) {
                 ZStack {
                     Circle()
@@ -346,12 +383,11 @@ struct FreeResponseAudioConfirmationView: View {
             }
             
             Spacer()
-            
-            // Action buttons
+
             VStack(spacing: 12) {
                 Button(action: onComplete) {
                     Text("Save Entry")
-                        .font(.system(size: 17, weight: .regular))
+                        .font(.system(size: 17, weight: .medium))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 54)
@@ -421,6 +457,26 @@ struct FreeResponseAudioConfirmationView: View {
         } catch {
             print("Failed to deactivate audio session: \(error)")
         }
+    }
+}
+
+struct TranscriptionView: View {
+    let text: String
+    
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(text)
+                    .font(.system(size: 20))
+                    .foregroundColor(.black)
+                    .lineSpacing(4)
+                    .multilineTextAlignment(.leading)
+                    .padding(.vertical, 2)
+                    .bold()
+            }
+            .padding(.bottom, 16)
+        }
+        .frame(maxHeight: 200)
     }
 }
 
