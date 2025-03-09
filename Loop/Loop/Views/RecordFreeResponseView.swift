@@ -19,7 +19,7 @@ struct RecordFreeResponseView: View {
     @State private var recordingTimer: Timer?
     @State private var liveTranscriptionEnabled = true
     
-    @State private var timeRemaining: Int = 60
+    @State private var timeRemaining: Int = 1000
     @State private var retryAttempts = 100
     @Environment(\.dismiss) var dismiss
     

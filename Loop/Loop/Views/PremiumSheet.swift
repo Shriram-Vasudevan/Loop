@@ -66,7 +66,7 @@ struct PremiumUpgradeView: View {
                     
                     VStack(spacing: 24) {
                         VStack(alignment: .leading, spacing: 20) {
-                            FeatureRow(emoji: "✦", title: "Unlimited Entry Length")
+                            FeatureRow(emoji: "✦", title: "Improved Transcription")
                             FeatureRow(emoji: "✦", title: "Talk to your Journal")
                             FeatureRow(emoji: "✦", title: "Customizable Prompts")
                             FeatureRow(emoji: "✦", title: "Deeper Insights")
