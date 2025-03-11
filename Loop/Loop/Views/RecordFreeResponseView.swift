@@ -29,9 +29,9 @@ struct RecordFreeResponseView: View {
     
     var body: some View {
         ZStack {
-            InitialReflectionVisual(index: 0)
+            WarmComfortingBackground()
                 .edgesIgnoringSafeArea(.all)
-                .scaleEffect(y: -1)
+//                .scaleEffect(y: -1)
                 
             VStack(spacing: 0) {
                 if showingThankYouScreen {
@@ -101,7 +101,7 @@ struct RecordFreeResponseView: View {
 //                        .foregroundColor(.gray)
 
                     if liveTranscriptionEnabled && !transcriptionManager.transcribedText.isEmpty {
-                        TranscriptionView(text: transcriptionManager.transcribedText)
+                        CleanTranscriptionView(text: transcriptionManager.transcribedText)
                             .padding(.top, 10)
                             .transition(.opacity)
                     }
@@ -460,23 +460,197 @@ struct FreeResponseAudioConfirmationView: View {
     }
 }
 
-struct TranscriptionView: View {
+struct CleanTranscriptionView: View {
     let text: String
+    let textColor = Color(hex: "2C3E50")
+    let accentColor = Color(hex: "A28497")
+    
+    @State private var scrollViewProxy: ScrollViewProxy? = nil
+    @State private var bottomID = UUID()
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(text)
-                    .font(.system(size: 20))
-                    .foregroundColor(.black)
-                    .lineSpacing(4)
-                    .multilineTextAlignment(.leading)
-                    .padding(.vertical, 2)
-                    .bold()
+        ScrollViewReader { proxy in
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    if !text.isEmpty {
+                        // Process text into paragraphs with decreasing opacity
+                        ForEach(splitTextIntoSections(), id: \.self) { section in
+                            Text(section.text)
+                                .font(.system(size: 24, weight: section.isRecent ? .semibold : .regular))
+                                .foregroundColor(textColor.opacity(section.opacity))
+                                .lineSpacing(8)
+                                .padding(.vertical, 3)
+                                .multilineTextAlignment(.leading)
+                                .transition(.opacity)
+                                .id(section.isLast ? bottomID : nil)
+                        }
+                    } else {
+                        // Empty state
+                        Text("Your words will appear here...")
+                            .font(.system(size: 24, weight: .regular))
+                            .foregroundColor(textColor.opacity(0.3))
+                            .padding(.vertical, 16)
+                            .id(bottomID)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 20)
             }
-            .padding(.bottom, 16)
+            .onChange(of: text) { _ in
+                withAnimation {
+                    proxy.scrollTo(bottomID, anchor: .bottom)
+                }
+            }
+            .onAppear {
+                scrollViewProxy = proxy
+                proxy.scrollTo(bottomID, anchor: .bottom)
+            }
         }
-        .frame(maxHeight: 200)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white.opacity(0.05))
+        )
+        .frame(maxHeight: 220)
+    }
+    
+    // Splits text into sections with decreasing opacity levels
+    private func splitTextIntoSections() -> [TextSection] {
+        guard !text.isEmpty else { return [] }
+        
+        let wordList = text.components(separatedBy: " ")
+        
+        // If the text is short, just return it as a single section
+        if wordList.count <= 20 {
+            return [TextSection(text: text, opacity: 1.0, isRecent: true, isLast: true)]
+        }
+        
+        // Divide longer texts into sections with decreasing opacity
+        var sections: [TextSection] = []
+        let sectionSize = max(10, wordList.count / 4)
+        
+        for i in stride(from: 0, to: wordList.count, by: sectionSize) {
+            let endIndex = min(i + sectionSize, wordList.count)
+            let sectionWords = Array(wordList[i..<endIndex])
+            let sectionText = sectionWords.joined(separator: " ")
+            
+            // Calculate opacity based on recency (newest text is most opaque)
+            let sectionPosition = Double(i) / Double(wordList.count)
+            let opacity = 0.4 + (0.6 * (1.0 - sectionPosition))
+            
+            // Determine if this is the most recent section
+            let isRecent = (endIndex == wordList.count)
+            let isLast = (endIndex == wordList.count)
+            
+            sections.append(TextSection(
+                text: sectionText,
+                opacity: opacity,
+                isRecent: isRecent,
+                isLast: isLast
+            ))
+        }
+        
+        return sections
+    }
+    
+    // Model for text sections with variable opacity
+    struct TextSection: Hashable {
+        let text: String
+        let opacity: Double
+        let isRecent: Bool
+        let isLast: Bool
+    }
+}
+
+struct EnhancedWarmBackground: View {
+    private let primaryColor = Color(hex: "A28497")
+    private let secondaryColor = Color(hex: "B7A284")
+    
+    var body: some View {
+        ZStack {
+            // Rich gradient base
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    primaryColor.opacity(0.18),
+                    secondaryColor.opacity(0.14),
+                    primaryColor.opacity(0.1)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            
+            // Subtle animated elements
+            TimelineView(.animation(minimumInterval: 1/20)) { timeline in
+                Canvas { context, size in
+                    let timeOffset = timeline.date.timeIntervalSinceReferenceDate
+                    
+                    // Soft gradient overlay at the bottom
+                    let gradientRect = CGRect(x: 0, y: size.height * 0.6,
+                                             width: size.width, height: size.height * 0.4)
+                    context.fill(
+                        Path(gradientRect),
+                        with: .linearGradient(
+                            Gradient(colors: [
+                                secondaryColor.opacity(0.0),
+                                secondaryColor.opacity(0.15)
+                            ]),
+                            startPoint: CGPoint(x: 0, y: size.height * 0.6),
+                            endPoint: CGPoint(x: 0, y: size.height)
+                        )
+                    )
+                    
+                    // Create two gentle wave layers
+                    for i in 0..<2 {
+                        var path = Path()
+                        let baseY = size.height - CGFloat(40 + i * 20)
+                        let amplitude = 12.0 - Double(i) * 3.0
+                        let phase = timeOffset * (0.2 - Double(i) * 0.05)
+                        
+                        path.move(to: CGPoint(x: 0, y: baseY))
+                        
+                        for x in stride(from: 0, to: Double(size.width + 10), by: 8) {
+                            let normalizedX = x / Double(size.width)
+                            let waveHeight = sin(normalizedX * 6 + phase) * amplitude
+                            let y = baseY + CGFloat(waveHeight)
+                            
+                            path.addLine(to: CGPoint(x: x, y: y))
+                        }
+                        
+                        path.addLine(to: CGPoint(x: size.width, y: size.height))
+                        path.addLine(to: CGPoint(x: 0, y: size.height))
+                        path.closeSubpath()
+                        
+                        context.opacity = 0.15 - Double(i) * 0.05
+                        context.fill(
+                            path,
+                            with: .color(i == 0 ? primaryColor : secondaryColor)
+                        )
+                    }
+                    
+                    // Add a subtle glow in the top portion
+                    let glowCenter = CGPoint(x: size.width * 0.5, y: size.height * 0.25)
+                    let glowRadius = size.width * 0.6
+                    let glowPath = Path(ellipseIn: CGRect(
+                        x: glowCenter.x - glowRadius,
+                        y: glowCenter.y - glowRadius,
+                        width: glowRadius * 2,
+                        height: glowRadius * 2
+                    ))
+                    
+                    context.opacity = 0.07 + sin(timeOffset * 0.3) * 0.02
+                    context.fill(
+                        glowPath,
+                        with: .radialGradient(
+                            Gradient(colors: [primaryColor, primaryColor.opacity(0)]),
+                            center: CGPoint(x: 0.5, y: 0.5),
+                            startRadius: 0,
+                            endRadius: glowRadius
+                        )
+                    )
+                }
+            }
+        }
+        .edgesIgnoringSafeArea(.all)
     }
 }
 
