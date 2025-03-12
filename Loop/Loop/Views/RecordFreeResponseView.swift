@@ -29,9 +29,6 @@ struct RecordFreeResponseView: View {
     
     var body: some View {
         ZStack {
-            WarmComfortingBackground()
-                .edgesIgnoringSafeArea(.all)
-//                .scaleEffect(y: -1)
                 
             VStack(spacing: 0) {
                 if showingThankYouScreen {
@@ -562,97 +559,6 @@ struct CleanTranscriptionView: View {
     }
 }
 
-struct EnhancedWarmBackground: View {
-    private let primaryColor = Color(hex: "A28497")
-    private let secondaryColor = Color(hex: "B7A284")
-    
-    var body: some View {
-        ZStack {
-            // Rich gradient base
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    primaryColor.opacity(0.18),
-                    secondaryColor.opacity(0.14),
-                    primaryColor.opacity(0.1)
-                ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            
-            // Subtle animated elements
-            TimelineView(.animation(minimumInterval: 1/20)) { timeline in
-                Canvas { context, size in
-                    let timeOffset = timeline.date.timeIntervalSinceReferenceDate
-                    
-                    // Soft gradient overlay at the bottom
-                    let gradientRect = CGRect(x: 0, y: size.height * 0.6,
-                                             width: size.width, height: size.height * 0.4)
-                    context.fill(
-                        Path(gradientRect),
-                        with: .linearGradient(
-                            Gradient(colors: [
-                                secondaryColor.opacity(0.0),
-                                secondaryColor.opacity(0.15)
-                            ]),
-                            startPoint: CGPoint(x: 0, y: size.height * 0.6),
-                            endPoint: CGPoint(x: 0, y: size.height)
-                        )
-                    )
-                    
-                    // Create two gentle wave layers
-                    for i in 0..<2 {
-                        var path = Path()
-                        let baseY = size.height - CGFloat(40 + i * 20)
-                        let amplitude = 12.0 - Double(i) * 3.0
-                        let phase = timeOffset * (0.2 - Double(i) * 0.05)
-                        
-                        path.move(to: CGPoint(x: 0, y: baseY))
-                        
-                        for x in stride(from: 0, to: Double(size.width + 10), by: 8) {
-                            let normalizedX = x / Double(size.width)
-                            let waveHeight = sin(normalizedX * 6 + phase) * amplitude
-                            let y = baseY + CGFloat(waveHeight)
-                            
-                            path.addLine(to: CGPoint(x: x, y: y))
-                        }
-                        
-                        path.addLine(to: CGPoint(x: size.width, y: size.height))
-                        path.addLine(to: CGPoint(x: 0, y: size.height))
-                        path.closeSubpath()
-                        
-                        context.opacity = 0.15 - Double(i) * 0.05
-                        context.fill(
-                            path,
-                            with: .color(i == 0 ? primaryColor : secondaryColor)
-                        )
-                    }
-                    
-                    // Add a subtle glow in the top portion
-                    let glowCenter = CGPoint(x: size.width * 0.5, y: size.height * 0.25)
-                    let glowRadius = size.width * 0.6
-                    let glowPath = Path(ellipseIn: CGRect(
-                        x: glowCenter.x - glowRadius,
-                        y: glowCenter.y - glowRadius,
-                        width: glowRadius * 2,
-                        height: glowRadius * 2
-                    ))
-                    
-                    context.opacity = 0.07 + sin(timeOffset * 0.3) * 0.02
-                    context.fill(
-                        glowPath,
-                        with: .radialGradient(
-                            Gradient(colors: [primaryColor, primaryColor.opacity(0)]),
-                            center: CGPoint(x: 0.5, y: 0.5),
-                            startRadius: 0,
-                            endRadius: glowRadius
-                        )
-                    )
-                }
-            }
-        }
-        .edgesIgnoringSafeArea(.all)
-    }
-}
 
 #Preview {
     RecordFreeResponseView()

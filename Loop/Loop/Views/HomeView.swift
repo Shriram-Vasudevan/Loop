@@ -311,65 +311,11 @@ struct HomeView: View {
             .background(Color.clear)
         }
     }
-
-//    private var featuredReflectionsSection: some View {
-//        VStack(alignment: .leading, spacing: 16) {
-//            Text("featured reflections")
-//                .font(.system(size: 13, weight: .medium))
-//                .tracking(1.5)
-//                .foregroundColor(textColor)
-//            
-//            ScrollView(.horizontal, showsIndicators: false) {
-//                HStack(spacing: 16) {
-//                    ForEach(loopManager.featuredReflections, id: \.text) { prompt in
-//                        Button(action: {
-//                            self.featuredPrompt = FeaturedPrompt(prompt: prompt.text)
-//                        }) {
-//                            VStack(alignment: .leading, spacing: 16) {
-//                                HStack {
-//                                    Text(prompt.text)
-//                                        .font(.system(size: 14, weight: .medium))
-//                                        .foregroundColor(textColor)
-//                                        .multilineTextAlignment(.leading)
-//                                        .lineLimit(2)
-//                                        .frame(width: 200)
-//                                    
-//                                    Spacer()
-//                                }
-//                                
-//                                HStack(spacing: 6) {
-//                                    Image(systemName: "mic.fill")
-//                                        .font(.system(size: 10))
-//                                    Text("RECORD")
-//                                        .font(.system(size: 11, weight: .medium))
-//                                        .tracking(1.5)
-//                                    
-//                                    Spacer()
-//                                }
-//                                .foregroundColor(accentColor.opacity(0.6))
-//                            }
-//                            .frame(width: 240)
-//                            .padding(24)
-//                            .background(
-//                                ZStack {
-//                                    RoundedRectangle(cornerRadius: 10)
-//                                        .fill(.white)
-//                                    
-//                                    WavyBackgroundGrey()
-//                                        .cornerRadius(10)
-//                                }
-//                            )
-//                            .overlay(
-//                                RoundedRectangle(cornerRadius: 16)
-//                                    .stroke(accentColor.opacity(0.05), lineWidth: 1)
-//                            )
-//                        }
-//                    }
-//                }
-//            }
-//        }
+    
+//    private var todaysJournal: some View {
+//        
 //    }
-//    
+
     private var notificationsSection: some View {
         VStack(alignment: .leading, spacing: 20) {
             Text("more")
@@ -546,7 +492,6 @@ struct DailyReflectionTutorial: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
-            // Header with close button
             HStack {
                 Text("Begin Your First Reflection")
                     .font(.system(size: 20, weight: .medium))

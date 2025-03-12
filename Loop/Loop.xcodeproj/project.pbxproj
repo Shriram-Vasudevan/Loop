@@ -33,6 +33,7 @@
 		991564772D7BCA2100779836 /* RecordMorningPagesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991564762D7BCA2100779836 /* RecordMorningPagesView.swift */; };
 		9915647B2D7BCCF500779836 /* JournalOfTheDayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915647A2D7BCCF500779836 /* JournalOfTheDayManager.swift */; };
 		9915647D2D7D235C00779836 /* LiveTranscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915647C2D7D235C00779836 /* LiveTranscriptionManager.swift */; };
+		9915647F2D81140B00779836 /* DailyJournalWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915647E2D81140A00779836 /* DailyJournalWidget.swift */; };
 		9915BAB52CE6AF8D00D3C44B /* DailyCheckinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB42CE6AF8D00D3C44B /* DailyCheckinView.swift */; };
 		9915BAB72CE6AF9E00D3C44B /* DailyCheckinManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB62CE6AF9E00D3C44B /* DailyCheckinManager.swift */; };
 		9915BAB92CEC332500D3C44B /* AnalysisManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB82CEC332500D3C44B /* AnalysisManager.swift */; };
@@ -217,6 +218,7 @@
 		991564762D7BCA2100779836 /* RecordMorningPagesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordMorningPagesView.swift; sourceTree = "<group>"; };
 		9915647A2D7BCCF500779836 /* JournalOfTheDayManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalOfTheDayManager.swift; sourceTree = "<group>"; };
 		9915647C2D7D235C00779836 /* LiveTranscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranscriptionManager.swift; sourceTree = "<group>"; };
+		9915647E2D81140A00779836 /* DailyJournalWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyJournalWidget.swift; sourceTree = "<group>"; };
 		9915BAB42CE6AF8D00D3C44B /* DailyCheckinView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckinView.swift; sourceTree = "<group>"; };
 		9915BAB62CE6AF9E00D3C44B /* DailyCheckinManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckinManager.swift; sourceTree = "<group>"; };
 		9915BAB82CEC332500D3C44B /* AnalysisManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisManager.swift; sourceTree = "<group>"; };
@@ -526,6 +528,7 @@
 				991564662D696CAA00779836 /* PremiumSheet.swift */,
 				9915646A2D6D404000779836 /* FullTopicBreakdown.swift */,
 				991564762D7BCA2100779836 /* RecordMorningPagesView.swift */,
+				9915647E2D81140A00779836 /* DailyJournalWidget.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -819,6 +822,7 @@
 				99F7F6F32CAC7D0F009858AC /* Loop.swift in Sources */,
 				9988DB8D2CDA77C8005628DE /* PrivateUserRecord.swift in Sources */,
 				9935CEE02D28D07100AF0C16 /* ScheduleView.swift in Sources */,
+				9915647F2D81140B00779836 /* DailyJournalWidget.swift in Sources */,
 				9988DB852CD9BFAC005628DE /* FriendsView.swift in Sources */,
 				99F7F6E52CAC77E7009858AC /* IntroView.swift in Sources */,
 				999DAC7E2D20761400A6626B /* AITrendAnalysisManager.swift in Sources */,

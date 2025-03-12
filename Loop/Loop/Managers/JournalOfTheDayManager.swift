@@ -8,6 +8,8 @@
 import Foundation
 
 class JournalOfTheDayManager: ObservableObject {
+    static let shared = JournalOfTheDayManager()
+    
     var journals: [String] = ["freeResponse", "success", "dream"]
     
     @Published var currentJournal: String
