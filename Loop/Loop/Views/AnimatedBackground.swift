@@ -60,7 +60,7 @@ struct AnimatedBackground: View {
             .background(Color(hex: "FAFBFC"))
         }
         .edgesIgnoringSafeArea(.all)
-    }
+    }        
 }
 
 #Preview {

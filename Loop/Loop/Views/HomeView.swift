@@ -91,6 +91,9 @@ struct HomeView: View {
                         recordingInterface
                             .padding(.horizontal, 24)
                         
+                        DailyJournalWidget()
+                            .padding(.horizontal, 24)
+                        
                         if quoteManager.showDailyQuote {
                             DailyQuoteWidget()
                                 .padding(.horizontal, 24)
@@ -312,9 +315,6 @@ struct HomeView: View {
         }
     }
     
-//    private var todaysJournal: some View {
-//        
-//    }
 
     private var notificationsSection: some View {
         VStack(alignment: .leading, spacing: 20) {

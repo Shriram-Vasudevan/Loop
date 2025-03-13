@@ -26,10 +26,21 @@ struct RecordFreeResponseView: View {
     let accentColor = Color(hex: "A28497")
     let secondaryColor = Color(hex: "B7A284")
     let textColor = Color(hex: "2C3E50")
+    let lightBackgroundColor = Color(hex: "F8F9FA")
     
     var body: some View {
         ZStack {
-                
+//            // Beautiful animated background
+//            GradientWaveBackground(
+//                primaryColor: accentColor,
+//                secondaryColor: secondaryColor.opacity(0.7),
+//                tertiaryColor: textColor.opacity(0.05)
+//            )
+            
+            InitialReflectionVisual(index: 0)
+                .edgesIgnoringSafeArea(.all)
+                .scaleEffect(y: -1)
+            
             VStack(spacing: 0) {
                 if showingThankYouScreen {
                     thankYouView
@@ -47,6 +58,7 @@ struct RecordFreeResponseView: View {
                 Spacer()
             }
         }
+        .background(lightBackgroundColor)
         .onAppear {
             audioManager.cleanup()
             transcriptionManager.checkSpeechRecognitionAuthorization()
@@ -61,7 +73,18 @@ struct RecordFreeResponseView: View {
                     .foregroundColor(.gray)
                 
                 Spacer()
-
+                
+                // Optional subtle glowing indicator
+                if isRecording {
+                    HStack(spacing: 8) {
+                        PulsingDot()
+                            .frame(width: 8, height: 8)
+                        Text("Recording")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(accentColor)
+                    }
+                    .transition(.opacity)
+                }
             }
             .padding(.top, 16)
             
@@ -77,6 +100,20 @@ struct RecordFreeResponseView: View {
             Divider()
         }
         .padding(.horizontal, 32)
+        .background(
+            Rectangle()
+                .fill(LinearGradient(
+                    gradient: Gradient(stops: [
+                        .init(color: lightBackgroundColor, location: 0),
+                        .init(color: lightBackgroundColor.opacity(0.95), location: 0.7),
+                        .init(color: lightBackgroundColor.opacity(0), location: 1)
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                ))
+                .frame(height: 200)
+                .offset(y: -40)
+        )
     }
     
     private var mainRecordingView: some View {
@@ -85,32 +122,18 @@ struct RecordFreeResponseView: View {
             
             if isRecording {
                 VStack(spacing: 20) {
-                    // Timer and status
-//                    HStack(spacing: 12) {
-//                        PulsingDot()
-//                        Text("\(timeRemaining)s")
-//                            .font(.system(size: 20, weight: .regular))
-//                            .foregroundColor(accentColor)
-//                    }
-//                    
-//                    Text("Recording your thoughts...")
-//                        .font(.system(size: 16, weight: .regular))
-//                        .foregroundColor(.gray)
-
                     if liveTranscriptionEnabled && !transcriptionManager.transcribedText.isEmpty {
                         CleanTranscriptionView(text: transcriptionManager.transcribedText)
                             .padding(.top, 10)
                             .transition(.opacity)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.white.opacity(0.7))
+                                    .shadow(color: accentColor.opacity(0.1), radius: 15, x: 0, y: 8)
+                            )
+                            .padding(.horizontal, 16)
                     }
                 }
-            } else {
-//                VStack(spacing: 24) {
-//                    Image(systemName: "waveform")
-//                        .font(.system(size: 48))
-//                        .foregroundColor(accentColor.opacity(0.8))
-//                    
-//                }
-//                .padding(.bottom, 40)
             }
             
             Spacer()
@@ -123,16 +146,18 @@ struct RecordFreeResponseView: View {
     
     private var recordingButton: some View {
        Button(action: {
-           withAnimation {
+           withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                toggleRecording()
            }
        }) {
            ZStack {
+               // Outer shadow
                Circle()
                    .fill(Color.white)
                    .frame(width: 96)
                    .shadow(color: accentColor.opacity(0.2), radius: 20, x: 0, y: 8)
 
+               // Main button background
                Circle()
                    .fill(
                        LinearGradient(
@@ -147,6 +172,7 @@ struct RecordFreeResponseView: View {
                    .frame(width: 88)
                    .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                
+               // Button icon
                if isRecording {
                    RoundedRectangle(cornerRadius: 6)
                        .fill(Color.white)
@@ -166,6 +192,7 @@ struct RecordFreeResponseView: View {
                        .frame(width: 74)
                }
            
+               // Pulsing animation when recording
                if isRecording {
                    PulsingRing(color: accentColor)
                }
@@ -191,6 +218,12 @@ struct RecordFreeResponseView: View {
             accentColor: accentColor,
             textColor: textColor
         )
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color.white.opacity(0.8))
+                .shadow(color: accentColor.opacity(0.1), radius: 20, x: 0, y: 10)
+        )
+        .padding(.horizontal, 24)
     }
     
     private var thankYouView: some View {
@@ -198,9 +231,15 @@ struct RecordFreeResponseView: View {
             Spacer()
             
             ZStack {
+                // Success checkmark with beautiful glow effect
                 Circle()
                     .fill(accentColor.opacity(0.1))
                     .frame(width: 100)
+                
+                Circle()
+                    .fill(Color.white.opacity(0.5))
+                    .frame(width: 85)
+                    .shadow(color: accentColor.opacity(0.3), radius: 15, x: 0, y: 0)
                 
                 Image(systemName: "checkmark")
                     .font(.system(size: 40, weight: .light))
@@ -329,6 +368,214 @@ struct RecordFreeResponseView: View {
         }
     }
 }
+
+// Beautiful animated gradient wave background
+struct GradientWaveBackground: View {
+    let primaryColor: Color
+    let secondaryColor: Color
+    let tertiaryColor: Color
+    
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1/30)) { timeline in
+            Canvas { context, size in
+                // Create a gradient background at the top that fades out
+                let gradientRect = CGRect(origin: .zero, size: size)
+                let backgroundGradient = Gradient(colors: [
+                    primaryColor.opacity(0.05),
+                    Color.white.opacity(0.2),
+                    Color.white.opacity(0.6),
+                    Color.white.opacity(0.9)
+                ])
+                
+                context.fill(
+                    Path(gradientRect),
+                    with: .linearGradient(
+                        backgroundGradient,
+                        startPoint: CGPoint(x: size.width/2, y: 0),
+                        endPoint: CGPoint(x: size.width/2, y: size.height * 0.8)
+                    )
+                )
+                
+                let timeOffset = timeline.date.timeIntervalSinceReferenceDate
+                let phase = timeOffset.truncatingRemainder(dividingBy: 10) * 0.2
+                
+                // Create multiple wave layers with different colors and phases
+                drawWaveLayer(in: context, size: size, phase: phase, amplitude: 0.02, frequency: 3, color: primaryColor, opacity: 0.2, yPosition: 0.2)
+                drawWaveLayer(in: context, size: size, phase: phase * 0.7, amplitude: 0.015, frequency: 4, color: secondaryColor, opacity: 0.15, yPosition: 0.3)
+                drawWaveLayer(in: context, size: size, phase: phase * 1.3, amplitude: 0.01, frequency: 5, color: tertiaryColor, opacity: 0.1, yPosition: 0.25)
+                
+                // Add some floating particles
+                drawFloatingParticles(in: context, size: size, timeOffset: timeOffset)
+            }
+        }
+    }
+    
+    private func drawWaveLayer(in context: GraphicsContext, size: CGSize, phase: Double, amplitude: Double, frequency: Double, color: Color, opacity: Double, yPosition: Double) {
+        let width = size.width
+        let height = size.height
+        let steps = Int(width / 2)
+        let dx = width / CGFloat(steps)
+        
+        var path = Path()
+        path.move(to: CGPoint(x: 0, y: height))
+        
+        // Calculate the base y position (as a percentage of the height)
+        let baseY = height * CGFloat(yPosition)
+        
+        // Generate the wave points
+        for step in 0...steps {
+            let x = CGFloat(step) * dx
+            let relativeX = x / width * CGFloat(frequency)
+            
+            // Create a smooth wave with sine function
+            let waveHeight = sin(relativeX * 2 * .pi + CGFloat(phase)) * CGFloat(amplitude) * height
+            let y = baseY + waveHeight
+            
+            path.addLine(to: CGPoint(x: x, y: y))
+        }
+        
+        // Close the path by adding lines to the bottom corners
+        path.addLine(to: CGPoint(x: width, y: baseY))
+        path.addLine(to: CGPoint(x: width, y: height))
+        path.closeSubpath()
+        
+        // Fill the wave with a gradient
+        let gradient = Gradient(colors: [
+            color.opacity(0.8),
+            color.opacity(0.4),
+            color.opacity(0.1)
+        ])
+        
+        var contextCopy = context
+        contextCopy.opacity = opacity
+        contextCopy.fill(
+            path,
+            with: .linearGradient(
+                gradient,
+                startPoint: CGPoint(x: width/2, y: baseY),
+                endPoint: CGPoint(x: width/2, y: baseY + height * 0.3)
+            )
+        )
+    }
+    
+    private func drawFloatingParticles(in context: GraphicsContext, size: CGSize, timeOffset: TimeInterval) {
+        // Create a set of "fixed" particle positions that move slowly over time
+        let particleCount = 40
+        let baseOffset = timeOffset * 0.05
+        
+        for i in 0..<particleCount {
+            let seed = Double(i) * 0.1
+            
+            // Position calculation with some randomness
+            let xPercent = (sin(seed * 7.5 + baseOffset * 0.3) + 1) / 2
+            let yOffset = cos(seed * 3.2 + baseOffset * 0.2) * 0.2
+            let yPercent = 0.1 + yOffset * 0.3 // Keep particles in the top 30% of the screen
+            
+            let x = size.width * CGFloat(xPercent)
+            let y = size.height * CGFloat(yPercent)
+            
+            // Size calculation (smaller near the top)
+            let sizeFactor = 0.2 + (yPercent * 0.8)
+            let particleSize = CGFloat(2 + (sizeFactor * 2))
+            
+            // Opacity calculation (fade based on y position and time)
+            let opacityBase = 0.2 + 0.3 * sin(seed * 5.4 + baseOffset)
+            let opacity = max(0.05, min(0.3, opacityBase)) * Double(yPercent * 3)
+            
+            // Choose color based on index
+            let particleColor: Color
+            if i % 3 == 0 {
+                particleColor = primaryColor
+            } else if i % 3 == 1 {
+                particleColor = secondaryColor
+            } else {
+                particleColor = Color.white
+            }
+            
+            // Draw the particle
+            let particleRect = CGRect(
+                x: x - particleSize/2,
+                y: y - particleSize/2,
+                width: particleSize,
+                height: particleSize
+            )
+            
+            var particleContext = context
+            particleContext.opacity = opacity
+            particleContext.fill(
+                Circle().path(in: particleRect),
+                with: .color(particleColor)
+            )
+            
+            // Add a subtle glow for some particles
+            if i % 5 == 0 {
+                let glowSize = particleSize * 2.5
+                let glowRect = CGRect(
+                    x: x - glowSize/2,
+                    y: y - glowSize/2,
+                    width: glowSize,
+                    height: glowSize
+                )
+                
+                var glowContext = context
+                glowContext.opacity = opacity * 0.3
+                glowContext.fill(
+                    Circle().path(in: glowRect),
+                    with: .color(particleColor)
+                )
+            }
+        }
+    }
+}
+
+//// Enhanced PulsingDot with smoother animation
+//struct PulsingDot: View {
+//    @State private var pulsing = false
+//    
+//    var body: some View {
+//        Circle()
+//            .fill(Color(hex: "A28497"))
+//            .frame(width: 8, height: 8)
+//            .scaleEffect(pulsing ? 1.2 : 0.8)
+//            .opacity(pulsing ? 1.0 : 0.6)
+//            .animation(
+//                Animation.easeInOut(duration: 0.8)
+//                    .repeatForever(autoreverses: true),
+//                value: pulsing
+//            )
+//            .onAppear {
+//                pulsing = true
+//            }
+//    }
+//}
+//
+//// Enhanced PulsingRing with multiple layers
+//struct PulsingRing: View {
+//    var color: Color
+//    @State private var isAnimating = false
+//    
+//    var body: some View {
+//        ZStack {
+//            // Multiple expanding rings with staggered animations
+//            ForEach(0..<3) { index in
+//                Circle()
+//                    .stroke(color.opacity(0.2), lineWidth: 1.5)
+//                    .scaleEffect(isAnimating ? 1.6 - (CGFloat(index) * 0.15) : 1)
+//                    .opacity(isAnimating ? 0 : 0.6)
+//                    .animation(
+//                        Animation.easeInOut(duration: 1.8)
+//                            .repeatForever(autoreverses: false)
+//                            .delay(Double(index) * 0.3),
+//                        value: isAnimating
+//                    )
+//            }
+//        }
+//        .frame(width: 88, height: 88)
+//        .onAppear {
+//            isAnimating = true
+//        }
+//    }
+//}
 
 struct FreeResponseAudioConfirmationView: View {
     let audioURL: URL
@@ -505,8 +752,9 @@ struct CleanTranscriptionView: View {
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white.opacity(0.05))
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white.opacity(0.9))
+                .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
         )
         .frame(maxHeight: 220)
     }
@@ -558,7 +806,6 @@ struct CleanTranscriptionView: View {
         let isLast: Bool
     }
 }
-
 
 #Preview {
     RecordFreeResponseView()

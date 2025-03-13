@@ -7,12 +7,19 @@
 
 import Foundation
 
+enum JournalType: String {
+    case none = "none"
+    case freeResponse = "freeResponse"
+    case success = "success"
+    case dream = "dream"
+}
+
 class JournalOfTheDayManager: ObservableObject {
     static let shared = JournalOfTheDayManager()
     
     var journals: [String] = ["freeResponse", "success", "dream"]
     
-    @Published var currentJournal: String
+    @Published var currentJournal: JournalType
     
     private let userDefaults = UserDefaults.standard
     var currentJournalKey: String = "currentJournal"
@@ -21,7 +28,7 @@ class JournalOfTheDayManager: ObservableObject {
     var journalHistory: [JournalHistory] = []
     
     init() {
-        currentJournal = ""
+        currentJournal = .none
         getJournalHistory()
         
         if loadTodaysJournal() {
@@ -50,7 +57,7 @@ class JournalOfTheDayManager: ObservableObject {
     
     
     func loadTodaysJournal() -> Bool {
-        if let data = userDefaults.data(forKey: currentJournal), let decoded = try? JSONDecoder().decode(DailyJournalCache.self, from: data) {
+        if let data = userDefaults.data(forKey: currentJournal.rawValue), let decoded = try? JSONDecoder().decode(DailyJournalCache.self, from: data) {
             if Calendar.current.isDateInToday(decoded.date) {
                 return false
             }
@@ -83,9 +90,23 @@ class JournalOfTheDayManager: ObservableObject {
             
             addToJournalHistory()
             saveJournal(journalID: randomJournal)
+            
+            self.currentJournal = getJournalType(journalID: randomJournal)
         }
     }
-
+    
+    func getJournalType(journalID: String) -> JournalType {
+        switch journalID {
+            case "freeResponse":
+                return .freeResponse
+            case "success":
+                return .success
+            case "dream":
+                return .dream
+            default:
+                return .none
+        }
+    }
 }
 
 struct JournalHistory: Codable {

@@ -15,7 +15,6 @@ import CloudKit
 class LoopLocalStorageUtility {
     static let shared = LoopLocalStorageUtility()
     
-    // MARK: - File Management
     private let fileManager = FileManager.default
     
     private var mediaDirectory: URL {
