@@ -946,9 +946,11 @@ struct FlowLayout: Layout {
     }
 }
 
+// Premium-restricted KeyMomentsCard
 struct KeyMomentsCard: View {
     @Binding var timeframe: Timeframe
     @ObservedObject private var trendsManager = TrendsManager.shared
+    @ObservedObject private var premiumManager = PremiumManager.shared
     @State private var currentIndex = 0
     @State private var keyMoments: [KeyMoment] = []
     
@@ -956,121 +958,140 @@ struct KeyMomentsCard: View {
     private let accentColor = Color(hex: "A28497")
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Key Moments")
-                        .font(.system(size: 18, weight: .bold))
-                    Spacer()
-                }
-                
-                Text("Highlights from your reflections")
-                    .font(.system(size: 14))
-                    .foregroundColor(.gray)
-            }
-            
-            if keyMoments.isEmpty {
-                NewEmptyStateView(showWavePattern: false)
-            } else {
-                TabView(selection: $currentIndex) {
-                    ForEach(Array(keyMoments.prefix(3).enumerated()), id: \.element.date) { index, moment in
-                        VStack(alignment: .leading, spacing: 16) {
-                            HStack {
-                                Text(moment.category.rawValue.capitalized)
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(accentColor)
-                                
-                                Text("•")
-                                    .foregroundColor(.gray)
-                                
-                                Text(moment.date.formatted(date: .abbreviated, time: .omitted))
-                                    .font(.system(size: 13))
-                                    .foregroundColor(.gray)
-                            }
-                            
-                            Text("""
-                                 + moment.content +
-                                 """)
-                                .font(.system(size: 20, weight: .light))
-                                .foregroundColor(textColor)
-                                .lineSpacing(8)
-                                .multilineTextAlignment(.center)
+        Group {
+            if premiumManager.isUserPremium() {
+                // Regular card content for premium users
+                VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Key Moments")
+                                .font(.system(size: 18, weight: .bold))
+                            Spacer()
                         }
-                        .padding(.horizontal)
-                        .tag(index)
+                        
+                        Text("Highlights from your reflections")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                    }
+                    
+                    if keyMoments.isEmpty {
+                        NewEmptyStateView(showWavePattern: false)
+                    } else {
+                        TabView(selection: $currentIndex) {
+                            ForEach(Array(keyMoments.prefix(3).enumerated()), id: \.element.date) { index, moment in
+                                VStack(alignment: .leading, spacing: 16) {
+                                    HStack {
+                                        Text(moment.category.rawValue.capitalized)
+                                            .font(.system(size: 13, weight: .medium))
+                                            .foregroundColor(accentColor)
+                                        
+                                        Text("•")
+                                            .foregroundColor(.gray)
+                                        
+                                        Text(moment.date.formatted(date: .abbreviated, time: .omitted))
+                                            .font(.system(size: 13))
+                                            .foregroundColor(.gray)
+                                    }
+                                    
+                                    Text(moment.content)
+                                        .font(.system(size: 20, weight: .light))
+                                        .foregroundColor(textColor)
+                                        .lineSpacing(8)
+                                        .multilineTextAlignment(.center)
+                                }
+                                .padding(.horizontal)
+                                .tag(index)
+                            }
+                        }
+                        .tabViewStyle(.page)
+                        .frame(height: 180)
                     }
                 }
-                .tabViewStyle(.page)
-                .frame(height: 180)
+                .padding(24)
+                .background(Color.white)
+                .cornerRadius(16)
+                .task {
+                    keyMoments = await trendsManager.getKeyMoments(for: timeframe)
+                }
+            } else {
+                // Premium placeholder for non-premium users
+                PremiumCardPlaceholder(
+                    title: "Key Moments",
+                    description: "Highlights from your reflections"
+                )
             }
-        }
-        .padding(24)
-        .background(Color.white)
-        .cornerRadius(16)
-        .task {
-            keyMoments = await trendsManager.getKeyMoments(for: timeframe)
         }
     }
 }
 
+// Premium-restricted AchievementsCard
 struct AchievementsCard: View {
     @Binding var timeframe: Timeframe
     @ObservedObject private var trendsManager = TrendsManager.shared
+    @ObservedObject private var premiumManager = PremiumManager.shared
     @State private var achievements: [Achievement] = []
     
     // Mauve color variants
-    private let lightMauve = Color(hex: "D5C5CC")     // Lighter variant
-    private let midMauve = Color(hex: "BBA4AD")       // Medium variant
+    private let lightMauve = Color(hex: "D5C5CC")
+    private let midMauve = Color(hex: "BBA4AD")
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Recent Wins")
-                        .font(.system(size: 18, weight: .bold))
-                    Spacer()
-                }
-                
-                Text("Your notable achievements")
-                    .font(.system(size: 14))
-                    .foregroundColor(.gray)
-            }
-            
-            if achievements.isEmpty {
-                NewEmptyStateView(showWavePattern: false)
-            } else {
-                ZStack {
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            lightMauve.opacity(0.3),
-                            Color.white.opacity(0.9)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+        Group {
+            if premiumManager.isUserPremium() {
+                // Regular card content for premium users
+                VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Recent Wins")
+                                .font(.system(size: 18, weight: .bold))
+                            Spacer()
+                        }
+                        
+                        Text("Your notable achievements")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                    }
                     
-                    GeometricMountains()
-                        .fill(midMauve)
-                        .opacity(0.2)
-                        .frame(height: 120)
-                        .offset(y: 40)
-                    
-                    
-                    VStack(spacing: 16) {
-                        ForEach(achievements.prefix(2), id: \.win) { achievement in
-                            AchievementRow(achievement: achievement)
+                    if achievements.isEmpty {
+                        NewEmptyStateView(showWavePattern: false)
+                    } else {
+                        ZStack {
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    lightMauve.opacity(0.3),
+                                    Color.white.opacity(0.9)
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                            
+                            GeometricMountains()
+                                .fill(midMauve)
+                                .opacity(0.2)
+                                .frame(height: 120)
+                                .offset(y: 40)
+                            
+                            VStack(spacing: 16) {
+                                ForEach(achievements.prefix(2), id: \.win) { achievement in
+                                    AchievementRow(achievement: achievement)
+                                }
+                            }
                         }
                     }
                 }
+                .padding(24)
+                .background(Color.white)
+                .cornerRadius(16)
+                .task {
+                    achievements = await trendsManager.getAchievements(for: timeframe)
+                }
+            } else {
+                // Premium placeholder for non-premium users
+                PremiumCardPlaceholder(
+                    title: "Recent Wins",
+                    description: "Your notable achievements"
+                )
             }
-        }
-        .padding(24)
-        .background(
-            Color.white
-        )
-        .cornerRadius(16)
-        .task {
-            achievements = await trendsManager.getAchievements(for: timeframe)
         }
     }
 }
@@ -1109,62 +1130,186 @@ struct AchievementRow: View {
 struct AffirmationsCard: View {
     @Binding var timeframe: Timeframe
     @ObservedObject private var trendsManager = TrendsManager.shared
+    @ObservedObject private var premiumManager = PremiumManager.shared
     @State private var affirmations: [Affirmation] = []
     
     private let textColor = Color(hex: "2C3E50")
     private let accentColor = Color(hex: "A28497")
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
+        Group {
+            if premiumManager.isUserPremium() {
+                VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Positive Beliefs")
+                                .font(.system(size: 18, weight: .bold))
+                            Spacer()
+                        }
+                        
+                        Text("Things you've acknowledged about yourself")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                    }
+                    
+                    if affirmations.isEmpty {
+                        NewEmptyStateView(showWavePattern: false)
+                    } else {
+                        VStack(spacing: 16) {
+                            ForEach(affirmations.prefix(3), id: \.affirmation) { affirmation in
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text(affirmation.affirmation)
+                                        .font(.system(size: 16))
+                                        .foregroundColor(textColor)
+                                    
+                                    Text(affirmation.theme.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
+                                        .font(.system(size: 13))
+                                        .foregroundColor(accentColor)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 4)
+                                        .background(accentColor.opacity(0.1))
+                                        .cornerRadius(12)
+                                }
+                                .padding(16)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(
+                                    LinearGradient(
+                                        colors: [accentColor.opacity(0.05), .clear],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .cornerRadius(12)
+                            }
+                        }
+                    }
+                }
+                .padding(24)
+                .background(Color.white)
+                .cornerRadius(16)
+                .task {
+                    affirmations = await trendsManager.getAffirmations(for: timeframe)
+                }
+            } else {
+                // Premium placeholder for non-premium users
+                PremiumCardPlaceholder(
+                    title: "Positive Beliefs",
+                    description: "Things you've acknowledged about yourself"
+                )
+            }
+        }
+    }
+}
+
+
+struct PremiumCardPlaceholder: View {
+    let title: String
+    let description: String
+    let accentColor = Color(hex: "A28497")
+    
+    @ObservedObject var premiumManager = PremiumManager.shared
+    @State private var isPurchasing = false
+    @State private var showAlert = false
+    @State private var alertMessage = ""
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            // Top section with card info
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("Positive Beliefs")
+                    Text(title)
                         .font(.system(size: 18, weight: .bold))
+                    
                     Spacer()
+                    
+                    Image(systemName: "crown.fill")
+                        .foregroundColor(accentColor)
                 }
                 
-                Text("Things you've acknowledged about yourself")
+                Text(description)
                     .font(.system(size: 14))
                     .foregroundColor(.gray)
             }
             
-            if affirmations.isEmpty {
-                NewEmptyStateView(showWavePattern: false)
-            } else {
-                VStack(spacing: 16) {
-                    ForEach(affirmations.prefix(3), id: \.affirmation) { affirmation in
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(affirmation.affirmation)
-                                .font(.system(size: 16))
-                                .foregroundColor(textColor)
+            // Premium placeholder with blur effect
+            ZStack {
+                // Background pattern or visualization
+                WavePattern()
+                    .fill(accentColor.opacity(0.2))
+                    .frame(height: 80)
+                    .blur(radius: 3)
+                
+                // Premium lock overlay
+                VStack(spacing: 12) {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(accentColor)
+                    
+                    Text("Premium Feature")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(Color(hex: "2C3E50"))
+                    
+                    Button(action: {
+                        purchasePremium()
+                    }) {
+                        HStack {
+                            Text("Upgrade")
+                                .font(.system(size: 15, weight: .medium))
                             
-                            Text(affirmation.theme.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
-                                .font(.system(size: 13))
-                                .foregroundColor(accentColor)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 4)
-                                .background(accentColor.opacity(0.1))
-                                .cornerRadius(12)
+                            if isPurchasing {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle())
+                                    .scaleEffect(0.8)
+                            }
                         }
-                        .padding(16)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(
-                            LinearGradient(
-                                colors: [accentColor.opacity(0.05), .clear],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .cornerRadius(12)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+                        .background(accentColor)
+                        .foregroundColor(.white)
+                        .cornerRadius(20)
                     }
+                    .disabled(isPurchasing)
                 }
+                .padding()
+                .background(Color.white.opacity(0.8))
+                .cornerRadius(12)
             }
         }
         .padding(24)
         .background(Color.white)
         .cornerRadius(16)
-        .task {
-            affirmations = await trendsManager.getAffirmations(for: timeframe)
+        .alert(isPresented: $showAlert) {
+            Alert(
+                title: Text("Premium"),
+                message: Text(alertMessage),
+                dismissButton: .default(Text("OK"))
+            )
+        }
+    }
+    
+    private func purchasePremium() {
+        isPurchasing = true
+        
+        Task {
+            do {
+                let success = try await premiumManager.purchasePremium()
+                
+                await MainActor.run {
+                    isPurchasing = false
+                    if success {
+                        alertMessage = "Thank you for upgrading to Premium!"
+                    } else {
+                        alertMessage = "Purchase could not be completed."
+                    }
+                    showAlert = true
+                }
+            } catch {
+                await MainActor.run {
+                    isPurchasing = false
+                    alertMessage = "Purchase failed: \(error.localizedDescription)"
+                    showAlert = true
+                }
+            }
         }
     }
 }

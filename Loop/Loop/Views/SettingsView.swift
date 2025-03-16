@@ -10,7 +10,9 @@ import SwiftUI
 import Foundation
 import Darwin
 struct SettingsView: View {
-    @StateObject private var notificationManager = NotificationManager.shared
+    @ObservedObject private var notificationManager = NotificationManager.shared
+    @ObservedObject var premiumManager = PremiumManager.shared
+    
     @AppStorage("iCloudBackupEnabled") private var isCloudBackupEnabled = false
     @State private var showingLogoutAlert = false
     @State private var showingContactView = false
@@ -69,7 +71,7 @@ struct SettingsView: View {
                     VStack(spacing: 16) {
                         header
                         
-                        if getPurchaseStatus() {
+                        if !premiumManager.isUserPremium() {
                             premiumWidget
                         }
                     }
@@ -292,21 +294,8 @@ struct SettingsView: View {
                     }
                 }
 
-                HStack {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("iCloud Backup")
-                            .font(.custom("PPNeueMontreal-Medium", size: 17))
-                            .foregroundColor(textColor)
-                        
-                        Text("Sync your journal across devices")
-                            .font(.system(size: 15))
-                            .foregroundColor(textColor.opacity(0.5))
-                    }
-                    
-                    Spacer()
-                    
-                    MinimalToggle(isOn: $isCloudBackupEnabled)
-                }
+                // Use the new iCloud backup section
+                iCloudBackupSection
             }
             .padding()
             .background(
@@ -316,6 +305,46 @@ struct SettingsView: View {
         }
     }
     
+    var iCloudBackupSection: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("iCloud Backup")
+                    .font(.custom("PPNeueMontreal-Medium", size: 17))
+                    .foregroundColor(textColor)
+                
+                if premiumManager.isUserPremium() {
+                    Text("Sync your journal across devices")
+                        .font(.system(size: 15))
+                        .foregroundColor(textColor.opacity(0.5))
+                } else {
+                    HStack(spacing: 6) {
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(accentColor)
+                        
+                        Text("Premium feature")
+                            .font(.system(size: 15))
+                            .foregroundColor(accentColor)
+                    }
+                }
+            }
+            
+            Spacer()
+
+            if premiumManager.isUserPremium() {
+                MinimalToggle(isOn: $isCloudBackupEnabled)
+            } else {
+                Button(action: {
+                    initiateUpgradeToPremium()
+                }) {
+                    Circle()
+                        .stroke(Color.gray.opacity(0.3), lineWidth: 1.5)
+                        .frame(width: 24, height: 24)
+                }
+            }
+        }
+    }
+
     private var supportSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             sectionTitle("Support")
@@ -474,8 +503,20 @@ struct SettingsView: View {
         }
     }
     
-    func getPurchaseStatus() -> Bool {
-        return PurchaseManager.shared.checkIfPremiumUser()
+    private func initiateUpgradeToPremium() {
+        Task {
+            do {
+                let success = try await premiumManager.purchasePremium()
+                
+//                if success {
+//                    await MainActor.run {
+//                        isCloudBackupEnabled = true
+//                    }
+//                }
+            } catch {
+                print("Failed to upgrade to premium: \(error)")
+            }
+        }
     }
 }
 

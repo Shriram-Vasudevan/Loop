@@ -93,6 +93,10 @@ struct HomeView: View {
                         
                         DailyJournalWidget()
                             .padding(.horizontal, 24)
+                            .badge(0)
+                        
+                        thematicPromptsSection
+                            .padding(.horizontal, 24)
                         
                         if quoteManager.showDailyQuote {
                             DailyQuoteWidget()
@@ -101,8 +105,6 @@ struct HomeView: View {
                         
                     }
                     
-                    thematicPromptsSection
-                        .padding(.horizontal, 24)
                     
                     if let pastLoop = loopManager.pastLoop {
                         pastLoopSection(pastLoop)

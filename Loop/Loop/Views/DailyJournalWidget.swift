@@ -109,48 +109,36 @@ struct DailyJournalWidget: View {
     private var journalContent: some View {
         switch journalOfTheDayManager.currentJournal {
         case .freeResponse:
-            VStack(spacing: 16) {
+            VStack(spacing: 8) {
                 FreeResponseShape()
                     .padding(.bottom, 4)
                 
                 Text("Free Entry")
                     .font(.system(size: 18, weight: .medium))
                     .foregroundColor(textColor)
-                    
-//                Text("Express your thoughts freely")
-//                    .font(.system(size: 14))
-//                    .foregroundColor(textColor.opacity(0.7))
-//                    .multilineTextAlignment(.center)
+
             }
             
         case .dream:
-            VStack(spacing: 16) {
+            VStack(spacing: 8) {
                 DreamShape()
                     .padding(.bottom, 4)
                 
                 Text("Dream Journal")
                     .font(.system(size: 18, weight: .medium))
                     .foregroundColor(textColor)
-//                    
-//                Text("Record and reflect on your dreams")
-//                    .font(.system(size: 14))
-//                    .foregroundColor(textColor.opacity(0.7))
-//                    .multilineTextAlignment(.center)
+
             }
             
         case .success:
-            VStack(spacing: 16) {
+            VStack(spacing: 8) {
                 SuccessShape()
                     .padding(.bottom, 4)
                 
                 Text("Success Log")
                     .font(.system(size: 18, weight: .medium))
                     .foregroundColor(textColor)
-//                    
-//                Text("Document your achievements")
-//                    .font(.system(size: 14))
-//                    .foregroundColor(textColor.opacity(0.7))
-//                    .multilineTextAlignment(.center)
+
             }
         case .none:
             FreeResponseShape()
@@ -163,80 +151,222 @@ struct DailyJournalWidget: View {
     }
 }
 
+struct JournalColors {
+    static let accent = Color(hex: "A28497")
+    static let moonYellow = Color(hex: "F9D71C")
+    static let journalBlue = Color(hex: "5E8B7E")
+    static let successGreen = Color(hex: "66A182")
+}
+
 struct FreeResponseShape: View {
     var body: some View {
-        Canvas { context, size in
-            let lineWidth: CGFloat = 1.5
-            let width = size.width * 0.7
-            let yPositions: [CGFloat] = [
-                size.height * 0.35,
-                size.height * 0.5,
-                size.height * 0.65
-            ]
-            
-            for (index, y) in yPositions.enumerated() {
-                let lineLength = index == 2 ? width * 0.75 : width
-                let path = Path { path in
-                    path.move(to: CGPoint(x: (size.width - lineLength) / 2, y: y))
-                    path.addLine(to: CGPoint(x: (size.width - lineLength) / 2 + lineLength, y: y))
+        ZStack {
+            RoundedRectangle(cornerRadius: 5.6)
+                .fill(Color.white)
+                .frame(width: 45, height: 56)
+                .shadow(color: Color.black.opacity(0.1), radius: 2.8, x: 0, y: 1.4)
+
+            VStack(spacing: 8.4) {
+                ForEach(0..<4) { _ in
+                    Rectangle()
+                        .fill(JournalColors.accent.opacity(0.6))
+                        .frame(width: 34, height: 1.4)
                 }
-                context.stroke(path, with: .color(.black), lineWidth: lineWidth)
             }
+
+            Path { path in
+                path.move(to: CGPoint(x: 59, y: 8.4))
+                path.addLine(to: CGPoint(x: 39, y: 28))
+                path.addLine(to: CGPoint(x: 42, y: 31))
+                path.addLine(to: CGPoint(x: 62, y: 11))
+                path.addLine(to: CGPoint(x: 59, y: 8.4))
+
+                path.move(to: CGPoint(x: 36, y: 31))
+                path.addLine(to: CGPoint(x: 42, y: 31))
+                path.addLine(to: CGPoint(x: 39, y: 28))
+                path.closeSubpath()
+            }
+            .fill(JournalColors.journalBlue)
         }
-        .frame(width: 40, height: 40)
+        .frame(width: 70, height: 70)
     }
 }
 
-// Dream - Elegant moon shape
 struct DreamShape: View {
     var body: some View {
-        Canvas { context, size in
-            context.withCGContext { ctx in
-                ctx.setFillColor(UIColor.black.cgColor)
-                
-                // Create a more refined crescent shape
-                let center = CGPoint(x: size.width/2, y: size.height/2)
-                let radius = min(size.width, size.height) * 0.4
-                
-                // Outer arc
-                ctx.addArc(center: center, radius: radius,
-                          startAngle: -.pi/4, endAngle: .pi * 5/4,
-                          clockwise: false)
-                
-                // Inner arc (smaller and offset)
-                let innerCenter = CGPoint(x: center.x + radius * 0.3,
-                                        y: center.y - radius * 0.1)
-                ctx.addArc(center: innerCenter, radius: radius * 0.75,
-                          startAngle: .pi * 5/4, endAngle: -.pi/4,
-                          clockwise: true)
-                ctx.closePath()
-                ctx.fillPath()
+        ZStack {
+            Star(corners: 5, smoothness: 0.45)
+                .fill(JournalColors.moonYellow.opacity(0.8))
+                .frame(width: 14, height: 14)
+                .offset(x: -22, y: -17)
+
+            Star(corners: 5, smoothness: 0.45)
+                .fill(JournalColors.moonYellow.opacity(0.6))
+                .frame(width: 8.4, height: 8.4)
+                .offset(x: 17, y: -11)
+
+            ZStack {
+                Circle()
+                    .fill(JournalColors.moonYellow)
+                    .frame(width: 49, height: 49)
+
+                Circle()
+                    .fill(Color.black.opacity(0.05))
+                    .frame(width: 49, height: 49)
+                    .offset(x: 14, y: -2.8)
+                    .mask(
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 47.6, height: 47.6)
+                    )
             }
         }
-        .frame(width: 40, height: 40)
+        .frame(width: 70, height: 70)
     }
 }
 
-// Success - Minimalist upward trend or achievement symbol
 struct SuccessShape: View {
     var body: some View {
-        Canvas { context, size in
-            // Clean upward trend line
-            let lineWidth: CGFloat = 2
-            let path = Path { path in
-                path.move(to: CGPoint(x: size.width * 0.25, y: size.height * 0.65))
-                path.addLine(to: CGPoint(x: size.width * 0.5, y: size.height * 0.4))
-                path.addLine(to: CGPoint(x: size.width * 0.75, y: size.height * 0.25))
+        ZStack {
+            Path { path in
+                path.move(to: CGPoint(x: 21, y: 14))
+                path.addLine(to: CGPoint(x: 49, y: 14))
+                path.addCurve(
+                    to: CGPoint(x: 53, y: 21),
+                    control1: CGPoint(x: 52, y: 14),
+                    control2: CGPoint(x: 53, y: 17)
+                )
+                path.addCurve(
+                    to: CGPoint(x: 49, y: 42),
+                    control1: CGPoint(x: 53, y: 28),
+                    control2: CGPoint(x: 53, y: 38)
+                )
+                path.addLine(to: CGPoint(x: 21, y: 42))
+                path.addCurve(
+                    to: CGPoint(x: 17, y: 21),
+                    control1: CGPoint(x: 17, y: 38),
+                    control2: CGPoint(x: 17, y: 28)
+                )
+                path.addCurve(
+                    to: CGPoint(x: 21, y: 14),
+                    control1: CGPoint(x: 17, y: 17),
+                    control2: CGPoint(x: 18, y: 14)
+                )
+                path.closeSubpath()
+
+                path.move(to: CGPoint(x: 28, y: 42))
+                path.addLine(to: CGPoint(x: 42, y: 42))
+                path.addLine(to: CGPoint(x: 45, y: 56))
+                path.addLine(to: CGPoint(x: 25, y: 56))
+                path.addLine(to: CGPoint(x: 28, y: 42))
+                path.closeSubpath()
             }
-            context.stroke(path, with: .color(.black), style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
+            .fill(JournalColors.successGreen)
+
+            Path { path in
+                path.move(to: CGPoint(x: 28, y: 21))
+                path.addCurve(
+                    to: CGPoint(x: 24, y: 35),
+                    control1: CGPoint(x: 22, y: 25),
+                    control2: CGPoint(x: 21, y: 31)
+                )
+            }
+            .stroke(Color.white.opacity(0.6), lineWidth: 2.1)
             
-            // Small dot at the end
-            let dotPath = Path(ellipseIn: CGRect(x: size.width * 0.75 - 2.5,
-                                               y: size.height * 0.25 - 2.5,
-                                               width: 5, height: 5))
-            context.fill(dotPath, with: .color(.black))
+            // Sparkle
+            SparkleShape()
+                .fill(JournalColors.moonYellow)
+                .frame(width: 16.8, height: 16.8)
+                .offset(x: 17, y: -14)
         }
-        .frame(width: 40, height: 40)
+        .frame(width: 70, height: 70)
+    }
+}
+
+struct Star: Shape {
+    let corners: Int
+    let smoothness: CGFloat
+    
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let center = CGPoint(x: rect.width / 2, y: rect.height / 2)
+        let outerRadius = min(rect.width, rect.height) / 2
+        let innerRadius = outerRadius * smoothness
+        
+        let angleIncrement = .pi * 2 / CGFloat(corners * 2)
+        
+        var angle = -CGFloat.pi / 2
+        
+        for i in 0..<corners * 2 {
+            let radius = i % 2 == 0 ? outerRadius : innerRadius
+            let x = center.x + cos(angle) * radius
+            let y = center.y + sin(angle) * radius
+            
+            if i == 0 {
+                path.move(to: CGPoint(x: x, y: y))
+            } else {
+                path.addLine(to: CGPoint(x: x, y: y))
+            }
+            
+            angle += angleIncrement
+        }
+        
+        path.closeSubpath()
+        return path
+    }
+}
+
+struct SparkleShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let center = CGPoint(x: rect.width / 2, y: rect.height / 2)
+        let radius = min(rect.width, rect.height) / 2
+
+        path.move(to: CGPoint(x: center.x, y: center.y - radius))
+        path.addLine(to: CGPoint(x: center.x, y: center.y + radius))
+
+        path.move(to: CGPoint(x: center.x - radius, y: center.y))
+        path.addLine(to: CGPoint(x: center.x + radius, y: center.y))
+
+        path.move(to: CGPoint(x: center.x - radius * 0.7, y: center.y - radius * 0.7))
+        path.addLine(to: CGPoint(x: center.x + radius * 0.7, y: center.y + radius * 0.7))
+
+        path.move(to: CGPoint(x: center.x - radius * 0.7, y: center.y + radius * 0.7))
+        path.addLine(to: CGPoint(x: center.x + radius * 0.7, y: center.y - radius * 0.7))
+        
+        return path
+    }
+}
+
+struct JournalShapesPreview: View {
+    var body: some View {
+        HStack(spacing: 40) {
+            VStack {
+                FreeResponseShape()
+                Text("Free Entry")
+                    .font(.caption)
+            }
+            
+            VStack {
+                DreamShape()
+                Text("Dream Journal")
+                    .font(.caption)
+            }
+            
+            VStack {
+                SuccessShape()
+                Text("Success Log")
+                    .font(.caption)
+            }
+        }
+        .padding()
+        .background(Color(hex: "FAFBFC"))
+    }
+}
+
+struct JournalShapesPreview_Previews: PreviewProvider {
+    static var previews: some View {
+        JournalShapesPreview()
     }
 }
 

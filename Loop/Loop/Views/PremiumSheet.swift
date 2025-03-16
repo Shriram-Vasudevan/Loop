@@ -67,10 +67,10 @@ struct PremiumUpgradeView: View {
                     VStack(spacing: 24) {
                         VStack(alignment: .leading, spacing: 20) {
                             FeatureRow(emoji: "✦", title: "Improved Transcription")
-                            FeatureRow(emoji: "✦", title: "Talk to your Journal")
-                            FeatureRow(emoji: "✦", title: "Customizable Prompts")
+                            FeatureRow(emoji: "✦", title: "Entries that return to you")
+                            FeatureRow(emoji: "✦", title: "More Journals")
                             FeatureRow(emoji: "✦", title: "Deeper Insights")
-                            FeatureRow(emoji: "✦", title: "Themes & Customization")
+                            FeatureRow(emoji: "✦", title: "iCloud Backuo")
                         }
                         .opacity(appearAnimation[3] ? 1 : 0)
                         

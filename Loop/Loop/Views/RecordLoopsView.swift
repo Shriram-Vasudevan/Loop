@@ -22,7 +22,7 @@ struct RecordLoopsView: View {
     @State private var userDaysThresholdNotMet = false
     @State private var noMemoryFound = false
     @State private var recordingTimer: Timer?
-    @State private var timeRemaining: Int = 30
+    @State private var timeRemaining: Int = 60
     @State private var showingFirstLaunchScreen = true
     @State private var showingPromptOptions = false
     @State var isFirstLaunch: Bool

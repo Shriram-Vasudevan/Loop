@@ -7,6 +7,15 @@
 
 import Foundation
 
+//
+//  JournalOfTheDayManager.swift
+//  Loop
+//
+//  Created by Shriram Vasudevan on 3/7/25.
+//
+
+import Foundation
+
 enum JournalType: String {
     case none = "none"
     case freeResponse = "freeResponse"
@@ -16,105 +25,113 @@ enum JournalType: String {
 
 class JournalOfTheDayManager: ObservableObject {
     static let shared = JournalOfTheDayManager()
-    
-    var journals: [String] = ["freeResponse", "success", "dream"]
-    
+
+    private let availableJournals = ["freeResponse", "success", "dream"]
+
     @Published var currentJournal: JournalType
-    
+
     private let userDefaults = UserDefaults.standard
-    var currentJournalKey: String = "currentJournal"
-    var selectedJournalsKey: String = "journalHistory"
-    
-    var journalHistory: [JournalHistory] = []
+    private let todaysJournalKey = "todaysJournal"
+    private let journalHistoryKey = "journalHistory"
+
+    private var journalHistory: [JournalHistory] = []
     
     init() {
         currentJournal = .none
-        getJournalHistory()
         
-        if loadTodaysJournal() {
-            selectRandomJournal()
-        }
+        loadJournalHistory()
+        setTodaysJournal()
     }
     
-    func saveJournal(journalID: String) {
-        let journalCache = DailyJournalCache(journal: journalID, date: Date())
-        if let data = try? JSONEncoder().encode(journalCache) {
-            userDefaults.set(data, forKey: currentJournalKey)
+    func selectNewJournalForToday() {
+        assignJournalForToday()
+    }
+
+    private func setTodaysJournal() {
+        if let todaysJournal = getExistingJournalForToday() {
+            currentJournal = getJournalType(journalID: todaysJournal.journalId)
+        } else {
+            assignJournalForToday()
         }
     }
-    
-    func getJournalHistory() {
-        if let data = userDefaults.data(forKey: selectedJournalsKey), let journalHistory = try? JSONDecoder().decode([JournalHistory].self, from: data) {
-            self.journalHistory = journalHistory
-        }
-    }
-    
-    func addToJournalHistory() {
-        if let encoded = try? JSONEncoder().encode(journalHistory) {
-            userDefaults.set(encoded, forKey: selectedJournalsKey)
-        }
-    }
-    
-    
-    func loadTodaysJournal() -> Bool {
-        if let data = userDefaults.data(forKey: currentJournal.rawValue), let decoded = try? JSONDecoder().decode(DailyJournalCache.self, from: data) {
-            if Calendar.current.isDateInToday(decoded.date) {
-                return false
-            }
-            
-            return true
-        }
+
+    private func getExistingJournalForToday() -> JournalHistory? {
+        let today = Calendar.current.startOfDay(for: Date())
         
-        return true
+        return journalHistory.first { history in
+            Calendar.current.isDate(history.date, inSameDayAs: today)
+        }
     }
-    
-    func selectRandomJournal() {
+
+    private func assignJournalForToday() {
+        let recentJournals = getRecentJournals(days: 3)
+
+        let availableJournals = self.availableJournals.filter { journalId in
+            !recentJournals.contains(journalId)
+        }
+
+        let selectedJournal = availableJournals.isEmpty ?
+            self.availableJournals.randomElement()! :
+            availableJournals.randomElement()!
+
+        let today = Date()
+
+        journalHistory.removeAll { Calendar.current.isDate($0.date, inSameDayAs: today) }
+
+        let newEntry = JournalHistory(journalId: selectedJournal, date: today)
+        journalHistory.append(newEntry)
+
+        cleanupOldEntries()
+
+        saveJournalHistory()
+
+        currentJournal = getJournalType(journalID: selectedJournal)
+    }
+
+    private func getRecentJournals(days: Int) -> [String] {
         let calendar = Calendar.current
-        let threeDaysAgo = calendar.date(byAdding: .day, value: -3, to: Date()) ?? Date()
+        let cutoffDate = calendar.date(byAdding: .day, value: -days, to: Date())!
         
-        let unavailableJournals = journalHistory
-            .filter { $0.date >= threeDaysAgo }
+        return journalHistory
+            .filter { $0.date >= cutoffDate }
             .map { $0.journalId }
+    }
+
+    private func cleanupOldEntries() {
+        let calendar = Calendar.current
+        let cutoffDate = calendar.date(byAdding: .day, value: -7, to: Date())!
         
-        let availableJournals = journals
-            .filter { !unavailableJournals.contains($0) }
-        
-        let randomJournal = availableJournals.isEmpty ? journals.randomElement() : availableJournals.randomElement()
-        
-        let sixDaysAgo = calendar.date(byAdding: .day, value: -6, to: Date()) ?? Date()
-        
-        if let randomJournal = randomJournal {
-            self.journalHistory = self.journalHistory.filter { $0.date >= sixDaysAgo }
-            
-            self.journalHistory.append(JournalHistory(journalId: randomJournal, date: Date()))
-            
-            addToJournalHistory()
-            saveJournal(journalID: randomJournal)
-            
-            self.currentJournal = getJournalType(journalID: randomJournal)
+        journalHistory.removeAll { $0.date < cutoffDate }
+    }
+
+    private func loadJournalHistory() {
+        if let data = userDefaults.data(forKey: journalHistoryKey),
+           let history = try? JSONDecoder().decode([JournalHistory].self, from: data) {
+            self.journalHistory = history
         }
     }
     
-    func getJournalType(journalID: String) -> JournalType {
+    private func saveJournalHistory() {
+        if let encoded = try? JSONEncoder().encode(journalHistory) {
+            userDefaults.set(encoded, forKey: journalHistoryKey)
+        }
+    }
+
+    private func getJournalType(journalID: String) -> JournalType {
         switch journalID {
-            case "freeResponse":
-                return .freeResponse
-            case "success":
-                return .success
-            case "dream":
-                return .dream
-            default:
-                return .none
+        case "freeResponse":
+            return .freeResponse
+        case "success":
+            return .success
+        case "dream":
+            return .dream
+        default:
+            return .none
         }
     }
 }
 
 struct JournalHistory: Codable {
     let journalId: String
-    let date: Date
-}
-
-struct DailyJournalCache: Codable {
-    let journal: String
     let date: Date
 }
