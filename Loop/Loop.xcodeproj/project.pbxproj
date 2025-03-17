@@ -38,6 +38,8 @@
 		9915BAB72CE6AF9E00D3C44B /* DailyCheckinManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB62CE6AF9E00D3C44B /* DailyCheckinManager.swift */; };
 		9915BAB92CEC332500D3C44B /* AnalysisManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9915BAB82CEC332500D3C44B /* AnalysisManager.swift */; };
 		991F32232D8792FC00DDCDF6 /* LoopFromThePastManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991F32222D8792FC00DDCDF6 /* LoopFromThePastManager.swift */; };
+		991F32252D87B73200DDCDF6 /* MonthlyRetrospectiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991F32242D87B73100DDCDF6 /* MonthlyRetrospectiveView.swift */; };
+		991F32272D87B74F00DDCDF6 /* MonthlyRetrospectiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 991F32262D87B74F00DDCDF6 /* MonthlyRetrospectiveView.swift */; };
 		992FA39B2D52E83200F8AE36 /* DaySummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 992FA39A2D52E83200F8AE36 /* DaySummaryView.swift */; };
 		9935CED22D23969600AF0C16 /* SpeakingHighlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CED12D23969600AF0C16 /* SpeakingHighlight.swift */; };
 		9935CED42D23982200AF0C16 /* SpeakingPatternCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9935CED32D23982200AF0C16 /* SpeakingPatternCard.swift */; };
@@ -224,6 +226,8 @@
 		9915BAB62CE6AF9E00D3C44B /* DailyCheckinManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCheckinManager.swift; sourceTree = "<group>"; };
 		9915BAB82CEC332500D3C44B /* AnalysisManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisManager.swift; sourceTree = "<group>"; };
 		991F32222D8792FC00DDCDF6 /* LoopFromThePastManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopFromThePastManager.swift; sourceTree = "<group>"; };
+		991F32242D87B73100DDCDF6 /* MonthlyRetrospectiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyRetrospectiveView.swift; sourceTree = "<group>"; };
+		991F32262D87B74F00DDCDF6 /* MonthlyRetrospectiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyRetrospectiveView.swift; sourceTree = "<group>"; };
 		992EB36B2D4C9F9B0061544E /* LoopDataNewer.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = LoopDataNewer.xcdatamodel; sourceTree = "<group>"; };
 		992FA39A2D52E83200F8AE36 /* DaySummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaySummaryView.swift; sourceTree = "<group>"; };
 		992FA39C2D52FC3300F8AE36 /* LoopNewData.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = LoopNewData.xcdatamodel; sourceTree = "<group>"; };
@@ -531,6 +535,7 @@
 				9915646A2D6D404000779836 /* FullTopicBreakdown.swift */,
 				991564762D7BCA2100779836 /* RecordMorningPagesView.swift */,
 				9915647E2D81140A00779836 /* DailyJournalWidget.swift */,
+				991F32262D87B74F00DDCDF6 /* MonthlyRetrospectiveView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -568,6 +573,7 @@
 				9915647A2D7BCCF500779836 /* JournalOfTheDayManager.swift */,
 				9915647C2D7D235C00779836 /* LiveTranscriptionManager.swift */,
 				991F32222D8792FC00DDCDF6 /* LoopFromThePastManager.swift */,
+				991F32242D87B73100DDCDF6 /* MonthlyRetrospectiveView.swift */,
 			);
 			path = Managers;
 			sourceTree = "<group>";
@@ -789,6 +795,7 @@
 				9935CEF82D2CA6BD00AF0C16 /* AITrendAnalysisModels.swift in Sources */,
 				999DAC802D2078C400A6626B /* QuantitativeTrendsManager.swift in Sources */,
 				99F7F6EB2CAC7935009858AC /* AudioManager.swift in Sources */,
+				991F32272D87B74F00DDCDF6 /* MonthlyRetrospectiveView.swift in Sources */,
 				99F00AF72D432417008F1228 /* TopicMoodGraph.swift in Sources */,
 				9953BE082CFCB92600348AC3 /* StoragePreference.swift in Sources */,
 				990E4A8C2CB48BAF009F88A0 /* PagesHolderView.swift in Sources */,
@@ -848,6 +855,7 @@
 				9953BE042CFB940500348AC3 /* TabButton.swift in Sources */,
 				9953BDE62CF1832100348AC3 /* ThematicLoopCard.swift in Sources */,
 				99F00AB72D3DA3D7008F1228 /* SleepCheckInView.swift in Sources */,
+				991F32252D87B73200DDCDF6 /* MonthlyRetrospectiveView.swift in Sources */,
 				9988DB8B2CD9CAEE005628DE /* SharedLoop.swift in Sources */,
 				99DC91BB2D1A50BF002B9A89 /* AudioAnalyzer.swift in Sources */,
 				9935CED22D23969600AF0C16 /* SpeakingHighlight.swift in Sources */,
