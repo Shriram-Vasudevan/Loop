@@ -34,10 +34,7 @@ struct MonthlyRetrospectiveView: View {
         .navigationTitle("Monthly Reflection")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingPremiumUpgrade) {
-            PremiumUpgradeView(
-                feature: "Monthly Reflection",
-                description: "Gain insights from your past month of journaling and set meaningful intentions for growth."
-            )
+            PremiumUpgradeView()
         }
         .onAppear {
             Task {
@@ -95,7 +92,6 @@ struct MonthlyRetrospectiveView: View {
     
     private var mainContentView: some View {
         VStack(spacing: 0) {
-            // Progress indicator
             ProgressIndicator(
                 totalSteps: retrospectiveManager.sectionTitles.count,
                 currentStep: retrospectiveManager.currentSection,
@@ -557,166 +553,3 @@ struct MonthlyRetrospectiveView: View {
     }
 }
 
-// MARK: - Helper Components
-
-struct ProgressIndicator: View {
-    let totalSteps: Int
-    let currentStep: Int
-    let accentColor: Color
-    
-    var body: some View {
-        HStack(spacing: 4) {
-            ForEach(0..<totalSteps, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(index == currentStep ? accentColor : Color.gray.opacity(0.3))
-                    .frame(height: 4)
-            }
-        }
-        .frame(height: 4)
-        .padding(.vertical, 8)
-    }
-}
-
-struct PremiumUpgradeView: View {
-    let feature: String
-    let description: String
-    
-    @Environment(\.dismiss) var dismiss
-    @ObservedObject var premiumManager = PremiumManager.shared
-    @State private var isProcessing = false
-    
-    private let accentColor = Color(hex: "94A7B7")
-    private let textColor = Color(hex: "2C3E50")
-    
-    var body: some View {
-        VStack(spacing: 24) {
-            // Header
-            HStack {
-                Button(action: { dismiss() }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 20))
-                        .foregroundColor(textColor.opacity(0.6))
-                }
-                
-                Spacer()
-                
-                Text("Premium")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(textColor)
-                
-                Spacer()
-                
-                // Empty view for balance
-                Image(systemName: "xmark")
-                    .font(.system(size: 20))
-                    .foregroundColor(.clear)
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
-            
-            // Content
-            ScrollView {
-                VStack(spacing: 32) {
-                    // Feature image
-                    Image(systemName: "star.circle.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(accentColor)
-                    
-                    // Feature info
-                    VStack(spacing: 16) {
-                        Text(feature)
-                            .font(.system(size: 24, weight: .medium))
-                            .foregroundColor(textColor)
-                            .multilineTextAlignment(.center)
-                        
-                        Text(description)
-                            .font(.system(size: 16))
-                            .foregroundColor(textColor.opacity(0.7))
-                            .multilineTextAlignment(.center)
-                            .lineSpacing(4)
-                            .padding(.horizontal, 24)
-                    }
-                    
-                    // Premium benefits
-                    VStack(spacing: 16) {
-                        Text("Loop Premium includes:")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(textColor)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        benefitRow(icon: "infinity", text: "Unlimited recording length")
-                        benefitRow(icon: "chart.bar.fill", text: "In-depth insights and analytics")
-                        benefitRow(icon: "square.stack.fill", text: "Premium-only journal templates")
-                        benefitRow(icon: "icloud.fill", text: "Cloud backup of all recordings")
-                    }
-                    .padding(20)
-                    .background(Color(hex: "F5F5F5"))
-                    .cornerRadius(12)
-                }
-                .padding(.horizontal, 24)
-            }
-            
-            // Purchase button
-            Button(action: {
-                purchasePremium()
-            }) {
-                HStack {
-                    if isProcessing {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(0.8)
-                            .padding(.trailing, 8)
-                    }
-                    
-                    Text("Upgrade for $3.99")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.white)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(accentColor)
-                .cornerRadius(12)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 16)
-            }
-            .disabled(isProcessing)
-        }
-    }
-    
-    private func benefitRow(icon: String, text: String) -> some View {
-        HStack(spacing: 16) {
-            Image(systemName: icon)
-                .font(.system(size: 16))
-                .foregroundColor(accentColor)
-                .frame(width: 20, height: 20)
-            
-            Text(text)
-                .font(.system(size: 16))
-                .foregroundColor(textColor)
-            
-            Spacer()
-        }
-    }
-    
-    private func purchasePremium() {
-        isProcessing = true
-        
-        Task {
-            do {
-                let success = try await premiumManager.purchasePremium()
-                
-                await MainActor.run {
-                    isProcessing = false
-                    if success {
-                        dismiss()
-                    }
-                }
-            } catch {
-                print("Failed to purchase premium: \(error)")
-                await MainActor.run {
-                    isProcessing = false
-                }
-            }
-        }
-    }
-}
