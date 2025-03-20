@@ -55,7 +55,6 @@ struct RecordFreeResponseView: View {
         .background(Color.white)
         .onAppear {
             audioManager.cleanup()
-            // Set the initial time based on premium status
             timeRemaining = premiumManager.getMaxRecordingDuration()
         }
     }

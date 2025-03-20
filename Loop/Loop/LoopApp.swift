@@ -49,7 +49,7 @@ struct OpeningViewsContainer: View {
                 })
                 .preferredColorScheme(.light)
             } else {
-                PagesHolderView(pageType: .record)
+                PagesHolderView(pageType: .home)
                     .transition(.opacity.animation(.easeInOut(duration: 0.5)))
                     .preferredColorScheme(.light)
             }

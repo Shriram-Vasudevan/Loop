@@ -15,7 +15,7 @@ struct MorningReflectionView: View {
     @State private var isRecording = false
     @State private var isPostRecording = false
     @State private var recordingTimer: Timer?
-    @State private var timeRemaining: Int = 30
+    @State private var timeRemaining: Int = 60
     @State private var sleepHours: Double = 7.0
     @State private var currentTab = 0
     @State private var isSaving = false

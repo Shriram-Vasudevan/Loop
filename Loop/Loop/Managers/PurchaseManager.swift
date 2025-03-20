@@ -19,8 +19,8 @@ class PremiumManager: ObservableObject {
     @Published var products: [Product] = []
     @Published var isLoading = false
     
-    private let monthlyProductID = "LoopPremiumMonthly"
-    private let yearlyProductID = "LoopPremiumYearly"
+    private let monthlyProductID = "LoopPremium"
+    private let yearlyProductID = "Loop"
     
     init() {
         isPremium = UserDefaults.standard.bool(forKey: "userIsPremium")
@@ -149,8 +149,7 @@ class PremiumManager: ObservableObject {
             throw error
         }
     }
-    
-    // Restore purchases
+
     func restorePurchases() async {
         isLoading = true
         
@@ -159,5 +158,31 @@ class PremiumManager: ObservableObject {
         await MainActor.run {
             isLoading = false
         }
+    }
+    
+    func getSubscriptionDetails() async -> (expiryDate: Date?, productId: String?) {
+        var expiryDate: Date? = nil
+        var productId: String? = nil
+        
+        do {
+            for await result in Transaction.currentEntitlements {
+                guard case .verified(let transaction) = result else {
+                    continue
+                }
+                
+                if (transaction.productID == monthlyProductID || transaction.productID == yearlyProductID) {
+                    if let expirationDate = transaction.expirationDate {
+                        if expiryDate == nil || expirationDate > expiryDate! {
+                            expiryDate = expirationDate
+                            productId = transaction.productID
+                        }
+                    }
+                }
+            }
+        } catch {
+            print("Error fetching subscription details: \(error)")
+        }
+        
+        return (expiryDate, productId)
     }
 }

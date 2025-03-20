@@ -153,7 +153,7 @@ struct SettingsView: View {
     private var premiumWidget: some View {
         VStack(spacing: 16) {
             VStack(spacing: 12) {
-                Text("Unlimited entry length, custom prompts, and more")
+                Text("Unlimited entries, iCloud Backup, and more")
                     .font(.custom("PPNeueMontreal-Medium", size: 20))
                     .foregroundColor(textColor)
                     .multilineTextAlignment(.center)
@@ -204,6 +204,7 @@ struct SettingsView: View {
         })
         .cornerRadius(10)
     }
+    
     
     private var profileSection: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -302,6 +303,38 @@ struct SettingsView: View {
                 }
 
                 iCloudBackupSection
+                
+                if premiumManager.isUserPremium() {
+                    Divider()
+                    
+                    HStack {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Premium Subscription")
+                                .font(.custom("PPNeueMontreal-Medium", size: 17))
+                                .foregroundColor(textColor)
+                            
+                            Text("Currently active")
+                                .font(.system(size: 15))
+                                .foregroundColor(textColor.opacity(0.5))
+                        }
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            openSubscriptionManagement()
+                        }) {
+                            Text("Manage")
+                                .font(.system(size: 15))
+                                .foregroundColor(.red)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.red.opacity(0.5), lineWidth: 1)
+                                )
+                        }
+                    }
+                }
             }
             .padding()
             .background(
@@ -506,6 +539,12 @@ struct SettingsView: View {
                     .font(.system(size: 14))
                     .foregroundColor(textColor.opacity(0.3))
             }
+        }
+    }
+    
+    private func openSubscriptionManagement() {
+        if let url = URL(string: "itms-apps://apps.apple.com/account/subscriptions") {
+            UIApplication.shared.open(url)
         }
     }
     

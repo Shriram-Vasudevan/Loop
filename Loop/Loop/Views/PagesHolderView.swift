@@ -30,8 +30,7 @@ struct PagesHolderView: View {
         NavigationStack {
             ZStack {
             
-//                TabBarBackground()
-                Color(hex: "F5F5F5")
+                TabBarBackground()
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
@@ -46,8 +45,6 @@ struct PagesHolderView: View {
                             ScheduleView(selectedScheduleDate: $selectedScheduleDate)
                         case .trends:
                             InsightsView(pageType: $pageType)
-                        case .record:
-                            RecordFreeResponseView()
 ////                            Text("oops")
 //                            TodaysInsightsView()
                         }
@@ -95,14 +92,18 @@ struct PagesHolderView: View {
                         .padding(.top, 12)
 
                         Button {
-                            withAnimation {
-                                pageType = .record
-                            }
+                            toggleMenu()
                         } label: {
-                            Image(systemName: isMenuOpened ? "mic.fill" : "mic.fill")
+                            Image(systemName: isMenuOpened ? "xmark" : "plus")
                                 .font(.system(size: 22, weight: .medium))
-                                .foregroundColor(pageType == .record ? accentColor : .gray.opacity(0.5))
+                                .foregroundColor(.white)
                                 .frame(width: 62, height: 62)
+                                .background(
+                                    Circle()
+                                        .fill(accentColor)
+                                        .shadow(color: accentColor.opacity(0.25), radius: 8, x: 0, y: 4)
+                                        .rotationEffect(isMenuOpened ? Angle.degrees(45) : Angle.degrees(0))
+                                )
                         }
                         .offset(y: -8)
                     }
@@ -149,6 +150,7 @@ struct PagesHolderView: View {
         withAnimation {
             isMenuOpened.toggle()
         }
+        //action to take
     }
 }
 
@@ -279,13 +281,13 @@ struct BottomTabButton: View {
         Button(action: action) {
             VStack(spacing: 4) {
                 Image(systemName: icon)
-                    .font(.system(size: 22, weight: isSelected ? .medium : .light))
+                    .font(.system(size: 18, weight: isSelected ? .medium : .light))
                     .foregroundColor(isSelected ? accentColor : .gray.opacity(0.5))
-                    .frame(height: 22)
-//
-//                Text(label)
-//                    .font(.system(size: 10, weight: isSelected ? .medium : .regular))
-//                    .foregroundColor(isSelected ? accentColor : .gray.opacity(0.5))
+                    .frame(height: 18)
+                
+                Text(label)
+                    .font(.system(size: 10, weight: isSelected ? .medium : .regular))
+                    .foregroundColor(isSelected ? accentColor : .gray.opacity(0.5))
             }
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
@@ -303,5 +305,5 @@ struct TabButtonStyle: ButtonStyle {
 }
 
 #Preview {
-    PagesHolderView(pageType: .record)
+    PagesHolderView(pageType: .home)
 }
