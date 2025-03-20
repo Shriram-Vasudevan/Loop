@@ -96,3 +96,4 @@ class MonthlyRetrospectiveManager: ObservableObject {
         print("Saving intentions: \(nextMonthIntentions)")
     }
 }
+

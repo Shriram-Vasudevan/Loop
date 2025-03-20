@@ -34,7 +34,7 @@ struct MonthlyRetrospectiveView: View {
         .navigationTitle("Monthly Reflection")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingPremiumUpgrade) {
-            PremiumUpgradeView()
+            PremiumUpgradeView(onIntroCompletion: {})
         }
         .onAppear {
             Task {

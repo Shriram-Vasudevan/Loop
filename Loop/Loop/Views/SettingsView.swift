@@ -27,6 +27,8 @@ struct SettingsView: View {
     @State private var animateContent = false
     @State private var timePickerType: TimePickerType = .evening
     
+    @State private var showingPremiumUpgrade = false
+    
     private let accentColor = Color(hex: "A28497")
     private let textColor = Color(hex: "2C3E50")
     
@@ -116,6 +118,11 @@ struct SettingsView: View {
             webView(for: webViewData)
         }
         .sheet(isPresented: $showNameEditor) { nameEditorView }
+        .sheet(isPresented: $showingPremiumUpgrade) {
+            PremiumUpgradeView(onIntroCompletion: {
+                showingPremiumUpgrade = false
+            })
+        }
         .alert("Leave a Review", isPresented: $showingReviewPrompt) {
             Button("Not Now", role: .cancel) { }
             Button("Review on App Store") {
@@ -163,6 +170,7 @@ struct SettingsView: View {
                 Spacer()
                 
                 Button(action: {
+                    showPremiumUpgrade()
                 }, label: {
                     Text("Subscribe")
                         .foregroundColor(textColor)
@@ -174,10 +182,9 @@ struct SettingsView: View {
                                 .foregroundColor(textColor.opacity(0.7))
                         )
                         .padding(.top, 12)
-
                 })
                 .padding(.bottom, 24)
-   
+                
                 Spacer()
             }
         }
@@ -294,7 +301,6 @@ struct SettingsView: View {
                     }
                 }
 
-                // Use the new iCloud backup section
                 iCloudBackupSection
             }
             .padding()
@@ -504,20 +510,13 @@ struct SettingsView: View {
     }
     
     private func initiateUpgradeToPremium() {
-        Task {
-            do {
-                let success = try await premiumManager.purchasePremium()
-                
-//                if success {
-//                    await MainActor.run {
-//                        isCloudBackupEnabled = true
-//                    }
-//                }
-            } catch {
-                print("Failed to upgrade to premium: \(error)")
-            }
-        }
+        showPremiumUpgrade()
     }
+    
+    private func showPremiumUpgrade() {
+        showingPremiumUpgrade = true
+    }
+
 }
 
 struct MinimalToggle: View {

@@ -48,11 +48,13 @@ struct OnboardingView: View {
                 PatternRecognitionView(currentTab: $currentStep)
                     .edgesIgnoringSafeArea(.all)
                     .tag(4)
-                PrivacyStorageView(currentTab: $currentStep, onIntroCompletion: {
+                PrivacyStorageView(currentTab: $currentStep)
+                .tag(5)
+                PremiumUpgradeView(onIntroCompletion: {
                     FirstLaunchManager.shared.showTutorial = true
                     saveUserPreferences()
                 })
-                    .tag(5)
+                    .tag(6)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
         }
@@ -100,7 +102,6 @@ struct OnboardingView: View {
     }
     
     private func saveUserPreferences() {
-        // Save all user selections
         UserDefaults.standard.set(Array(selectedPurposes), forKey: "selectedPurposes")
         UserDefaults.standard.set(Array(selectedReflectionStyles), forKey: "selectedReflectionStyles")
         UserDefaults.standard.set(Array(selectedEmotionalChallenges), forKey: "selectedEmotionalChallenges")
@@ -703,7 +704,6 @@ struct BubbleView: View {
 
 struct PrivacyStorageView: View {
     @Binding var currentTab: Int
-    let onIntroCompletion: () -> Void
     
     @State private var appearAnimation: [Bool] = Array(repeating: false, count: 5)
     @State private var waveOffset: CGFloat = 0
@@ -771,7 +771,9 @@ struct PrivacyStorageView: View {
                 
                 Button(action: {
                     withAnimation(.spring(response: 0.6)) {
-                        onIntroCompletion()
+                        withAnimation(.spring(response: 0.6)) {
+                            currentTab += 1
+                        }
                     }
                 }) {
                     HStack(spacing: 12) {
@@ -825,7 +827,6 @@ struct PrivacyStorageView: View {
     }
 }
 
-// Feature Row for Premium Card
 struct IntroFeatureRow: View {
     let icon: String
     let text: String

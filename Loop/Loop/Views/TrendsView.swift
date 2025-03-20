@@ -1211,10 +1211,10 @@ struct PremiumCardPlaceholder: View {
     @State private var isPurchasing = false
     @State private var showAlert = false
     @State private var alertMessage = ""
+    @State private var showingPremiumUpgrade = false
     
     var body: some View {
         VStack(spacing: 20) {
-            // Top section with card info
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text(title)
@@ -1231,15 +1231,12 @@ struct PremiumCardPlaceholder: View {
                     .foregroundColor(.gray)
             }
             
-            // Premium placeholder with blur effect
             ZStack {
-                // Background pattern or visualization
                 WavePattern()
                     .fill(accentColor.opacity(0.2))
                     .frame(height: 80)
                     .blur(radius: 3)
                 
-                // Premium lock overlay
                 VStack(spacing: 12) {
                     Image(systemName: "lock.fill")
                         .font(.system(size: 24))
@@ -1250,25 +1247,16 @@ struct PremiumCardPlaceholder: View {
                         .foregroundColor(Color(hex: "2C3E50"))
                     
                     Button(action: {
-                        purchasePremium()
+                        showingPremiumUpgrade = true
                     }) {
-                        HStack {
-                            Text("Upgrade")
-                                .font(.system(size: 15, weight: .medium))
-                            
-                            if isPurchasing {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle())
-                                    .scaleEffect(0.8)
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 8)
-                        .background(accentColor)
-                        .foregroundColor(.white)
-                        .cornerRadius(20)
+                        Text("Upgrade")
+                            .font(.system(size: 15, weight: .medium))
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 8)
+                            .background(accentColor)
+                            .foregroundColor(.white)
+                            .cornerRadius(20)
                     }
-                    .disabled(isPurchasing)
                 }
                 .padding()
                 .background(Color.white.opacity(0.8))
@@ -1278,38 +1266,10 @@ struct PremiumCardPlaceholder: View {
         .padding(24)
         .background(Color.white)
         .cornerRadius(16)
-        .alert(isPresented: $showAlert) {
-            Alert(
-                title: Text("Premium"),
-                message: Text(alertMessage),
-                dismissButton: .default(Text("OK"))
-            )
-        }
-    }
-    
-    private func purchasePremium() {
-        isPurchasing = true
-        
-        Task {
-            do {
-                let success = try await premiumManager.purchasePremium()
-                
-                await MainActor.run {
-                    isPurchasing = false
-                    if success {
-                        alertMessage = "Thank you for upgrading to Premium!"
-                    } else {
-                        alertMessage = "Purchase could not be completed."
-                    }
-                    showAlert = true
-                }
-            } catch {
-                await MainActor.run {
-                    isPurchasing = false
-                    alertMessage = "Purchase failed: \(error.localizedDescription)"
-                    showAlert = true
-                }
-            }
+        .sheet(isPresented: $showingPremiumUpgrade) {
+            PremiumUpgradeView(onIntroCompletion: {
+                showingPremiumUpgrade = false
+            })
         }
     }
 }
