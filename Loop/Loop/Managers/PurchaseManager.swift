@@ -70,9 +70,9 @@ class PremiumManager: ObservableObject {
     func getFormattedPrice(for type: SubscriptionType) -> String {
         switch type {
         case .monthly:
-            return getMonthlyProduct()?.displayPrice ?? "$3.99/month"
+            return getMonthlyProduct()?.displayPrice ?? "$0.00/month"
         case .yearly:
-            return getYearlyProduct()?.displayPrice ?? "$24.99/year"
+            return getYearlyProduct()?.displayPrice ?? "$0.00/year"
         }
     }
     

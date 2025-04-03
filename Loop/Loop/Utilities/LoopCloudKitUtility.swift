@@ -371,13 +371,12 @@ class LoopCloudKitUtility {
         completion: @escaping (Result<[Date], Error>) -> Void
     ) {
         let privateDB = container.privateCloudDatabase
-
-        // Predicate to fetch loops starting from the given date or all dates if startDate is nil.
+        
         var predicate: NSPredicate
         if let startDate = startDate {
             predicate = NSPredicate(format: "Timestamp < %@", startDate as NSDate)
         } else {
-            predicate = NSPredicate(value: true) // No filter for the first batch.
+            predicate = NSPredicate(value: true)
         }
 
         let query = CKQuery(recordType: "LoopRecord", predicate: predicate)
