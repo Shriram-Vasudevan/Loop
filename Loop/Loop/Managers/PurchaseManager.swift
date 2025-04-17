@@ -32,17 +32,14 @@ class PremiumManager: ObservableObject {
         }
     }
     
-    // Simple function to check if user is premium
     func isUserPremium() -> Bool {
         return isPremium
     }
     
-    // Get max recording duration based on premium status
     func getMaxRecordingDuration() -> Int {
-        return isUserPremium() ? 1200 : 60 // 1200 seconds (20 min) for premium, 60 seconds for free
+        return isUserPremium() ? 1200 : 120
     }
     
-    // Load products from App Store
     @MainActor
     func loadProducts() async {
         isLoading = true
@@ -55,18 +52,15 @@ class PremiumManager: ObservableObject {
             isLoading = false
         }
     }
-    
-    // Get monthly product
+
     func getMonthlyProduct() -> Product? {
         return products.first { $0.id == monthlyProductID }
     }
     
-    // Get yearly product
     func getYearlyProduct() -> Product? {
         return products.first { $0.id == yearlyProductID }
     }
     
-    // Get formatted price for a subscription type
     func getFormattedPrice(for type: SubscriptionType) -> String {
         switch type {
         case .monthly:
@@ -75,8 +69,7 @@ class PremiumManager: ObservableObject {
             return getYearlyProduct()?.displayPrice ?? "$0.00/year"
         }
     }
-    
-    // Check premium status from StoreKit
+
     @MainActor
     func checkPremiumStatus() async {
         do {
@@ -96,7 +89,6 @@ class PremiumManager: ObservableObject {
         }
     }
     
-    // Listen for transactions
     @MainActor
     func listenForTransactions() async {
         for await result in Transaction.updates {
@@ -113,7 +105,6 @@ class PremiumManager: ObservableObject {
         }
     }
     
-    // Purchase premium with specific subscription type
     func purchasePremium(subscriptionType: SubscriptionType) async throws -> Bool {
         let productId = subscriptionType == .monthly ? monthlyProductID : yearlyProductID
         

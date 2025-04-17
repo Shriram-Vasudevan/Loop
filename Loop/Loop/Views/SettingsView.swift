@@ -27,6 +27,9 @@ struct SettingsView: View {
     @State private var animateContent = false
     @State private var timePickerType: TimePickerType = .evening
     
+    @State private var selectedLanguage = "English"
+    @State private var showLanguagePicker = false
+    
     @State private var showingPremiumUpgrade = false
     
     private let accentColor = Color(hex: "A28497")
@@ -88,6 +91,15 @@ struct SettingsView: View {
                 }
                 .padding(.horizontal, 24)
             }
+        }
+        .sheet(isPresented: $showLanguagePicker) {
+            LanguagePickerSheet(
+                selectedLanguage: $selectedLanguage,
+                onSave: { newLanguage in
+                    UserDefaults.standard.set(newLanguage, forKey: "preferredLanguage")
+                }
+            )
+            .presentationDetents([.fraction(0.5)])
         }
         .sheet(isPresented: $showTimeSelector) {
             TimePickerSheet(
@@ -303,6 +315,34 @@ struct SettingsView: View {
                 }
 
                 iCloudBackupSection
+                
+                HStack {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Preferred Language")
+                            .font(.custom("PPNeueMontreal-Medium", size: 17))
+                            .foregroundColor(textColor)
+                    }
+                    
+                    Spacer()
+                    
+                    Button(action: { showLanguagePicker = true }) {
+                        HStack(spacing: 8) {
+                            Text(selectedLanguage)
+                                .font(.system(size: 15))
+                                .foregroundColor(textColor)
+                            
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 12))
+                                .foregroundColor(textColor.opacity(0.3))
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                    }
+                }
                 
                 if premiumManager.isUserPremium() {
                     Divider()
@@ -765,6 +805,113 @@ struct ContactView: View {
         }
     }
 }
+
+struct LanguagePickerSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var selectedLanguage: String
+    let onSave: (String) -> Void
+    
+    private let languages = [
+        "Afrikaans", "Albanian", "Amharic", "Arabic", "Armenian", "Azerbaijani",
+        "Basque", "Belarusian", "Bengali", "Bosnian", "Bulgarian", "Burmese",
+        "Catalan", "Cebuano", "Chichewa", "Chinese (Simplified)", "Chinese (Traditional)", "Corsican", "Croatian", "Czech",
+        "Danish", "Dutch",
+        "English", "Esperanto", "Estonian",
+        "Filipino", "Finnish", "French",
+        "Galician", "Georgian", "German", "Greek", "Gujarati",
+        "Haitian Creole", "Hausa", "Hawaiian", "Hebrew", "Hindi", "Hmong", "Hungarian",
+        "Icelandic", "Igbo", "Indonesian", "Irish", "Italian",
+        "Japanese", "Javanese",
+        "Kannada", "Kazakh", "Khmer", "Kinyarwanda", "Korean", "Kurdish", "Kyrgyz",
+        "Lao", "Latin", "Latvian", "Lithuanian", "Luxembourgish",
+        "Macedonian", "Malagasy", "Malay", "Malayalam", "Maltese", "Maori", "Marathi", "Mongolian",
+        "Nepali", "Norwegian",
+        "Odia", "Pashto", "Persian", "Polish", "Portuguese", "Punjabi",
+        "Romanian", "Russian",
+        "Samoan", "Scots Gaelic", "Serbian", "Sesotho", "Shona", "Sindhi", "Sinhala", "Slovak", "Slovenian", "Somali", "Spanish", "Sundanese", "Swahili", "Swedish",
+        "Tajik", "Tamil", "Tatar", "Telugu", "Thai", "Turkish",
+        "Ukrainian", "Urdu", "Uyghur", "Uzbek",
+        "Vietnamese",
+        "Welsh",
+        "Xhosa",
+        "Yiddish", "Yoruba",
+        "Zulu"
+    ]
+    
+    @State private var tempSelection: String = ""
+    @State private var searchText: String = ""
+    
+    private let accentColor = Color(hex: "A28497")
+    private let textColor = Color(hex: "2C3E50")
+    
+    init(selectedLanguage: Binding<String>, onSave: @escaping (String) -> Void) {
+        self._selectedLanguage = selectedLanguage
+        self.onSave = onSave
+        self._tempSelection = State(initialValue: selectedLanguage.wrappedValue)
+    }
+    
+    var filteredLanguages: [String] {
+        if searchText.isEmpty {
+            return languages
+        } else {
+            return languages.filter { $0.lowercased().contains(searchText.lowercased()) }
+        }
+    }
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                Color(hex: "F5F5F5").ignoresSafeArea()
+                
+                VStack(spacing: 0) {
+                    List {
+                        ForEach(filteredLanguages, id: \.self) { language in
+                            Button(action: {
+                                tempSelection = language
+                            }) {
+                                HStack {
+                                    Text(language)
+                                        .font(.custom("PPNeueMontreal-Medium", size: 17))
+                                        .foregroundColor(textColor)
+                                    
+                                    Spacer()
+                                    
+                                    if tempSelection == language {
+                                        Image(systemName: "checkmark")
+                                            .foregroundColor(accentColor)
+                                    }
+                                }
+                            }
+                            .listRowBackground(Color.white)
+                        }
+                    }
+                    .listStyle(PlainListStyle())
+                }
+                .navigationTitle("Select Language")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Cancel") {
+                            dismiss()
+                        }
+                        .foregroundColor(textColor)
+                    }
+                    
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Save") {
+                            selectedLanguage = tempSelection
+                            onSave(tempSelection)
+                            dismiss()
+                        }
+                        .foregroundColor(accentColor)
+                        .font(.system(size: 17, weight: .medium))
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 struct TimePickerSheet: View {
     @Environment(\.dismiss) private var dismiss
